@@ -1,0 +1,19 @@
+-e .[starlette]
+
+# Tests
+autoflake==1.4
+black==21.12b0
+coverage==6.2
+flake8==4.0.1
+isort==5.10.1
+mypy==0.920
+pytest==6.2.5
+
+# Documentation
+mkdocs==1.2.3
+mkdocs-material==8.1.2
+mkautodoc==0.1.0
+
+# Packaging
+twine==3.7.1
+wheel==0.37.0

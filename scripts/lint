@@ -1,0 +1,14 @@
+#!/bin/sh -e
+
+if [ -d 'venv' ] ; then
+    PREFIX="venv/bin/"
+else
+    PREFIX=""
+fi
+SOURCE_FILES="sqladmin tests"
+
+set -x
+
+${PREFIX}autoflake --in-place --recursive ${SOURCE_FILES}
+${PREFIX}isort --project=sqladmin ${SOURCE_FILES}
+${PREFIX}black ${SOURCE_FILES}

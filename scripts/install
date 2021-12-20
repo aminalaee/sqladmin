@@ -1,0 +1,16 @@
+#!/bin/sh -e
+
+PYTHON="python3"
+REQUIREMENTS="requirements.txt"
+VENV="venv"
+
+set -x
+
+if [ -z "$GITHUB_ACTIONS" ]; then
+    "$PYTHON" -m venv "$VENV"
+    PIP="$VENV/bin/pip"
+else
+    PIP="pip"
+fi
+
+"$PIP" install -r "$REQUIREMENTS"
