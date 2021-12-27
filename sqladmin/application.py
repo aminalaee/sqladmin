@@ -1,42 +1,17 @@
-from typing import TYPE_CHECKING, Any, List, Type
+from typing import TYPE_CHECKING, List, Type
 
-from jinja2 import (
-    ChoiceLoader,
-    Environment,
-    FileSystemLoader,
-    PackageLoader,
-    Template,
-    pass_context,
-)
+from jinja2 import ChoiceLoader, FileSystemLoader, PackageLoader
 from sqlalchemy.orm import Session
 from starlette.applications import Starlette
-from starlette.background import BackgroundTask
 from starlette.exceptions import HTTPException
 from starlette.requests import Request
 from starlette.responses import Response
 from starlette.routing import Mount, Route, Router
 from starlette.staticfiles import StaticFiles
+from starlette.templating import Jinja2Templates
 
 if TYPE_CHECKING:
     from sqladmin.models import ModelAdmin
-
-
-class _TemplateResponse(Response):
-    media_type = "text/html"
-
-    def __init__(
-        self,
-        template: Template,
-        context: dict,
-        status_code: int = 200,
-        headers: dict = None,
-        media_type: str = None,
-        background: BackgroundTask = None,
-    ) -> None:
-        self.template = template
-        self.context = context
-        content = template.render(context)
-        super().__init__(content, status_code, headers, media_type, background)
 
 
 class BaseAdmin:
@@ -46,14 +21,14 @@ class BaseAdmin:
         self.base_url = base_url
         self._model_admins: List[Type["ModelAdmin"]] = []
 
-        loader = ChoiceLoader(
+        self.templates = Jinja2Templates("templates")
+        self.templates.env.loader = ChoiceLoader(
             [
                 FileSystemLoader("templates"),
                 PackageLoader("sqladmin", "templates"),
             ]
         )
-        self.templates = Environment(loader=loader, autoescape=True)
-        self.templates.globals["min"] = min
+        self.templates.env.globals["min"] = min
 
     @property
     def model_admins(self) -> List[Type["ModelAdmin"]]:
@@ -62,9 +37,6 @@ class BaseAdmin:
         """
 
         return self._model_admins
-
-    def _get_template(self, name: str) -> Template:
-        return self.templates.get_template(name)
 
     def _find_model_admin(self, identity: str) -> Type["ModelAdmin"]:
         for model_admin in self.model_admins:
@@ -96,20 +68,12 @@ class Admin(BaseAdmin):
         )
         self.app.mount(base_url, app=router, name="admin")
 
-        @pass_context
-        def url_for(context: dict, name: str, **path_params: Any) -> str:
-            request = context["request"]
-            return request.url_for(name, **path_params)
+        self.templates.env.globals["model_admins"] = self.model_admins
 
-        self.templates.globals["url_for"] = url_for
-        self.templates.globals["model_admins"] = self.model_admins
+    async def index(self, request: Request) -> Response:
+        return self.templates.TemplateResponse("index.html", {"request": request})
 
-    async def index(self, request: Request) -> _TemplateResponse:
-        template = self._get_template("index.html")
-        return _TemplateResponse(template, {"request": request})
-
-    async def list(self, request: Request) -> _TemplateResponse:
-        template = self._get_template("list.html")
+    async def list(self, request: Request) -> Response:
         model_admin = self._find_model_admin(request.path_params["identity"])
         pagination = await model_admin.paginate(request)
 
@@ -119,4 +83,4 @@ class Admin(BaseAdmin):
             "pagination": pagination,
         }
 
-        return _TemplateResponse(template, context)
+        return self.templates.TemplateResponse("list.html", context)
