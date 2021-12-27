@@ -14,6 +14,11 @@ if TYPE_CHECKING:
     from sqladmin.models import ModelAdmin
 
 
+__all__ = [
+    "Admin",
+]
+
+
 class BaseAdmin:
     def __init__(self, app: Starlette, db: Session, base_url: str = "/admin") -> None:
         self.app = app
@@ -54,7 +59,20 @@ class BaseAdmin:
 
 
 class Admin(BaseAdmin):
+    """
+    Main entrypoint to admin interface.
+    """
+
     def __init__(self, app: Starlette, db: Session, base_url: str = "/admin") -> None:
+        """
+        :param app:
+            Starlette application instance
+        :param db:
+            SQLAlchemy database session.
+        :param base_url:
+            Base url for admin application.
+        """
+
         super().__init__(app=app, db=db, base_url=base_url)
 
         statics = StaticFiles(packages=["sqladmin"])
@@ -71,9 +89,17 @@ class Admin(BaseAdmin):
         self.templates.env.globals["model_admins"] = self.model_admins
 
     async def index(self, request: Request) -> Response:
+        """
+        Index view for admin app which can be overriden.
+        """
+
         return self.templates.TemplateResponse("index.html", {"request": request})
 
     async def list(self, request: Request) -> Response:
+        """
+        List view for model showing paginated list of items.
+        """
+
         model_admin = self._find_model_admin(request.path_params["identity"])
         pagination = await model_admin.paginate(request)
 
