@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
+    <link rel="stylesheet" href="{{ url_for('admin:statics', path='css/tabler.min.css') }}">
+    <link rel="stylesheet" href="{{ url_for('admin:statics', path='css/fontawesome.min.css') }}">
+    {% block head %}
+    {% endblock %}
+    <title>{{ title }}</title>
+  </head>
+  <body>
+    {% block body %}
+    <main>
+      {% block main %}
+      {% endblock %}
+    </main>
+    {% endblock %}
+    <script type="text/javascript" src="{{ url_for('admin:statics', path='js/jquery.min.js') }}"></script>
+    <script type="text/javascript" src="{{ url_for('admin:statics', path='js/fontawesome.min.js') }}"></script>
+    <script type="text/javascript" src="{{ url_for('admin:statics', path='js/tabler.min.js') }}"></script>
+    <script type="text/javascript" src="{{ url_for('admin:statics', path='js/moment.min.js') }}"></script>
+    {% block tail %}
+    {% endblock %}
+  </body>
+</html>

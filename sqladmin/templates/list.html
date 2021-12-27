@@ -1,0 +1,89 @@
+{% extends "layout.html" %}
+{% block content %}
+<div class="col-12">
+  <div class="card">
+    <div class="card-header">
+      <h3 class="card-title">{{ model_admin.name_plural }}</h3>
+    </div>
+    <div class="card-body border-bottom py-3">
+      <div class="d-flex">
+        <div class="text-muted">
+          Show
+          <div class="mx-2 d-inline-block">
+            <select class="form-select form-control form-control-sm" aria-label="count">
+            {% for per_page_option in model_admin.per_page_options %}
+            <option value="{{ per_page_option }}" {% if pagination.per_page == per_page_option %} selected {% endif %}>{{ per_page_option }}</option>
+            {% endfor %}
+            </select>
+          </div>
+          items
+        </div>
+        <!-- <div class="ms-auto text-muted">
+          Search:
+          <div class="ms-2 d-inline-block">
+              <input type="text" class="form-control form-control-sm" aria-label="Search">
+          </div>
+          </div> -->
+      </div>
+    </div>
+    <div class="table-responsive">
+      <table class="table card-table table-vcenter text-nowrap datatable">
+        <thead>
+          <tr>
+            <th class="w-1"><input class="form-check-input m-0 align-middle" type="checkbox" aria-label="Select all"></th>
+            <th class="w-1">Actions</th>
+            {% for attr in model_admin.list_display %}
+            <th>{{ attr.name }}</th>
+            {% endfor %}
+          </tr>
+        </thead>
+        <tbody>
+          {% for row in pagination.rows %}
+          <tr>
+            <td><input class="form-check-input m-0 align-middle" type="checkbox" aria-label="Select item"></td>
+            <td class="text-end">
+              {% if model_admin.can_view_details %}
+              <a href="#" data-bs-toggle="tooltip" data-bs-placement="top" title="View">
+              <span class="me-1"><i class="fas fa-eye"></i></span>
+              </a>
+              {% endif %}
+              {% if model_admin.can_edit %}
+              <a href="#" data-bs-toggle="tooltip" data-bs-placement="top" title="Edit">
+              <span class="me-1"><i class="fas fa-edit"></i></span>
+              </a>
+              {% endif %}
+              {% if model_admin.can_delete %}
+              <a href="#" data-bs-toggle="tooltip" data-bs-placement="top" title="Delete">
+              <span class="me-1"><i class="fas fa-trash"></i></span>
+              </a>
+              {% endif %}
+            </td>
+            {% for attr in row %}
+            <td>{{ attr }}</td>
+            {% endfor %}
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    <div class="card-footer d-flex align-items-center">
+      <p class="m-0 text-muted">Showing <span>{{ ((pagination.page - 1) * pagination.per_page) + 1 }}</span> to <span>{{ min(pagination.page * pagination.per_page, pagination.count) }}</span> of <span>{{ pagination.count }}</span> items</p>
+      <ul class="pagination m-0 ms-auto">
+        <li class="page-item {% if not pagination.previous_page_url %} disabled {% endif %}">
+          <a class="page-link" href="{{ pagination.previous_page_url }}">
+          <i class="fas fa-chevron-left"></i>
+          prev
+          </a>
+        </li>
+        <li class="page-item active"><a class="page-link" href="{{ url_for('admin:list', identity=model_admin.identity) }}?page={{ pagination.page }}">{{ pagination.page }}</a></li>
+        <li class="page-item {% if not pagination.next_page_url %} disabled {% endif %}">
+          <a class="page-link" href="{{ pagination.next_page_url }}">
+          next
+          <i class="fas fa-chevron-right"></i>
+          </a>
+        </li>
+      </ul>
+    </div>
+  </div>
+</div>
+{% endblock %}
