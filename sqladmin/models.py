@@ -14,7 +14,6 @@ from starlette.requests import Request
 
 from sqladmin.exceptions import InvalidColumnError, InvalidModelError
 
-
 __all__ = [
     "ModelAdmin",
 ]
