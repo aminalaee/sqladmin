@@ -51,6 +51,18 @@ class BaseAdmin:
         raise HTTPException(status_code=404)
 
     def register_model(self, model: Type["ModelAdmin"]) -> None:
+        """
+        Register ModelAdmin to the Admin.
+
+        Usage:
+            from sqladmin import Admin, ModelAdmin
+
+            class UserAdmin(ModelAdmin, model=User):
+                pass
+
+            admin.register_model(UserAdmin)
+        """
+
         # Set global db if it's not set per model
         if model.db is None:
             model.db = self.db

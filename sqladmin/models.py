@@ -15,6 +15,11 @@ from starlette.requests import Request
 from sqladmin.exceptions import InvalidColumnError, InvalidModelError
 
 
+__all__ = [
+    "ModelAdmin",
+]
+
+
 @dataclass
 class Pagination:
     rows: List[Any]
