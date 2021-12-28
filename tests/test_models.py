@@ -6,13 +6,13 @@ from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import Session, relationship, sessionmaker
 from starlette.applications import Starlette
 
-from sqladmin.application import Admin
+from sqladmin import Admin, ModelAdmin
 from sqladmin.exceptions import InvalidColumnError, InvalidModelError
-from sqladmin.models import ModelAdmin
+from tests.common import TEST_DATABASE_URI
 
 Base = declarative_base()  # type: Any
 
-engine = create_engine("sqlite:///tmp.db", connect_args={"check_same_thread": False})
+engine = create_engine(TEST_DATABASE_URI, connect_args={"check_same_thread": False})
 
 LocalSession = sessionmaker(bind=engine)
 
