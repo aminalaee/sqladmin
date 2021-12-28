@@ -22,7 +22,7 @@ def test_date_field() -> None:
         date = DateField()
 
     form = F()
-    assert form.date.format == "%Y-%m-%d"
+    assert form.date.format == ["%Y-%m-%d"]
 
     assert 'data-role="datepicker"' in form.date()
     assert 'data-date-format="YYYY-MM-DD"' in form.date()
