@@ -4,8 +4,8 @@ site_description: An admin dashboard for SQLAlchemy.
 theme:
     name: 'material'
 
-repo_name: sqlalchemy-admin/sqlalchemy-admin
-repo_url: https://github.com/sqlalchemy-admin/sqlalchemy-admin
+repo_name: aminalaee/sqladmin
+repo_url: https://github.com/aminalaee/sqladmin
 edit_uri: ""
 
 # nav:

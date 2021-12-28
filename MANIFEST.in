@@ -1,0 +1,4 @@
+include README.md
+include LICENSE.md
+recursive-include sqladmin/statics *
+recursive-include sqladmin/templates *
