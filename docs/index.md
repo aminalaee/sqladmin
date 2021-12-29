@@ -54,3 +54,68 @@ $ pip install sqladmin
 ---
 
 ## Quickstart
+
+Let's define an example SQLAlchemy model:
+
+```python
+from sqlalchemy import Column, Integer, String, create_engine
+from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm import sessionmaker
+
+
+Base = declarative_base()
+engine = create_engine(
+    "sqlite:///example.db",
+    connect_args={"check_same_thread": False},
+)
+Session = sessionmaker(bind=engine)
+db = Session()
+
+
+class User(Base):
+    __tablename__ = "users"
+
+    id = Column(Integer, primary_key=True)
+    name = Column(String)
+
+
+Base.metadata.create_all(engine)  # Create tables
+```
+
+If you want to use `SQLAdmin` with `FastAPI`:
+
+```python
+from fastapi import FastAPI
+from sqladmin import Admin, ModelAdmin
+
+
+app = FastAPI()
+admin = Admin(app, db)
+
+
+class UserAdmin(ModelAdmin, model=User):
+    list_display = [User.id, User.name]
+
+
+admin.register_model(UserAdmin)
+```
+
+Or if you want to use `SQLAdmin` with `Starlette`:
+
+```python
+from starlette.applications import Starlette
+from sqladmin import Admin, ModelAdmin
+
+
+app = Starlette()
+admin = Admin(app, db)
+
+
+class UserAdmin(ModelAdmin, model=User):
+    list_display = [User.id, User.name]
+
+
+admin.register_model(UserAdmin)
+```
+
+Now visiting `/admin` on your browser you can see the `SQLAdmin` interface.
