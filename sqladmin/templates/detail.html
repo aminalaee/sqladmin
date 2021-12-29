@@ -1,0 +1,30 @@
+{% extends "layout.html" %}
+{% block content %}
+<div class="col-12">
+  <div class="card">
+    <div class="card-header">
+      <h3 class="card-title">{{ model_admin.pk_column.name }}: {{ model_admin.get_column_value(model, model_admin.pk_column) }}</h3>
+    </div>
+    <div class="card-body border-bottom py-3">
+      <div class="table-responsive">
+        <table class="table card-table table-vcenter text-nowrap datatable table-hover table-bordered">
+          <thead>
+            <tr>
+              <th class="w-1">Column</th>
+              <th class="w-1">Value</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for column in model_admin.column_details_list %}
+            <tr>
+              <td>{{ column.name }}</td>
+              <td>{{ model_admin.get_column_value(model, column) }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import Any, ClassVar, List, Optional, Type, Union, no_type_check
+from typing import Any, ClassVar, List, Optional, Sequence, Type, Union, no_type_check
 
 import anyio
 from sqlalchemy import Column, func, inspect
@@ -9,6 +9,7 @@ from sqlalchemy.exc import NoInspectionAvailable
 from sqlalchemy.ext.asyncio import AsyncEngine
 from sqlalchemy.orm import Session
 from sqlalchemy.orm.attributes import InstrumentedAttribute
+from sqlalchemy.orm.exc import NoResultFound
 from sqlalchemy.sql.expression import select
 from starlette.requests import Request
 
@@ -23,7 +24,7 @@ __all__ = [
 class Pagination:
     rows: List[Any]
     page: int
-    per_page: int
+    page_size: int
     count: int
     next_page_url: Optional[str] = None
     previous_page_url: Optional[str] = None
@@ -60,30 +61,61 @@ class ModelAdminMeta(type):
         cls.name = attrs.get("name", cls.model.__name__)
         cls.name_plural = attrs.get("name_plural", f"{cls.name}s")
 
-        cls.list_display = [
-            mcls.get_column_by_attr(model, attr)
-            for attr in attrs.get("list_display", [cls.pk_column])
-        ]
+        cls.column_list = mcls.setup_column_list(cls, attrs)
+        cls.column_details_list = mcls.setup_column_details_list(cls, attrs)
 
         return cls
 
     @classmethod
-    def get_column_by_attr(
-        cls, model: type, attr: Union[str, InstrumentedAttribute, Column]
-    ) -> Column:
-        """
-        Get SQLAlchemy Column from Model using Column or name of Column.
-        """
-
-        if not isinstance(attr, str):
-            return attr
-
-        try:
-            return getattr(model, attr)
-        except AttributeError:
-            raise InvalidColumnError(
-                f"Model '{model.__name__}' has no attribute '{attr}'."
+    def setup_column_list(cls, admin: Type["ModelAdmin"], attrs: dict) -> List[Column]:
+        if "column_list" in attrs and "column_exclude_list" in attrs:
+            raise Exception(
+                "Cannot use 'column_list' and 'column_exclude_list' together."
             )
+        elif "column_list" in attrs:
+            column_list = attrs["column_list"]
+            assert column_list, "Field 'column_list' cannot be empty."
+
+            return [admin.get_column_by_attr(attr) for attr in column_list]
+        elif "column_exclude_list" in attrs:
+            column_exclude_list = attrs["column_exclude_list"]
+            assert column_exclude_list, "Field 'column_exclude_list' cannot be empty."
+
+            columns_exclude = [
+                admin.get_column_by_attr(attr) for attr in column_exclude_list
+            ]
+            columns = admin.get_model_columns()
+            return list(set(columns) - set(columns_exclude))
+        else:
+            return [admin.pk_column]
+
+    @classmethod
+    def setup_column_details_list(
+        cls, admin: Type["ModelAdmin"], attrs: dict
+    ) -> List[Column]:
+        if "column_details_list" in attrs and "column_details_exclude_list" in attrs:
+            raise Exception(
+                "Cannot use 'column_details_list' and "
+                "'column_details_exclude_list' together."
+            )
+        elif "column_details_list" in attrs:
+            column_list = attrs["column_details_list"]
+            assert column_list, "Field 'column_details_list' cannot be empty."
+
+            return [admin.get_column_by_attr(attr) for attr in column_list]
+        elif "column_details_exclude_list" in attrs:
+            column_exclude_list = attrs["column_details_exclude_list"]
+            assert (
+                column_exclude_list
+            ), "Field 'column_details_exclude_list' cannot be empty."
+
+            columns_exclude = [
+                admin.get_column_by_attr(attr) for attr in column_exclude_list
+            ]
+            columns = admin.get_model_columns()
+            return list(set(columns) - set(columns_exclude))
+        else:
+            return admin.get_model_columns()
 
 
 class ModelAdmin(metaclass=ModelAdminMeta):
@@ -117,9 +149,14 @@ class ModelAdmin(metaclass=ModelAdminMeta):
     can_view_details: ClassVar[bool] = True
 
     # List page
-    list_display: List[Union[str, Column]]
-    per_page_default: int = 10
-    per_page_options: List[int] = [10, 25, 50, 100]
+    column_list: Sequence[Union[str, Column]]
+    column_exclude_list: Sequence[Union[str, Column]]
+    page_size: int = 10
+    page_size_options: Sequence[int] = [10, 25, 50, 100]
+
+    # Details page
+    column_details_list: Sequence[Union[str, Column]]
+    column_details_exclude_list: Sequence[Union[str, Column]]
 
     @classmethod
     async def _run_query(cls, query: str) -> CursorResult:
@@ -145,10 +182,10 @@ class ModelAdmin(metaclass=ModelAdminMeta):
     @classmethod
     async def paginate(cls, request: Request) -> Pagination:
         page = int(request.query_params.get("page", 1))
-        per_page = int(request.query_params.get("per_page", cls.per_page_default))
-        per_page = min(per_page, 100)
+        page_size = int(request.query_params.get("page_size", cls.page_size))
+        page_size = min(page_size, max(cls.page_size_options))
 
-        query = select(cls.list_display).limit(per_page).offset((page - 1) * per_page)
+        query = select(cls.column_list).limit(page_size).offset((page - 1) * page_size)
         items = await cls._run_query(query)
 
         count = await cls.count()
@@ -162,7 +199,7 @@ class ModelAdmin(metaclass=ModelAdminMeta):
         else:
             previous_page_url = base_url + f"?page={page - 1}"
 
-        if (page * per_page) > count:
+        if (page * page_size) > count:
             next_page_url = None
         else:
             next_page_url = base_url + f"?page={page + 1}"
@@ -170,8 +207,39 @@ class ModelAdmin(metaclass=ModelAdminMeta):
         return Pagination(
             rows=items.all(),
             page=page,
-            per_page=per_page,
+            page_size=page_size,
             count=count,
             previous_page_url=previous_page_url,
             next_page_url=next_page_url,
         )
+
+    @classmethod
+    async def get_model_by_pk(cls, value: Any) -> Any:
+        query = select(cls.model).where(cls.pk_column == value)
+        result = await cls._run_query(query)
+
+        try:
+            return result.scalar_one()
+        except NoResultFound:
+            return None
+
+    @classmethod
+    def get_column_value(cls, obj: type, column: Column) -> Any:
+        return getattr(obj, column.name, None)
+
+    @classmethod
+    def get_column_by_attr(cls, attr: Union[str, InstrumentedAttribute]) -> Column:
+        try:
+            mapper = inspect(cls.model)
+            if isinstance(attr, str):
+                return mapper.columns[attr]
+            else:
+                return mapper.columns[attr.name]
+        except KeyError:
+            raise InvalidColumnError(
+                f"Model '{cls.model.__name__}' has no attribute '{attr}'."
+            )
+
+    @classmethod
+    def get_model_columns(cls) -> List[Column]:
+        return list(inspect(cls.model).columns)
