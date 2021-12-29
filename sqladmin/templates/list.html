@@ -32,9 +32,7 @@
           <tr>
             <th class="w-1"><input class="form-check-input m-0 align-middle" type="checkbox" aria-label="Select all"></th>
             <th class="w-1">Actions</th>
-            {% for attr in model_admin.column_list %}
-            <th>{{ attr.name }}</th>
-            {% endfor %}
+            {% for column in model_admin.column_list %} <th>{{ column.name }}</th> {% endfor %}
           </tr>
         </thead>
         <tbody>

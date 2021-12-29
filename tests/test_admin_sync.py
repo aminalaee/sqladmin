@@ -54,6 +54,8 @@ class UserAdmin(ModelAdmin, model=User):
 class AddressAdmin(ModelAdmin, model=Address, db=db):
     column_list = ["id", "user_id"]
     name_plural = "Addresses"
+    can_edit = False
+    can_delete = False
     can_view_details = False
 
 
@@ -137,6 +139,26 @@ def test_list_view_multi_page() -> None:
     # Next disabled
     assert response.text.count('<li class="page-item  disabled ">') == 1
     assert response.text.count('<li class="page-item ">') == 1
+
+
+def test_list_page_permission_actions() -> None:
+    for _ in range(10):
+        user = User(name="John Doe")
+        db.add(user)
+        db.flush()
+
+        address = Address(user_id=user.id)
+        db.add(address)
+
+    db.commit()
+
+    with TestClient(app) as client:
+        response = client.get("/admin/address/list")
+
+    assert response.status_code == 200
+    assert response.text.count('<i class="fas fa-eye"></i>') == 0
+    assert response.text.count('<i class="fas fa-pencil"></i>') == 0
+    assert response.text.count('<i class="fas fa-trash"></i>') == 0
 
 
 def test_unauthorized_detail_page() -> None:
