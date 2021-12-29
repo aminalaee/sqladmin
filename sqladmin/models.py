@@ -61,36 +61,13 @@ class ModelAdminMeta(type):
         cls.name = attrs.get("name", cls.model.__name__)
         cls.name_plural = attrs.get("name_plural", f"{cls.name}s")
 
-        mcls.setup_list_page_settings(cls, attrs)
-        mcls.setup_detail_page_settings(cls, attrs)
+        cls.column_list = mcls.setup_column_list(cls, attrs)
+        cls.column_details_list = mcls.setup_column_details_list(cls, attrs)
 
         return cls
 
     @classmethod
-    def get_column_by_attr(
-        cls, model: type, attr: Union[str, InstrumentedAttribute]
-    ) -> Column:
-        """
-        Get SQLAlchemy Column from Model using InstrumentedAttribute or name of Column.
-        """
-
-        try:
-            mapper = inspect(model)
-            if isinstance(attr, str):
-                return mapper.columns[attr]
-            else:
-                return mapper.columns[attr.name]
-        except KeyError:
-            raise InvalidColumnError(
-                f"Model '{model.__name__}' has no attribute '{attr}'."
-            )
-
-    @classmethod
-    def get_model_columns(cls, model: type) -> List[Column]:
-        return list(inspect(model).columns)
-
-    @classmethod
-    def setup_list_page_settings(cls, admin: Type["ModelAdmin"], attrs: dict) -> None:
+    def setup_column_list(cls, admin: Type["ModelAdmin"], attrs: dict) -> List[Column]:
         if "column_list" in attrs and "column_exclude_list" in attrs:
             raise Exception(
                 "Cannot use 'column_list' and 'column_exclude_list' together."
@@ -99,24 +76,23 @@ class ModelAdminMeta(type):
             column_list = attrs["column_list"]
             assert column_list, "Field 'column_list' cannot be empty."
 
-            admin.column_list = [
-                cls.get_column_by_attr(admin.model, attr) for attr in column_list
-            ]
+            return [admin.get_column_by_attr(attr) for attr in column_list]
         elif "column_exclude_list" in attrs:
             column_exclude_list = attrs["column_exclude_list"]
             assert column_exclude_list, "Field 'column_exclude_list' cannot be empty."
 
             columns_exclude = [
-                cls.get_column_by_attr(admin.model, attr)
-                for attr in column_exclude_list
+                admin.get_column_by_attr(attr) for attr in column_exclude_list
             ]
-            columns = cls.get_model_columns(admin.model)
-            admin.column_list = list(set(columns) - set(columns_exclude))
+            columns = admin.get_model_columns()
+            return list(set(columns) - set(columns_exclude))
         else:
-            admin.column_list = [admin.pk_column]
+            return [admin.pk_column]
 
     @classmethod
-    def setup_detail_page_settings(cls, admin: Type["ModelAdmin"], attrs: dict) -> None:
+    def setup_column_details_list(
+        cls, admin: Type["ModelAdmin"], attrs: dict
+    ) -> List[Column]:
         if "column_details_list" in attrs and "column_details_exclude_list" in attrs:
             raise Exception(
                 "Cannot use 'column_details_list' and "
@@ -126,9 +102,7 @@ class ModelAdminMeta(type):
             column_list = attrs["column_details_list"]
             assert column_list, "Field 'column_details_list' cannot be empty."
 
-            admin.column_details_list = [
-                cls.get_column_by_attr(admin.model, attr) for attr in column_list
-            ]
+            return [admin.get_column_by_attr(attr) for attr in column_list]
         elif "column_details_exclude_list" in attrs:
             column_exclude_list = attrs["column_details_exclude_list"]
             assert (
@@ -136,13 +110,12 @@ class ModelAdminMeta(type):
             ), "Field 'column_details_exclude_list' cannot be empty."
 
             columns_exclude = [
-                cls.get_column_by_attr(admin.model, attr)
-                for attr in column_exclude_list
+                admin.get_column_by_attr(attr) for attr in column_exclude_list
             ]
-            columns = cls.get_model_columns(admin.model)
-            admin.column_details_list = list(set(columns) - set(columns_exclude))
+            columns = admin.get_model_columns()
+            return list(set(columns) - set(columns_exclude))
         else:
-            admin.column_details_list = cls.get_model_columns(admin.model)
+            return admin.get_model_columns()
 
 
 class ModelAdmin(metaclass=ModelAdminMeta):
@@ -210,7 +183,7 @@ class ModelAdmin(metaclass=ModelAdminMeta):
     async def paginate(cls, request: Request) -> Pagination:
         page = int(request.query_params.get("page", 1))
         page_size = int(request.query_params.get("page_size", cls.page_size))
-        page_size = min(page_size, 100)
+        page_size = min(page_size, max(cls.page_size_options))
 
         query = select(cls.column_list).limit(page_size).offset((page - 1) * page_size)
         items = await cls._run_query(query)
@@ -253,3 +226,20 @@ class ModelAdmin(metaclass=ModelAdminMeta):
     @classmethod
     def get_column_value(cls, obj: type, column: Column) -> Any:
         return getattr(obj, column.name, None)
+
+    @classmethod
+    def get_column_by_attr(cls, attr: Union[str, InstrumentedAttribute]) -> Column:
+        try:
+            mapper = inspect(cls.model)
+            if isinstance(attr, str):
+                return mapper.columns[attr]
+            else:
+                return mapper.columns[attr.name]
+        except KeyError:
+            raise InvalidColumnError(
+                f"Model '{cls.model.__name__}' has no attribute '{attr}'."
+            )
+
+    @classmethod
+    def get_model_columns(cls) -> List[Column]:
+        return list(inspect(cls.model).columns)

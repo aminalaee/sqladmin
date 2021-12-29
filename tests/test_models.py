@@ -140,9 +140,9 @@ def test_column_details_list_default() -> None:
 
 def test_column_details_list_by_model_column() -> None:
     class UserAdmin(ModelAdmin, model=User):
-        column_details_list = [User.id]
+        column_details_list = [User.name, User.id]
 
-    assert UserAdmin.column_details_list == [User.id]
+    assert UserAdmin.column_details_list == [User.name, User.id]
 
 
 def test_column_details_exclude_list_by_model_column() -> None:
