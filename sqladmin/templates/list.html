@@ -11,8 +11,8 @@
           Show
           <div class="mx-2 d-inline-block">
             <select class="form-select form-control form-control-sm" aria-label="count">
-            {% for per_page_option in model_admin.per_page_options %}
-            <option value="{{ per_page_option }}" {% if pagination.per_page == per_page_option %} selected {% endif %}>{{ per_page_option }}</option>
+            {% for page_size_option in model_admin.page_size_options %}
+            <option value="{{ page_size_option }}" {% if pagination.page_size == page_size_option %} selected {% endif %}>{{ page_size_option }}</option>
             {% endfor %}
             </select>
           </div>
@@ -32,7 +32,7 @@
           <tr>
             <th class="w-1"><input class="form-check-input m-0 align-middle" type="checkbox" aria-label="Select all"></th>
             <th class="w-1">Actions</th>
-            {% for attr in model_admin.list_display %}
+            {% for attr in model_admin.column_list %}
             <th>{{ attr.name }}</th>
             {% endfor %}
           </tr>
@@ -43,7 +43,7 @@
             <td><input class="form-check-input m-0 align-middle" type="checkbox" aria-label="Select item"></td>
             <td class="text-end">
               {% if model_admin.can_view_details %}
-              <a href="#" data-bs-toggle="tooltip" data-bs-placement="top" title="View">
+              <a href="{{ url_for('admin:detail', identity=model_admin.identity, pk=model_admin.get_column_value(row, model_admin.pk_column)) }}" data-bs-toggle="tooltip" data-bs-placement="top" title="View">
               <span class="me-1"><i class="fas fa-eye"></i></span>
               </a>
               {% endif %}
@@ -67,7 +67,7 @@
       </table>
     </div>
     <div class="card-footer d-flex align-items-center">
-      <p class="m-0 text-muted">Showing <span>{{ ((pagination.page - 1) * pagination.per_page) + 1 }}</span> to <span>{{ min(pagination.page * pagination.per_page, pagination.count) }}</span> of <span>{{ pagination.count }}</span> items</p>
+      <p class="m-0 text-muted">Showing <span>{{ ((pagination.page - 1) * pagination.page_size) + 1 }}</span> to <span>{{ min(pagination.page * pagination.page_size, pagination.count) }}</span> of <span>{{ pagination.count }}</span> items</p>
       <ul class="pagination m-0 ms-auto">
         <li class="page-item {% if not pagination.previous_page_url %} disabled {% endif %}">
           <a class="page-link" href="{{ pagination.previous_page_url }}">

@@ -50,6 +50,14 @@ class BaseAdmin:
 
         raise HTTPException(status_code=404)
 
+    def _not_found_response(self, request: Request) -> Response:
+        context = {"request": request, "status_code": 404, "message": "Not found."}
+        return self.templates.TemplateResponse("error.html", context, status_code=404)
+
+    def _unathorized_response(self, request: Request) -> Response:
+        context = {"request": request, "status_code": 401, "message": "Unauthorized."}
+        return self.templates.TemplateResponse("error.html", context, status_code=401)
+
     def register_model(self, model: Type["ModelAdmin"]) -> None:
         """
         Register ModelAdmin to the Admin.
@@ -94,6 +102,7 @@ class Admin(BaseAdmin):
                 Mount("/statics", app=statics, name="statics"),
                 Route("/", endpoint=self.index, name="index"),
                 Route("/{identity}/list", endpoint=self.list, name="list"),
+                Route("/{identity}/detail/{pk}", endpoint=self.detail, name="detail"),
             ]
         )
         self.app.mount(base_url, app=router, name="admin")
@@ -122,3 +131,21 @@ class Admin(BaseAdmin):
         }
 
         return self.templates.TemplateResponse("list.html", context)
+
+    async def detail(self, request: Request) -> Response:
+        model_admin = self._find_model_admin(request.path_params["identity"])
+        if not model_admin.can_view_details:
+            return self._unathorized_response(request)
+
+        model = await model_admin.get_model_by_pk(request.path_params["pk"])
+        if not model:
+            return self._not_found_response(request)
+
+        context = {
+            "request": request,
+            "model_admin": model_admin,
+            "model": model,
+            "title": model_admin.name,
+        }
+
+        return self.templates.TemplateResponse("detail.html", context)

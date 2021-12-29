@@ -48,12 +48,13 @@ def prepare_database() -> Generator[None, None, None]:
 
 
 class UserAdmin(ModelAdmin, model=User):
-    list_display = [User.id, User.name]
+    column_list = [User.id, User.name]
 
 
 class AddressAdmin(ModelAdmin, model=Address, db=db):
-    list_display = ["id", "user_id"]
+    column_list = ["id", "user_id"]
     name_plural = "Addresses"
+    can_view_details = False
 
 
 admin.register_model(UserAdmin)
@@ -136,3 +137,34 @@ def test_list_view_multi_page() -> None:
     # Next disabled
     assert response.text.count('<li class="page-item  disabled ">') == 1
     assert response.text.count('<li class="page-item ">') == 1
+
+
+def test_unauthorized_detail_page() -> None:
+    with TestClient(app) as client:
+        response = client.get("/admin/address/detail/1")
+
+    assert response.status_code == 401
+
+
+def test_not_found_detail_page() -> None:
+    with TestClient(app) as client:
+        response = client.get("/admin/user/detail/1")
+
+    assert response.status_code == 404
+
+
+def test_detail_page() -> None:
+    user = User(name="Amin Alaee")
+    db.add(user)
+    db.commit()
+
+    with TestClient(app) as client:
+        response = client.get("/admin/user/detail/1")
+
+    assert response.status_code == 200
+    assert response.text.count('<th class="w-1">Column</th>') == 1
+    assert response.text.count('<th class="w-1">Value</th>') == 1
+    assert response.text.count("td>id</td>") == 1
+    assert response.text.count("td>1</td>") == 1
+    assert response.text.count("td>name</td>") == 1
+    assert response.text.count("td>Amin Alaee</td>") == 1
