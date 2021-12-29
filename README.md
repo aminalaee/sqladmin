@@ -1,6 +1,6 @@
 <p align="center">
 <a href="https://github.com/aminalaee/sqladmin">
-    <img width="400px" src="https://user-images.githubusercontent.com/19784933/147659550-19cf8b93-9205-43f7-a676-6d601492efa5.png" alt"SQLAdmin">
+    <img width="400px" src="https://raw.githubusercontent.com/aminalaee/sqladmin/main/docs/assets/images/banner.png" alt"SQLAdmin">
 </a>
 </p>
 

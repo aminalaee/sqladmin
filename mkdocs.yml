@@ -3,6 +3,8 @@ site_description: Flexible admin dashboard for SQLAlchemy.
 
 theme:
   name: 'material'
+  palette:
+      primary: white
 
 repo_name: aminalaee/sqladmin
 repo_url: https://github.com/aminalaee/sqladmin
