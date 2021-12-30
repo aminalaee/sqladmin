@@ -2,6 +2,7 @@ from dataclasses import dataclass
 from typing import (
     Any,
     ClassVar,
+    Dict,
     List,
     Optional,
     Sequence,
@@ -127,7 +128,7 @@ class ModelAdmin(metaclass=ModelAdminMeta):
     column_details_list: Sequence[Union[str, Column]]
     column_details_exclude_list: Sequence[Union[str, Column]]
 
-    # column_labels: Dict[str, str]
+    column_labels: Dict[Union[str, Column], str] = dict()
 
     @classmethod
     async def _run_query(cls, query: str) -> CursorResult:
@@ -231,7 +232,7 @@ class ModelAdmin(metaclass=ModelAdminMeta):
         else:
             columns = [cls.pk_column]
 
-        return [(c.name, c) for c in columns]
+        return [(cls.get_column_labels().get(c, c.name), c) for c in columns]
 
     @classmethod
     def get_details_columns(cls) -> List[Tuple[str, Column]]:
@@ -249,4 +250,12 @@ class ModelAdmin(metaclass=ModelAdminMeta):
         else:
             columns = cls.get_model_columns()
 
-        return [(c.name, c) for c in columns]
+        return [(cls.get_column_labels().get(c, c.name), c) for c in columns]
+
+    @classmethod
+    def get_column_labels(cls) -> Dict[Column, str]:
+        column_labels = {}
+        for column_label, value in cls.column_labels.items():
+            column_labels[cls.get_column_by_attr(column_label)] = value
+
+        return column_labels

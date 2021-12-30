@@ -173,3 +173,31 @@ def test_column_details_exclude_list_by_model_column() -> None:
         column_details_exclude_list = [User.id]
 
     assert UserAdmin.get_details_columns() == [("name", User.name)]
+
+
+def test_column_labels_by_string_name() -> None:
+    class UserAdmin(ModelAdmin, model=User):
+        column_list = [User.name]
+        column_labels = {"name": "Name"}
+
+    assert UserAdmin.get_list_columns() == [("Name", User.name)]
+
+    class AddressAdmin(ModelAdmin, model=Address):
+        column_details_list = [Address.user_id]
+        column_labels = {"user_id": "User ID"}
+
+    assert AddressAdmin.get_details_columns() == [("User ID", Address.user_id)]
+
+
+def test_column_labels_by_model_columns() -> None:
+    class UserAdmin(ModelAdmin, model=User):
+        column_list = [User.name]
+        column_labels = {User.name: "Name"}
+
+    assert UserAdmin.get_list_columns() == [("Name", User.name)]
+
+    class AddressAdmin(ModelAdmin, model=Address):
+        column_details_list = [Address.user_id]
+        column_labels = {Address.user_id: "User ID"}
+
+    assert AddressAdmin.get_details_columns() == [("User ID", Address.user_id)]

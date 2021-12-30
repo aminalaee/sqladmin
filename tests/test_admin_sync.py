@@ -27,6 +27,7 @@ class User(Base):
 
     id = Column(Integer, primary_key=True)
     name = Column(String)
+    email = Column(String)
 
     addresses = relationship("Address", back_populates="user")
 
@@ -48,7 +49,8 @@ def prepare_database() -> Generator[None, None, None]:
 
 
 class UserAdmin(ModelAdmin, model=User):
-    column_list = [User.id, User.name]
+    column_list = [User.id, User.name, User.email]
+    column_labels = {User.email: "Email"}
 
 
 class AddressAdmin(ModelAdmin, model=Address, db=db):
@@ -186,7 +188,25 @@ def test_detail_page() -> None:
     assert response.status_code == 200
     assert response.text.count('<th class="w-1">Column</th>') == 1
     assert response.text.count('<th class="w-1">Value</th>') == 1
-    assert response.text.count("td>id</td>") == 1
-    assert response.text.count("td>1</td>") == 1
-    assert response.text.count("td>name</td>") == 1
-    assert response.text.count("td>Amin Alaee</td>") == 1
+    assert response.text.count("<td>id</td>") == 1
+    assert response.text.count("<td>1</td>") == 1
+    assert response.text.count("<td>name</td>") == 1
+    assert response.text.count("<td>Amin Alaee</td>") == 1
+
+
+def test_column_labels() -> None:
+    user = User(name="Foo")
+    db.add(user)
+    db.commit()
+
+    with TestClient(app) as client:
+        response = client.get("/admin/user/list")
+
+    assert response.status_code == 200
+    assert response.text.count("<th>Email</th>") == 1
+
+    with TestClient(app) as client:
+        response = client.get("/admin/user/detail/1")
+
+    assert response.status_code == 200
+    assert response.text.count("<td>Email</td>") == 1
