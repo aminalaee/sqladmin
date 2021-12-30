@@ -115,13 +115,13 @@ def test_column_list_invalid_attribute() -> None:
 
 
 def test_column_list_both_include_and_exclude() -> None:
-    with pytest.raises(Exception) as exc:
+    with pytest.raises(AssertionError) as exc:
 
         class InvalidAdmin(ModelAdmin, model=User):
             column_list = ["id"]
             column_exclude_list = ["name"]
 
-    assert exc.match("Cannot use 'column_list' and 'column_exclude_list' together.")
+    assert exc.match("Cannot use column_list and column_exclude_list together.")
 
 
 def test_column_exclude_list_by_str_name() -> None:
@@ -139,14 +139,14 @@ def test_column_exclude_list_by_model_column() -> None:
 
 
 def test_column_details_list_both_include_and_exclude() -> None:
-    with pytest.raises(Exception) as exc:
+    with pytest.raises(AssertionError) as exc:
 
         class InvalidAdmin(ModelAdmin, model=User):
             column_details_list = ["id"]
             column_details_exclude_list = ["name"]
 
     assert exc.match(
-        "Cannot use 'column_details_list' and 'column_details_exclude_list' together."
+        "Cannot use column_details_list and column_details_exclude_list together."
     )
 
 

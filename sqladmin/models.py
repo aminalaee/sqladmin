@@ -64,28 +64,25 @@ class ModelAdminMeta(type):
         cls.name_plural = attrs.get("name_plural", f"{cls.name}s")
         cls.icon = attrs.get("icon", None)
 
-        cls.column_list = mcls.setup_column_list(cls, attrs)
-        cls.column_details_list = mcls.setup_column_details_list(cls, attrs)
+        cls.column_list = mcls._setup_column_list(cls, attrs)
+        cls.column_details_list = mcls._setup_column_details_list(cls, attrs)
 
         return cls
 
     @classmethod
-    def setup_column_list(cls, admin: Type["ModelAdmin"], attrs: dict) -> List[Column]:
-        if "column_list" in attrs and "column_exclude_list" in attrs:
-            raise Exception(
-                "Cannot use 'column_list' and 'column_exclude_list' together."
-            )
-        elif "column_list" in attrs:
-            column_list = attrs["column_list"]
-            assert column_list, "Field 'column_list' cannot be empty."
+    def _check_conflicting_options(cls, keys: List[str], attrs: dict) -> None:
+        if all(k in attrs for k in keys):
+            raise AssertionError(f"Cannot use {' and '.join(keys)} together.")
 
-            return [admin.get_column_by_attr(attr) for attr in column_list]
+    @classmethod
+    def _setup_column_list(cls, admin: Type["ModelAdmin"], attrs: dict) -> List[Column]:
+        cls._check_conflicting_options(["column_list", "column_exclude_list"], attrs)
+
+        if "column_list" in attrs:
+            return [admin.get_column_by_attr(attr) for attr in attrs["column_list"]]
         elif "column_exclude_list" in attrs:
-            column_exclude_list = attrs["column_exclude_list"]
-            assert column_exclude_list, "Field 'column_exclude_list' cannot be empty."
-
             columns_exclude = [
-                admin.get_column_by_attr(attr) for attr in column_exclude_list
+                admin.get_column_by_attr(attr) for attr in attrs["column_exclude_list"]
             ]
             columns = admin.get_model_columns()
             return list(set(columns) - set(columns_exclude))
@@ -93,27 +90,21 @@ class ModelAdminMeta(type):
             return [admin.pk_column]
 
     @classmethod
-    def setup_column_details_list(
+    def _setup_column_details_list(
         cls, admin: Type["ModelAdmin"], attrs: dict
     ) -> List[Column]:
-        if "column_details_list" in attrs and "column_details_exclude_list" in attrs:
-            raise Exception(
-                "Cannot use 'column_details_list' and "
-                "'column_details_exclude_list' together."
-            )
-        elif "column_details_list" in attrs:
-            column_list = attrs["column_details_list"]
-            assert column_list, "Field 'column_details_list' cannot be empty."
+        cls._check_conflicting_options(
+            ["column_details_list", "column_details_exclude_list"], attrs
+        )
 
-            return [admin.get_column_by_attr(attr) for attr in column_list]
+        if "column_details_list" in attrs:
+            return [
+                admin.get_column_by_attr(attr) for attr in attrs["column_details_list"]
+            ]
         elif "column_details_exclude_list" in attrs:
-            column_exclude_list = attrs["column_details_exclude_list"]
-            assert (
-                column_exclude_list
-            ), "Field 'column_details_exclude_list' cannot be empty."
-
             columns_exclude = [
-                admin.get_column_by_attr(attr) for attr in column_exclude_list
+                admin.get_column_by_attr(attr)
+                for attr in attrs["column_details_exclude_list"]
             ]
             columns = admin.get_model_columns()
             return list(set(columns) - set(columns_exclude))
