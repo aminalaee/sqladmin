@@ -15,9 +15,9 @@
             </tr>
           </thead>
           <tbody>
-            {% for column in model_admin.column_details_list %}
+            {% for name, column in model_admin.get_details_columns() %}
             <tr>
-              <td>{{ column.name }}</td>
+              <td>{{ name }}</td>
               <td>{{ model_admin.get_column_value(model, column) }}</td>
             </tr>
             {% endfor %}

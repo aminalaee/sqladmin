@@ -88,7 +88,7 @@ def test_column_list_default() -> None:
     class UserAdmin(ModelAdmin, model=User):
         pass
 
-    assert UserAdmin.column_list == [User.id]
+    assert UserAdmin.get_list_columns() == [("id", User.id)]
 
 
 def test_column_list_by_model_columns() -> None:
@@ -102,14 +102,18 @@ def test_column_list_by_str_name() -> None:
     class AddressAdmin(ModelAdmin, model=Address):
         column_list = ["id", "user_id"]
 
-    assert AddressAdmin.column_list == [Address.id, Address.user_id]
+    assert AddressAdmin.get_list_columns() == [
+        ("id", Address.id),
+        ("user_id", Address.user_id),
+    ]
 
 
 def test_column_list_invalid_attribute() -> None:
-    with pytest.raises(InvalidColumnError) as exc:
+    class ExampleAdmin(ModelAdmin, model=Address):
+        column_list = ["example"]
 
-        class ExampleAdmin(ModelAdmin, model=Address):
-            column_list = ["example"]
+    with pytest.raises(InvalidColumnError) as exc:
+        ExampleAdmin.get_list_columns()
 
     assert exc.match("Model 'Address' has no attribute 'example'.")
 
@@ -128,14 +132,14 @@ def test_column_exclude_list_by_str_name() -> None:
     class UserAdmin(ModelAdmin, model=User):
         column_exclude_list = ["id"]
 
-    assert UserAdmin.column_list == [User.name]
+    assert UserAdmin.get_list_columns() == [("name", User.name)]
 
 
 def test_column_exclude_list_by_model_column() -> None:
     class UserAdmin(ModelAdmin, model=User):
         column_exclude_list = [User.id]
 
-    assert UserAdmin.column_list == [User.name]
+    assert UserAdmin.get_list_columns() == [("name", User.name)]
 
 
 def test_column_details_list_both_include_and_exclude() -> None:
@@ -154,18 +158,18 @@ def test_column_details_list_default() -> None:
     class UserAdmin(ModelAdmin, model=User):
         pass
 
-    assert UserAdmin.column_details_list == [User.id, User.name]
+    assert UserAdmin.get_details_columns() == [("id", User.id), ("name", User.name)]
 
 
 def test_column_details_list_by_model_column() -> None:
     class UserAdmin(ModelAdmin, model=User):
         column_details_list = [User.name, User.id]
 
-    assert UserAdmin.column_details_list == [User.name, User.id]
+    assert UserAdmin.get_details_columns() == [("name", User.name), ("id", User.id)]
 
 
 def test_column_details_exclude_list_by_model_column() -> None:
     class UserAdmin(ModelAdmin, model=User):
         column_details_exclude_list = [User.id]
 
-    assert UserAdmin.column_details_list == [User.name]
+    assert UserAdmin.get_details_columns() == [("name", User.name)]
