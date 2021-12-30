@@ -47,13 +47,32 @@ def test_model_setup() -> None:
     assert UserAdmin.model == User
     assert UserAdmin.db is None
     assert UserAdmin.pk_column == User.id
-    assert UserAdmin.identity == "user"
 
     class AddressAdmin(ModelAdmin, model=Address, db=db):
         pass
 
     assert AddressAdmin.model == Address
     assert AddressAdmin.db == db
+
+
+def test_metadata_setup() -> None:
+    class UserAdmin(ModelAdmin, model=User):
+        pass
+
+    assert UserAdmin.identity == "user"
+    assert UserAdmin.name == "User"
+    assert UserAdmin.name_plural == "Users"
+
+    class TempModel(User):
+        pass
+
+    class TempAdmin(ModelAdmin, model=TempModel):
+        icon = "fas fa-user"
+
+    assert TempAdmin.icon == "fas fa-user"
+    assert TempAdmin.identity == "temp-model"
+    assert TempAdmin.name == "Temp Model"
+    assert TempAdmin.name_plural == "Temp Models"
 
 
 def test_setup_with_invalid_sqlalchemy_model() -> None:

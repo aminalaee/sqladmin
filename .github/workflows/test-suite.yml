@@ -31,3 +31,7 @@ jobs:
         run: "scripts/test"
       - name: "Enforce coverage"
         run: "scripts/coverage"
+      - name: "Upload Coverage"
+        uses: codecov/codecov-action@v2
+        with:
+          files: coverage.xml
