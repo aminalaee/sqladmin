@@ -7,4 +7,5 @@ htmlcov/
 .coverage
 .pytest_cache/
 .mypy_cache/
+coverage.xml
 examples/
