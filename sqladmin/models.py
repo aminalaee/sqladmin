@@ -14,6 +14,7 @@ from sqlalchemy.sql.expression import select
 from starlette.requests import Request
 
 from sqladmin.exceptions import InvalidColumnError, InvalidModelError
+from sqladmin.helpers import prettify_class_name, slugify_class_name
 
 __all__ = [
     "ModelAdmin",
@@ -55,11 +56,13 @@ class ModelAdminMeta(type):
         assert len(mapper.primary_key) == 1, "Multiple PK columns not supported."
 
         cls.pk_column = mapper.primary_key[0]
-        cls.identity = model.__name__.lower()
+        cls.identity = slugify_class_name(model.__name__)
         cls.model = model
         cls.db = db
-        cls.name = attrs.get("name", cls.model.__name__)
+
+        cls.name = attrs.get("name", prettify_class_name(cls.model.__name__))
         cls.name_plural = attrs.get("name_plural", f"{cls.name}s")
+        cls.icon = attrs.get("icon", None)
 
         cls.column_list = mcls.setup_column_list(cls, attrs)
         cls.column_details_list = mcls.setup_column_details_list(cls, attrs)

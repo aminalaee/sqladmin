@@ -20,7 +20,7 @@
           <li class="nav-item">
             <a class="nav-link" href="{{ url_for('admin:list', identity=model_admin.identity) }}">
             <span class="nav-link-icon d-md-none d-lg-inline-block">
-            <i class="{{ model_admin.icon }}"></i>
+            {% if model_admin.icon %} <i class="{{ model_admin.icon }}"></i> {% endif %}
             </span>
             <span class="nav-link-title">{{ model_admin.name_plural }}</span>
             </a>
