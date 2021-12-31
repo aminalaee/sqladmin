@@ -16,7 +16,7 @@ engine = create_engine(TEST_DATABASE_URI, connect_args={"check_same_thread": Fal
 
 LocalSession = sessionmaker(bind=engine)
 
-db: Session = LocalSession()
+session: Session = LocalSession()
 
 app = Starlette()
 admin = Admin(app=app, engine=engine)
@@ -84,8 +84,8 @@ def test_invalid_list_page() -> None:
 def test_list_view_single_page() -> None:
     for _ in range(5):
         user = User(name="John Doe")
-        db.add(user)
-        db.commit()
+        session.add(user)
+        session.commit()
 
     with TestClient(app) as client:
         response = client.get("/admin/user/list")
@@ -103,8 +103,8 @@ def test_list_view_single_page() -> None:
 def test_list_view_multi_page() -> None:
     for _ in range(45):
         user = User(name="John Doe")
-        db.add(user)
-        db.commit()
+        session.add(user)
+        session.commit()
 
     with TestClient(app) as client:
         response = client.get("/admin/user/list")
@@ -146,13 +146,13 @@ def test_list_view_multi_page() -> None:
 def test_list_page_permission_actions() -> None:
     for _ in range(10):
         user = User(name="John Doe")
-        db.add(user)
-        db.flush()
+        session.add(user)
+        session.flush()
 
         address = Address(user_id=user.id)
-        db.add(address)
+        session.add(address)
 
-    db.commit()
+    session.commit()
 
     with TestClient(app) as client:
         response = client.get("/admin/address/list")
@@ -179,8 +179,8 @@ def test_not_found_detail_page() -> None:
 
 def test_detail_page() -> None:
     user = User(name="Amin Alaee")
-    db.add(user)
-    db.commit()
+    session.add(user)
+    session.commit()
 
     with TestClient(app) as client:
         response = client.get("/admin/user/detail/1")
@@ -196,8 +196,8 @@ def test_detail_page() -> None:
 
 def test_column_labels() -> None:
     user = User(name="Foo")
-    db.add(user)
-    db.commit()
+    session.add(user)
+    session.commit()
 
     with TestClient(app) as client:
         response = client.get("/admin/user/list")
