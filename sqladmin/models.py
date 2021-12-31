@@ -17,8 +17,8 @@ from sqlalchemy import Column, func, inspect
 from sqlalchemy.engine.base import Engine
 from sqlalchemy.engine.cursor import CursorResult
 from sqlalchemy.exc import NoInspectionAvailable
-from sqlalchemy.ext.asyncio import AsyncEngine
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession
+from sqlalchemy.orm import Session, sessionmaker
 from sqlalchemy.orm.attributes import InstrumentedAttribute
 from sqlalchemy.orm.exc import NoResultFound
 from sqlalchemy.sql.expression import select
@@ -52,7 +52,6 @@ class ModelAdminMeta(type):
         cls: Type["ModelAdmin"] = super().__new__(mcls, name, bases, attrs)
 
         model = kwargs.get("model", None)
-        db = kwargs.get("db")
 
         if not model:
             return cls
@@ -69,7 +68,6 @@ class ModelAdminMeta(type):
         cls.pk_column = mapper.primary_key[0]
         cls.identity = slugify_class_name(model.__name__)
         cls.model = model
-        cls.db = db
 
         cls.name = attrs.get("name", prettify_class_name(cls.model.__name__))
         cls.name_plural = attrs.get("name_plural", f"{cls.name}s")
@@ -87,6 +85,13 @@ class ModelAdminMeta(type):
         if all(k in attrs for k in keys):
             raise AssertionError(f"Cannot use {' and '.join(keys)} together.")
 
+    @classmethod
+    def _get_sessionmaker(mcls, engine: Union[Engine, AsyncEngine]) -> None:
+        if isinstance(engine, Engine):
+            return sessionmaker(bind=engine, class_=Session)
+        else:
+            return sessionmaker(bind=engine, class_=AsyncSession)
+
 
 class ModelAdmin(metaclass=ModelAdminMeta):
     """
@@ -101,7 +106,8 @@ class ModelAdmin(metaclass=ModelAdminMeta):
     """
 
     model: ClassVar[type]
-    db: ClassVar[Session]
+    engine: ClassVar[Union[Engine, AsyncEngine]]
+    session_maker: ClassVar[sessionmaker]
 
     # Internals
     pk_column: ClassVar[Column]
@@ -137,12 +143,15 @@ class ModelAdmin(metaclass=ModelAdminMeta):
         otherwise it will run using the async driver.
         """
 
-        engine: Union[Engine, AsyncEngine] = cls.db.get_bind()
-        if isinstance(engine, Engine):
-            return await anyio.to_thread.run_sync(cls.db.execute, query)
+        assert isinstance(cls.engine, (Engine, AsyncEngine))
+
+        if isinstance(cls.engine, Engine):
+            session: Session = cls.session_maker()
+            return await anyio.to_thread.run_sync(session.execute, query)
         else:
-            async with engine.begin() as conn:
-                return await conn.execute()
+            async with cls.session_maker() as session:
+                async with session.begin():
+                    return await session.execute(query)
 
     @classmethod
     async def count(cls) -> int:

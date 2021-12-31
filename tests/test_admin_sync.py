@@ -19,7 +19,7 @@ LocalSession = sessionmaker(bind=engine)
 db: Session = LocalSession()
 
 app = Starlette()
-admin = Admin(app=app, db=db)
+admin = Admin(app=app, engine=engine)
 
 
 class User(Base):
@@ -53,7 +53,7 @@ class UserAdmin(ModelAdmin, model=User):
     column_labels = {User.email: "Email"}
 
 
-class AddressAdmin(ModelAdmin, model=Address, db=db):
+class AddressAdmin(ModelAdmin, model=Address):
     column_list = ["id", "user_id"]
     name_plural = "Addresses"
     can_edit = False
