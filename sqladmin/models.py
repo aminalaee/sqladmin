@@ -21,7 +21,7 @@ from sqlalchemy.ext.asyncio import AsyncEngine
 from sqlalchemy.orm import Session
 from sqlalchemy.orm.attributes import InstrumentedAttribute
 from sqlalchemy.orm.exc import NoResultFound
-from sqlalchemy.sql.expression import select
+from sqlalchemy.sql.expression import select, delete
 from starlette.requests import Request
 
 from sqladmin.exceptions import InvalidColumnError, InvalidModelError
@@ -259,3 +259,8 @@ class ModelAdmin(metaclass=ModelAdminMeta):
             column_labels[cls.get_column_by_attr(column_label)] = value
 
         return column_labels
+
+    @classmethod
+    async def delete_model(cls, pk: Any) -> bool:
+        query = delete(cls.model).where(cls.pk_column == pk)
+        await cls._run_query(query)

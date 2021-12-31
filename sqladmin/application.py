@@ -5,7 +5,7 @@ from sqlalchemy.orm import Session
 from starlette.applications import Starlette
 from starlette.exceptions import HTTPException
 from starlette.requests import Request
-from starlette.responses import Response
+from starlette.responses import RedirectResponse, Response
 from starlette.routing import Mount, Route, Router
 from starlette.staticfiles import StaticFiles
 from starlette.templating import Jinja2Templates
@@ -103,6 +103,7 @@ class Admin(BaseAdmin):
                 Route("/", endpoint=self.index, name="index"),
                 Route("/{identity}/list", endpoint=self.list, name="list"),
                 Route("/{identity}/detail/{pk}", endpoint=self.detail, name="detail"),
+                Route("/{identity}/delete/{pk}", endpoint=self.delete, name="delete"),
             ]
         )
         self.app.mount(base_url, app=router, name="admin")
@@ -149,3 +150,13 @@ class Admin(BaseAdmin):
         }
 
         return self.templates.TemplateResponse("detail.html", context)
+
+    async def delete(self, request: Request) -> Response:
+        identity = request.path_params["identity"]
+        model_admin = self._find_model_admin(identity)
+        if not model_admin.can_delete:
+            return self._unathorized_response(request)
+
+        await model_admin.delete_model(request.path_params["pk"])
+
+        return RedirectResponse(request.url_for("admin:list", identity=identity))

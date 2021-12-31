@@ -24,7 +24,25 @@
           </tbody>
         </table>
       </div>
+      <div class="card-footer d-flex align-items-right">
+        <div class="row">
+          <div class="col">
+            <a href="{{ url_for('admin:list', identity=model_admin.identity) }}" class="btn">
+              Go Back
+            </a></div>
+          {% if model_admin.can_delete %}
+          <div class="col">
+            <a href="#" data-name="{{ model_admin.name }}" data-pk="{{ model_admin.get_column_value(model, model_admin.pk_column) }}" data-url="{{ url_for('admin:delete', identity=model_admin.identity, pk=model_admin.get_column_value(model, model_admin.pk_column)) }}" data-bs-toggle="modal" data-bs-target="#modal-delete" class="btn btn-danger">
+              Delete
+            </a>
+          </div>
+          {% endif %}
+        </div>
+      </div>
     </div>
   </div>
 </div>
+{% if model_admin.can_delete %}
+{% include 'modals/delete.html' %}
+{% endif %}
 {% endblock %}
