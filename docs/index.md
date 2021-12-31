@@ -94,7 +94,7 @@ admin = Admin(app, db)
 
 
 class UserAdmin(ModelAdmin, model=User):
-    list_display = [User.id, User.name]
+    column_list = [User.id, User.name]
 
 
 admin.register_model(UserAdmin)
@@ -112,7 +112,7 @@ admin = Admin(app, db)
 
 
 class UserAdmin(ModelAdmin, model=User):
-    list_display = [User.id, User.name]
+    column_list = [User.id, User.name]
 
 
 admin.register_model(UserAdmin)

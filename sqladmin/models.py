@@ -1,5 +1,16 @@
 from dataclasses import dataclass
-from typing import Any, ClassVar, List, Optional, Sequence, Type, Union, no_type_check
+from typing import (
+    Any,
+    ClassVar,
+    Dict,
+    List,
+    Optional,
+    Sequence,
+    Tuple,
+    Type,
+    Union,
+    no_type_check,
+)
 
 import anyio
 from sqlalchemy import Column, func, inspect
@@ -64,61 +75,17 @@ class ModelAdminMeta(type):
         cls.name_plural = attrs.get("name_plural", f"{cls.name}s")
         cls.icon = attrs.get("icon", None)
 
-        cls.column_list = mcls.setup_column_list(cls, attrs)
-        cls.column_details_list = mcls.setup_column_details_list(cls, attrs)
+        mcls._check_conflicting_options(["column_list", "column_exclude_list"], attrs)
+        mcls._check_conflicting_options(
+            ["column_details_list", "column_details_exclude_list"], attrs
+        )
 
         return cls
 
     @classmethod
-    def setup_column_list(cls, admin: Type["ModelAdmin"], attrs: dict) -> List[Column]:
-        if "column_list" in attrs and "column_exclude_list" in attrs:
-            raise Exception(
-                "Cannot use 'column_list' and 'column_exclude_list' together."
-            )
-        elif "column_list" in attrs:
-            column_list = attrs["column_list"]
-            assert column_list, "Field 'column_list' cannot be empty."
-
-            return [admin.get_column_by_attr(attr) for attr in column_list]
-        elif "column_exclude_list" in attrs:
-            column_exclude_list = attrs["column_exclude_list"]
-            assert column_exclude_list, "Field 'column_exclude_list' cannot be empty."
-
-            columns_exclude = [
-                admin.get_column_by_attr(attr) for attr in column_exclude_list
-            ]
-            columns = admin.get_model_columns()
-            return list(set(columns) - set(columns_exclude))
-        else:
-            return [admin.pk_column]
-
-    @classmethod
-    def setup_column_details_list(
-        cls, admin: Type["ModelAdmin"], attrs: dict
-    ) -> List[Column]:
-        if "column_details_list" in attrs and "column_details_exclude_list" in attrs:
-            raise Exception(
-                "Cannot use 'column_details_list' and "
-                "'column_details_exclude_list' together."
-            )
-        elif "column_details_list" in attrs:
-            column_list = attrs["column_details_list"]
-            assert column_list, "Field 'column_details_list' cannot be empty."
-
-            return [admin.get_column_by_attr(attr) for attr in column_list]
-        elif "column_details_exclude_list" in attrs:
-            column_exclude_list = attrs["column_details_exclude_list"]
-            assert (
-                column_exclude_list
-            ), "Field 'column_details_exclude_list' cannot be empty."
-
-            columns_exclude = [
-                admin.get_column_by_attr(attr) for attr in column_exclude_list
-            ]
-            columns = admin.get_model_columns()
-            return list(set(columns) - set(columns_exclude))
-        else:
-            return admin.get_model_columns()
+    def _check_conflicting_options(cls, keys: List[str], attrs: dict) -> None:
+        if all(k in attrs for k in keys):
+            raise AssertionError(f"Cannot use {' and '.join(keys)} together.")
 
 
 class ModelAdmin(metaclass=ModelAdminMeta):
@@ -161,6 +128,8 @@ class ModelAdmin(metaclass=ModelAdminMeta):
     column_details_list: Sequence[Union[str, Column]]
     column_details_exclude_list: Sequence[Union[str, Column]]
 
+    column_labels: Dict[Union[str, Column], str] = dict()
+
     @classmethod
     async def _run_query(cls, query: str) -> CursorResult:
         """
@@ -188,7 +157,7 @@ class ModelAdmin(metaclass=ModelAdminMeta):
         page_size = int(request.query_params.get("page_size", cls.page_size))
         page_size = min(page_size, max(cls.page_size_options))
 
-        query = select(cls.column_list).limit(page_size).offset((page - 1) * page_size)
+        query = select(cls.model).limit(page_size).offset((page - 1) * page_size)
         items = await cls._run_query(query)
 
         count = await cls.count()
@@ -208,7 +177,7 @@ class ModelAdmin(metaclass=ModelAdminMeta):
             next_page_url = base_url + f"?page={page + 1}"
 
         return Pagination(
-            rows=items.all(),
+            rows=items.scalars().all(),
             page=page,
             page_size=page_size,
             count=count,
@@ -246,3 +215,47 @@ class ModelAdmin(metaclass=ModelAdminMeta):
     @classmethod
     def get_model_columns(cls) -> List[Column]:
         return list(inspect(cls.model).columns)
+
+    @classmethod
+    def get_list_columns(cls) -> List[Tuple[str, Column]]:
+        column_list = getattr(cls, "column_list", None)
+        column_exclude_list = getattr(cls, "column_exclude_list", None)
+
+        if column_list:
+            columns = [cls.get_column_by_attr(attr) for attr in cls.column_list]
+        elif column_exclude_list:
+            exclude_columns = [
+                cls.get_column_by_attr(attr) for attr in column_exclude_list
+            ]
+            all_columns = cls.get_model_columns()
+            columns = list(set(all_columns) - set(exclude_columns))
+        else:
+            columns = [cls.pk_column]
+
+        return [(cls.get_column_labels().get(c, c.name), c) for c in columns]
+
+    @classmethod
+    def get_details_columns(cls) -> List[Tuple[str, Column]]:
+        column_details_list = getattr(cls, "column_details_list", None)
+        column_details_exclude_list = getattr(cls, "column_details_exclude_list", None)
+
+        if column_details_list:
+            columns = [cls.get_column_by_attr(attr) for attr in column_details_list]
+        elif column_details_exclude_list:
+            exclude_columns = [
+                cls.get_column_by_attr(attr) for attr in column_details_exclude_list
+            ]
+            all_columns = cls.get_model_columns()
+            columns = list(set(all_columns) - set(exclude_columns))
+        else:
+            columns = cls.get_model_columns()
+
+        return [(cls.get_column_labels().get(c, c.name), c) for c in columns]
+
+    @classmethod
+    def get_column_labels(cls) -> Dict[Column, str]:
+        column_labels = {}
+        for column_label, value in cls.column_labels.items():
+            column_labels[cls.get_column_by_attr(column_label)] = value
+
+        return column_labels
