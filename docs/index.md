@@ -60,7 +60,6 @@ Let's define an example SQLAlchemy model:
 ```python
 from sqlalchemy import Column, Integer, String, create_engine
 from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import sessionmaker
 
 
 Base = declarative_base()
@@ -68,8 +67,6 @@ engine = create_engine(
     "sqlite:///example.db",
     connect_args={"check_same_thread": False},
 )
-Session = sessionmaker(bind=engine)
-db = Session()
 
 
 class User(Base):
@@ -90,7 +87,7 @@ from sqladmin import Admin, ModelAdmin
 
 
 app = FastAPI()
-admin = Admin(app, db)
+admin = Admin(app, engine)
 
 
 class UserAdmin(ModelAdmin, model=User):
@@ -103,12 +100,12 @@ admin.register_model(UserAdmin)
 Or if you want to use `SQLAdmin` with `Starlette`:
 
 ```python
-from starlette.applications import Starlette
 from sqladmin import Admin, ModelAdmin
+from starlette.applications import Starlette
 
 
 app = Starlette()
-admin = Admin(app, db)
+admin = Admin(app, engine)
 
 
 class UserAdmin(ModelAdmin, model=User):

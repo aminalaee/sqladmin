@@ -3,7 +3,7 @@ from typing import Any
 import pytest
 from sqlalchemy import Column, ForeignKey, Integer, String, create_engine
 from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import Session, relationship, sessionmaker
+from sqlalchemy.orm import relationship, sessionmaker
 from starlette.applications import Starlette
 
 from sqladmin import Admin, ModelAdmin
@@ -16,10 +16,8 @@ engine = create_engine(TEST_DATABASE_URI, connect_args={"check_same_thread": Fal
 
 LocalSession = sessionmaker(bind=engine)
 
-db: Session = LocalSession()
-
 app = Starlette()
-admin = Admin(app=app, db=db)
+admin = Admin(app=app, engine=engine)
 
 
 class User(Base):
@@ -45,14 +43,12 @@ def test_model_setup() -> None:
         pass
 
     assert UserAdmin.model == User
-    assert UserAdmin.db is None
     assert UserAdmin.pk_column == User.id
 
-    class AddressAdmin(ModelAdmin, model=Address, db=db):
+    class AddressAdmin(ModelAdmin, model=Address):
         pass
 
     assert AddressAdmin.model == Address
-    assert AddressAdmin.db == db
 
 
 def test_metadata_setup() -> None:
