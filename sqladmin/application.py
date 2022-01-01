@@ -1,7 +1,8 @@
-from typing import TYPE_CHECKING, List, Type
+from typing import TYPE_CHECKING, List, Type, Union
 
 from jinja2 import ChoiceLoader, FileSystemLoader, PackageLoader
-from sqlalchemy.orm import Session
+from sqlalchemy.engine import Engine
+from sqlalchemy.ext.asyncio import AsyncEngine
 from starlette.applications import Starlette
 from starlette.exceptions import HTTPException
 from starlette.requests import Request
@@ -20,9 +21,14 @@ __all__ = [
 
 
 class BaseAdmin:
-    def __init__(self, app: Starlette, db: Session, base_url: str = "/admin") -> None:
+    def __init__(
+        self,
+        app: Starlette,
+        engine: Union[Engine, AsyncEngine],
+        base_url: str = "/admin",
+    ) -> None:
         self.app = app
-        self.db = db
+        self.engine = engine
         self.base_url = base_url
         self._model_admins: List[Type["ModelAdmin"]] = []
 
@@ -71,9 +77,9 @@ class BaseAdmin:
             admin.register_model(UserAdmin)
         """
 
-        # Set global db if it's not set per model
-        if model.db is None:
-            model.db = self.db
+        # Set database engine from Admin instance
+        model.engine = self.engine
+        model.sessionmaker = model._get_sessionmaker(model.engine)
 
         self._model_admins.append(model)
 
@@ -83,7 +89,12 @@ class Admin(BaseAdmin):
     Main entrypoint to admin interface.
     """
 
-    def __init__(self, app: Starlette, db: Session, base_url: str = "/admin") -> None:
+    def __init__(
+        self,
+        app: Starlette,
+        engine: Union[Engine, AsyncEngine],
+        base_url: str = "/admin",
+    ) -> None:
         """
         :param app:
             Starlette application instance
@@ -93,7 +104,7 @@ class Admin(BaseAdmin):
             Base url for admin application.
         """
 
-        super().__init__(app=app, db=db, base_url=base_url)
+        super().__init__(app=app, engine=engine, base_url=base_url)
 
         statics = StaticFiles(packages=["sqladmin"])
 
