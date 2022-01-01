@@ -79,7 +79,7 @@ class BaseAdmin:
 
         # Set database engine from Admin instance
         model.engine = self.engine
-        model.session_maker = model._get_sessionmaker(model.engine)
+        model.sessionmaker = model._get_sessionmaker(model.engine)
 
         self._model_admins.append(model)
 

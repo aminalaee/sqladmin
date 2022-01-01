@@ -87,7 +87,7 @@ from sqladmin import Admin, ModelAdmin
 
 
 app = FastAPI()
-admin = Admin(app, engine=engine)
+admin = Admin(app, engine)
 
 
 class UserAdmin(ModelAdmin, model=User):
@@ -100,12 +100,12 @@ admin.register_model(UserAdmin)
 Or if you want to use `SQLAdmin` with `Starlette`:
 
 ```python
-from starlette.applications import Starlette
 from sqladmin import Admin, ModelAdmin
+from starlette.applications import Starlette
 
 
 app = Starlette()
-admin = Admin(app, engine=engine)
+admin = Admin(app, engine)
 
 
 class UserAdmin(ModelAdmin, model=User):

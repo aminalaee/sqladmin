@@ -17,7 +17,7 @@ from sqlalchemy import Column, func, inspect
 from sqlalchemy.engine.base import Engine
 from sqlalchemy.engine.cursor import CursorResult
 from sqlalchemy.exc import NoInspectionAvailable
-from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession
+from sqlalchemy.ext.asyncio import AsyncEngine
 from sqlalchemy.orm import Session, sessionmaker
 from sqlalchemy.orm.attributes import InstrumentedAttribute
 from sqlalchemy.orm.exc import NoResultFound
@@ -89,8 +89,8 @@ class ModelAdminMeta(type):
     def _get_sessionmaker(mcls, engine: Union[Engine, AsyncEngine]) -> None:
         if isinstance(engine, Engine):
             return sessionmaker(bind=engine, class_=Session)
-        else:
-            return sessionmaker(bind=engine, class_=AsyncSession)
+        # else:
+        #     return sessionmaker(bind=engine, class_=AsyncSession)
 
 
 class ModelAdmin(metaclass=ModelAdminMeta):
@@ -107,7 +107,7 @@ class ModelAdmin(metaclass=ModelAdminMeta):
 
     model: ClassVar[type]
     engine: ClassVar[Union[Engine, AsyncEngine]]
-    session_maker: ClassVar[sessionmaker]
+    sessionmaker: ClassVar[sessionmaker]
 
     # Internals
     pk_column: ClassVar[Column]
@@ -146,12 +146,12 @@ class ModelAdmin(metaclass=ModelAdminMeta):
         assert isinstance(cls.engine, (Engine, AsyncEngine))
 
         if isinstance(cls.engine, Engine):
-            session: Session = cls.session_maker()
+            session: Session = cls.sessionmaker()
             return await anyio.to_thread.run_sync(session.execute, query)
-        else:
-            async with cls.session_maker() as session:
-                async with session.begin():
-                    return await session.execute(query)
+        # else:
+        #     async with cls.sessionmaker() as session:
+        #         async with session.begin():
+        #             return await session.execute(query)
 
     @classmethod
     async def count(cls) -> int:
