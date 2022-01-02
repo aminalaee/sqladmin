@@ -155,6 +155,13 @@ def test_list_page_permission_actions() -> None:
     session.commit()
 
     with TestClient(app) as client:
+        response = client.get("/admin/user/list")
+
+    assert response.status_code == 200
+    assert response.text.count('<i class="fas fa-eye"></i>') == 10
+    assert response.text.count('<i class="fas fa-trash"></i>') == 10
+
+    with TestClient(app) as client:
         response = client.get("/admin/address/list")
 
     assert response.status_code == 200
@@ -193,6 +200,14 @@ def test_detail_page() -> None:
     assert response.text.count("<td>name</td>") == 1
     assert response.text.count("<td>Amin Alaee</td>") == 1
 
+    # Action Buttons
+    assert response.text.count("http://testserver/admin/user/list") == 2
+    assert response.text.count("Go Back") == 1
+
+    # Delete modal
+    assert response.text.count("Cancel") == 1
+    assert response.text.count("Delete") == 2
+
 
 def test_column_labels() -> None:
     user = User(name="Foo")
@@ -210,3 +225,32 @@ def test_column_labels() -> None:
 
     assert response.status_code == 200
     assert response.text.count("<td>Email</td>") == 1
+
+
+def test_delete_endpoint_unauthorized_response() -> None:
+    with TestClient(app) as client:
+        response = client.delete("/admin/address/delete/1")
+
+    assert response.status_code == 401
+
+
+def test_delete_endpoint_not_found_response() -> None:
+    with TestClient(app) as client:
+        response = client.delete("/admin/user/delete/1")
+
+    assert response.status_code == 404
+    assert session.query(User).count() == 0
+
+
+def test_delete_endpoint() -> None:
+    user = User(name="Bar")
+    session.add(user)
+    session.commit()
+
+    assert session.query(User).count() == 1
+
+    with TestClient(app) as client:
+        response = client.delete("/admin/user/delete/1")
+
+    assert response.status_code == 200
+    assert session.query(User).count() == 0

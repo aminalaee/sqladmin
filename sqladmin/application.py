@@ -114,6 +114,12 @@ class Admin(BaseAdmin):
                 Route("/", endpoint=self.index, name="index"),
                 Route("/{identity}/list", endpoint=self.list, name="list"),
                 Route("/{identity}/detail/{pk}", endpoint=self.detail, name="detail"),
+                Route(
+                    "/{identity}/delete/{pk}",
+                    endpoint=self.delete,
+                    name="delete",
+                    methods=["DELETE"],
+                ),
             ]
         )
         self.app.mount(base_url, app=router, name="admin")
@@ -133,7 +139,19 @@ class Admin(BaseAdmin):
         """
 
         model_admin = self._find_model_admin(request.path_params["identity"])
-        pagination = await model_admin.paginate(request)
+
+        page = int(request.query_params.get("page", 1))
+        page_size = int(request.query_params.get("page_size", 0))
+
+        pagination = await model_admin.list(page, page_size)
+
+        if pagination.page != 1:
+            url = str(request.url.include_query_params(page=page - 1))
+            pagination.previous_page_url = url
+
+        if (pagination.page * pagination.page_size) < pagination.count:
+            url = str(request.url.include_query_params(page=page + 1))
+            pagination.next_page_url = url
 
         context = {
             "request": request,
@@ -160,3 +178,17 @@ class Admin(BaseAdmin):
         }
 
         return self.templates.TemplateResponse("detail.html", context)
+
+    async def delete(self, request: Request) -> Response:
+        identity = request.path_params["identity"]
+        model_admin = self._find_model_admin(identity)
+        if not model_admin.can_delete:
+            return self._unathorized_response(request)
+
+        model = await model_admin.get_model_by_pk(request.path_params["pk"])
+        if not model:
+            return self._not_found_response(request)
+
+        await model_admin.delete_model(model)
+
+        return Response(content=request.url_for("admin:list", identity=identity))

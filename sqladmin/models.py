@@ -13,16 +13,13 @@ from typing import (
 )
 
 import anyio
-from sqlalchemy import Column, func, inspect
+from sqlalchemy import Column, func, inspect, select
 from sqlalchemy.engine.base import Engine
-from sqlalchemy.engine.cursor import CursorResult
 from sqlalchemy.exc import NoInspectionAvailable
 from sqlalchemy.ext.asyncio import AsyncEngine
 from sqlalchemy.orm import Session, sessionmaker
 from sqlalchemy.orm.attributes import InstrumentedAttribute
 from sqlalchemy.orm.exc import NoResultFound
-from sqlalchemy.sql.expression import select
-from starlette.requests import Request
 
 from sqladmin.exceptions import InvalidColumnError, InvalidModelError
 from sqladmin.helpers import prettify_class_name, slugify_class_name
@@ -137,72 +134,43 @@ class ModelAdmin(metaclass=ModelAdminMeta):
     column_labels: Dict[Union[str, Column], str] = dict()
 
     @classmethod
-    async def _run_query(cls, query: str) -> CursorResult:
-        """
-        If using a sync driver, query will be run in a worker thread,
-        otherwise it will run using the async driver.
-        """
-
-        assert isinstance(cls.engine, (Engine, AsyncEngine))
+    async def count(cls) -> int:  # type: ignore
+        query = select(func.count(cls.pk_column))
 
         if isinstance(cls.engine, Engine):
-            session: Session = cls.sessionmaker()
-            return await anyio.to_thread.run_sync(session.execute, query)
-        # else:
-        #     async with cls.sessionmaker() as session:
-        #         async with session.begin():
-        #             return await session.execute(query)
+            with cls.sessionmaker() as session:
+                result = await anyio.to_thread.run_sync(session.execute, query)
+                return result.scalar_one()
 
     @classmethod
-    async def count(cls) -> int:
-        query = select(func.count(cls.pk_column))
-        result = await cls._run_query(query)
-
-        return result.scalar()
-
-    @classmethod
-    async def paginate(cls, request: Request) -> Pagination:
-        page = int(request.query_params.get("page", 1))
-        page_size = int(request.query_params.get("page_size", cls.page_size))
-        page_size = min(page_size, max(cls.page_size_options))
-
-        query = select(cls.model).limit(page_size).offset((page - 1) * page_size)
-        items = await cls._run_query(query)
+    async def list(cls, page: int, page_size: int) -> Pagination:  # type: ignore
+        page_size = min(page_size or cls.page_size, max(cls.page_size_options))
 
         count = await cls.count()
+        query = select(cls.model).limit(page_size).offset((page - 1) * page_size)
 
-        # TODO: Use query params from url_for
-        # https://github.com/encode/starlette/pull/1385
-        base_url = request.url_for("admin:list", identity=cls.identity)
+        if isinstance(cls.engine, Engine):
+            with cls.sessionmaker() as session:
+                items = await anyio.to_thread.run_sync(session.execute, query)
 
-        if page == 1:
-            previous_page_url = None
-        else:
-            previous_page_url = base_url + f"?page={page - 1}"
-
-        if (page * page_size) > count:
-            next_page_url = None
-        else:
-            next_page_url = base_url + f"?page={page + 1}"
-
-        return Pagination(
-            rows=items.scalars().all(),
-            page=page,
-            page_size=page_size,
-            count=count,
-            previous_page_url=previous_page_url,
-            next_page_url=next_page_url,
-        )
+                return Pagination(
+                    rows=items.scalars().all(),
+                    page=page,
+                    page_size=page_size,
+                    count=count,
+                )
 
     @classmethod
     async def get_model_by_pk(cls, value: Any) -> Any:
         query = select(cls.model).where(cls.pk_column == value)
-        result = await cls._run_query(query)
 
-        try:
-            return result.scalar_one()
-        except NoResultFound:
-            return None
+        if isinstance(cls.engine, Engine):
+            with cls.sessionmaker() as session:
+                result = await anyio.to_thread.run_sync(session.execute, query)
+                try:
+                    return result.scalar_one()
+                except NoResultFound:
+                    return None
 
     @classmethod
     def get_column_value(cls, obj: type, column: Column) -> Any:
@@ -268,3 +236,9 @@ class ModelAdmin(metaclass=ModelAdminMeta):
             column_labels[cls.get_column_by_attr(column_label)] = value
 
         return column_labels
+
+    @classmethod
+    async def delete_model(cls, obj: str) -> None:
+        if isinstance(cls.engine, Engine):
+            with cls.sessionmaker.begin() as session:
+                await anyio.to_thread.run_sync(session.delete, obj)
