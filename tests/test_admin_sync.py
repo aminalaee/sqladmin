@@ -210,3 +210,32 @@ def test_column_labels() -> None:
 
     assert response.status_code == 200
     assert response.text.count("<td>Email</td>") == 1
+
+
+def test_delete_endpoint_unauthorized_response() -> None:
+    with TestClient(app) as client:
+        response = client.delete("/admin/address/delete/1")
+
+    assert response.status_code == 401
+
+
+def test_delete_endpoint_not_found_response() -> None:
+    with TestClient(app) as client:
+        response = client.delete("/admin/user/delete/1")
+
+    assert response.status_code == 404
+    assert session.query(User).count() == 0
+
+
+def test_delete_endpoint() -> None:
+    user = User(name="Bar")
+    session.add(user)
+    session.commit()
+
+    assert session.query(User).count() == 1
+
+    with TestClient(app) as client:
+        response = client.delete("/admin/user/delete/1")
+
+    assert response.status_code == 307
+    assert session.query(User).count() == 0
