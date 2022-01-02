@@ -108,20 +108,20 @@ class Admin(BaseAdmin):
 
         statics = StaticFiles(packages=["sqladmin"])
 
-        routes = [
-            Mount("/statics", app=statics, name="statics"),
-            Route("/", endpoint=self.index, name="index"),
-            Route("/{identity}/list", endpoint=self.list, name="list"),
-            Route("/{identity}/detail/{pk}", endpoint=self.detail, name="detail"),
-            Route(
-                "/{identity}/delete/{pk}",
-                endpoint=self.delete,
-                name="delete",
-                methods=["DELETE"],
-            ),
-        ]
-
-        router = Router(routes=routes)
+        router = Router(
+            routes=[
+                Mount("/statics", app=statics, name="statics"),
+                Route("/", endpoint=self.index, name="index"),
+                Route("/{identity}/list", endpoint=self.list, name="list"),
+                Route("/{identity}/detail/{pk}", endpoint=self.detail, name="detail"),
+                Route(
+                    "/{identity}/delete/{pk}",
+                    endpoint=self.delete,
+                    name="delete",
+                    methods=["DELETE"],
+                ),
+            ]
+        )
         self.app.mount(base_url, app=router, name="admin")
 
         self.templates.env.globals["model_admins"] = self.model_admins

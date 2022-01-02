@@ -155,6 +155,13 @@ def test_list_page_permission_actions() -> None:
     session.commit()
 
     with TestClient(app) as client:
+        response = client.get("/admin/user/list")
+
+    assert response.status_code == 200
+    assert response.text.count('<i class="fas fa-eye"></i>') == 10
+    assert response.text.count('<i class="fas fa-trash"></i>') == 10
+
+    with TestClient(app) as client:
         response = client.get("/admin/address/list")
 
     assert response.status_code == 200
@@ -192,6 +199,14 @@ def test_detail_page() -> None:
     assert response.text.count("<td>1</td>") == 1
     assert response.text.count("<td>name</td>") == 1
     assert response.text.count("<td>Amin Alaee</td>") == 1
+
+    # Action Buttons
+    assert response.text.count("http://testserver/admin/user/list") == 2
+    assert response.text.count("Go Back") == 1
+
+    # Delete modal
+    assert response.text.count("Cancel") == 1
+    assert response.text.count("Delete") == 2
 
 
 def test_column_labels() -> None:
