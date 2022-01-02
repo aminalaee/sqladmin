@@ -237,5 +237,5 @@ def test_delete_endpoint() -> None:
     with TestClient(app) as client:
         response = client.delete("/admin/user/delete/1")
 
-    assert response.status_code == 307
+    assert response.status_code == 200
     assert session.query(User).count() == 0
