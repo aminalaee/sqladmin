@@ -104,6 +104,7 @@ class Admin(BaseAdmin):
             Base url for admin application.
         """
 
+        assert isinstance(engine, (Engine, AsyncEngine))
         super().__init__(app=app, engine=engine, base_url=base_url)
 
         statics = StaticFiles(packages=["sqladmin"])

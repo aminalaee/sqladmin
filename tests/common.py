@@ -1,7 +1,10 @@
 import os
 from typing import Any, List
 
-TEST_DATABASE_URI = os.environ.get("TEST_DATABASE_URI", "sqlite:///test.db")
+TEST_DATABASE_URI_SYNC = os.environ.get("TEST_DATABASE_URI_SYNC", "sqlite:///test.db")
+TEST_DATABASE_URI_ASYNC = os.environ.get(
+    "TEST_DATABASE_URI_ASYNC", "sqlite+aiosqlite:///test.db"
+)
 
 
 class DummyData(dict):  # pragma: no cover
