@@ -341,7 +341,7 @@ class QuerySelectField(fields.SelectFieldBase):
         if self._object_list is None:
             query = self.query if self.query is not None else self.query_factory()
             get_pk = self.get_pk
-            self._object_list = list((str(get_pk(obj)), obj) for obj in query)
+            self._object_list = [(str(get_pk(obj)), obj) for obj in query]
         return self._object_list
 
     def iter_choices(self) -> Generator[Tuple[str, str, bool], None, None]:
@@ -434,7 +434,7 @@ class QuerySelectMultipleField(QuerySelectField):
         if self._invalid_formdata:
             raise ValidationError(self.gettext("Not a valid choice"))
         elif self.data:
-            obj_list = list(x[1] for x in self._get_object_list())
+            obj_list = [x[1] for x in self._get_object_list()]
             for v in self.data:
                 if v not in obj_list:
                     raise ValidationError(self.gettext("Not a valid choice"))
