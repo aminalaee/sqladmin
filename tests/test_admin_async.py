@@ -1,24 +1,27 @@
-from typing import Any, Generator
+from typing import Any, AsyncGenerator
 
 import pytest
-from sqlalchemy import Column, ForeignKey, Integer, String, create_engine
+from sqlalchemy import Column, ForeignKey, Integer, String, func, select
+from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import Session, relationship, sessionmaker
+from sqlalchemy.orm import relationship, sessionmaker
 from starlette.applications import Starlette
 from starlette.testclient import TestClient
 
 from sqladmin import Admin, ModelAdmin
-from tests.common import TEST_DATABASE_URI_SYNC
+from tests.common import TEST_DATABASE_URI_ASYNC
+
+pytestmark = pytest.mark.anyio
 
 Base = declarative_base()  # type: Any
 
-engine = create_engine(
-    TEST_DATABASE_URI_SYNC, connect_args={"check_same_thread": False}
+engine = create_async_engine(
+    TEST_DATABASE_URI_ASYNC, connect_args={"check_same_thread": False}
 )
 
-LocalSession = sessionmaker(bind=engine)
+LocalSession = sessionmaker(bind=engine, class_=AsyncSession)
 
-session: Session = LocalSession()
+session: AsyncSession = LocalSession()
 
 app = Starlette()
 admin = Admin(app=app, engine=engine)
@@ -44,10 +47,14 @@ class Address(Base):
 
 
 @pytest.fixture(autouse=True, scope="function")
-def prepare_database() -> Generator[None, None, None]:
-    Base.metadata.create_all(engine)
+async def prepare_database() -> AsyncGenerator[None, None]:
+    async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.create_all)
+
     yield
-    Base.metadata.drop_all(engine)
+
+    async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.drop_all)
 
 
 class UserAdmin(ModelAdmin, model=User):
@@ -67,7 +74,7 @@ admin.register_model(UserAdmin)
 admin.register_model(AddressAdmin)
 
 
-def test_root_view() -> None:
+async def test_root_view() -> None:
     with TestClient(app) as client:
         response = client.get("/admin")
 
@@ -76,18 +83,18 @@ def test_root_view() -> None:
     assert response.text.count('<span class="nav-link-title">Addresses</span>') == 1
 
 
-def test_invalid_list_page() -> None:
+async def test_invalid_list_page() -> None:
     with TestClient(app) as client:
         response = client.get("/admin/example/list")
 
     assert response.status_code == 404
 
 
-def test_list_view_single_page() -> None:
+async def test_list_view_single_page() -> None:
     for _ in range(5):
         user = User(name="John Doe")
         session.add(user)
-    session.commit()
+    await session.commit()
 
     with TestClient(app) as client:
         response = client.get("/admin/user/list")
@@ -102,11 +109,11 @@ def test_list_view_single_page() -> None:
     assert response.text.count('<li class="page-item  disabled ">') == 2
 
 
-def test_list_view_multi_page() -> None:
+async def test_list_view_multi_page() -> None:
     for _ in range(45):
         user = User(name="John Doe")
         session.add(user)
-    session.commit()
+    await session.commit()
 
     with TestClient(app) as client:
         response = client.get("/admin/user/list")
@@ -145,16 +152,16 @@ def test_list_view_multi_page() -> None:
     assert response.text.count('<li class="page-item ">') == 1
 
 
-def test_list_page_permission_actions() -> None:
+async def test_list_page_permission_actions() -> None:
     for _ in range(10):
         user = User(name="John Doe")
         session.add(user)
-        session.flush()
+        await session.flush()
 
         address = Address(user_id=user.id)
         session.add(address)
 
-    session.commit()
+    await session.commit()
 
     with TestClient(app) as client:
         response = client.get("/admin/user/list")
@@ -172,24 +179,24 @@ def test_list_page_permission_actions() -> None:
     assert response.text.count('<i class="fas fa-trash"></i>') == 0
 
 
-def test_unauthorized_detail_page() -> None:
+async def test_unauthorized_detail_page() -> None:
     with TestClient(app) as client:
         response = client.get("/admin/address/detail/1")
 
     assert response.status_code == 401
 
 
-def test_not_found_detail_page() -> None:
+async def test_not_found_detail_page() -> None:
     with TestClient(app) as client:
         response = client.get("/admin/user/detail/1")
 
     assert response.status_code == 404
 
 
-def test_detail_page() -> None:
+async def test_detail_page() -> None:
     user = User(name="Amin Alaee")
     session.add(user)
-    session.commit()
+    await session.commit()
 
     with TestClient(app) as client:
         response = client.get("/admin/user/detail/1")
@@ -211,10 +218,10 @@ def test_detail_page() -> None:
     assert response.text.count("Delete") == 2
 
 
-def test_column_labels() -> None:
+async def test_column_labels() -> None:
     user = User(name="Foo")
     session.add(user)
-    session.commit()
+    await session.commit()
 
     with TestClient(app) as client:
         response = client.get("/admin/user/list")
@@ -229,30 +236,38 @@ def test_column_labels() -> None:
     assert response.text.count("<td>Email</td>") == 1
 
 
-def test_delete_endpoint_unauthorized_response() -> None:
+async def test_delete_endpoint_unauthorized_response() -> None:
     with TestClient(app) as client:
         response = client.delete("/admin/address/delete/1")
 
     assert response.status_code == 401
 
 
-def test_delete_endpoint_not_found_response() -> None:
+async def test_delete_endpoint_not_found_response() -> None:
     with TestClient(app) as client:
         response = client.delete("/admin/user/delete/1")
 
     assert response.status_code == 404
-    assert session.query(User).count() == 0
+
+    stmt = select(func.count(User.id))
+    result = await session.execute(stmt)
+    assert result.scalar_one() == 0
 
 
-def test_delete_endpoint() -> None:
+async def test_delete_endpoint() -> None:
     user = User(name="Bar")
     session.add(user)
-    session.commit()
+    await session.commit()
 
-    assert session.query(User).count() == 1
+    stmt = select(func.count(User.id))
+
+    result = await session.execute(stmt)
+    assert result.scalar_one() == 1
 
     with TestClient(app) as client:
         response = client.delete("/admin/user/delete/1")
 
     assert response.status_code == 200
-    assert session.query(User).count() == 0
+
+    result = await session.execute(stmt)
+    assert result.scalar_one() == 0

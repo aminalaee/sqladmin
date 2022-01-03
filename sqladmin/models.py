@@ -16,7 +16,7 @@ import anyio
 from sqlalchemy import Column, func, inspect, select
 from sqlalchemy.engine.base import Engine
 from sqlalchemy.exc import NoInspectionAvailable
-from sqlalchemy.ext.asyncio import AsyncEngine
+from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession
 from sqlalchemy.orm import Session, sessionmaker
 from sqlalchemy.orm.attributes import InstrumentedAttribute
 from sqlalchemy.orm.exc import NoResultFound
@@ -86,8 +86,8 @@ class ModelAdminMeta(type):
     def _get_sessionmaker(mcls, engine: Union[Engine, AsyncEngine]) -> None:
         if isinstance(engine, Engine):
             return sessionmaker(bind=engine, class_=Session)
-        # else:
-        #     return sessionmaker(bind=engine, class_=AsyncSession)
+        else:
+            return sessionmaker(bind=engine, class_=AsyncSession)
 
 
 class ModelAdmin(metaclass=ModelAdminMeta):
@@ -134,31 +134,42 @@ class ModelAdmin(metaclass=ModelAdminMeta):
     column_labels: Dict[Union[str, Column], str] = dict()
 
     @classmethod
-    async def count(cls) -> int:  # type: ignore
+    async def count(cls) -> int:
         query = select(func.count(cls.pk_column))
 
         if isinstance(cls.engine, Engine):
             with cls.sessionmaker() as session:
                 result = await anyio.to_thread.run_sync(session.execute, query)
                 return result.scalar_one()
+        else:
+            async with cls.sessionmaker() as session:
+                result = await session.execute(query)
+                return result.scalar_one()
 
     @classmethod
-    async def list(cls, page: int, page_size: int) -> Pagination:  # type: ignore
+    async def list(cls, page: int, page_size: int) -> Pagination:
         page_size = min(page_size or cls.page_size, max(cls.page_size_options))
 
         count = await cls.count()
         query = select(cls.model).limit(page_size).offset((page - 1) * page_size)
 
+        pagination = Pagination(
+            rows=[],
+            page=page,
+            page_size=page_size,
+            count=count,
+        )
+
         if isinstance(cls.engine, Engine):
             with cls.sessionmaker() as session:
                 items = await anyio.to_thread.run_sync(session.execute, query)
-
-                return Pagination(
-                    rows=items.scalars().all(),
-                    page=page,
-                    page_size=page_size,
-                    count=count,
-                )
+                pagination.rows = items.scalars().all()
+                return pagination
+        else:
+            async with cls.sessionmaker() as session:
+                items = await session.execute(query)
+                pagination.rows = items.scalars().all()
+                return pagination
 
     @classmethod
     async def get_model_by_pk(cls, value: Any) -> Any:
@@ -167,6 +178,13 @@ class ModelAdmin(metaclass=ModelAdminMeta):
         if isinstance(cls.engine, Engine):
             with cls.sessionmaker() as session:
                 result = await anyio.to_thread.run_sync(session.execute, query)
+                try:
+                    return result.scalar_one()
+                except NoResultFound:
+                    return None
+        else:
+            async with cls.sessionmaker() as session:
+                result = await session.execute(query)
                 try:
                     return result.scalar_one()
                 except NoResultFound:
@@ -242,3 +260,6 @@ class ModelAdmin(metaclass=ModelAdminMeta):
         if isinstance(cls.engine, Engine):
             with cls.sessionmaker.begin() as session:
                 await anyio.to_thread.run_sync(session.delete, obj)
+        else:
+            async with cls.sessionmaker.begin() as session:
+                await session.delete(obj)

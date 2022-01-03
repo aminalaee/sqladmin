@@ -8,11 +8,13 @@ from starlette.applications import Starlette
 
 from sqladmin import Admin, ModelAdmin
 from sqladmin.exceptions import InvalidColumnError, InvalidModelError
-from tests.common import TEST_DATABASE_URI
+from tests.common import TEST_DATABASE_URI_SYNC
 
 Base = declarative_base()  # type: Any
 
-engine = create_engine(TEST_DATABASE_URI, connect_args={"check_same_thread": False})
+engine = create_engine(
+    TEST_DATABASE_URI_SYNC, connect_args={"check_same_thread": False}
+)
 
 LocalSession = sessionmaker(bind=engine)
 
