@@ -40,8 +40,10 @@ class Pagination:
 
 
 class ModelAdminMeta(type):
-    """
-    Metaclass used to specify class variables in ModelAdmin.
+    """Metaclass used to specify class variables in ModelAdmin.
+
+    Danger:
+        This class should almost never be used directly.
     """
 
     @no_type_check
@@ -91,15 +93,17 @@ class ModelAdminMeta(type):
 
 
 class ModelAdmin(metaclass=ModelAdminMeta):
-    """
-    Base class for defining admnistrative behaviour for the model.
+    """Base class for defining admnistrative behaviour for the model.
 
-    Usage:
+    ???+ usage
+        ```python
         from sqladmin import ModelAdmin
 
-        class ExampleAdmin(ModelAdmin, model=SQLAlchemyModel):
-            can_create = True
+        from mymodels import User # SQLAlchemy model
 
+        class UserAdmin(ModelAdmin, model=User):
+            can_create = True
+        ```
     """
 
     model: ClassVar[type]
@@ -111,27 +115,128 @@ class ModelAdmin(metaclass=ModelAdminMeta):
     identity: ClassVar[str]
 
     # Metadata
-    name: ClassVar[str]
-    name_plural: ClassVar[str]
-    icon: ClassVar[str]
+    name: ClassVar[str] = ""
+    """Name of ModelAdmin to display.
+    Default value is set to Model class name.
+    """
+
+    name_plural: ClassVar[str] = ""
+    """Plural name of ModelAdmin.
+    Default value is Model class name + `s`.
+    """
+
+    icon: ClassVar[str] = ""
+    """Display icon for ModelAdmin in the sidebar.
+    Currently only supports FontAwesome icons.
+
+    ???+ example
+        ```python
+        class UserAdmin(ModelAdmin, model=User):
+            icon = "fas fa-user"
+        ```
+    """
 
     # Permissions
     can_create: ClassVar[bool] = True
+    """Permission for creating new Models. Default value is set to `True`."""
+
     can_edit: ClassVar[bool] = True
+    """Permission for editing Models. Default value is set to `True`."""
+
     can_delete: ClassVar[bool] = True
+    """Permission for deleting Models. Default value is set to `True`."""
+
     can_view_details: ClassVar[bool] = True
+    """Permission for viewing full details of Models.
+    Default value is set to `True`.
+    """
 
     # List page
-    column_list: Sequence[Union[str, Column]]
-    column_exclude_list: Sequence[Union[str, Column]]
-    page_size: int = 10
-    page_size_options: Sequence[int] = [10, 25, 50, 100]
+    column_list: ClassVar[Sequence[Union[str, InstrumentedAttribute]]] = []
+    """List of columns to display in `List` page.
+    Columns can either be string names or SQLAlchemy columns.
+
+    ???+ note
+        By default only Model primary key is displayed.
+
+    ???+ example
+        ```python
+        class UserAdmin(ModelAdmin, model=User):
+            column_list = [User.id, User.name]
+        ```
+    """
+
+    column_exclude_list: ClassVar[Sequence[Union[str, InstrumentedAttribute]]] = []
+    """List of columns to exclude in `List` page.
+    Columns can either be string names or SQLAlchemy columns.
+
+    ???+ example
+        ```python
+        class UserAdmin(ModelAdmin, model=User):
+            column_exclude_list = [User.id, User.name]
+        ```
+    """
+
+    page_size: ClassVar[int] = 10
+    """Default number of items to display in `List` page pagination.
+    Default value is set to `10`.
+
+    ???+ example
+        ```python
+        class UserAdmin(ModelAdmin, model=User):
+            page_size = 25
+        ```
+    """
+
+    page_size_options: ClassVar[Sequence[int]] = [10, 25, 50, 100]
+    """Pagination choices displayed in `List` page.
+    Default value is set to `[10, 25, 50, 100]`.
+
+    ???+ example
+        ```python
+        class UserAdmin(ModelAdmin, model=User):
+            page_size_options = [50, 100]
+        ```
+    """
 
     # Details page
-    column_details_list: Sequence[Union[str, Column]]
-    column_details_exclude_list: Sequence[Union[str, Column]]
+    column_details_list: ClassVar[Sequence[Union[str, InstrumentedAttribute]]] = []
+    """List of columns to display in `Detail` page.
+    Columns can either be string names or SQLAlchemy columns.
 
-    column_labels: Dict[Union[str, Column], str] = dict()
+    ???+ note
+        By default all columns of Model are displayed.
+
+    ???+ example
+        ```python
+        class UserAdmin(ModelAdmin, model=User):
+            column_details_list = [User.id, User.name, User.mail]
+        ```
+    """
+
+    column_details_exclude_list: ClassVar[
+        Sequence[Union[str, InstrumentedAttribute]]
+    ] = []
+    """List of columns to exclude from displaying in `Detail` page.
+    Columns can either be string names or SQLAlchemy columns.
+
+    ???+ example
+        ```python
+        class UserAdmin(ModelAdmin, model=User):
+            column_details_exclude_list = [User.mail]
+        ```
+    """
+
+    column_labels: ClassVar[Dict[Union[str, InstrumentedAttribute], str]] = {}
+    """A dict of column labels, used to map column names to new names.
+    Dictionary keys can be string names or SQLAlchemy columns with string values.
+
+    ???+ example
+        ```python
+        class UserAdmin(ModelAdmin, model=User):
+            column_labels = {User.mail: "Email"}
+        ```
+    """
 
     @classmethod
     async def count(cls) -> int:
@@ -213,6 +318,8 @@ class ModelAdmin(metaclass=ModelAdminMeta):
 
     @classmethod
     def get_list_columns(cls) -> List[Tuple[str, Column]]:
+        """Get list of columns to display in Detail page."""
+
         column_list = getattr(cls, "column_list", None)
         column_exclude_list = getattr(cls, "column_exclude_list", None)
 
@@ -231,6 +338,8 @@ class ModelAdmin(metaclass=ModelAdminMeta):
 
     @classmethod
     def get_details_columns(cls) -> List[Tuple[str, Column]]:
+        """Get list of columns to display in Detail page."""
+
         column_details_list = getattr(cls, "column_details_list", None)
         column_details_exclude_list = getattr(cls, "column_details_exclude_list", None)
 

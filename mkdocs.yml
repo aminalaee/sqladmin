@@ -12,13 +12,26 @@ edit_uri: ""
 
 nav:
   - Introduction: 'index.md'
+  - API Reference:
+    - Application: 'api_reference/application.md'
+    - ModelAdmin: 'api_reference/model_admin.md'
 
 markdown_extensions:
   - markdown.extensions.codehilite:
       guess_lang: false
-  - mkautodoc
   - admonition
   - pymdownx.details
   - pymdownx.highlight
   - pymdownx.tabbed
   - pymdownx.superfences
+
+plugins:
+  - mkdocstrings:
+      default_handler: python
+      handlers:
+        python:
+          rendering:
+            show_root_heading: true
+            show_source: false
+      watch:
+        - sqladmin/

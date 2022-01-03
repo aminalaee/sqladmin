@@ -21,6 +21,12 @@ __all__ = [
 
 
 class BaseAdmin:
+    """Base class for implementing Admin interface.
+
+    Danger:
+        This class should almost never be used directly.
+    """
+
     def __init__(
         self,
         app: Starlette,
@@ -43,8 +49,10 @@ class BaseAdmin:
 
     @property
     def model_admins(self) -> List[Type["ModelAdmin"]]:
-        """
-        Get list of model_admins lazily.
+        """Get list of ModelAdmins lazily.
+
+        Returns:
+            List of ModelAdmin classes register in Admin.
         """
 
         return self._model_admins
@@ -65,16 +73,20 @@ class BaseAdmin:
         return self.templates.TemplateResponse("error.html", context, status_code=401)
 
     def register_model(self, model: Type["ModelAdmin"]) -> None:
-        """
-        Register ModelAdmin to the Admin.
+        """Register ModelAdmin to the Admin.
 
-        Usage:
+        Args:
+            model: ModelAdmin class to register in Admin.
+
+        ???+ usage
+            ```python
             from sqladmin import Admin, ModelAdmin
 
             class UserAdmin(ModelAdmin, model=User):
                 pass
 
             admin.register_model(UserAdmin)
+            ```
         """
 
         # Set database engine from Admin instance
@@ -85,8 +97,26 @@ class BaseAdmin:
 
 
 class Admin(BaseAdmin):
-    """
-    Main entrypoint to admin interface.
+    """Main entrypoint to admin interface.
+
+    ???+ usage
+        ```python
+        from fastapi import FastAPI
+        from sqladmin import Admin, ModelAdmin
+
+        from mymodels import User # SQLAlchemy model
+
+
+        app = FastAPI()
+        admin = Admin(app, engine)
+
+
+        class UserAdmin(ModelAdmin, model=User):
+            column_list = [User.id, User.name]
+
+
+        admin.register_model(UserAdmin)
+        ```
     """
 
     def __init__(
@@ -96,12 +126,10 @@ class Admin(BaseAdmin):
         base_url: str = "/admin",
     ) -> None:
         """
-        :param app:
-            Starlette application instance
-        :param db:
-            SQLAlchemy database session.
-        :param base_url:
-            Base url for admin application.
+        Args:
+            app: Starlette or FastAPI application.
+            engine: SQLAlchemy engine instance.
+            base_url: Base URL for Admin interface.
         """
 
         assert isinstance(engine, (Engine, AsyncEngine))
@@ -128,16 +156,12 @@ class Admin(BaseAdmin):
         self.templates.env.globals["model_admins"] = self.model_admins
 
     async def index(self, request: Request) -> Response:
-        """
-        Index view for admin app which can be overriden.
-        """
+        """Index route which can be overriden to create dashboards."""
 
         return self.templates.TemplateResponse("index.html", {"request": request})
 
     async def list(self, request: Request) -> Response:
-        """
-        List view for model showing paginated list of items.
-        """
+        """List route to display paginated Model instances."""
 
         model_admin = self._find_model_admin(request.path_params["identity"])
 
@@ -163,6 +187,8 @@ class Admin(BaseAdmin):
         return self.templates.TemplateResponse("list.html", context)
 
     async def detail(self, request: Request) -> Response:
+        """Detail route."""
+
         model_admin = self._find_model_admin(request.path_params["identity"])
         if not model_admin.can_view_details:
             return self._unathorized_response(request)
@@ -181,6 +207,8 @@ class Admin(BaseAdmin):
         return self.templates.TemplateResponse("detail.html", context)
 
     async def delete(self, request: Request) -> Response:
+        """Delete route."""
+
         identity = request.path_params["identity"]
         model_admin = self._find_model_admin(identity)
         if not model_admin.can_delete:
