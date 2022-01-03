@@ -1,1 +1,4 @@
-comment: off
+coverage:
+  precision: 1
+
+comment: false
