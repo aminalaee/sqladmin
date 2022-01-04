@@ -15,9 +15,3 @@
         - page_size_options
         - column_details_list
         - column_details_exclude_list
-
-::: sqladmin.models.ModelAdminMeta
-    handler: python
-    selection:
-      members:
-        -
