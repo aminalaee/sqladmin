@@ -98,6 +98,12 @@ def test_list_view_single_page() -> None:
         in response.text
     )
 
+    # Showing active navigation link
+    assert (
+        '<a class="nav-link active" href="http://testserver/admin/user/list"'
+        in response.text
+    )
+
     # Next/Previous disabled
     assert response.text.count('<li class="page-item  disabled ">') == 2
 
