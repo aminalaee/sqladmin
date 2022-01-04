@@ -1,1 +1,8 @@
-comment: off
+coverage:
+  status:
+    project:
+      default:
+        target: auto
+        threshold: 1%
+
+comment: false

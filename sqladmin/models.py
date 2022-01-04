@@ -48,7 +48,7 @@ class ModelAdminMeta(type):
     def __new__(mcls, name, bases, attrs: dict, **kwargs: Any):
         cls: Type["ModelAdmin"] = super().__new__(mcls, name, bases, attrs)
 
-        model = kwargs.get("model", None)
+        model = kwargs.get("model")
 
         if not model:
             return cls
@@ -68,7 +68,7 @@ class ModelAdminMeta(type):
 
         cls.name = attrs.get("name", prettify_class_name(cls.model.__name__))
         cls.name_plural = attrs.get("name_plural", f"{cls.name}s")
-        cls.icon = attrs.get("icon", None)
+        cls.icon = attrs.get("icon")
 
         mcls._check_conflicting_options(["column_list", "column_exclude_list"], attrs)
         mcls._check_conflicting_options(
@@ -249,11 +249,10 @@ class ModelAdmin(metaclass=ModelAdminMeta):
 
     @classmethod
     def get_column_labels(cls) -> Dict[Column, str]:
-        column_labels = {}
-        for column_label, value in cls.column_labels.items():
-            column_labels[cls.get_column_by_attr(column_label)] = value
-
-        return column_labels
+        return {
+            cls.get_column_by_attr(column_label): value
+            for column_label, value in cls.column_labels.items()
+        }
 
     @classmethod
     async def delete_model(cls, obj: str) -> None:
