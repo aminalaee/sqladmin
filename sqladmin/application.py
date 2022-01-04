@@ -52,7 +52,7 @@ class BaseAdmin:
         """Get list of ModelAdmins lazily.
 
         Returns:
-            List of ModelAdmin classes register in Admin.
+            List of ModelAdmin classes registered in Admin.
         """
 
         return self._model_admins

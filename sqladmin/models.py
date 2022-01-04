@@ -228,7 +228,7 @@ class ModelAdmin(metaclass=ModelAdminMeta):
     """
 
     column_labels: ClassVar[Dict[Union[str, InstrumentedAttribute], str]] = {}
-    """A dict of column labels, used to map column names to new names.
+    """A mapping of column labels, used to map column names to new names.
     Dictionary keys can be string names or SQLAlchemy columns with string values.
 
     ???+ example
@@ -318,7 +318,7 @@ class ModelAdmin(metaclass=ModelAdminMeta):
 
     @classmethod
     def get_list_columns(cls) -> List[Tuple[str, Column]]:
-        """Get list of columns to display in Detail page."""
+        """Get list of columns to display in List page."""
 
         column_list = getattr(cls, "column_list", None)
         column_exclude_list = getattr(cls, "column_exclude_list", None)
