@@ -1,5 +1,6 @@
 site_name: SQLAlchemy Admin
 site_description: Flexible admin dashboard for SQLAlchemy.
+site_url: https://aminalaee.github.io/sqladmin
 
 theme:
   name: 'material'
@@ -12,13 +13,38 @@ edit_uri: ""
 
 nav:
   - Introduction: 'index.md'
+  - API Reference:
+    - Application: 'api_reference/application.md'
+    - ModelAdmin: 'api_reference/model_admin.md'
 
 markdown_extensions:
   - markdown.extensions.codehilite:
       guess_lang: false
-  - mkautodoc
   - admonition
   - pymdownx.details
   - pymdownx.highlight
   - pymdownx.tabbed
   - pymdownx.superfences
+
+extra_css:
+  - stylesheets/extra.css
+
+plugins:
+  - mkdocstrings:
+      default_handler: python
+      handlers:
+        python:
+          rendering:
+            show_root_heading: true
+            show_source: false
+      watch:
+        - sqladmin/
+
+extra:
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/aminalaee
+    - icon: fontawesome/brands/twitter
+      link: https://twitter.com/aminalaee
+    - icon: fontawesome/brands/linkedin
+      link: https://www.linkedin.com/in/amin-alaee

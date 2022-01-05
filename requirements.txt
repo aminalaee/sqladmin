@@ -13,8 +13,8 @@ greenlet==1.1.2
 
 # Documentation
 mkdocs==1.2.3
-mkdocs-material==8.1.2
-mkautodoc==0.1.0
+mkdocs-material==8.1.4
+mkdocstrings==0.17.0
 
 # Packaging
 twine==3.7.1
