@@ -18,7 +18,7 @@
         <ul class="navbar-nav pt-lg-3">
           {% for model_admin in model_admins %}
           <li class="nav-item">
-            <a class="nav-link" href="{{ url_for('admin:list', identity=model_admin.identity) }}">
+            <a class="nav-link {% if model_admin.identity == request.path_params['identity'] %}active{% endif %}" href="{{ url_for('admin:list', identity=model_admin.identity) }}">
             <span class="nav-link-icon d-md-none d-lg-inline-block">
             {% if model_admin.icon %} <i class="{{ model_admin.icon }}"></i> {% endif %}
             </span>
