@@ -4,6 +4,13 @@
   <div class="card">
     <div class="card-header">
       <h3 class="card-title">{{ model_admin.name_plural }}</h3>
+      <div class="ms-auto">
+        <div class="ms-3 d-inline-block">
+          <a href="{{ url_for('admin:create', identity=model_admin.identity) }}" class="btn btn-primary">
+            + New {{ model_admin.name }}
+          </a>
+        </div>
+      </div>
     </div>
     <div class="card-body border-bottom py-3">
       <div class="d-flex">

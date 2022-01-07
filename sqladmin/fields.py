@@ -268,11 +268,6 @@ class QuerySelectField(fields.SelectFieldBase):
     pass a one-argument callable to `get_pk` which can return a unique
     comparable key.
 
-    The `query` property on the field can be set from within a view to assign
-    a query per-instance to the field. If the property is not set, the
-    `query_factory` callable passed to the field constructor will be called to
-    obtain a query.
-
     Specify `get_label` to customize the label associated with each option. If
     a string, this is the name of an attribute on the model object to use as
     the label text. If a one-argument callable, this callable will be passed
@@ -287,21 +282,19 @@ class QuerySelectField(fields.SelectFieldBase):
 
     widget = widgets.Select()
 
-    # TODO: make query_factory and get_pk required
     def __init__(
         self,
+        object_list: list = None,
         label: str = None,
         validators: list = None,
-        query_factory: Callable = None,
-        get_pk: Callable = None,
         get_label: Union[Callable, str] = None,
         allow_blank: bool = False,
         blank_text: str = "",
         **kwargs: Any,
     ) -> None:
-        super().__init__(label, validators, **kwargs)
-        self.query_factory = query_factory
-        self.get_pk = get_pk
+        super().__init__(label=label, validators=validators, **kwargs)
+
+        self._object_list = object_list or []
 
         if get_label is None:
             self.get_label = lambda x: x
@@ -312,15 +305,13 @@ class QuerySelectField(fields.SelectFieldBase):
 
         self.allow_blank = allow_blank
         self.blank_text = blank_text
-        self.query = None
-        self._object_list: Optional[List[tuple]] = None
         self._data: Optional[tuple]
         self._formdata: Optional[Union[str, List[str]]]
 
     @property
     def data(self) -> Optional[tuple]:
         if self._formdata is not None:
-            for pk, obj in self._get_object_list():
+            for pk, obj in self._object_list:
                 if pk == self._formdata:
                     self.data = obj
                     break
@@ -331,24 +322,11 @@ class QuerySelectField(fields.SelectFieldBase):
         self._data = data
         self._formdata = None
 
-    def _get_object_list(self) -> List[tuple]:
-        if self.query is None and self.query_factory is None:
-            raise RuntimeError("Both `query` and `query_factory` are None.")
-
-        if self.get_pk is None:
-            raise RuntimeError("`get_pk` cannot be None.")
-
-        if self._object_list is None:
-            query = self.query if self.query is not None else self.query_factory()
-            get_pk = self.get_pk
-            self._object_list = [(str(get_pk(obj)), obj) for obj in query]
-        return self._object_list
-
     def iter_choices(self) -> Generator[Tuple[str, str, bool], None, None]:
         if self.allow_blank:
             yield ("__None", self.blank_text, self.data is None)
 
-        for pk, obj in self._get_object_list():
+        for pk, obj in self._object_list:
             yield (pk, self.get_label(obj), obj == self.data)
 
     def process_formdata(self, valuelist: List[str]) -> None:
@@ -362,7 +340,7 @@ class QuerySelectField(fields.SelectFieldBase):
     def pre_validate(self, form: Form) -> None:
         data = self.data
         if data is not None:
-            for _, obj in self._get_object_list():
+            for _, obj in self._object_list:
                 if data == obj:
                     break
             else:
@@ -385,13 +363,17 @@ class QuerySelectMultipleField(QuerySelectField):
 
     def __init__(
         self,
+        object_list: list = None,
         label: str = None,
         validators: list = None,
         default: Any = None,
         **kwargs: Any,
     ) -> None:
         default = default or []
-        super().__init__(label, validators, default=default, **kwargs)
+        super().__init__(label=label, validators=validators, default=default, **kwargs)
+
+        self._object_list = object_list or []
+
         if kwargs.get("allow_blank", False):
             import warnings
 
@@ -406,7 +388,7 @@ class QuerySelectMultipleField(QuerySelectField):
         formdata = self._formdata
         if formdata is not None:
             data = []
-            for pk, obj in self._get_object_list():
+            for pk, obj in self._object_list:
                 if not formdata:
                     break
                 elif pk in formdata:
@@ -423,8 +405,8 @@ class QuerySelectMultipleField(QuerySelectField):
         self._formdata = None
 
     def iter_choices(self) -> Generator[Tuple[str, Any, bool], None, None]:
-        if self.data:
-            for pk, obj in self._get_object_list():
+        if self.data is not None:
+            for pk, obj in self._object_list:
                 yield (pk, self.get_label(obj), obj in self.data)
 
     def process_formdata(self, valuelist: List[str]) -> None:
@@ -434,7 +416,7 @@ class QuerySelectMultipleField(QuerySelectField):
         if self._invalid_formdata:
             raise ValidationError(self.gettext("Not a valid choice"))
         elif self.data:
-            obj_list = [x[1] for x in self._get_object_list()]
+            obj_list = [x[1] for x in self._object_list]
             for v in self.data:
                 if v not in obj_list:
                     raise ValidationError(self.gettext("Not a valid choice"))
