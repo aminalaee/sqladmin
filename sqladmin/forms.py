@@ -6,7 +6,6 @@ from sqlalchemy import inspect as sqlalchemy_inspect, select
 from sqlalchemy.engine import Engine
 from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession
 from sqlalchemy.orm import ColumnProperty, Mapper, RelationshipProperty, Session
-from sqlalchemy.orm.attributes import InstrumentedAttribute
 from sqlalchemy.sql.schema import Column
 from wtforms import (
     BooleanField,
@@ -230,8 +229,8 @@ class ModelConverter(ModelConverterBase):
 async def get_model_form(
     model: type,
     engine: Union[Engine, AsyncEngine],
-    only: Sequence[InstrumentedAttribute] = None,
-    exclude: Sequence[InstrumentedAttribute] = None,
+    only: Sequence[str] = None,
+    exclude: Sequence[str] = None,
 ) -> Type[Form]:
     type_name = model.__name__ + "Form"
     converter = ModelConverter()
@@ -239,10 +238,9 @@ async def get_model_form(
 
     attributes = []
     for name, attr in mapper.attrs.items():
-        instrumented_attr = getattr(model, name)
-        if only and instrumented_attr not in only:
+        if only and name not in only:
             continue
-        elif exclude and instrumented_attr in exclude:
+        elif exclude and name in exclude:
             continue
 
         attributes.append((name, attr))

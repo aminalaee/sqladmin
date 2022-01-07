@@ -94,10 +94,10 @@ async def test_model_form_converter_with_defau() -> None:
 
 
 async def test_model_form_only() -> None:
-    Form = await get_model_form(model=User, engine=engine, only=[User.status])
+    Form = await get_model_form(model=User, engine=engine, only=["status"])
     assert len(Form()._fields) == 1
 
 
 async def test_model_form_exclude() -> None:
-    Form = await get_model_form(model=User, engine=engine, exclude=[User.status])
+    Form = await get_model_form(model=User, engine=engine, exclude=["status"])
     assert len(Form()._fields) == 8
