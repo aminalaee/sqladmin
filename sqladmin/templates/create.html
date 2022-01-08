@@ -1,0 +1,43 @@
+{% extends "layout.html" %}
+{% block content %}
+<div class="col-12">
+  <div class="card">
+    <div class="card-header">
+      <h3 class="card-title">New {{ model_admin.name }}</h3>
+    </div>
+    <div class="card-body border-bottom py-3">
+      <form action="{{ url_for('admin:create', identity=model_admin.identity) }}" method="POST">
+        <fieldset class="form-fieldset">
+          {% for field in form %}
+          <div class="mb-3 form-group row">
+            {{ field.label(class_="form-label col-sm-2 col-form-label") }}
+            <div class="col-sm-10">
+              {% if field.errors %}
+              {{ field(class_="form-control is-invalid") }}
+              {% else %}
+              {{ field(class_="form-control") }}
+              {% endif %}
+              {% for error in field.errors %}
+              <div class="invalid-feedback">{{ error }}</div>
+              {% endfor %}
+            </div>
+          </div>
+          {% endfor %}
+        </fieldset>
+        <div class="d-flex align-items-right">
+          <div class="row">
+            <div class="col">
+              <a href="{{ url_for('admin:list', identity=model_admin.identity) }}" class="btn">
+                Cancel
+              </a>
+            </div>
+            <div class="col">
+              <input type="submit" value="Save" class="btn btn-primary">
+            </div>
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,7 +1,10 @@
 from datetime import date, datetime
-from typing import List, Tuple
+from typing import Any, Generator, Tuple
 
 import pytest
+from sqlalchemy import Column, Integer, String, create_engine
+from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm import Session, sessionmaker
 from wtforms import Form
 
 from sqladmin.fields import (
@@ -14,7 +17,31 @@ from sqladmin.fields import (
     Select2TagsField,
     TimeField,
 )
-from tests.common import DummyData
+from tests.common import TEST_DATABASE_URI_SYNC, DummyData
+
+Base = declarative_base()  # type: Any
+
+engine = create_engine(
+    TEST_DATABASE_URI_SYNC, connect_args={"check_same_thread": False}
+)
+
+LocalSession = sessionmaker(bind=engine)
+
+session: Session = LocalSession()
+
+
+class User(Base):
+    __tablename__ = "users"
+
+    id = Column(Integer, primary_key=True)
+    name = Column(String)
+
+
+@pytest.fixture(autouse=True, scope="function")
+def prepare_database() -> Generator[None, None, None]:
+    Base.metadata.create_all(engine)
+    yield
+    Base.metadata.drop_all(engine)
 
 
 def test_date_field() -> None:
@@ -152,21 +179,13 @@ def test_select2_tags_field() -> None:
 
 
 def test_query_select_field() -> None:
-    def query_factory() -> List[Tuple[int, str]]:
-        return [(1, "Apple"), (2, "Banana")]
-
-    def get_pk(obj: Tuple[int, str]) -> int:
-        return obj[0]
+    object_list = [(str(i), User(id=i)) for i in range(5)]
 
     def get_label(obj: Tuple[int, str]) -> str:
         return getattr(obj, "__doc__", "")
 
     class F(Form):
-        select = QuerySelectField(
-            query_factory=query_factory,
-            get_pk=get_pk,
-            get_label="__doc__",
-        )
+        select = QuerySelectField(object_list=object_list, get_label="__doc__")
 
     form = F()
     assert form.validate() is False
@@ -182,8 +201,7 @@ def test_query_select_field() -> None:
 
     class F(Form):  # type: ignore
         select = QuerySelectField(
-            query_factory=query_factory,
-            get_pk=get_pk,
+            object_list=object_list,
             allow_blank=True,
             get_label=get_label,
         )
@@ -198,36 +216,25 @@ def test_query_select_field() -> None:
     class F(Form):  # type: ignore
         select = QuerySelectField()
 
-    with pytest.raises(RuntimeError):
-        form = F(DummyData(select=["1"]))
-        assert form.validate() is False
-
-    with pytest.raises(RuntimeError):
-        form.select.query_factory = query_factory
-        assert form.validate() is False
+    form = F(DummyData(select=["1"]))
+    assert form.validate() is False
 
 
 def test_query_select_multiple_field() -> None:
-    def query_factory() -> List[Tuple[int, str]]:
-        return [(1, "Apple"), (2, "Banana")]
-
-    def get_pk(obj: Tuple[int, str]) -> int:
-        return obj[0]
+    object_list = [(str(i), User(id=i)) for i in range(5)]
 
     class F(Form):
-        select = QuerySelectMultipleField(allow_blank=True)
+        select = QuerySelectMultipleField(allow_blank=True, object_list=object_list)
 
     form = F()
     assert form.validate() is True
 
     form = F(DummyData(select=["1"]))
-    form.select.query_factory = query_factory
-    form.select.get_pk = get_pk
+    form.select._object_list = object_list
     assert form.validate() is True
 
     form = F(DummyData(select=["100"]))
-    form.select.query_factory = query_factory
-    form.select.get_pk = get_pk
+    form.select._object_list = object_list
     assert form.select.data == []
     assert form.validate() is False
 

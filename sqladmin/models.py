@@ -20,8 +20,10 @@ from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession
 from sqlalchemy.orm import Session, sessionmaker
 from sqlalchemy.orm.attributes import InstrumentedAttribute
 from sqlalchemy.orm.exc import NoResultFound
+from wtforms import Form
 
 from sqladmin.exceptions import InvalidColumnError, InvalidModelError
+from sqladmin.forms import get_model_form
 from sqladmin.helpers import prettify_class_name, slugify_class_name
 
 __all__ = [
@@ -364,10 +366,23 @@ class ModelAdmin(metaclass=ModelAdminMeta):
         }
 
     @classmethod
-    async def delete_model(cls, obj: str) -> None:
+    async def delete_model(cls, obj: type) -> None:
         if isinstance(cls.engine, Engine):
             with cls.sessionmaker.begin() as session:
                 await anyio.to_thread.run_sync(session.delete, obj)
         else:
             async with cls.sessionmaker.begin() as session:
                 await session.delete(obj)
+
+    @classmethod
+    async def insert_model(cls, obj: type) -> Any:
+        if isinstance(cls.engine, Engine):
+            with cls.sessionmaker.begin() as session:
+                await anyio.to_thread.run_sync(session.add, obj)
+        else:
+            async with cls.sessionmaker.begin() as session:
+                session.add(obj)
+
+    @classmethod
+    async def scaffold_form(cls) -> Type[Form]:
+        return await get_model_form(model=cls.model, engine=cls.engine)

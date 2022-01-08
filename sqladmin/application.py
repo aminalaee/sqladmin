@@ -6,7 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncEngine
 from starlette.applications import Starlette
 from starlette.exceptions import HTTPException
 from starlette.requests import Request
-from starlette.responses import Response
+from starlette.responses import RedirectResponse, Response
 from starlette.routing import Mount, Route, Router
 from starlette.staticfiles import StaticFiles
 from starlette.templating import Jinja2Templates
@@ -149,6 +149,12 @@ class Admin(BaseAdmin):
                     name="delete",
                     methods=["DELETE"],
                 ),
+                Route(
+                    "/{identity}/create",
+                    endpoint=self.create,
+                    name="create",
+                    methods=["GET", "POST"],
+                ),
             ]
         )
         self.app.mount(base_url, app=router, name="admin")
@@ -221,3 +227,38 @@ class Admin(BaseAdmin):
         await model_admin.delete_model(model)
 
         return Response(content=request.url_for("admin:list", identity=identity))
+
+    async def create(self, request: Request) -> Response:
+        """Create model endpoint."""
+
+        identity = request.path_params["identity"]
+        model_admin = self._find_model_admin(identity)
+        if not model_admin.can_create:
+            return self._unathorized_response(request)
+
+        Form = await model_admin.scaffold_form()
+        form = Form(await request.form())
+
+        context = {
+            "request": request,
+            "model_admin": model_admin,
+            "form": form,
+        }
+
+        if request.method == "GET":
+            return self.templates.TemplateResponse("create.html", context)
+
+        if not form.validate():
+            return self.templates.TemplateResponse(
+                "create.html",
+                context,
+                status_code=400,
+            )
+
+        model = model_admin.model(**form.data)
+        await model_admin.insert_model(model)
+
+        return RedirectResponse(
+            request.url_for("admin:list", identity=identity),
+            status_code=302,
+        )

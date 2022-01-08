@@ -1,10 +1,10 @@
 from typing import Any, AsyncGenerator
 
 import pytest
-from sqlalchemy import Column, ForeignKey, Integer, String, func, select
+from sqlalchemy import Column, Date, ForeignKey, Integer, String, func, select
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import relationship, sessionmaker
+from sqlalchemy.orm import relationship, selectinload, sessionmaker
 from starlette.applications import Starlette
 from starlette.testclient import TestClient
 
@@ -33,6 +33,7 @@ class User(Base):
     id = Column(Integer, primary_key=True)
     name = Column(String)
     email = Column(String)
+    date_of_birth = Column(Date)
 
     addresses = relationship("Address", back_populates="user")
 
@@ -277,3 +278,90 @@ async def test_delete_endpoint() -> None:
 
     result = await session.execute(stmt)
     assert result.scalar_one() == 0
+
+
+async def test_create_endpoint_unauthorized_response() -> None:
+    admin._model_admins[1].can_create = False
+
+    with TestClient(app) as client:
+        response = client.get("/admin/address/create")
+
+    assert response.status_code == 401
+
+    admin._model_admins[1].can_create = True
+
+
+async def test_create_endpoint_get_form() -> None:
+    with TestClient(app) as client:
+        response = client.get("/admin/user/create")
+
+    assert response.status_code == 200
+    assert (
+        '<select class="form-control" id="addresses" multiple name="addresses">'
+        in response.text
+    )
+    assert (
+        '<input class="form-control" id="name" name="name" type="text" value="">'
+        in response.text
+    )
+    assert (
+        '<input class="form-control" id="email" name="email" type="text" value="">'
+        in response.text
+    )
+
+
+async def test_create_endpoint_post_form() -> None:
+    data: dict = {"date_of_birth": "Wrong Date Format"}
+    with TestClient(app) as client:
+        response = client.post("/admin/user/create", data=data)
+
+    assert response.status_code == 400
+    assert (
+        '<div class="invalid-feedback">Not a valid date value.</div>' in response.text
+    )
+
+    data = {"name": "SQLAlchemy"}
+    with TestClient(app) as client:
+        response = client.post("/admin/user/create", data=data)
+
+    stmt = select(func.count(User.id))
+    result = await session.execute(stmt)
+    assert result.scalar_one() == 1
+    assert response.status_code == 302
+
+    stmt = select(User).limit(1).options(selectinload(User.addresses))
+    result = await session.execute(stmt)
+    user = result.scalar_one()
+    assert user.name == "SQLAlchemy"
+    assert user.email is None
+    assert user.addresses == []
+
+    data = {"user": user.id}
+    with TestClient(app) as client:
+        response = client.post("/admin/address/create", data=data)
+
+    stmt = select(func.count(Address.id))
+    result = await session.execute(stmt)
+    assert result.scalar_one() == 1
+    assert response.status_code == 302
+
+    stmt = select(Address).limit(1)
+    result = await session.execute(stmt)
+    address = result.scalar_one()
+    assert address.user == user
+    assert address.user_id == user.id
+
+    data = {"name": "SQLAdmin", "addresses": [address.id]}
+    with TestClient(app) as client:
+        response = client.post("/admin/user/create", data=data)
+
+    stmt = select(func.count(User.id))
+    result = await session.execute(stmt)
+    assert result.scalar_one() == 2
+    assert response.status_code == 302
+
+    stmt = select(User).offset(1).limit(1).options(selectinload(User.addresses))
+    result = await session.execute(stmt)
+    user = result.scalar_one()
+    assert user.name == "SQLAdmin"
+    assert user.addresses == [address]
