@@ -6,12 +6,7 @@
       <h1 class="navbar-brand navbar-brand-autodark">
         <a href="{{ url_for('admin:index') }}">
         {% if admin_logo_url %}
-        <img
-          src="{{ admin_logo_url }}"
-          width="64"
-          height="64"
-          alt="Admin"
-          class="navbar-brand-image"/>
+        <img src="{{ admin_logo_url }}" width="64" height="64" alt="Admin" class="navbar-brand-image"/>
         {% else %}
         <h3>{{ admin_title }}</h3>
         {% endif %}
