@@ -5,13 +5,11 @@
     <div class="container-fluid">
       <h1 class="navbar-brand navbar-brand-autodark">
         <a href="{{ url_for('admin:index') }}">
-        <img
-          src="https://preview.tabler.io/static/logo-white.svg"
-          width="64"
-          height="64"
-          alt="Tabler"
-          class="navbar-brand-image"
-          />
+        {% if admin_logo_url %}
+        <img src="{{ admin_logo_url }}" width="64" height="64" alt="Admin" class="navbar-brand-image"/>
+        {% else %}
+        <h3>{{ admin_title }}</h3>
+        {% endif %}
         </a>
       </h1>
       <div class="collapse navbar-collapse" id="navbar-menu">

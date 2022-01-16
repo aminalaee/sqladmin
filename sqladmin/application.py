@@ -32,6 +32,8 @@ class BaseAdmin:
         app: Starlette,
         engine: Union[Engine, AsyncEngine],
         base_url: str = "/admin",
+        title: str = "Admin",
+        logo_url: str = None,
     ) -> None:
         self.app = app
         self.engine = engine
@@ -46,6 +48,8 @@ class BaseAdmin:
             ]
         )
         self.templates.env.globals["min"] = min
+        self.templates.env.globals["admin_title"] = title
+        self.templates.env.globals["admin_logo_url"] = logo_url
 
     @property
     def model_admins(self) -> List[Type["ModelAdmin"]]:
@@ -124,16 +128,22 @@ class Admin(BaseAdmin):
         app: Starlette,
         engine: Union[Engine, AsyncEngine],
         base_url: str = "/admin",
+        title: str = "Admin",
+        logo_url: str = None,
     ) -> None:
         """
         Args:
             app: Starlette or FastAPI application.
             engine: SQLAlchemy engine instance.
             base_url: Base URL for Admin interface.
+            title: Admin title.
+            logo: URL of logo to be displayed instead of title.
         """
 
         assert isinstance(engine, (Engine, AsyncEngine))
-        super().__init__(app=app, engine=engine, base_url=base_url)
+        super().__init__(
+            app=app, engine=engine, base_url=base_url, title=title, logo_url=logo_url
+        )
 
         statics = StaticFiles(packages=["sqladmin"])
 
