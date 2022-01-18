@@ -258,7 +258,8 @@ class ModelAdmin(metaclass=ModelAdminMeta):
         page_size = min(page_size or cls.page_size, max(cls.page_size_options))
 
         count = await cls.count()
-        query = select(cls.model).limit(page_size).offset((page - 1) * page_size)
+        #  sqlalchemy.exc.CompileError: MSSQL requires an order_by when using an OFFSET or a non-simple LIMIT clause
+        query = select(cls.model).order_by("id").limit(page_size).offset((page - 1) * page_size)
 
         pagination = Pagination(
             rows=[],
