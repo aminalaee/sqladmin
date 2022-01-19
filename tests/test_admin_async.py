@@ -59,12 +59,12 @@ async def prepare_database() -> AsyncGenerator[None, None]:
 
 
 class UserAdmin(ModelAdmin, model=User):
-    column_list = [User.id, User.name, User.email]
+    column_list = [User.id, User.name, User.email, User.addresses]
     column_labels = {User.email: "Email"}
 
 
 class AddressAdmin(ModelAdmin, model=Address):
-    column_list = ["id", "user_id"]
+    column_list = ["id", "user_id", "user"]
     name_plural = "Addresses"
     can_edit = False
     can_delete = False

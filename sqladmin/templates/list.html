@@ -50,7 +50,7 @@
             <td><input class="form-check-input m-0 align-middle" type="checkbox" aria-label="Select item"></td>
             <td class="text-end">
               {% if model_admin.can_view_details %}
-              <a href="{{ url_for('admin:detail', identity=model_admin.identity, pk=model_admin.get_column_value(row, model_admin.pk_column)) }}" data-bs-toggle="tooltip" data-bs-placement="top" title="View">
+              <a href="{{ url_for('admin:detail', identity=model_admin.identity, pk=model_admin.get_attr_value(row, model_admin.pk_column)) }}" data-bs-toggle="tooltip" data-bs-placement="top" title="View">
                 <span class="me-1"><i class="fas fa-eye"></i></span>
               </a>
               {% endif %}
@@ -60,13 +60,13 @@
               </a>
               {% endif %}
               {% if model_admin.can_delete %}
-              <a href="#" data-name="{{ model_admin.name }}" data-pk="{{ model_admin.get_column_value(row, model_admin.pk_column) }}" data-url="{{ url_for('admin:delete', identity=model_admin.identity, pk=model_admin.get_column_value(row, model_admin.pk_column)) }}" data-bs-toggle="modal" data-bs-target="#modal-delete" title="Delete">
+              <a href="#" data-name="{{ model_admin.name }}" data-pk="{{ model_admin.get_attr_value(row, model_admin.pk_column) }}" data-url="{{ url_for('admin:delete', identity=model_admin.identity, pk=model_admin.get_attr_value(row, model_admin.pk_column)) }}" data-bs-toggle="modal" data-bs-target="#modal-delete" title="Delete">
                 <span class="me-1"><i class="fas fa-trash"></i></span>
               </a>
               {% endif %}
             </td>
             {% for _, column in model_admin.get_list_columns() %}
-            <td>{{ model_admin.get_column_value(row, column) }}</td>
+            <td>{{ model_admin.get_attr_value(row, column) }}</td>
             {% endfor %}
           </tr>
           {% endfor %}
