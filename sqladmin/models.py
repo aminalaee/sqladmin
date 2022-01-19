@@ -258,7 +258,12 @@ class ModelAdmin(metaclass=ModelAdminMeta):
         page_size = min(page_size or cls.page_size, max(cls.page_size_options))
 
         count = await cls.count()
-        query = select(cls.model).order_by(cls.pk_column).limit(page_size).offset((page - 1) * page_size)
+        query = (
+            select(cls.model)
+            .order_by(cls.pk_column)
+            .limit(page_size)
+            .offset((page - 1) * page_size)
+        )
 
         pagination = Pagination(
             rows=[],
