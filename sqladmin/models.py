@@ -265,8 +265,7 @@ class ModelAdmin(metaclass=ModelAdminMeta):
         count = await cls.count()
         query = select(cls.model).limit(page_size).offset((page - 1) * page_size)
 
-        for list_attr in cls.get_list_columns():
-            _, attr = list_attr
+        for _, attr in cls.get_list_columns():
             if isinstance(attr, RelationshipProperty):
                 query = query.options(selectinload(attr.key))
 
@@ -292,8 +291,7 @@ class ModelAdmin(metaclass=ModelAdminMeta):
     async def get_model_by_pk(cls, value: Any) -> Any:
         query = select(cls.model).where(cls.pk_column == value)
 
-        for list_attr in cls.get_list_columns():
-            _, attr = list_attr
+        for _, attr in cls.get_list_columns():
             if isinstance(attr, RelationshipProperty):
                 query = query.options(selectinload(attr.key))
 
@@ -359,12 +357,7 @@ class ModelAdmin(metaclass=ModelAdminMeta):
             attrs = [getattr(cls.model, cls.pk_column.name).prop]
 
         labels = cls.get_column_labels()
-        list_columns = []
-
-        for attr in attrs:
-            list_columns.append((labels.get(attr, attr.key), attr))
-
-        return list_columns
+        return [(labels.get(attr, attr.key), attr) for attr in attrs]
 
     @classmethod
     def get_details_columns(cls) -> List[Tuple[str, Column]]:
@@ -385,12 +378,8 @@ class ModelAdmin(metaclass=ModelAdminMeta):
             attrs = cls.get_model_attributes()
 
         labels = cls.get_column_labels()
-        details_columns = []
+        return [(labels.get(attr, attr.key), attr) for attr in attrs]
 
-        for attr in attrs:
-            details_columns.append((labels.get(attr, attr.key), attr))
-
-        return details_columns
 
     @classmethod
     def get_column_labels(cls) -> Dict[Column, str]:
