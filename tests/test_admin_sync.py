@@ -43,6 +43,9 @@ class User(Base):
 
     addresses = relationship("Address", back_populates="user")
 
+    def __str__(self) -> str:
+        return f"User {self.id}"
+
 
 class Address(Base):
     __tablename__ = "addresses"
@@ -51,6 +54,9 @@ class Address(Base):
     user_id = Column(Integer, ForeignKey("users.id"))
 
     user = relationship("User", back_populates="addresses")
+
+    def __str__(self) -> str:
+        return f"Address {self.id}"
 
 
 @pytest.fixture(autouse=True, scope="function")
@@ -205,6 +211,11 @@ def test_not_found_detail_page() -> None:
 def test_detail_page() -> None:
     user = User(name="Amin Alaee")
     session.add(user)
+    session.flush()
+
+    for _ in range(2):
+        address = Address(user_id=user.id)
+        session.add(address)
     session.commit()
 
     with TestClient(app) as client:
@@ -217,6 +228,8 @@ def test_detail_page() -> None:
     assert response.text.count("<td>1</td>") == 1
     assert response.text.count("<td>name</td>") == 1
     assert response.text.count("<td>Amin Alaee</td>") == 1
+    assert response.text.count("<td>addresses</td>") == 1
+    assert response.text.count("<td>Address 1, Address 2</td>") == 1
 
     # Action Buttons
     assert response.text.count("http://testserver/admin/user/list") == 2

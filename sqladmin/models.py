@@ -13,7 +13,7 @@ from typing import (
 )
 
 import anyio
-from sqlalchemy import func, inspect, select
+from sqlalchemy import Column, func, inspect, select
 from sqlalchemy.engine.base import Engine
 from sqlalchemy.exc import NoInspectionAvailable
 from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession
@@ -21,11 +21,10 @@ from sqlalchemy.orm import (
     ColumnProperty,
     RelationshipProperty,
     Session,
-    joinedload,
+    selectinload,
     sessionmaker,
 )
 from sqlalchemy.orm.attributes import InstrumentedAttribute
-from sqlalchemy.sql.schema import Column
 from wtforms import Form
 
 from sqladmin.exceptions import InvalidColumnError, InvalidModelError
@@ -269,7 +268,7 @@ class ModelAdmin(metaclass=ModelAdminMeta):
         for list_attr in cls.get_list_columns():
             _, attr = list_attr
             if isinstance(attr, RelationshipProperty):
-                query = query.options(joinedload(attr.key))
+                query = query.options(selectinload(attr.key))
 
         pagination = Pagination(
             rows=[],
@@ -281,12 +280,12 @@ class ModelAdmin(metaclass=ModelAdminMeta):
         if isinstance(cls.engine, Engine):
             with cls.sessionmaker() as session:
                 items = await anyio.to_thread.run_sync(session.execute, query)
-                pagination.rows = items.unique().scalars().all()
+                pagination.rows = items.scalars().all()
                 return pagination
         else:
             async with cls.sessionmaker() as session:
                 items = await session.execute(query)
-                pagination.rows = items.unique().scalars().all()
+                pagination.rows = items.scalars().all()
                 return pagination
 
     @classmethod
@@ -296,16 +295,16 @@ class ModelAdmin(metaclass=ModelAdminMeta):
         for list_attr in cls.get_list_columns():
             _, attr = list_attr
             if isinstance(attr, RelationshipProperty):
-                query = query.options(joinedload(attr.key))
+                query = query.options(selectinload(attr.key))
 
         if isinstance(cls.engine, Engine):
             with cls.sessionmaker() as session:
                 result = await anyio.to_thread.run_sync(session.execute, query)
-                return result.unique().scalar_one_or_none()
+                return result.scalar_one_or_none()
         else:
             async with cls.sessionmaker() as session:
                 result = await session.execute(query)
-                return result.unique().scalar_one_or_none()
+                return result.scalar_one_or_none()
 
     @classmethod
     def get_attr_value(
