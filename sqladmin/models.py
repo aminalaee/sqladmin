@@ -380,7 +380,6 @@ class ModelAdmin(metaclass=ModelAdminMeta):
         labels = cls.get_column_labels()
         return [(labels.get(attr, attr.key), attr) for attr in attrs]
 
-
     @classmethod
     def get_column_labels(cls) -> Dict[Column, str]:
         return {
