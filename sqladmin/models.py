@@ -17,9 +17,14 @@ from sqlalchemy import Column, func, inspect, select
 from sqlalchemy.engine.base import Engine
 from sqlalchemy.exc import NoInspectionAvailable
 from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession
-from sqlalchemy.orm import Session, sessionmaker
+from sqlalchemy.orm import (
+    ColumnProperty,
+    RelationshipProperty,
+    Session,
+    selectinload,
+    sessionmaker,
+)
 from sqlalchemy.orm.attributes import InstrumentedAttribute
-from sqlalchemy.orm.exc import NoResultFound
 from wtforms import Form
 
 from sqladmin.exceptions import InvalidColumnError, InvalidModelError
@@ -265,6 +270,10 @@ class ModelAdmin(metaclass=ModelAdminMeta):
             .offset((page - 1) * page_size)
         )
 
+        for _, attr in cls.get_list_columns():
+            if isinstance(attr, RelationshipProperty):
+                query = query.options(selectinload(attr.key))
+
         pagination = Pagination(
             rows=[],
             page=page,
@@ -287,41 +296,54 @@ class ModelAdmin(metaclass=ModelAdminMeta):
     async def get_model_by_pk(cls, value: Any) -> Any:
         query = select(cls.model).where(cls.pk_column == value)
 
+        for _, attr in cls.get_list_columns():
+            if isinstance(attr, RelationshipProperty):
+                query = query.options(selectinload(attr.key))
+
         if isinstance(cls.engine, Engine):
             with cls.sessionmaker() as session:
                 result = await anyio.to_thread.run_sync(session.execute, query)
-                try:
-                    return result.scalar_one()
-                except NoResultFound:
-                    return None
+                return result.scalar_one_or_none()
         else:
             async with cls.sessionmaker() as session:
                 result = await session.execute(query)
-                try:
-                    return result.scalar_one()
-                except NoResultFound:
-                    return None
+                return result.scalar_one_or_none()
 
     @classmethod
-    def get_column_value(cls, obj: type, column: Column) -> Any:
-        return getattr(obj, column.name, None)
+    def get_attr_value(
+        cls, obj: type, attr: Union[Column, ColumnProperty, RelationshipProperty]
+    ) -> Any:
+        if isinstance(attr, Column):
+            return getattr(obj, attr.name)
+        else:
+            value = getattr(obj, attr.key)
+            if isinstance(value, list):
+                return ", ".join(map(str, value))
+            return value
 
     @classmethod
-    def get_column_by_attr(cls, attr: Union[str, InstrumentedAttribute]) -> Column:
+    def get_model_attr(
+        cls, attr: Union[str, InstrumentedAttribute]
+    ) -> Union[ColumnProperty, RelationshipProperty]:
+        assert isinstance(attr, (str, InstrumentedAttribute))
+
+        if isinstance(attr, str):
+            key = attr
+        elif isinstance(attr.prop, ColumnProperty):
+            key = attr.name
+        elif isinstance(attr.prop, RelationshipProperty):
+            key = attr.prop.key
+
         try:
-            mapper = inspect(cls.model)
-            if isinstance(attr, str):
-                return mapper.columns[attr]
-            else:
-                return mapper.columns[attr.name]
+            return inspect(cls.model).attrs[key]
         except KeyError:
             raise InvalidColumnError(
                 f"Model '{cls.model.__name__}' has no attribute '{attr}'."
             )
 
     @classmethod
-    def get_model_columns(cls) -> List[Column]:
-        return list(inspect(cls.model).columns)
+    def get_model_attributes(cls) -> List[Column]:
+        return list(inspect(cls.model).attrs)
 
     @classmethod
     def get_list_columns(cls) -> List[Tuple[str, Column]]:
@@ -331,17 +353,16 @@ class ModelAdmin(metaclass=ModelAdminMeta):
         column_exclude_list = getattr(cls, "column_exclude_list", None)
 
         if column_list:
-            columns = [cls.get_column_by_attr(attr) for attr in cls.column_list]
+            attrs = [cls.get_model_attr(attr) for attr in cls.column_list]
         elif column_exclude_list:
-            exclude_columns = [
-                cls.get_column_by_attr(attr) for attr in column_exclude_list
-            ]
-            all_columns = cls.get_model_columns()
-            columns = list(set(all_columns) - set(exclude_columns))
+            exclude_columns = [cls.get_model_attr(attr) for attr in column_exclude_list]
+            all_attrs = cls.get_model_attributes()
+            attrs = list(set(all_attrs) - set(exclude_columns))
         else:
-            columns = [cls.pk_column]
+            attrs = [getattr(cls.model, cls.pk_column.name).prop]
 
-        return [(cls.get_column_labels().get(c, c.name), c) for c in columns]
+        labels = cls.get_column_labels()
+        return [(labels.get(attr, attr.key), attr) for attr in attrs]
 
     @classmethod
     def get_details_columns(cls) -> List[Tuple[str, Column]]:
@@ -351,22 +372,23 @@ class ModelAdmin(metaclass=ModelAdminMeta):
         column_details_exclude_list = getattr(cls, "column_details_exclude_list", None)
 
         if column_details_list:
-            columns = [cls.get_column_by_attr(attr) for attr in column_details_list]
+            attrs = [cls.get_model_attr(attr) for attr in column_details_list]
         elif column_details_exclude_list:
             exclude_columns = [
-                cls.get_column_by_attr(attr) for attr in column_details_exclude_list
+                cls.get_model_attr(attr) for attr in column_details_exclude_list
             ]
-            all_columns = cls.get_model_columns()
-            columns = list(set(all_columns) - set(exclude_columns))
+            all_attrs = cls.get_model_attributes()
+            attrs = list(set(all_attrs) - set(exclude_columns))
         else:
-            columns = cls.get_model_columns()
+            attrs = cls.get_model_attributes()
 
-        return [(cls.get_column_labels().get(c, c.name), c) for c in columns]
+        labels = cls.get_column_labels()
+        return [(labels.get(attr, attr.key), attr) for attr in attrs]
 
     @classmethod
     def get_column_labels(cls) -> Dict[Column, str]:
         return {
-            cls.get_column_by_attr(column_label): value
+            cls.get_model_attr(column_label): value
             for column_label, value in cls.column_labels.items()
         }
 
