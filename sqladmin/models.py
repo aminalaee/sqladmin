@@ -296,7 +296,7 @@ class ModelAdmin(metaclass=ModelAdminMeta):
     async def get_model_by_pk(cls, value: Any) -> Any:
         query = select(cls.model).where(cls.pk_column == value)
 
-        for _, attr in cls.get_list_columns():
+        for _, attr in cls.get_details_columns():
             if isinstance(attr, RelationshipProperty):
                 query = query.options(selectinload(attr.key))
 
