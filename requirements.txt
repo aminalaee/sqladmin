@@ -19,3 +19,4 @@ mkdocstrings==0.17.0
 # Packaging
 twine==3.7.1
 wheel==0.37.0
+pydantic==1.9.0
