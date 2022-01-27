@@ -22,8 +22,11 @@ def createmanager(username: str, password: str):
     session.add(user)
     session.commit()
     print(f"create {username} success.")
+
+
 def main():
     app()
+
 
 if __name__ == "__main__":
     main()

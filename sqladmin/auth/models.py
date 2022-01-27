@@ -6,7 +6,7 @@ from sqladmin.auth.hashers import make_password, verify_password
 Base = declarative_base()
 
 
-class User(Base):
+class User(Base):  # type: ignore
     __tablename__ = "auth_users"
 
     id = Column(Integer, primary_key=True)
@@ -17,7 +17,7 @@ class User(Base):
 
     # is_superuser = Column(Boolean)
 
-    def set_password(self, raw_password: str):
+    def set_password(self, raw_password: str) -> None:
         self.password = make_password(
             raw_password,
         )

@@ -56,9 +56,11 @@ class BaseAdmin:
                 os.path.dirname(__file__) + "/translations",
                 languages=[language],
             )
-            self.templates.env.install_gettext_translations(translation, newstyle=True)
+            self.templates.env.install_gettext_translations(  # type: ignore
+                translation, newstyle=True
+            )  # type: ignore
         else:
-            self.templates.env.install_null_translations(newstyle=True)
+            self.templates.env.install_null_translations(newstyle=True)  # type: ignore
         self.templates.env.loader = ChoiceLoader(
             [
                 FileSystemLoader("templates"),
@@ -124,7 +126,7 @@ def check_token(request: Request) -> bool:
         try:
             decode_access_token(token)
             return True
-        except:
+        except:  # noqa
             pass
     return False
 
@@ -363,13 +365,13 @@ class Admin(BaseAdmin):
             res = await anyio.to_thread.run_sync(
                 self.engine.execute,
                 select(User.password)
-                .where(User.username == username, User.is_active == True)
+                .where(User.username == username, User.is_active == True)  # noqa
                 .limit(1),
             )
         else:
             res = await self.engine.execute(
                 select(User.password)
-                .where(User.username == username, User.is_active == True)
+                .where(User.username == username, User.is_active == True)  # noqa
                 .limit(1)
             )
         password = res.scalar_one_or_none()

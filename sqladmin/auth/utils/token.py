@@ -9,7 +9,7 @@ ALGORITHM = settings.ALGORITHM
 EXPIRES_DELTA = timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
 
 
-def create_access_token(data: dict):
+def create_access_token(data: dict) -> str:
     to_encode = data.copy()
     expire = datetime.utcnow() + EXPIRES_DELTA
     to_encode.update({"exp": expire})
@@ -19,5 +19,5 @@ def create_access_token(data: dict):
 
 def decode_access_token(
     token: str,
-):
+) -> dict:
     return jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
