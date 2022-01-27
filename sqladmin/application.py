@@ -7,9 +7,11 @@ from jinja2 import ChoiceLoader, FileSystemLoader, PackageLoader
 from sqlalchemy import select
 from sqlalchemy.engine import Engine
 from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy.orm import sessionmaker, Session
 from starlette.applications import Starlette
+from starlette.authentication import requires
 from starlette.exceptions import HTTPException
+from starlette.middleware.authentication import AuthenticationMiddleware
 from starlette.requests import Request
 from starlette.responses import RedirectResponse, Response
 from starlette.routing import Mount, Route, Router
@@ -17,6 +19,7 @@ from starlette.staticfiles import StaticFiles
 from starlette.templating import Jinja2Templates
 
 from sqladmin.auth.hashers import make_password
+from sqladmin.auth.middlewares import BasicAuthBackend
 from sqladmin.auth.models import User
 from sqladmin.auth.utils.token import create_access_token, decode_access_token
 
@@ -121,17 +124,6 @@ class BaseAdmin:
         self._model_admins.append(model)
 
 
-def check_token(request: Request) -> bool:
-    token = request.cookies.get("access_token")
-    if token:
-        try:
-            decode_access_token(token)
-            return True
-        except:  # noqa
-            pass
-    return False
-
-
 class Admin(BaseAdmin):
     """Main entrypoint to admin interface.
 
@@ -183,7 +175,15 @@ class Admin(BaseAdmin):
             logo_url=logo_url,
             language=language,
         )
-
+        if isinstance(engine, Engine):
+            LocalSession = sessionmaker(bind=self.engine, class_=Session)
+            self.session = LocalSession()
+            self._sync=True
+        else:
+            LocalSession = sessionmaker(bind=self.engine, class_=AsyncSession)
+            self.session = LocalSession()
+            self._sync=False
+        app.add_middleware(AuthenticationMiddleware, backend=BasicAuthBackend(self.session,self._sync))
         statics = StaticFiles(packages=["sqladmin"])
 
         router = Router(
@@ -215,26 +215,15 @@ class Admin(BaseAdmin):
         self.app.mount(base_url, app=router, name="admin")
 
         self.templates.env.globals["model_admins"] = self.model_admins
-        self.session: Optional[sessionmaker] = None
 
+    @requires('authenticated', redirect='login')
     async def index(self, request: Request) -> Response:
         """Index route which can be overriden to create dashboards."""
-        if not check_token(request):
-            return RedirectResponse(
-                url=request.url_for(
-                    "admin:login",
-                ),
-            )
         return self.templates.TemplateResponse("index.html", {"request": request})
 
+    @requires('authenticated', redirect='login')
     async def list(self, request: Request) -> Response:
         """List route to display paginated Model instances."""
-        if not check_token(request):
-            return RedirectResponse(
-                request.url_for(
-                    "admin:login",
-                ),
-            )
         model_admin = self._find_model_admin(request.path_params["identity"])
 
         page = int(request.query_params.get("page", 1))
@@ -258,14 +247,10 @@ class Admin(BaseAdmin):
 
         return self.templates.TemplateResponse("list.html", context)
 
+    @requires('authenticated', redirect='login')
     async def detail(self, request: Request) -> Response:
         """Detail route."""
-        if not check_token(request):
-            return RedirectResponse(
-                request.url_for(
-                    "admin:login",
-                ),
-            )
+
         model_admin = self._find_model_admin(request.path_params["identity"])
         if not model_admin.can_view_details:
             return self._unathorized_response(request)
@@ -283,10 +268,9 @@ class Admin(BaseAdmin):
 
         return self.templates.TemplateResponse("detail.html", context)
 
+    @requires('authenticated', redirect='login')
     async def delete(self, request: Request) -> Response:
         """Delete route."""
-        if not check_token(request):
-            return self._not_found_response(request)
         identity = request.path_params["identity"]
         model_admin = self._find_model_admin(identity)
         if not model_admin.can_delete:
@@ -300,14 +284,9 @@ class Admin(BaseAdmin):
 
         return Response(content=request.url_for("admin:list", identity=identity))
 
+    @requires('authenticated', redirect='login')
     async def create(self, request: Request) -> Response:
         """Create model endpoint."""
-        if not check_token(request):
-            return RedirectResponse(
-                request.url_for(
-                    "admin:login",
-                ),
-            )
         identity = request.path_params["identity"]
         model_admin = self._find_model_admin(identity)
         if not model_admin.can_create:
@@ -360,21 +339,18 @@ class Admin(BaseAdmin):
         if not raw_password:
             context["password_err"] = True
             return self.templates.TemplateResponse("login.html", context)
-        if isinstance(self.engine, Engine):
+        if self._sync:
             res = await anyio.to_thread.run_sync(
-                self.engine.execute,
+                self.session.execute,
                 select(User.password)
-                .where(User.username == username, User.is_active == True)  # noqa
-                .limit(1),
+                    .where(User.username == username, User.is_active == True)  # noqa
+                    .limit(1),
             )
         else:
-            if self.session is None:
-                LocalSession = sessionmaker(bind=self.engine, class_=AsyncSession)
-                self.session = LocalSession()
             res = await self.session.execute(
                 select(User.password)
-                .where(User.username == username, User.is_active == True)  # noqa
-                .limit(1)
+                    .where(User.username == username, User.is_active == True)  # noqa
+                    .limit(1)
             )
         password = res.scalar_one_or_none()
         if password is not None:
