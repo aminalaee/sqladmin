@@ -169,7 +169,8 @@ class Admin(BaseAdmin):
             engine: SQLAlchemy engine instance.
             base_url: Base URL for Admin interface.
             title: Admin title.
-            logo: URL of logo to be displayed instead of title.
+            logo_url: URL of logo to be displayed instead of title.
+            language: Now it can write "zh_CN" or None.
         """
 
         assert isinstance(engine, (Engine, AsyncEngine))
