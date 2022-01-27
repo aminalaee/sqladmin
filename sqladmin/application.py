@@ -1,12 +1,13 @@
 import gettext
 import os
-from typing import TYPE_CHECKING, List, Type, Union
+from typing import TYPE_CHECKING, List, Optional, Type, Union
 
 import anyio
 from jinja2 import ChoiceLoader, FileSystemLoader, PackageLoader
 from sqlalchemy import select
 from sqlalchemy.engine import Engine
-from sqlalchemy.ext.asyncio import AsyncEngine
+from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession
+from sqlalchemy.orm import sessionmaker
 from starlette.applications import Starlette
 from starlette.exceptions import HTTPException
 from starlette.requests import Request
@@ -214,6 +215,7 @@ class Admin(BaseAdmin):
         self.app.mount(base_url, app=router, name="admin")
 
         self.templates.env.globals["model_admins"] = self.model_admins
+        self.session: Optional[sessionmaker] = None
 
     async def index(self, request: Request) -> Response:
         """Index route which can be overriden to create dashboards."""
@@ -284,11 +286,7 @@ class Admin(BaseAdmin):
     async def delete(self, request: Request) -> Response:
         """Delete route."""
         if not check_token(request):
-            return RedirectResponse(
-                request.url_for(
-                    "admin:login",
-                ),
-            )
+            return self._not_found_response(request)
         identity = request.path_params["identity"]
         model_admin = self._find_model_admin(identity)
         if not model_admin.can_delete:
@@ -370,7 +368,10 @@ class Admin(BaseAdmin):
                 .limit(1),
             )
         else:
-            res = await self.engine.execute(
+            if self.session is None:
+                LocalSession = sessionmaker(bind=self.engine, class_=AsyncSession)
+                self.session = LocalSession()
+            res = await self.session.execute(
                 select(User.password)
                 .where(User.username == username, User.is_active == True)  # noqa
                 .limit(1)

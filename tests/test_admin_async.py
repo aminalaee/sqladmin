@@ -9,6 +9,8 @@ from starlette.applications import Starlette
 from starlette.testclient import TestClient
 
 from sqladmin import Admin, ModelAdmin
+from sqladmin.auth.hashers import make_password
+from sqladmin.auth.models import Base as AdminBase, User as AdminUser
 from tests import get_test_token
 from tests.common import TEST_DATABASE_URI_ASYNC
 
@@ -58,7 +60,7 @@ class Address(Base):
 async def prepare_database() -> AsyncGenerator[None, None]:
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
-
+        await conn.run_sync(AdminBase.metadata.create_all)
     yield
 
     async with engine.begin() as conn:
@@ -401,3 +403,98 @@ async def test_create_endpoint_post_form() -> None:
     user = result.scalar_one()
     assert user.name == "SQLAdmin"
     assert user.addresses == [address]
+
+
+async def test_login() -> None:
+
+    user = AdminUser(
+        username="root2",
+        is_active=True,
+        email="test@email.com",
+        password=make_password("root2"),
+    )
+    session.add(user)
+    await session.commit()
+    with TestClient(app) as client:
+        response = client.post(
+            "/admin/login", data={"username": "root2", "password": "root2"}
+        )
+
+    assert response.status_code == 307
+    assert len(response.cookies.get("access_token")) > 0
+    with TestClient(app) as client:
+        response = client.post(
+            "/admin/login", data={"username": "root", "password": "root2"}
+        )
+
+    assert response.status_code == 200
+    assert (
+        response.text.count(
+            '<span style="color: red">Username or password is error!</span>'
+        )
+        == 1
+    )
+    with TestClient(app) as client:
+        response = client.post(
+            "/admin/login", data={"username": "root", "password": ""}
+        )
+
+    assert response.status_code == 200
+    assert response.text.count("Password can not be null.") == 1
+    with TestClient(app) as client:
+        response = client.post(
+            "/admin/login", data={"username": "", "password": "root"}
+        )
+
+    assert response.status_code == 200
+    assert response.text.count("Username can not be null.") == 1
+
+
+def check_redirect(url: str, method: str = "GET") -> None:
+    with TestClient(app) as client:
+        response = client.get(url)
+        assert response.status_code == 200 or response.status_code == 307
+        assert (
+            response.text.count(
+                '<h2 class="card-title text-center mb-4">Login to your account</h2>'
+            )
+            == 1
+        )
+
+
+def test_redirect() -> None:
+    check_redirect("/admin")
+    check_redirect("/admin/address/detail/1")
+    check_redirect("/admin/address/list")
+    check_redirect("/admin/address/create")
+    with TestClient(app) as client:
+        response = client.delete("/admin/address/delete/1")
+        assert response.status_code == 404
+
+
+async def test_i18n() -> None:
+    app = Starlette()
+    i18n_admin = Admin(app=app, engine=engine, language="zh_CN")
+    i18n_admin.register_model(UserAdmin)
+    i18n_admin.register_model(AddressAdmin)
+    with TestClient(app) as client:
+        response = client.get("/admin/login")
+
+    assert response.status_code == 200
+    assert (
+        response.text.count('<h2 class="card-title text-center mb-4">登陆你的账户</h2>') == 1
+    )
+
+
+async def test_expire_time() -> None:
+    token = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VybmFtZSI6InJvb3QiLCJleHAiOjE2NDMyNzYyMDl9._iFrRq5TqlomtM0bCr-p0L-VSst-bP9rZDf4s9Zc-1c"  # noqa
+    with TestClient(app) as client:
+        client.cookies.setdefault("access_token", token)
+        response = client.get("/admin")
+        assert response.status_code == 200 or response.status_code == 307
+        assert (
+            response.text.count(
+                '<h2 class="card-title text-center mb-4">Login to your account</h2>'
+            )
+            == 1
+        )
