@@ -7,6 +7,7 @@ from starlette.applications import Starlette
 from starlette.testclient import TestClient
 
 from sqladmin import Admin
+from tests import get_test_token
 from tests.common import TEST_DATABASE_URI_SYNC
 
 Base = declarative_base()  # type: Any
@@ -24,6 +25,8 @@ def test_application_title() -> None:
     Admin(app=app, engine=engine)
 
     with TestClient(app) as client:
+        client.cookies.setdefault("access_token", get_test_token())
+
         response = client.get("/admin")
 
     assert response.status_code == 200
@@ -39,6 +42,7 @@ def test_application_logo() -> None:
     )
 
     with TestClient(app) as client:
+        client.cookies.setdefault("access_token", get_test_token())
         response = client.get("/dashboard")
 
     assert response.status_code == 200
