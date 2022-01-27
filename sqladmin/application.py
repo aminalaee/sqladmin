@@ -1,6 +1,10 @@
+import gettext
+import os
 from typing import TYPE_CHECKING, List, Type, Union
 
+import anyio
 from jinja2 import ChoiceLoader, FileSystemLoader, PackageLoader
+from sqlalchemy import select
 from sqlalchemy.engine import Engine
 from sqlalchemy.ext.asyncio import AsyncEngine
 from starlette.applications import Starlette
@@ -11,9 +15,12 @@ from starlette.routing import Mount, Route, Router
 from starlette.staticfiles import StaticFiles
 from starlette.templating import Jinja2Templates
 
+from sqladmin.auth.hashers import make_password
+from sqladmin.auth.models import User
+from sqladmin.auth.utils.token import create_access_token, decode_access_token
+
 if TYPE_CHECKING:
     from sqladmin.models import ModelAdmin
-
 
 __all__ = [
     "Admin",
@@ -34,6 +41,7 @@ class BaseAdmin:
         base_url: str = "/admin",
         title: str = "Admin",
         logo_url: str = None,
+        language: str = None,
     ) -> None:
         self.app = app
         self.engine = engine
@@ -41,6 +49,16 @@ class BaseAdmin:
         self._model_admins: List[Type["ModelAdmin"]] = []
 
         self.templates = Jinja2Templates("templates")
+        self.templates.env.add_extension("jinja2.ext.i18n")
+        if language:
+            translation = gettext.translation(
+                "lang",
+                os.path.dirname(__file__) + "/translations",
+                languages=[language],
+            )
+            self.templates.env.install_gettext_translations(translation, newstyle=True)
+        else:
+            self.templates.env.install_null_translations(newstyle=True)
         self.templates.env.loader = ChoiceLoader(
             [
                 FileSystemLoader("templates"),
@@ -100,6 +118,17 @@ class BaseAdmin:
         self._model_admins.append(model)
 
 
+def check_token(request: Request) -> bool:
+    token = request.cookies.get("access_token")
+    if token:
+        try:
+            decode_access_token(token)
+            return True
+        except:
+            pass
+    return False
+
+
 class Admin(BaseAdmin):
     """Main entrypoint to admin interface.
 
@@ -130,6 +159,7 @@ class Admin(BaseAdmin):
         base_url: str = "/admin",
         title: str = "Admin",
         logo_url: str = None,
+        language: str = None,
     ) -> None:
         """
         Args:
@@ -142,7 +172,12 @@ class Admin(BaseAdmin):
 
         assert isinstance(engine, (Engine, AsyncEngine))
         super().__init__(
-            app=app, engine=engine, base_url=base_url, title=title, logo_url=logo_url
+            app=app,
+            engine=engine,
+            base_url=base_url,
+            title=title,
+            logo_url=logo_url,
+            language=language,
         )
 
         statics = StaticFiles(packages=["sqladmin"])
@@ -150,7 +185,7 @@ class Admin(BaseAdmin):
         router = Router(
             routes=[
                 Mount("/statics", app=statics, name="statics"),
-                Route("/", endpoint=self.index, name="index"),
+                Route("/", endpoint=self.index, name="index", methods=["GET", "POST"]),
                 Route("/{identity}/list", endpoint=self.list, name="list"),
                 Route("/{identity}/detail/{pk}", endpoint=self.detail, name="detail"),
                 Route(
@@ -165,6 +200,12 @@ class Admin(BaseAdmin):
                     name="create",
                     methods=["GET", "POST"],
                 ),
+                Route(
+                    "/login",
+                    endpoint=self.login,
+                    name="login",
+                    methods=["GET", "POST"],
+                ),
             ]
         )
         self.app.mount(base_url, app=router, name="admin")
@@ -173,12 +214,22 @@ class Admin(BaseAdmin):
 
     async def index(self, request: Request) -> Response:
         """Index route which can be overriden to create dashboards."""
-
+        if not check_token(request):
+            return RedirectResponse(
+                url=request.url_for(
+                    "admin:login",
+                ),
+            )
         return self.templates.TemplateResponse("index.html", {"request": request})
 
     async def list(self, request: Request) -> Response:
         """List route to display paginated Model instances."""
-
+        if not check_token(request):
+            return RedirectResponse(
+                request.url_for(
+                    "admin:login",
+                ),
+            )
         model_admin = self._find_model_admin(request.path_params["identity"])
 
         page = int(request.query_params.get("page", 1))
@@ -204,7 +255,12 @@ class Admin(BaseAdmin):
 
     async def detail(self, request: Request) -> Response:
         """Detail route."""
-
+        if not check_token(request):
+            return RedirectResponse(
+                request.url_for(
+                    "admin:login",
+                ),
+            )
         model_admin = self._find_model_admin(request.path_params["identity"])
         if not model_admin.can_view_details:
             return self._unathorized_response(request)
@@ -224,7 +280,12 @@ class Admin(BaseAdmin):
 
     async def delete(self, request: Request) -> Response:
         """Delete route."""
-
+        if not check_token(request):
+            return RedirectResponse(
+                request.url_for(
+                    "admin:login",
+                ),
+            )
         identity = request.path_params["identity"]
         model_admin = self._find_model_admin(identity)
         if not model_admin.can_delete:
@@ -240,7 +301,12 @@ class Admin(BaseAdmin):
 
     async def create(self, request: Request) -> Response:
         """Create model endpoint."""
-
+        if not check_token(request):
+            return RedirectResponse(
+                request.url_for(
+                    "admin:login",
+                ),
+            )
         identity = request.path_params["identity"]
         model_admin = self._find_model_admin(identity)
         if not model_admin.can_create:
@@ -272,3 +338,53 @@ class Admin(BaseAdmin):
             request.url_for("admin:list", identity=identity),
             status_code=302,
         )
+
+    async def login(self, request: Request) -> Response:
+        context = {
+            "request": request,
+            "errinfo": "",
+            "username_err": False,
+            "password_err": False,
+        }
+
+        if request.method == "GET":
+            return self.templates.TemplateResponse("login.html", context)
+        form = await request.form()
+        username = form.get("username")
+        raw_password = form.get("password")
+
+        if not username:
+            context["username_err"] = True
+            return self.templates.TemplateResponse("login.html", context)
+        if not raw_password:
+            context["password_err"] = True
+            return self.templates.TemplateResponse("login.html", context)
+        if isinstance(self.engine, Engine):
+            res = await anyio.to_thread.run_sync(
+                self.engine.execute,
+                select(User.password)
+                .where(User.username == username, User.is_active == True)
+                .limit(1),
+            )
+        else:
+            res = await self.engine.execute(
+                select(User.password)
+                .where(User.username == username, User.is_active == True)
+                .limit(1)
+            )
+        password = res.scalar_one_or_none()
+        if password is not None:
+            if make_password(raw_password) == password:
+                request.cookies.setdefault(
+                    "access_token",
+                )
+                res = RedirectResponse(
+                    request.url_for(
+                        "admin:index",
+                    ),
+                )
+                access_token = create_access_token({"username": username})
+                res.set_cookie("access_token", access_token)
+                return res
+        context["errinfo"] = "e"
+        return self.templates.TemplateResponse("login.html", context)
