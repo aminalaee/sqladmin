@@ -21,3 +21,6 @@ twine==3.7.1
 wheel==0.37.0
 pydantic[dotenv]==1.9.0
 python-jose==3.3.0
+anyio==3.5.0
+wtforms==3.0.1
+typer==0.4.0

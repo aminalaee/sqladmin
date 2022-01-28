@@ -1,13 +1,13 @@
 import gettext
 import os
-from typing import TYPE_CHECKING, List, Optional, Type, Union
+from typing import TYPE_CHECKING, List, Type, Union
 
 import anyio
 from jinja2 import ChoiceLoader, FileSystemLoader, PackageLoader
 from sqlalchemy import select
 from sqlalchemy.engine import Engine
 from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession
-from sqlalchemy.orm import sessionmaker, Session
+from sqlalchemy.orm import Session, sessionmaker
 from starlette.applications import Starlette
 from starlette.authentication import requires
 from starlette.exceptions import HTTPException
@@ -21,7 +21,7 @@ from starlette.templating import Jinja2Templates
 from sqladmin.auth.hashers import make_password
 from sqladmin.auth.middlewares import BasicAuthBackend
 from sqladmin.auth.models import User
-from sqladmin.auth.utils.token import create_access_token, decode_access_token
+from sqladmin.auth.utils.token import create_access_token
 
 if TYPE_CHECKING:
     from sqladmin.models import ModelAdmin
@@ -178,12 +178,14 @@ class Admin(BaseAdmin):
         if isinstance(engine, Engine):
             LocalSession = sessionmaker(bind=self.engine, class_=Session)
             self.session = LocalSession()
-            self._sync=True
+            self._sync = True
         else:
             LocalSession = sessionmaker(bind=self.engine, class_=AsyncSession)
             self.session = LocalSession()
-            self._sync=False
-        app.add_middleware(AuthenticationMiddleware, backend=BasicAuthBackend(self.session,self._sync))
+            self._sync = False
+        app.add_middleware(
+            AuthenticationMiddleware, backend=BasicAuthBackend(self.session, self._sync)
+        )
         statics = StaticFiles(packages=["sqladmin"])
 
         router = Router(
@@ -216,12 +218,12 @@ class Admin(BaseAdmin):
 
         self.templates.env.globals["model_admins"] = self.model_admins
 
-    @requires('authenticated', redirect='login')
+    @requires("authenticated", redirect="admin:login")
     async def index(self, request: Request) -> Response:
         """Index route which can be overriden to create dashboards."""
         return self.templates.TemplateResponse("index.html", {"request": request})
 
-    @requires('authenticated', redirect='login')
+    @requires("authenticated", redirect="admin:login")
     async def list(self, request: Request) -> Response:
         """List route to display paginated Model instances."""
         model_admin = self._find_model_admin(request.path_params["identity"])
@@ -247,7 +249,7 @@ class Admin(BaseAdmin):
 
         return self.templates.TemplateResponse("list.html", context)
 
-    @requires('authenticated', redirect='login')
+    @requires("authenticated", redirect="admin:login")
     async def detail(self, request: Request) -> Response:
         """Detail route."""
 
@@ -268,7 +270,7 @@ class Admin(BaseAdmin):
 
         return self.templates.TemplateResponse("detail.html", context)
 
-    @requires('authenticated', redirect='login')
+    @requires("authenticated", redirect="admin:login")
     async def delete(self, request: Request) -> Response:
         """Delete route."""
         identity = request.path_params["identity"]
@@ -284,7 +286,7 @@ class Admin(BaseAdmin):
 
         return Response(content=request.url_for("admin:list", identity=identity))
 
-    @requires('authenticated', redirect='login')
+    @requires("authenticated", redirect="admin:login")
     async def create(self, request: Request) -> Response:
         """Create model endpoint."""
         identity = request.path_params["identity"]
@@ -343,14 +345,14 @@ class Admin(BaseAdmin):
             res = await anyio.to_thread.run_sync(
                 self.session.execute,
                 select(User.password)
-                    .where(User.username == username, User.is_active == True)  # noqa
-                    .limit(1),
+                .where(User.username == username, User.is_active == True)  # noqa
+                .limit(1),
             )
         else:
             res = await self.session.execute(
                 select(User.password)
-                    .where(User.username == username, User.is_active == True)  # noqa
-                    .limit(1)
+                .where(User.username == username, User.is_active == True)  # noqa
+                .limit(1)
             )
         password = res.scalar_one_or_none()
         if password is not None:

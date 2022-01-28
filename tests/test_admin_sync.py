@@ -19,11 +19,12 @@ from starlette.testclient import TestClient
 from sqladmin import Admin, ModelAdmin
 from sqladmin.auth.hashers import make_password, verify_password
 from sqladmin.auth.models import Base as AdminBase, User as AdminUser
+from sqladmin.conf import settings
 from tests import get_test_token
 from tests.common import TEST_DATABASE_URI_SYNC
 
 Base = declarative_base()  # type: Any
-
+settings.DATABASE_URL = TEST_DATABASE_URI_SYNC
 engine = create_engine(
     TEST_DATABASE_URI_SYNC, connect_args={"check_same_thread": False}
 )
@@ -66,6 +67,15 @@ class Address(Base):
 def prepare_database() -> Generator[None, None, None]:
     Base.metadata.create_all(engine)
     AdminBase.metadata.create_all(engine)
+    res = session.execute(
+        select(AdminUser).where(AdminUser.username == "root_sync").limit(1)
+    )
+    if not res.scalar_one_or_none():
+        user = AdminUser(
+            username="root_sync", is_active=True, password=make_password("root")
+        )
+        session.add(user)
+        session.commit()
     yield
     Base.metadata.drop_all(engine)
     AdminBase.metadata.drop_all(engine)
@@ -90,7 +100,7 @@ admin.register_model(AddressAdmin)
 
 def test_root_view() -> None:
     with TestClient(app) as client:
-        client.cookies.setdefault("access_token", get_test_token())
+        client.cookies.setdefault("access_token", get_test_token("root_sync"))
         response = client.get("/admin")
 
     assert response.status_code == 200
@@ -100,8 +110,8 @@ def test_root_view() -> None:
 
 def test_invalid_list_page() -> None:
     with TestClient(app) as client:
-        client.cookies.setdefault("access_token", get_test_token())
-        client.cookies.setdefault("access_token", get_test_token())
+        client.cookies.setdefault("access_token", get_test_token("root_sync"))
+        client.cookies.setdefault("access_token", get_test_token("root_sync"))
         response = client.get("/admin/example/list")
 
     assert response.status_code == 404
@@ -114,7 +124,7 @@ def test_list_view_single_page() -> None:
     session.commit()
 
     with TestClient(app) as client:
-        client.cookies.setdefault("access_token", get_test_token())
+        client.cookies.setdefault("access_token", get_test_token("root_sync"))
         response = client.get("/admin/user/list")
 
     assert response.status_code == 200
@@ -140,7 +150,7 @@ def test_list_view_multi_page() -> None:
     session.commit()
 
     with TestClient(app) as client:
-        client.cookies.setdefault("access_token", get_test_token())
+        client.cookies.setdefault("access_token", get_test_token("root_sync"))
         response = client.get("/admin/user/list")
 
     assert response.status_code == 200
@@ -154,7 +164,7 @@ def test_list_view_multi_page() -> None:
     assert response.text.count('<li class="page-item ">') == 1
 
     with TestClient(app) as client:
-        client.cookies.setdefault("access_token", get_test_token())
+        client.cookies.setdefault("access_token", get_test_token("root_sync"))
         response = client.get("/admin/user/list?page=3")
 
     assert response.status_code == 200
@@ -165,7 +175,7 @@ def test_list_view_multi_page() -> None:
     assert response.text.count('<li class="page-item ">') == 2
 
     with TestClient(app) as client:
-        client.cookies.setdefault("access_token", get_test_token())
+        client.cookies.setdefault("access_token", get_test_token("root_sync"))
         response = client.get("/admin/user/list?page=5")
 
     assert response.status_code == 200
@@ -191,7 +201,7 @@ def test_list_page_permission_actions() -> None:
     session.commit()
 
     with TestClient(app) as client:
-        client.cookies.setdefault("access_token", get_test_token())
+        client.cookies.setdefault("access_token", get_test_token("root_sync"))
         response = client.get("/admin/user/list")
 
     assert response.status_code == 200
@@ -199,7 +209,7 @@ def test_list_page_permission_actions() -> None:
     assert response.text.count('<i class="fas fa-trash"></i>') == 10
 
     with TestClient(app) as client:
-        client.cookies.setdefault("access_token", get_test_token())
+        client.cookies.setdefault("access_token", get_test_token("root_sync"))
         response = client.get("/admin/address/list")
 
     assert response.status_code == 200
@@ -210,7 +220,7 @@ def test_list_page_permission_actions() -> None:
 
 def test_unauthorized_detail_page() -> None:
     with TestClient(app) as client:
-        client.cookies.setdefault("access_token", get_test_token())
+        client.cookies.setdefault("access_token", get_test_token("root_sync"))
         response = client.get("/admin/address/detail/1")
 
     assert response.status_code == 401
@@ -218,7 +228,7 @@ def test_unauthorized_detail_page() -> None:
 
 def test_not_found_detail_page() -> None:
     with TestClient(app) as client:
-        client.cookies.setdefault("access_token", get_test_token())
+        client.cookies.setdefault("access_token", get_test_token("root_sync"))
         response = client.get("/admin/user/detail/1")
 
     assert response.status_code == 404
@@ -235,7 +245,7 @@ def test_detail_page() -> None:
     session.commit()
 
     with TestClient(app) as client:
-        client.cookies.setdefault("access_token", get_test_token())
+        client.cookies.setdefault("access_token", get_test_token("root_sync"))
         response = client.get("/admin/user/detail/1")
 
     assert response.status_code == 200
@@ -263,14 +273,14 @@ def test_column_labels() -> None:
     session.commit()
 
     with TestClient(app) as client:
-        client.cookies.setdefault("access_token", get_test_token())
+        client.cookies.setdefault("access_token", get_test_token("root_sync"))
         response = client.get("/admin/user/list")
 
     assert response.status_code == 200
     assert response.text.count("<th>Email</th>") == 1
 
     with TestClient(app) as client:
-        client.cookies.setdefault("access_token", get_test_token())
+        client.cookies.setdefault("access_token", get_test_token("root_sync"))
         response = client.get("/admin/user/detail/1")
 
     assert response.status_code == 200
@@ -279,7 +289,7 @@ def test_column_labels() -> None:
 
 def test_delete_endpoint_unauthorized_response() -> None:
     with TestClient(app) as client:
-        client.cookies.setdefault("access_token", get_test_token())
+        client.cookies.setdefault("access_token", get_test_token("root_sync"))
         response = client.delete("/admin/address/delete/1")
 
     assert response.status_code == 401
@@ -287,7 +297,7 @@ def test_delete_endpoint_unauthorized_response() -> None:
 
 def test_delete_endpoint_not_found_response() -> None:
     with TestClient(app) as client:
-        client.cookies.setdefault("access_token", get_test_token())
+        client.cookies.setdefault("access_token", get_test_token("root_sync"))
         response = client.delete("/admin/user/delete/1")
 
     assert response.status_code == 404
@@ -302,7 +312,7 @@ def test_delete_endpoint() -> None:
     assert session.query(User).count() == 1
 
     with TestClient(app) as client:
-        client.cookies.setdefault("access_token", get_test_token())
+        client.cookies.setdefault("access_token", get_test_token("root_sync"))
         response = client.delete("/admin/user/delete/1")
 
     assert response.status_code == 200
@@ -313,7 +323,7 @@ def test_create_endpoint_unauthorized_response() -> None:
     admin._model_admins[1].can_create = False
 
     with TestClient(app) as client:
-        client.cookies.setdefault("access_token", get_test_token())
+        client.cookies.setdefault("access_token", get_test_token("root_sync"))
         response = client.get("/admin/address/create")
 
     assert response.status_code == 401
@@ -323,7 +333,7 @@ def test_create_endpoint_unauthorized_response() -> None:
 
 def test_create_endpoint_get_form() -> None:
     with TestClient(app) as client:
-        client.cookies.setdefault("access_token", get_test_token())
+        client.cookies.setdefault("access_token", get_test_token("root_sync"))
         response = client.get("/admin/user/create")
 
     assert response.status_code == 200
@@ -344,7 +354,7 @@ def test_create_endpoint_get_form() -> None:
 def test_create_endpoint_post_form() -> None:
     data: dict = {"birthdate": "Wrong Date Format"}
     with TestClient(app) as client:
-        client.cookies.setdefault("access_token", get_test_token())
+        client.cookies.setdefault("access_token", get_test_token("root_sync"))
         response = client.post("/admin/user/create", data=data)
 
     assert response.status_code == 400
@@ -354,7 +364,7 @@ def test_create_endpoint_post_form() -> None:
 
     data = {"name": "SQLAlchemy"}
     with TestClient(app) as client:
-        client.cookies.setdefault("access_token", get_test_token())
+        client.cookies.setdefault("access_token", get_test_token("root_sync"))
         response = client.post("/admin/user/create", data=data)
 
     stmt = select(func.count(User.id))
@@ -369,7 +379,7 @@ def test_create_endpoint_post_form() -> None:
 
     data = {"user": user.id}
     with TestClient(app) as client:
-        client.cookies.setdefault("access_token", get_test_token())
+        client.cookies.setdefault("access_token", get_test_token("root_sync"))
         response = client.post("/admin/address/create", data=data)
 
     stmt = select(func.count(Address.id))
@@ -383,7 +393,7 @@ def test_create_endpoint_post_form() -> None:
 
     data = {"name": "SQLAdmin", "addresses": [address.id]}
     with TestClient(app) as client:
-        client.cookies.setdefault("access_token", get_test_token())
+        client.cookies.setdefault("access_token", get_test_token("root_sync"))
         response = client.post("/admin/user/create", data=data)
 
     stmt = select(func.count(User.id))
@@ -464,7 +474,7 @@ def test_redirect() -> None:
     check_redirect("/admin/address/create")
     with TestClient(app) as client:
         response = client.delete("/admin/address/delete/1")
-        assert response.status_code == 404
+        assert response.status_code == 303
 
 
 def test_i18n() -> None:

@@ -9,4 +9,7 @@ htmlcov/
 .mypy_cache/
 coverage.xml
 examples/
+example/
 .idea/
+build/
+site/
