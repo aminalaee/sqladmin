@@ -1,55 +1,61 @@
 {% extends "base.html" %}
 {% block body %}
-<div class="wrapper">
-  <aside class="navbar navbar-vertical navbar-expand-md navbar-dark">
-    <div class="container-fluid">
-      <h1 class="navbar-brand navbar-brand-autodark">
-        <a href="{{ url_for('admin:index') }}">
-        {% if admin_logo_url %}
-        <img src="{{ admin_logo_url }}" width="64" height="64" alt="Admin" class="navbar-brand-image"/>
-        {% else %}
-        <h3>{{ admin_title }}</h3>
-        {% endif %}
-        </a>
-      </h1>
-      <div class="collapse navbar-collapse" id="navbar-menu">
-        <ul class="navbar-nav pt-lg-3">
-          {% for model_admin in model_admins %}
-          <li class="nav-item">
-            <a class="nav-link {% if model_admin.identity == request.path_params['identity'] %}active{% endif %}" href="{{ url_for('admin:list', identity=model_admin.identity) }}">
+    <div class="wrapper">
+        <aside class="navbar navbar-vertical navbar-expand-md navbar-dark">
+            <div class="container-fluid">
+                <h1 class="navbar-brand navbar-brand-autodark">
+                    <a href="{{ url_for('admin:index') }}">
+                        {% if admin_logo_url %}
+                            <img src="{{ admin_logo_url }}" width="64" height="64" alt="Admin"
+                                 class="navbar-brand-image"/>
+                        {% else %}
+                            <h3>{{ admin_title }}</h3>
+                        {% endif %}
+                    </a>
+                </h1>
+                <div class="collapse navbar-collapse" id="navbar-menu">
+                    <ul class="navbar-nav pt-lg-3">
+                        {% for model_admin in model_admins %}
+                            <li class="nav-item">
+                                <a class="nav-link {% if model_admin.identity == request.path_params['identity'] %}active{% endif %}"
+                                   href="{{ url_for('admin:list', identity=model_admin.identity) }}">
             <span class="nav-link-icon d-md-none d-lg-inline-block">
             {% if model_admin.icon %} <i class="{{ model_admin.icon }}"></i> {% endif %}
             </span>
-            <span class="nav-link-title">{{ model_admin.name_plural }}</span>
-            </a>
-          </li>
-          {% endfor %}
-        </ul>
-      </div>
-    </div>
-  </aside>
-  <div class="page-wrapper">
-    <div class="container-fluid">
-      <div class="page-header d-print-none">
-        {% block content_header %}
-        <div class="row align-items-center">
-          <div class="col">
-            <h2 class="page-title">{{ title }}</h2>
-            <div class="page-pretitle">{{ subtitle }}</div>
-          </div>
+                                    <span class="nav-link-title">{{ model_admin.name_plural }}</span>
+                                </a>
+                            </li>
+                        {% endfor %}
+                    </ul>
+                    <button onclick="logout()">Logout</button>
+                </div>
+            </div>
+        </aside>
+        <div class="page-wrapper">
+            <div class="container-fluid">
+                <div class="page-header d-print-none">
+                    {% block content_header %}
+                        <div class="row align-items-center">
+                            <div class="col">
+                                <h2 class="page-title">{{ title }}</h2>
+                                <div class="page-pretitle">{{ subtitle }}</div>
+                            </div>
+                        </div>
+                    {% endblock %}
+                </div>
+            </div>
+            <div class="page-body flex-grow-1">
+                <div class="container-fluid">
+                    <div class="row row-deck row-cards">
+                        {% block content %} {% endblock %}
+                    </div>
+                </div>
+            </div>
+            {% block footer %}
+            {% endblock %}
         </div>
-        {% endblock %}
-      </div>
     </div>
-    <div class="page-body flex-grow-1">
-      <div class="container-fluid">
-        <div class="row row-deck row-cards">
-          {% block content %} {% endblock %}
-        </div>
-      </div>
-    </div>
-    {% block footer %}
-    {% endblock %}
-  </div>
-</div>
+{% endblock %}
+{% block head %}
+    <script type="text/javascript" src="{{ url_for('admin:statics', path='js/logout.js') }}"></script>
 {% endblock %}
