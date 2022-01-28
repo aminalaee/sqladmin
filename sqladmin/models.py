@@ -25,6 +25,7 @@ from sqlalchemy.orm import (
     sessionmaker,
 )
 from sqlalchemy.orm.attributes import InstrumentedAttribute
+from starlette.responses import PlainTextResponse, Response
 from wtforms import Form
 
 from sqladmin.exceptions import InvalidColumnError, InvalidModelError
@@ -99,7 +100,35 @@ class ModelAdminMeta(type):
             return sessionmaker(bind=engine, class_=AsyncSession)
 
 
-class ModelAdmin(metaclass=ModelAdminMeta):
+class BaseModelAdmin:
+    @classmethod
+    def is_visible(cls) -> bool:
+        """Override this method if you want dynamically
+        hide or show administrative views from SQLAdmin menu structure
+        By default, item is visible in menu.
+        Both is_visible and is_accessible to be displayed in menu.
+        """
+        return True
+
+    @classmethod
+    def is_accessible(cls) -> bool:
+        """Override this method to add permission checks.
+        SQLAdmin does not make any assumptions about the authentication system
+        used in your application, so it is up to you to implement it.
+        By default, it will allow access for everyone.
+        """
+        return True
+
+    @classmethod
+    def inaccessible_callback(self) -> Response:
+        """Handle the response to inaccessible views.
+        By default, it throw HTTP 403 error. Override this method to
+        customize the behaviour.
+        """
+        return PlainTextResponse("Unauthorized", status_code=401)
+
+
+class ModelAdmin(BaseModelAdmin, metaclass=ModelAdminMeta):
     """Base class for defining admnistrative behaviour for the model.
 
     ???+ usage
