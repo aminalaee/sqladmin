@@ -1,5 +1,3 @@
-import gettext
-import os
 from typing import TYPE_CHECKING, List, Type, Union
 
 import anyio
@@ -54,17 +52,6 @@ class BaseAdmin:
 
         self.templates = Jinja2Templates("templates")
         self.templates.env.add_extension("jinja2.ext.i18n")
-        if language:
-            translation = gettext.translation(
-                "lang",
-                os.path.dirname(__file__) + "/translations",
-                languages=[language],
-            )
-            self.templates.env.install_gettext_translations(  # type: ignore
-                translation, newstyle=True
-            )  # type: ignore
-        else:
-            self.templates.env.install_null_translations(newstyle=True)  # type: ignore
         self.templates.env.loader = ChoiceLoader(
             [
                 FileSystemLoader("templates"),

@@ -7,31 +7,31 @@
             </div>
             <form class="card card-md" action="/admin/login" method="post" autocomplete="off">
                 <div class="card-body">
-                    <h2 class="card-title text-center mb-4">{{ _('Login to your account') }}</h2>
+                    <h2 class="card-title text-center mb-4">Login to your account</h2>
                     <div class="mb-3">
-                        <label class="form-label">{{ _('Username') }}</label>
+                        <label class="form-label">Username</label>
                         {% if username_err==true %}
-                            <input type="text" class="form-control is-invalid" placeholder="{{ _('Enter username') }}"
+                            <input type="text" class="form-control is-invalid" placeholder="Enter username"
                                    name="username">
-                            <div class="invalid-feedback">{{ _('Username can not be null.') }}</div>
+                            <div class="invalid-feedback">Username can not be null.</div>
                         {% else %}
-                            <input type="text" class="form-control" placeholder="{{ _('Enter username') }}"
+                            <input type="text" class="form-control" placeholder="Enter username"
                                    name="username">
                         {% endif %}
                     </div>
                     <div class="mb-3">
                         <label class="form-label">
-                            {{ _('Password') }}
+                            Password
                         </label>
                         <div class="input-group input-group-flat">
                             {% if password_err==true %}
                                 <input type="password" class="form-control is-invalid" name="password"
-                                       placeholder=" {{ _('Password') }}"
+                                       placeholder=" Password"
                                        autocomplete="off">
-                                <div class="invalid-feedback">{{ _('Password can not be null.') }}</div>
+                                <div class="invalid-feedback">Password can not be null.</div>
                             {% else %}
                                 <input type="password" class="form-control" name="password"
-                                       placeholder=" {{ _('Password') }}"
+                                       placeholder=" Password"
                                        autocomplete="off">
                             {% endif %}
                             <span class="input-group-text">
@@ -49,16 +49,16 @@
                     <div class="mb-2">
                         <label class="form-check">
                             <input type="checkbox" class="form-check-input">
-                            <span class="form-check-label">{{ _('Remember me on this device') }}</span>
+                            <span class="form-check-label">Remember me on this device</span>
                         </label>
                     </div>
                     <div style="display:block">
                         {% if errinfo!="" %}
-                            <span style="color: red">{{ _('Username or password is error!') }}</span>
+                            <span style="color: red">Username or password is error!</span>
                         {% endif %}
                     </div>
                     <div class="form-footer">
-                        <button type="submit" class="btn btn-primary w-100">{{ _('Sign in') }}</button>
+                        <button type="submit" class="btn btn-primary w-100">Sign in</button>
                     </div>
                 </div>
             </form>

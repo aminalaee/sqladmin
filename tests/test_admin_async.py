@@ -475,20 +475,6 @@ def test_redirect() -> None:
         assert response.status_code == 303
 
 
-async def test_i18n() -> None:
-    app = Starlette()
-    i18n_admin = Admin(app=app, engine=engine, language="zh_CN")
-    i18n_admin.register_model(UserAdmin)
-    i18n_admin.register_model(AddressAdmin)
-    with TestClient(app) as client:
-        response = client.get("/admin/login")
-
-    assert response.status_code == 200
-    assert (
-        response.text.count('<h2 class="card-title text-center mb-4">登陆你的账户</h2>') == 1
-    )
-
-
 async def test_expire_time() -> None:
     token = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VybmFtZSI6InJvb3QiLCJleHAiOjE2NDMyNzYyMDl9._iFrRq5TqlomtM0bCr-p0L-VSst-bP9rZDf4s9Zc-1c"  # noqa
     with TestClient(app) as client:
