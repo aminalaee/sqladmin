@@ -294,14 +294,14 @@ async def test_delete_endpoint() -> None:
 
 
 async def test_create_endpoint_unauthorized_response() -> None:
-    admin._model_admins[1].can_create = False
+    admin._model_admins[1].can_create = False  # type: ignore
 
     with TestClient(app) as client:
         response = client.get("/admin/address/create")
 
     assert response.status_code == 401
 
-    admin._model_admins[1].can_create = True
+    admin._model_admins[1].can_create = True  # type: ignore
 
 
 async def test_create_endpoint_get_form() -> None:

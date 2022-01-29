@@ -38,7 +38,7 @@ class BaseAdmin:
         self.app = app
         self.engine = engine
         self.base_url = base_url
-        self._model_admins: List[Type["ModelAdmin"]] = []
+        self._model_admins: List["ModelAdmin"] = []
 
         self.templates = Jinja2Templates("templates")
         self.templates.env.loader = ChoiceLoader(
@@ -52,7 +52,7 @@ class BaseAdmin:
         self.templates.env.globals["admin_logo_url"] = logo_url
 
     @property
-    def model_admins(self) -> List[Type["ModelAdmin"]]:
+    def model_admins(self) -> List["ModelAdmin"]:
         """Get list of ModelAdmins lazily.
 
         Returns:
@@ -61,7 +61,7 @@ class BaseAdmin:
 
         return self._model_admins
 
-    def _find_model_admin(self, identity: str) -> Type["ModelAdmin"]:
+    def _find_model_admin(self, identity: str) -> "ModelAdmin":
         for model_admin in self.model_admins:
             if model_admin.identity == identity:
                 return model_admin
@@ -97,7 +97,7 @@ class BaseAdmin:
         model.engine = self.engine
         model.sessionmaker = model._get_sessionmaker(model.engine)
 
-        self._model_admins.append(model)
+        self._model_admins.append((model()))
 
 
 class Admin(BaseAdmin):
@@ -137,7 +137,7 @@ class Admin(BaseAdmin):
             engine: SQLAlchemy engine instance.
             base_url: Base URL for Admin interface.
             title: Admin title.
-            logo: URL of logo to be displayed instead of title.
+            logo_url: URL of logo to be displayed instead of title.
         """
 
         assert isinstance(engine, (Engine, AsyncEngine))

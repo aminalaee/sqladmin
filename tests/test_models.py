@@ -86,7 +86,7 @@ def test_column_list_default() -> None:
     class UserAdmin(ModelAdmin, model=User):
         pass
 
-    assert UserAdmin.get_list_columns() == [("id", User.id)]
+    assert UserAdmin().get_list_columns() == [("id", User.id)]
 
 
 def test_column_list_by_model_columns() -> None:
@@ -100,7 +100,7 @@ def test_column_list_by_str_name() -> None:
     class AddressAdmin(ModelAdmin, model=Address):
         column_list = ["id", "user_id"]
 
-    assert AddressAdmin.get_list_columns() == [
+    assert AddressAdmin().get_list_columns() == [
         ("id", Address.id),
         ("user_id", Address.user_id),
     ]
@@ -111,7 +111,7 @@ def test_column_list_invalid_attribute() -> None:
         column_list = ["example"]
 
     with pytest.raises(InvalidColumnError) as exc:
-        ExampleAdmin.get_list_columns()
+        ExampleAdmin().get_list_columns()
 
     assert exc.match("Model 'Address' has no attribute 'example'.")
 
@@ -130,7 +130,7 @@ def test_column_exclude_list_by_str_name() -> None:
     class UserAdmin(ModelAdmin, model=User):
         column_exclude_list = ["id"]
 
-    assert sorted(UserAdmin.get_list_columns()) == [
+    assert sorted(UserAdmin().get_list_columns()) == [
         ("addresses", User.addresses.prop),
         ("name", User.name),
     ]
@@ -140,7 +140,7 @@ def test_column_exclude_list_by_model_column() -> None:
     class UserAdmin(ModelAdmin, model=User):
         column_exclude_list = [User.id]
 
-    assert sorted(UserAdmin.get_list_columns()) == [
+    assert sorted(UserAdmin().get_list_columns()) == [
         ("addresses", User.addresses.prop),
         ("name", User.name),
     ]
@@ -162,7 +162,7 @@ def test_column_details_list_default() -> None:
     class UserAdmin(ModelAdmin, model=User):
         pass
 
-    assert UserAdmin.get_details_columns() == [
+    assert UserAdmin().get_details_columns() == [
         ("addresses", User.addresses.prop),
         ("id", User.id),
         ("name", User.name),
@@ -173,14 +173,14 @@ def test_column_details_list_by_model_column() -> None:
     class UserAdmin(ModelAdmin, model=User):
         column_details_list = [User.name, User.id]
 
-    assert UserAdmin.get_details_columns() == [("name", User.name), ("id", User.id)]
+    assert UserAdmin().get_details_columns() == [("name", User.name), ("id", User.id)]
 
 
 def test_column_details_exclude_list_by_model_column() -> None:
     class UserAdmin(ModelAdmin, model=User):
         column_details_exclude_list = [User.id]
 
-    assert sorted(UserAdmin.get_details_columns()) == [
+    assert sorted(UserAdmin().get_details_columns()) == [
         ("addresses", User.addresses.prop),
         ("name", User.name),
     ]
@@ -191,13 +191,13 @@ def test_column_labels_by_string_name() -> None:
         column_list = [User.name]
         column_labels = {"name": "Name"}
 
-    assert UserAdmin.get_list_columns() == [("Name", User.name)]
+    assert UserAdmin().get_list_columns() == [("Name", User.name)]
 
     class AddressAdmin(ModelAdmin, model=Address):
         column_details_list = [Address.user_id]
         column_labels = {"user_id": "User ID"}
 
-    assert AddressAdmin.get_details_columns() == [("User ID", Address.user_id)]
+    assert AddressAdmin().get_details_columns() == [("User ID", Address.user_id)]
 
 
 def test_column_labels_by_model_columns() -> None:
@@ -205,10 +205,10 @@ def test_column_labels_by_model_columns() -> None:
         column_list = [User.name]
         column_labels = {User.name: "Name"}
 
-    assert UserAdmin.get_list_columns() == [("Name", User.name)]
+    assert UserAdmin().get_list_columns() == [("Name", User.name)]
 
     class AddressAdmin(ModelAdmin, model=Address):
         column_details_list = [Address.user_id]
         column_labels = {Address.user_id: "User ID"}
 
-    assert AddressAdmin.get_details_columns() == [("User ID", Address.user_id)]
+    assert AddressAdmin().get_details_columns() == [("User ID", Address.user_id)]
