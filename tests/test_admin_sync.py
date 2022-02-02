@@ -366,3 +366,14 @@ def test_create_endpoint_post_form() -> None:
     user = session.execute(stmt).scalar_one()
     assert user.name == "SQLAdmin"
     assert user.addresses == [address]
+
+
+def test_list_view_page_size_options() -> None:
+    with TestClient(app) as client:
+        response = client.get("/admin/user/list")
+
+    assert response.status_code == 200
+    assert 'href="http://testserver/admin/user/list?page_size=10' in response.text
+    assert 'href="http://testserver/admin/user/list?page_size=25' in response.text
+    assert 'href="http://testserver/admin/user/list?page_size=50' in response.text
+    assert 'href="http://testserver/admin/user/list?page_size=100' in response.text
