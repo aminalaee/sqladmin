@@ -24,7 +24,7 @@
 
 ---
 
-# SQLAlchemy Admin dashboard
+# SQLAlchemy Admin dashboard for Starlette/FastAPI
 
 SQLAdmin is a flexible Admin interface for SQLAlchemy models.
 
@@ -116,3 +116,9 @@ admin.register_model(UserAdmin)
 ```
 
 Now visiting `/admin` on your browser you can see the `SQLAdmin` interface.
+
+## Related projects and inspirations
+
+* [Flask-Admin](https://github.com/flask-admin/flask-admin) Admin interface for Flask supporting different database backends and ORMs. This project has inspired SQLAdmin extensively and most of the features and configurations are implemented the same.
+* [FastAPI-Admin](https://github.com/fastapi-admin/fastapi-admin) Admin interface for FastAPI which works with `TortoiseORM`.
+* [Dashboard](https://github.com/encode/dashboard) Admin interface for ASGI frameworks which works with the `orm` package.
