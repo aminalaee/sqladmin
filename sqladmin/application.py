@@ -185,14 +185,7 @@ class Admin(BaseAdmin):
         page_size = int(request.query_params.get("page_size", 0))
 
         pagination = await model_admin.list(page, page_size)
-
-        if pagination.page != 1:
-            url = str(request.url.include_query_params(page=page - 1))
-            pagination.previous_page_url = url
-
-        if (pagination.page * pagination.page_size) < pagination.count:
-            url = str(request.url.include_query_params(page=page + 1))
-            pagination.next_page_url = url
+        pagination.add_pagination_urls(request.url)
 
         context = {
             "request": request,

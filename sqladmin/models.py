@@ -1,10 +1,8 @@
-from dataclasses import dataclass
 from typing import (
     Any,
     ClassVar,
     Dict,
     List,
-    Optional,
     Sequence,
     Tuple,
     Type,
@@ -30,20 +28,11 @@ from wtforms import Form
 from sqladmin.exceptions import InvalidColumnError, InvalidModelError
 from sqladmin.forms import get_model_form
 from sqladmin.helpers import prettify_class_name, slugify_class_name
+from sqladmin.pagination import Pagination
 
 __all__ = [
     "ModelAdmin",
 ]
-
-
-@dataclass
-class Pagination:
-    rows: List[Any]
-    page: int
-    page_size: int
-    count: int
-    next_page_url: Optional[str] = None
-    previous_page_url: Optional[str] = None
 
 
 class ModelAdminMeta(type):
