@@ -101,8 +101,7 @@ class ModelAdminMeta(type):
 
 
 class BaseModelAdmin:
-    @classmethod
-    def is_visible(cls) -> bool:
+    def is_visible(self) -> bool:
         """Override this method if you want dynamically
         hide or show administrative views from SQLAdmin menu structure
         By default, item is visible in menu.
@@ -110,8 +109,7 @@ class BaseModelAdmin:
         """
         return True
 
-    @classmethod
-    def is_accessible(cls) -> bool:
+    def is_accessible(self) -> bool:
         """Override this method to add permission checks.
         SQLAdmin does not make any assumptions about the authentication system
         used in your application, so it is up to you to implement it.
@@ -119,7 +117,6 @@ class BaseModelAdmin:
         """
         return True
 
-    @classmethod
     def inaccessible_callback(self) -> Response:
         """Handle the response to inaccessible views.
         By default, it throw HTTP 403 error. Override this method to
