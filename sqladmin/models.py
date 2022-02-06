@@ -88,7 +88,7 @@ class ModelAdminMeta(type):
         return cls
 
     @classmethod
-    def _check_conflicting_options(cls, keys: List[str], attrs: dict) -> None:
+    def _check_conflicting_options(mcls, keys: List[str], attrs: dict) -> None:
         if all(k in attrs for k in keys):
             raise AssertionError(f"Cannot use {' and '.join(keys)} together.")
 
@@ -274,32 +274,30 @@ class ModelAdmin(BaseModelAdmin, metaclass=ModelAdminMeta):
         ```
     """
 
-    @classmethod
-    async def count(cls) -> int:
-        query = select(func.count(cls.pk_column))
+    async def count(self) -> int:
+        query = select(func.count(self.pk_column))
 
-        if isinstance(cls.engine, Engine):
-            with cls.sessionmaker() as session:
+        if isinstance(self.engine, Engine):
+            with self.sessionmaker() as session:
                 result = await anyio.to_thread.run_sync(session.execute, query)
                 return result.scalar_one()
         else:
-            async with cls.sessionmaker() as session:
+            async with self.sessionmaker() as session:
                 result = await session.execute(query)
                 return result.scalar_one()
 
-    @classmethod
-    async def list(cls, page: int, page_size: int) -> Pagination:
-        page_size = min(page_size or cls.page_size, max(cls.page_size_options))
+    async def list(self, page: int, page_size: int) -> Pagination:
+        page_size = min(page_size or self.page_size, max(self.page_size_options))
 
-        count = await cls.count()
+        count = await self.count()
         query = (
-            select(cls.model)
-            .order_by(cls.pk_column)
+            select(self.model)
+            .order_by(self.pk_column)
             .limit(page_size)
             .offset((page - 1) * page_size)
         )
 
-        for _, attr in cls.get_list_columns():
+        for _, attr in self.get_list_columns():
             if isinstance(attr, RelationshipProperty):
                 query = query.options(selectinload(attr.key))
 
@@ -310,37 +308,35 @@ class ModelAdmin(BaseModelAdmin, metaclass=ModelAdminMeta):
             count=count,
         )
 
-        if isinstance(cls.engine, Engine):
-            with cls.sessionmaker() as session:
+        if isinstance(self.engine, Engine):
+            with self.sessionmaker() as session:
                 items = await anyio.to_thread.run_sync(session.execute, query)
                 pagination.rows = items.scalars().all()
                 return pagination
         else:
-            async with cls.sessionmaker() as session:
+            async with self.sessionmaker() as session:
                 items = await session.execute(query)
                 pagination.rows = items.scalars().all()
                 return pagination
 
-    @classmethod
-    async def get_model_by_pk(cls, value: Any) -> Any:
-        query = select(cls.model).where(cls.pk_column == value)
+    async def get_model_by_pk(self, value: Any) -> Any:
+        query = select(self.model).where(self.pk_column == value)
 
-        for _, attr in cls.get_details_columns():
+        for _, attr in self.get_details_columns():
             if isinstance(attr, RelationshipProperty):
                 query = query.options(selectinload(attr.key))
 
-        if isinstance(cls.engine, Engine):
-            with cls.sessionmaker() as session:
+        if isinstance(self.engine, Engine):
+            with self.sessionmaker() as session:
                 result = await anyio.to_thread.run_sync(session.execute, query)
                 return result.scalar_one_or_none()
         else:
-            async with cls.sessionmaker() as session:
+            async with self.sessionmaker() as session:
                 result = await session.execute(query)
                 return result.scalar_one_or_none()
 
-    @classmethod
     def get_attr_value(
-        cls, obj: type, attr: Union[Column, ColumnProperty, RelationshipProperty]
+        self, obj: type, attr: Union[Column, ColumnProperty, RelationshipProperty]
     ) -> Any:
         if isinstance(attr, Column):
             return getattr(obj, attr.name)
@@ -350,9 +346,8 @@ class ModelAdmin(BaseModelAdmin, metaclass=ModelAdminMeta):
                 return ", ".join(map(str, value))
             return value
 
-    @classmethod
     def get_model_attr(
-        cls, attr: Union[str, InstrumentedAttribute]
+        self, attr: Union[str, InstrumentedAttribute]
     ) -> Union[ColumnProperty, RelationshipProperty]:
         assert isinstance(attr, (str, InstrumentedAttribute))
 
@@ -364,81 +359,76 @@ class ModelAdmin(BaseModelAdmin, metaclass=ModelAdminMeta):
             key = attr.prop.key
 
         try:
-            return inspect(cls.model).attrs[key]
+            return inspect(self.model).attrs[key]
         except KeyError:
             raise InvalidColumnError(
-                f"Model '{cls.model.__name__}' has no attribute '{attr}'."
+                f"Model '{self.model.__name__}' has no attribute '{attr}'."
             )
 
-    @classmethod
-    def get_model_attributes(cls) -> List[Column]:
-        return list(inspect(cls.model).attrs)
+    def get_model_attributes(self) -> List[Column]:
+        return list(inspect(self.model).attrs)
 
-    @classmethod
-    def get_list_columns(cls) -> List[Tuple[str, Column]]:
+    def get_list_columns(self) -> List[Tuple[str, Column]]:
         """Get list of columns to display in List page."""
 
-        column_list = getattr(cls, "column_list", None)
-        column_exclude_list = getattr(cls, "column_exclude_list", None)
+        column_list = getattr(self, "column_list", None)
+        column_exclude_list = getattr(self, "column_exclude_list", None)
 
         if column_list:
-            attrs = [cls.get_model_attr(attr) for attr in cls.column_list]
+            attrs = [self.get_model_attr(attr) for attr in self.column_list]
         elif column_exclude_list:
-            exclude_columns = [cls.get_model_attr(attr) for attr in column_exclude_list]
-            all_attrs = cls.get_model_attributes()
+            exclude_columns = [
+                self.get_model_attr(attr) for attr in column_exclude_list
+            ]
+            all_attrs = self.get_model_attributes()
             attrs = list(set(all_attrs) - set(exclude_columns))
         else:
-            attrs = [getattr(cls.model, cls.pk_column.name).prop]
+            attrs = [getattr(self.model, self.pk_column.name).prop]
 
-        labels = cls.get_column_labels()
+        labels = self.get_column_labels()
         return [(labels.get(attr, attr.key), attr) for attr in attrs]
 
-    @classmethod
-    def get_details_columns(cls) -> List[Tuple[str, Column]]:
+    def get_details_columns(self) -> List[Tuple[str, Column]]:
         """Get list of columns to display in Detail page."""
 
-        column_details_list = getattr(cls, "column_details_list", None)
-        column_details_exclude_list = getattr(cls, "column_details_exclude_list", None)
+        column_details_list = getattr(self, "column_details_list", None)
+        column_details_exclude_list = getattr(self, "column_details_exclude_list", None)
 
         if column_details_list:
-            attrs = [cls.get_model_attr(attr) for attr in column_details_list]
+            attrs = [self.get_model_attr(attr) for attr in column_details_list]
         elif column_details_exclude_list:
             exclude_columns = [
-                cls.get_model_attr(attr) for attr in column_details_exclude_list
+                self.get_model_attr(attr) for attr in column_details_exclude_list
             ]
-            all_attrs = cls.get_model_attributes()
+            all_attrs = self.get_model_attributes()
             attrs = list(set(all_attrs) - set(exclude_columns))
         else:
-            attrs = cls.get_model_attributes()
+            attrs = self.get_model_attributes()
 
-        labels = cls.get_column_labels()
+        labels = self.get_column_labels()
         return [(labels.get(attr, attr.key), attr) for attr in attrs]
 
-    @classmethod
-    def get_column_labels(cls) -> Dict[Column, str]:
+    def get_column_labels(self) -> Dict[Column, str]:
         return {
-            cls.get_model_attr(column_label): value
-            for column_label, value in cls.column_labels.items()
+            self.get_model_attr(column_label): value
+            for column_label, value in self.column_labels.items()
         }
 
-    @classmethod
-    async def delete_model(cls, obj: type) -> None:
-        if isinstance(cls.engine, Engine):
-            with cls.sessionmaker.begin() as session:
+    async def delete_model(self, obj: type) -> None:
+        if isinstance(self.engine, Engine):
+            with self.sessionmaker.begin() as session:
                 await anyio.to_thread.run_sync(session.delete, obj)
         else:
-            async with cls.sessionmaker.begin() as session:
+            async with self.sessionmaker.begin() as session:
                 await session.delete(obj)
 
-    @classmethod
-    async def insert_model(cls, obj: type) -> Any:
-        if isinstance(cls.engine, Engine):
-            with cls.sessionmaker.begin() as session:
+    async def insert_model(self, obj: type) -> Any:
+        if isinstance(self.engine, Engine):
+            with self.sessionmaker.begin() as session:
                 await anyio.to_thread.run_sync(session.add, obj)
         else:
-            async with cls.sessionmaker.begin() as session:
+            async with self.sessionmaker.begin() as session:
                 session.add(obj)
 
-    @classmethod
-    async def scaffold_form(cls) -> Type[Form]:
-        return await get_model_form(model=cls.model, engine=cls.engine)
+    async def scaffold_form(self) -> Type[Form]:
+        return await get_model_form(model=self.model, engine=self.engine)

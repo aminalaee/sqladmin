@@ -14,16 +14,19 @@
     </div>
     <div class="card-body border-bottom py-3">
       <div class="d-flex">
-        <div class="text-muted">
-          Show
-          <div class="mx-2 d-inline-block">
-            <select class="form-select form-control form-control-sm" aria-label="count">
-            {% for page_size_option in model_admin.page_size_options %}
-            <option value="{{ page_size_option }}" {% if pagination.page_size == page_size_option %} selected {% endif %}>{{ page_size_option }}</option>
-            {% endfor %}
-            </select>
-          </div>
+        <div class="dropdown text-muted">
+          Show 
+          <a href="#" class="btn btn-light dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+            {{ request.query_params.get("page_size") or model_admin.page_size }}
+          </a>
           items
+          <div class="dropdown-menu">
+            {% for page_size_option in model_admin.page_size_options %}
+            <a class="dropdown-item" href="{{ request.url.include_query_params(page_size=page_size_option) }}">
+              {{ page_size_option }}
+            </a>
+            {% endfor %}
+          </div>
         </div>
         <!-- <div class="ms-auto text-muted">
           Search:

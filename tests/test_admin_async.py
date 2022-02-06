@@ -294,14 +294,14 @@ async def test_delete_endpoint() -> None:
 
 
 async def test_create_endpoint_unauthorized_response() -> None:
-    admin._model_admins[1].can_create = False
+    admin._model_admins[1].can_create = False  # type: ignore
 
     with TestClient(app) as client:
         response = client.get("/admin/address/create")
 
     assert response.status_code == 401
 
-    admin._model_admins[1].can_create = True
+    admin._model_admins[1].can_create = True  # type: ignore
 
 
 async def test_create_endpoint_get_form() -> None:
@@ -378,3 +378,14 @@ async def test_create_endpoint_post_form() -> None:
     user = result.scalar_one()
     assert user.name == "SQLAdmin"
     assert user.addresses == [address]
+
+
+async def test_list_view_page_size_options() -> None:
+    with TestClient(app) as client:
+        response = client.get("/admin/user/list")
+
+    assert response.status_code == 200
+    assert "http://testserver/admin/user/list?page_size=10" in response.text
+    assert "http://testserver/admin/user/list?page_size=25" in response.text
+    assert "http://testserver/admin/user/list?page_size=50" in response.text
+    assert "http://testserver/admin/user/list?page_size=100" in response.text
