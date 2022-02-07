@@ -119,7 +119,7 @@ async def test_list_view_single_page() -> None:
     )
 
     # Next/Previous disabled
-    assert response.text.count('<li class="page-item  disabled ">') == 2
+    assert response.text.count('<li class="page-item disabled">') == 2
 
 
 async def test_list_view_multi_page() -> None:
@@ -138,8 +138,8 @@ async def test_list_view_multi_page() -> None:
     )
 
     # Previous disabled
-    assert response.text.count('<li class="page-item  disabled ">') == 1
-    assert response.text.count('<li class="page-item ">') == 1
+    assert response.text.count('<li class="page-item disabled">') == 1
+    assert response.text.count('<li class="page-item ">') == 5
 
     with TestClient(app) as client:
         response = client.get("/admin/user/list?page=3")
@@ -149,7 +149,7 @@ async def test_list_view_multi_page() -> None:
         "Showing <span>21</span> to <span>30</span> of <span>45</span> items</p>"
         in response.text
     )
-    assert response.text.count('<li class="page-item ">') == 2
+    assert response.text.count('<li class="page-item ">') == 6
 
     with TestClient(app) as client:
         response = client.get("/admin/user/list?page=5")
@@ -161,8 +161,8 @@ async def test_list_view_multi_page() -> None:
     )
 
     # Next disabled
-    assert response.text.count('<li class="page-item  disabled ">') == 1
-    assert response.text.count('<li class="page-item ">') == 1
+    assert response.text.count('<li class="page-item disabled">') == 1
+    assert response.text.count('<li class="page-item ">') == 5
 
 
 async def test_list_page_permission_actions() -> None:
