@@ -3,7 +3,7 @@ aiosqlite==0.17.0
 
 # Tests
 autoflake==1.4
-black==21.12b0
+black==22.1.0
 coverage==6.2
 flake8==4.0.1
 isort==5.10.1
@@ -14,7 +14,7 @@ greenlet==1.1.2
 # Documentation
 mkdocs==1.2.3
 mkdocs-material==8.1.4
-mkdocstrings==0.17.0
+mkdocstrings==0.18.0
 
 # Packaging
 twine==3.8.0
