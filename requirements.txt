@@ -17,5 +17,5 @@ mkdocs-material==8.1.10
 mkdocstrings==0.18.0
 
 # Packaging
-twine==3.7.1
+twine==3.8.0
 wheel==0.37.0
