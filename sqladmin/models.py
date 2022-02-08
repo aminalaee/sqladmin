@@ -11,14 +11,13 @@ from typing import (
 )
 
 import anyio
-from sqlalchemy import Column, func, inspect, select
+from sqlalchemy import Column, delete, func, insert, inspect, select
 from sqlalchemy.engine.base import Engine
 from sqlalchemy.exc import NoInspectionAvailable
-from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession
+from sqlalchemy.ext.asyncio import AsyncEngine
 from sqlalchemy.orm import (
     ColumnProperty,
     RelationshipProperty,
-    Session,
     selectinload,
     sessionmaker,
 )
@@ -80,13 +79,6 @@ class ModelAdminMeta(type):
         if all(k in attrs for k in keys):
             raise AssertionError(f"Cannot use {' and '.join(keys)} together.")
 
-    @classmethod
-    def _get_sessionmaker(mcls, engine: Union[Engine, AsyncEngine]) -> None:
-        if isinstance(engine, Engine):
-            return sessionmaker(bind=engine, class_=Session)
-        else:
-            return sessionmaker(bind=engine, class_=AsyncSession)
-
 
 class ModelAdmin(metaclass=ModelAdminMeta):
     """Base class for defining admnistrative behaviour for the model.
@@ -103,12 +95,13 @@ class ModelAdmin(metaclass=ModelAdminMeta):
     """
 
     model: ClassVar[type]
-    engine: ClassVar[Union[Engine, AsyncEngine]]
-    sessionmaker: ClassVar[sessionmaker]
 
     # Internals
     pk_column: ClassVar[Column]
     identity: ClassVar[str]
+    sessionmaker: ClassVar[sessionmaker]
+    engine: ClassVar[Union[Engine, AsyncEngine]]
+    async_engine: ClassVar[bool]
 
     # Metadata
     name: ClassVar[str] = ""
@@ -234,17 +227,24 @@ class ModelAdmin(metaclass=ModelAdminMeta):
         ```
     """
 
+    async def _run_query(self, query, commit: bool = False) -> Any:
+        if self.async_engine:
+            async with self.sessionmaker(expire_on_commit=False) as session:
+                result = await session.execute(query)
+                if not commit:
+                    return result.scalars().all()
+                session.commit()
+        else:
+            with self.sessionmaker(expire_on_commit=False) as session:
+                result = await anyio.to_thread.run_sync(session.execute, query)
+                if not commit:
+                    return result.scalars().all()
+                session.commit()
+
     async def count(self) -> int:
         query = select(func.count(self.pk_column))
-
-        if isinstance(self.engine, Engine):
-            with self.sessionmaker() as session:
-                result = await anyio.to_thread.run_sync(session.execute, query)
-                return result.scalar_one()
-        else:
-            async with self.sessionmaker() as session:
-                result = await session.execute(query)
-                return result.scalar_one()
+        rows = await self._run_query(query)
+        return rows[0]
 
     async def list(self, page: int, page_size: int) -> Pagination:
         page_size = min(page_size or self.page_size, max(self.page_size_options))
@@ -261,23 +261,15 @@ class ModelAdmin(metaclass=ModelAdminMeta):
             if isinstance(attr, RelationshipProperty):
                 query = query.options(selectinload(attr.key))
 
+        rows = await self._run_query(query)
         pagination = Pagination(
-            rows=[],
+            rows=rows,
             page=page,
             page_size=page_size,
             count=count,
         )
 
-        if isinstance(self.engine, Engine):
-            with self.sessionmaker() as session:
-                items = await anyio.to_thread.run_sync(session.execute, query)
-                pagination.rows = items.scalars().all()
-                return pagination
-        else:
-            async with self.sessionmaker() as session:
-                items = await session.execute(query)
-                pagination.rows = items.scalars().all()
-                return pagination
+        return pagination
 
     async def get_model_by_pk(self, value: Any) -> Any:
         query = select(self.model).where(self.pk_column == value)
@@ -286,14 +278,10 @@ class ModelAdmin(metaclass=ModelAdminMeta):
             if isinstance(attr, RelationshipProperty):
                 query = query.options(selectinload(attr.key))
 
-        if isinstance(self.engine, Engine):
-            with self.sessionmaker() as session:
-                result = await anyio.to_thread.run_sync(session.execute, query)
-                return result.scalar_one_or_none()
-        else:
-            async with self.sessionmaker() as session:
-                result = await session.execute(query)
-                return result.scalar_one_or_none()
+        rows = await self._run_query(query)
+        if rows:
+            return rows[0]
+        return None
 
     def get_attr_value(
         self, obj: type, attr: Union[Column, ColumnProperty, RelationshipProperty]
@@ -374,16 +362,13 @@ class ModelAdmin(metaclass=ModelAdminMeta):
             for column_label, value in self.column_labels.items()
         }
 
-    async def delete_model(self, obj: type) -> None:
-        if isinstance(self.engine, Engine):
-            with self.sessionmaker.begin() as session:
-                await anyio.to_thread.run_sync(session.delete, obj)
-        else:
-            async with self.sessionmaker.begin() as session:
-                await session.delete(obj)
+    async def delete_model(self, obj: Any) -> None:
+        pk = inspect(obj).identity[0]  # Only support single PK
+        query = delete(self.model).where(self.pk_column == pk)
+        await self._run_query(query, commit=True)
 
     async def insert_model(self, obj: type) -> Any:
-        if isinstance(self.engine, Engine):
+        if not self.async_engine:
             with self.sessionmaker.begin() as session:
                 await anyio.to_thread.run_sync(session.add, obj)
         else:

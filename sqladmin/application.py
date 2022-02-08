@@ -2,7 +2,8 @@ from typing import TYPE_CHECKING, List, Type, Union
 
 from jinja2 import ChoiceLoader, FileSystemLoader, PackageLoader
 from sqlalchemy.engine import Engine
-from sqlalchemy.ext.asyncio import AsyncEngine
+from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession
+from sqlalchemy.orm import Session, sessionmaker
 from starlette.applications import Starlette
 from starlette.exceptions import HTTPException
 from starlette.requests import Request
@@ -95,7 +96,12 @@ class BaseAdmin:
 
         # Set database engine from Admin instance
         model.engine = self.engine
-        model.sessionmaker = model._get_sessionmaker(model.engine)
+        if isinstance(model.engine, Engine):
+            model.sessionmaker = sessionmaker(bind=model.engine, class_=Session)
+            model.async_engine = False
+        else:
+            model.sessionmaker = sessionmaker(bind=model.engine, class_=AsyncSession)
+            model.async_engine = True
 
         self._model_admins.append((model()))
 
