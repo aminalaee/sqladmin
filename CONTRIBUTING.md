@@ -73,6 +73,7 @@ Ready to contribute? Here's how to set up `sqladmin` for local development.
 
     ```
     $ ./scripts/lint
+    ```
 
 6. When you're done making changes, check that your changes pass the tests:
 
