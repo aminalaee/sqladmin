@@ -13,7 +13,7 @@ greenlet==1.1.2
 
 # Documentation
 mkdocs==1.2.3
-mkdocs-material==8.1.10
+mkdocs-material==8.1.11
 mkdocstrings==0.18.0
 
 # Packaging
