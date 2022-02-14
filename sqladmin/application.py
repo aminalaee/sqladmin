@@ -193,7 +193,7 @@ class Admin(BaseAdmin):
             "pagination": pagination,
         }
 
-        return self.templates.TemplateResponse("list.html", context)
+        return self.templates.TemplateResponse(model_admin.list_template, context)
 
     async def detail(self, request: Request) -> Response:
         """Detail route."""
@@ -213,7 +213,7 @@ class Admin(BaseAdmin):
             "title": model_admin.name,
         }
 
-        return self.templates.TemplateResponse("detail.html", context)
+        return self.templates.TemplateResponse(model_admin.details_template, context)
 
     async def delete(self, request: Request) -> Response:
         """Delete route."""
@@ -249,11 +249,11 @@ class Admin(BaseAdmin):
         }
 
         if request.method == "GET":
-            return self.templates.TemplateResponse("create.html", context)
+            return self.templates.TemplateResponse(model_admin.create_template, context)
 
         if not form.validate():
             return self.templates.TemplateResponse(
-                "create.html",
+                model_admin.create_template,
                 context,
                 status_code=400,
             )
