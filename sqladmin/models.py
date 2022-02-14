@@ -244,7 +244,7 @@ class ModelAdmin(metaclass=ModelAdminMeta):
     create_template: ClassVar[str] = "create.html"
     """Default create template"""
 
-    details_template: ClassVar[str] = "detail.html"
+    details_template: ClassVar[str] = "details.html"
     """Default details view template"""
 
     async def count(self) -> int:

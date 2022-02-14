@@ -152,7 +152,9 @@ class Admin(BaseAdmin):
                 Mount("/statics", app=statics, name="statics"),
                 Route("/", endpoint=self.index, name="index"),
                 Route("/{identity}/list", endpoint=self.list, name="list"),
-                Route("/{identity}/detail/{pk}", endpoint=self.detail, name="detail"),
+                Route(
+                    "/{identity}/details/{pk}", endpoint=self.details, name="details"
+                ),
                 Route(
                     "/{identity}/delete/{pk}",
                     endpoint=self.delete,
@@ -195,8 +197,8 @@ class Admin(BaseAdmin):
 
         return self.templates.TemplateResponse(model_admin.list_template, context)
 
-    async def detail(self, request: Request) -> Response:
-        """Detail route."""
+    async def details(self, request: Request) -> Response:
+        """Details route."""
 
         model_admin = self._find_model_admin(request.path_params["identity"])
         if not model_admin.can_view_details:

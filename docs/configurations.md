@@ -107,9 +107,9 @@ The options available are:
         column_exclude_list = [User.id]
     ```
 
-## Detail page
+## Details page
 
-These options allow configurations in the detail page, in the case of this example
+These options allow configurations in the details page, in the case of this example
 where you can view details of a single User.
 
 The options available are:

@@ -196,14 +196,14 @@ def test_list_page_permission_actions() -> None:
 
 def test_unauthorized_detail_page() -> None:
     with TestClient(app) as client:
-        response = client.get("/admin/address/detail/1")
+        response = client.get("/admin/address/details/1")
 
     assert response.status_code == 401
 
 
 def test_not_found_detail_page() -> None:
     with TestClient(app) as client:
-        response = client.get("/admin/user/detail/1")
+        response = client.get("/admin/user/details/1")
 
     assert response.status_code == 404
 
@@ -219,7 +219,7 @@ def test_detail_page() -> None:
     session.commit()
 
     with TestClient(app) as client:
-        response = client.get("/admin/user/detail/1")
+        response = client.get("/admin/user/details/1")
 
     assert response.status_code == 200
     assert response.text.count('<th class="w-1">Column</th>') == 1
@@ -252,7 +252,7 @@ def test_column_labels() -> None:
     assert response.text.count("<th>Email</th>") == 1
 
     with TestClient(app) as client:
-        response = client.get("/admin/user/detail/1")
+        response = client.get("/admin/user/details/1")
 
     assert response.status_code == 200
     assert response.text.count("<td>Email</td>") == 1
