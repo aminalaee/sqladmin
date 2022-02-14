@@ -143,3 +143,21 @@ The pagination options in the list page can be configured. The available options
         page_size = 50
         page_size_options = [25, 50, 100, 200]
     ```
+
+## Templates
+
+The template files are built using Jinja2 and can be completely overriden in the configurations.
+The pages available are:
+
+* `list_template`: Template to use for models list page. Default is `list.html`.
+* `create_template`: Template to use for model creation page. Default is `create.html`.
+* `details_template`: Template to use for model details page. Default is `details.html`.
+
+!!! example
+
+    ```python
+    class UserAdmin(ModelAdmin, model=User):
+        list_template = "custom_list.html"
+    ```
+
+For more information about working with template see [Working with Templates](./working_with_templates.md).

@@ -235,9 +235,6 @@ class ModelAdmin(metaclass=ModelAdminMeta):
     """
 
     # Templates
-    index_template: ClassVar[str] = "index.html"
-    """Default index view template"""
-
     list_template: ClassVar[str] = "list.html"
     """Default list view template"""
 
