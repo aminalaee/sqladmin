@@ -24,7 +24,7 @@
 
 ---
 
-# SQLAlchemy Admin dashboard for Starlette/FastAPI
+# SQLAlchemy Admin for Starlette/FastAPI
 
 SQLAdmin is a flexible Admin interface for SQLAlchemy models.
 
