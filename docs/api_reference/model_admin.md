@@ -15,3 +15,7 @@
         - page_size_options
         - column_details_list
         - column_details_exclude_list
+        - index_template
+        - list_template
+        - create_template
+        - details_template

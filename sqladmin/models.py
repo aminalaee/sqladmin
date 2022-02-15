@@ -234,6 +234,16 @@ class ModelAdmin(metaclass=ModelAdminMeta):
         ```
     """
 
+    # Templates
+    list_template: ClassVar[str] = "list.html"
+    """Default list view template"""
+
+    create_template: ClassVar[str] = "create.html"
+    """Default create template"""
+
+    details_template: ClassVar[str] = "details.html"
+    """Default details view template"""
+
     async def count(self) -> int:
         query = select(func.count(self.pk_column))
 
