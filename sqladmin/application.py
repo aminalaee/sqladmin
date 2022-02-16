@@ -162,7 +162,7 @@ class Admin(BaseAdminView):
 
         statics = StaticFiles(packages=["sqladmin"])
 
-        def http_exception(request: Request, exc: HTTPException) -> Response:
+        def http_exception(request: Request, exc: Type[HTTPException]) -> Response:
             context = {
                 "request": request,
                 "status_code": exc.status_code,
