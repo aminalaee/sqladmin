@@ -3,19 +3,19 @@ aiosqlite==0.17.0
 
 # Tests
 autoflake==1.4
-black==21.12b0
-coverage==6.2
+black==22.1.0
+coverage==6.3.1
 flake8==4.0.1
 isort==5.10.1
-mypy==0.920
-pytest==6.2.5
+mypy==0.931
+pytest==7.0.1
 greenlet==1.1.2
 
 # Documentation
 mkdocs==1.2.3
-mkdocs-material==8.1.4
-mkdocstrings==0.17.0
+mkdocs-material==8.1.11
+mkdocstrings==0.18.0
 
 # Packaging
-twine==3.7.1
-wheel==0.37.0
+twine==3.8.0
+wheel==0.37.1

@@ -152,7 +152,9 @@ class Admin(BaseAdmin):
                 Mount("/statics", app=statics, name="statics"),
                 Route("/", endpoint=self.index, name="index"),
                 Route("/{identity}/list", endpoint=self.list, name="list"),
-                Route("/{identity}/detail/{pk}", endpoint=self.detail, name="detail"),
+                Route(
+                    "/{identity}/details/{pk}", endpoint=self.details, name="details"
+                ),
                 Route(
                     "/{identity}/delete/{pk}",
                     endpoint=self.delete,
@@ -185,14 +187,7 @@ class Admin(BaseAdmin):
         page_size = int(request.query_params.get("page_size", 0))
 
         pagination = await model_admin.list(page, page_size)
-
-        if pagination.page != 1:
-            url = str(request.url.include_query_params(page=page - 1))
-            pagination.previous_page_url = url
-
-        if (pagination.page * pagination.page_size) < pagination.count:
-            url = str(request.url.include_query_params(page=page + 1))
-            pagination.next_page_url = url
+        pagination.add_pagination_urls(request.url)
 
         context = {
             "request": request,
@@ -200,10 +195,10 @@ class Admin(BaseAdmin):
             "pagination": pagination,
         }
 
-        return self.templates.TemplateResponse("list.html", context)
+        return self.templates.TemplateResponse(model_admin.list_template, context)
 
-    async def detail(self, request: Request) -> Response:
-        """Detail route."""
+    async def details(self, request: Request) -> Response:
+        """Details route."""
 
         model_admin = self._find_model_admin(request.path_params["identity"])
         if not model_admin.can_view_details:
@@ -220,7 +215,7 @@ class Admin(BaseAdmin):
             "title": model_admin.name,
         }
 
-        return self.templates.TemplateResponse("detail.html", context)
+        return self.templates.TemplateResponse(model_admin.details_template, context)
 
     async def delete(self, request: Request) -> Response:
         """Delete route."""
@@ -256,11 +251,11 @@ class Admin(BaseAdmin):
         }
 
         if request.method == "GET":
-            return self.templates.TemplateResponse("create.html", context)
+            return self.templates.TemplateResponse(model_admin.create_template, context)
 
         if not form.validate():
             return self.templates.TemplateResponse(
-                "create.html",
+                model_admin.create_template,
                 context,
                 status_code=400,
             )

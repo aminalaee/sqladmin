@@ -13,6 +13,8 @@ edit_uri: ""
 
 nav:
   - Introduction: 'index.md'
+  - Configurations: 'configurations.md'
+  - Working with Templates: 'working_with_templates.md'
   - API Reference:
     - Application: 'api_reference/application.md'
     - ModelAdmin: 'api_reference/model_admin.md'

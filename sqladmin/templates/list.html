@@ -53,7 +53,7 @@
             <td><input class="form-check-input m-0 align-middle" type="checkbox" aria-label="Select item"></td>
             <td class="text-end">
               {% if model_admin.can_view_details %}
-              <a href="{{ url_for('admin:detail', identity=model_admin.identity, pk=model_admin.get_attr_value(row, model_admin.pk_column)) }}" data-bs-toggle="tooltip" data-bs-placement="top" title="View">
+              <a href="{{ url_for('admin:details', identity=model_admin.identity, pk=model_admin.get_attr_value(row, model_admin.pk_column)) }}" data-bs-toggle="tooltip" data-bs-placement="top" title="View">
                 <span class="me-1"><i class="fas fa-eye"></i></span>
               </a>
               {% endif %}
@@ -79,15 +79,25 @@
     <div class="card-footer d-flex align-items-center">
       <p class="m-0 text-muted">Showing <span>{{ ((pagination.page - 1) * pagination.page_size) + 1 }}</span> to <span>{{ min(pagination.page * pagination.page_size, pagination.count) }}</span> of <span>{{ pagination.count }}</span> items</p>
       <ul class="pagination m-0 ms-auto">
-        <li class="page-item {% if not pagination.previous_page_url %} disabled {% endif %}">
-          <a class="page-link" href="{{ pagination.previous_page_url }}">
+        <li class="page-item {% if not pagination.has_previous %}disabled{% endif %}">
+          {% if pagination.has_previous %}
+          <a class="page-link" href="{{ pagination.previous_page.url }}">
+          {% else %}
+          <a class="page-link" href="#">
+          {% endif %}
           <i class="fas fa-chevron-left"></i>
           prev
           </a>
         </li>
-        <li class="page-item active"><a class="page-link" href="{{ url_for('admin:list', identity=model_admin.identity) }}?page={{ pagination.page }}">{{ pagination.page }}</a></li>
-        <li class="page-item {% if not pagination.next_page_url %} disabled {% endif %}">
-          <a class="page-link" href="{{ pagination.next_page_url }}">
+        {% for page_control in pagination.page_controls %}
+        <li class="page-item {% if page_control.number == pagination.page %}active{% endif %}"><a class="page-link" href="{{ page_control.url }}">{{ page_control.number }}</a></li>
+        {% endfor %}
+        <li class="page-item {% if not pagination.has_next %}disabled{% endif %}">
+          {% if pagination.has_next %}
+          <a class="page-link" href="{{ pagination.next_page.url }}">
+          {% else %}
+          <a class="page-link" href="#">
+          {% endif %}
           next
           <i class="fas fa-chevron-right"></i>
           </a>

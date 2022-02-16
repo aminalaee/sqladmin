@@ -121,7 +121,7 @@ def test_list_view_single_page() -> None:
     )
 
     # Next/Previous disabled
-    assert response.text.count('<li class="page-item  disabled ">') == 2
+    assert response.text.count('<li class="page-item disabled">') == 2
 
 
 def test_list_view_multi_page() -> None:
@@ -140,8 +140,8 @@ def test_list_view_multi_page() -> None:
     )
 
     # Previous disabled
-    assert response.text.count('<li class="page-item  disabled ">') == 1
-    assert response.text.count('<li class="page-item ">') == 1
+    assert response.text.count('<li class="page-item disabled">') == 1
+    assert response.text.count('<li class="page-item ">') == 5
 
     with TestClient(app) as client:
         response = client.get("/admin/user/list?page=3")
@@ -151,7 +151,7 @@ def test_list_view_multi_page() -> None:
         "Showing <span>21</span> to <span>30</span> of <span>45</span> items</p>"
         in response.text
     )
-    assert response.text.count('<li class="page-item ">') == 2
+    assert response.text.count('<li class="page-item ">') == 6
 
     with TestClient(app) as client:
         response = client.get("/admin/user/list?page=5")
@@ -163,8 +163,8 @@ def test_list_view_multi_page() -> None:
     )
 
     # Next disabled
-    assert response.text.count('<li class="page-item  disabled ">') == 1
-    assert response.text.count('<li class="page-item ">') == 1
+    assert response.text.count('<li class="page-item disabled">') == 1
+    assert response.text.count('<li class="page-item ">') == 5
 
 
 def test_list_page_permission_actions() -> None:
@@ -196,14 +196,14 @@ def test_list_page_permission_actions() -> None:
 
 def test_unauthorized_detail_page() -> None:
     with TestClient(app) as client:
-        response = client.get("/admin/address/detail/1")
+        response = client.get("/admin/address/details/1")
 
     assert response.status_code == 401
 
 
 def test_not_found_detail_page() -> None:
     with TestClient(app) as client:
-        response = client.get("/admin/user/detail/1")
+        response = client.get("/admin/user/details/1")
 
     assert response.status_code == 404
 
@@ -219,7 +219,7 @@ def test_detail_page() -> None:
     session.commit()
 
     with TestClient(app) as client:
-        response = client.get("/admin/user/detail/1")
+        response = client.get("/admin/user/details/1")
 
     assert response.status_code == 200
     assert response.text.count('<th class="w-1">Column</th>') == 1
@@ -252,7 +252,7 @@ def test_column_labels() -> None:
     assert response.text.count("<th>Email</th>") == 1
 
     with TestClient(app) as client:
-        response = client.get("/admin/user/detail/1")
+        response = client.get("/admin/user/details/1")
 
     assert response.status_code == 200
     assert response.text.count("<td>Email</td>") == 1
