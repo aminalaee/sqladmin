@@ -6,6 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship, selectinload, sessionmaker
 from starlette.applications import Starlette
+from starlette.requests import Request
 from starlette.testclient import TestClient
 
 from sqladmin import Admin, ModelAdmin
@@ -53,6 +54,12 @@ class Address(Base):
         return f"Address {self.id}"
 
 
+class Movie(Base):
+    __tablename__ = "movies"
+
+    id = Column(Integer, primary_key=True)
+
+
 @pytest.fixture(autouse=True, scope="function")
 async def prepare_database() -> AsyncGenerator[None, None]:
     async with engine.begin() as conn:
@@ -77,8 +84,17 @@ class AddressAdmin(ModelAdmin, model=Address):
     can_view_details = False
 
 
+class MovieAdmin(ModelAdmin, model=Movie):
+    def is_accessible(self, request: Request) -> bool:
+        return False
+
+    def is_visible(self, request: Request) -> bool:
+        return False
+
+
 admin.register_model(UserAdmin)
 admin.register_model(AddressAdmin)
+admin.register_model(MovieAdmin)
 
 
 async def test_root_view() -> None:
@@ -389,3 +405,20 @@ async def test_list_view_page_size_options() -> None:
     assert "http://testserver/admin/user/list?page_size=25" in response.text
     assert "http://testserver/admin/user/list?page_size=50" in response.text
     assert "http://testserver/admin/user/list?page_size=100" in response.text
+
+
+async def test_is_accessible_method() -> None:
+    with TestClient(app) as client:
+        response = client.get("/admin/movie/list")
+
+    assert response.status_code == 403
+
+
+async def test_is_visible_method() -> None:
+    with TestClient(app) as client:
+        response = client.get("/admin")
+
+    assert response.status_code == 200
+    assert response.text.count('<span class="nav-link-title">Users</span>') == 1
+    assert response.text.count('<span class="nav-link-title">Addresses</span>') == 1
+    assert response.text.count("Movie") == 0
