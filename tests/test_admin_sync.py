@@ -198,7 +198,7 @@ def test_unauthorized_detail_page() -> None:
     with TestClient(app) as client:
         response = client.get("/admin/address/details/1")
 
-    assert response.status_code == 401
+    assert response.status_code == 403
 
 
 def test_not_found_detail_page() -> None:
@@ -262,7 +262,7 @@ def test_delete_endpoint_unauthorized_response() -> None:
     with TestClient(app) as client:
         response = client.delete("/admin/address/delete/1")
 
-    assert response.status_code == 401
+    assert response.status_code == 403
 
 
 def test_delete_endpoint_not_found_response() -> None:
@@ -293,7 +293,7 @@ def test_create_endpoint_unauthorized_response() -> None:
     with TestClient(app) as client:
         response = client.get("/admin/address/create")
 
-    assert response.status_code == 401
+    assert response.status_code == 403
 
     admin._model_admins[1].can_create = True  # type: ignore
 
