@@ -19,3 +19,5 @@
         - list_template
         - create_template
         - details_template
+        - is_visible
+        - is_accessible
