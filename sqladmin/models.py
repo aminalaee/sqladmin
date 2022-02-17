@@ -22,6 +22,7 @@ from sqlalchemy.orm import (
     sessionmaker,
 )
 from sqlalchemy.orm.attributes import InstrumentedAttribute
+from starlette.requests import Request
 from wtforms import Form
 
 from sqladmin.exceptions import InvalidColumnError, InvalidModelError
@@ -80,7 +81,25 @@ class ModelAdminMeta(type):
             raise AssertionError(f"Cannot use {' and '.join(keys)} together.")
 
 
-class ModelAdmin(metaclass=ModelAdminMeta):
+class BaseModelAdmin:
+    def is_visible(self, request: Request) -> bool:
+        """Override this method if you want dynamically
+        hide or show administrative views from SQLAdmin menu structure
+        By default, item is visible in menu.
+        Both is_visible and is_accessible to be displayed in menu.
+        """
+        return True
+
+    def is_accessible(self, request: Request) -> bool:
+        """Override this method to add permission checks.
+        SQLAdmin does not make any assumptions about the authentication system
+        used in your application, so it is up to you to implement it.
+        By default, it will allow access for everyone.
+        """
+        return True
+
+
+class ModelAdmin(BaseModelAdmin, metaclass=ModelAdminMeta):
     """Base class for defining admnistrative behaviour for the model.
 
     ???+ usage
@@ -227,19 +246,30 @@ class ModelAdmin(metaclass=ModelAdminMeta):
         ```
     """
 
-    async def _run_query(self, query, commit: bool = False) -> Any:
+    # Templates
+    list_template: ClassVar[str] = "list.html"
+    """Default list view template"""
+
+    create_template: ClassVar[str] = "create.html"
+    """Default create template"""
+
+    details_template: ClassVar[str] = "details.html"
+    """Default details view template"""
+
+    async def _run_query(self, query, requires_commit: bool = False) -> Any:
         if self.async_engine:
             async with self.sessionmaker(expire_on_commit=False) as session:
                 result = await session.execute(query)
-                if not commit:
-                    return result.scalars().all()
-                session.commit()
+                if requires_commit:
+                    await session.commit()
+                return result.scalars().all()
         else:
             with self.sessionmaker(expire_on_commit=False) as session:
                 result = await anyio.to_thread.run_sync(session.execute, query)
-                if not commit:
-                    return result.scalars().all()
-                session.commit()
+                if requires_commit:
+                    session.commit()
+                return result.scalars().all()
+                
 
     async def count(self) -> int:
         query = select(func.count(self.pk_column))

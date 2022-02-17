@@ -8,7 +8,7 @@ from starlette.applications import Starlette
 from starlette.exceptions import HTTPException
 from starlette.requests import Request
 from starlette.responses import RedirectResponse, Response
-from starlette.routing import Mount, Route, Router
+from starlette.routing import Mount, Route
 from starlette.staticfiles import StaticFiles
 from starlette.templating import Jinja2Templates
 
@@ -51,6 +51,7 @@ class BaseAdmin:
         self.templates.env.globals["min"] = min
         self.templates.env.globals["admin_title"] = title
         self.templates.env.globals["admin_logo_url"] = logo_url
+        self.templates.env.globals["model_admins"] = self.model_admins
 
     @property
     def model_admins(self) -> List["ModelAdmin"]:
@@ -68,14 +69,6 @@ class BaseAdmin:
                 return model_admin
 
         raise HTTPException(status_code=404)
-
-    def _not_found_response(self, request: Request) -> Response:
-        context = {"request": request, "status_code": 404, "message": "Not found."}
-        return self.templates.TemplateResponse("error.html", context, status_code=404)
-
-    def _unathorized_response(self, request: Request) -> Response:
-        context = {"request": request, "status_code": 401, "message": "Unauthorized."}
-        return self.templates.TemplateResponse("error.html", context, status_code=401)
 
     def register_model(self, model: Type["ModelAdmin"]) -> None:
         """Register ModelAdmin to the Admin.
@@ -106,7 +99,29 @@ class BaseAdmin:
         self._model_admins.append((model()))
 
 
-class Admin(BaseAdmin):
+class BaseAdminView(BaseAdmin):
+    async def _list(self, request: Request) -> None:
+        model_admin = self._find_model_admin(request.path_params["identity"])
+        if not model_admin.is_accessible(request):
+            raise HTTPException(status_code=403)
+
+    async def _create(self, request: Request) -> None:
+        model_admin = self._find_model_admin(request.path_params["identity"])
+        if not model_admin.can_create or not model_admin.is_accessible(request):
+            raise HTTPException(status_code=403)
+
+    async def _details(self, request: Request) -> None:
+        model_admin = self._find_model_admin(request.path_params["identity"])
+        if not model_admin.can_view_details or not model_admin.is_accessible(request):
+            raise HTTPException(status_code=403)
+
+    async def _delete(self, request: Request) -> None:
+        model_admin = self._find_model_admin(request.path_params["identity"])
+        if not model_admin.can_delete or not model_admin.is_accessible(request):
+            raise HTTPException(status_code=403)
+
+
+class Admin(BaseAdminView):
     """Main entrypoint to admin interface.
 
     ???+ usage
@@ -153,12 +168,25 @@ class Admin(BaseAdmin):
 
         statics = StaticFiles(packages=["sqladmin"])
 
-        router = Router(
+        def http_exception(request: Request, exc: Exception) -> Response:
+            assert isinstance(exc, HTTPException)
+            context = {
+                "request": request,
+                "status_code": exc.status_code,
+                "message": exc.detail,
+            }
+            return self.templates.TemplateResponse(
+                "error.html", context, status_code=exc.status_code
+            )
+
+        admin = Starlette(
             routes=[
                 Mount("/statics", app=statics, name="statics"),
                 Route("/", endpoint=self.index, name="index"),
                 Route("/{identity}/list", endpoint=self.list, name="list"),
-                Route("/{identity}/detail/{pk}", endpoint=self.detail, name="detail"),
+                Route(
+                    "/{identity}/details/{pk}", endpoint=self.details, name="details"
+                ),
                 Route(
                     "/{identity}/delete/{pk}",
                     endpoint=self.delete,
@@ -171,11 +199,10 @@ class Admin(BaseAdmin):
                     name="create",
                     methods=["GET", "POST"],
                 ),
-            ]
+            ],
+            exception_handlers={HTTPException: http_exception},
         )
-        self.app.mount(base_url, app=router, name="admin")
-
-        self.templates.env.globals["model_admins"] = self.model_admins
+        self.app.mount(base_url, app=admin, name="admin")
 
     async def index(self, request: Request) -> Response:
         """Index route which can be overriden to create dashboards."""
@@ -184,6 +211,8 @@ class Admin(BaseAdmin):
 
     async def list(self, request: Request) -> Response:
         """List route to display paginated Model instances."""
+
+        await self._list(request)
 
         model_admin = self._find_model_admin(request.path_params["identity"])
 
@@ -199,18 +228,18 @@ class Admin(BaseAdmin):
             "pagination": pagination,
         }
 
-        return self.templates.TemplateResponse("list.html", context)
+        return self.templates.TemplateResponse(model_admin.list_template, context)
 
-    async def detail(self, request: Request) -> Response:
-        """Detail route."""
+    async def details(self, request: Request) -> Response:
+        """Details route."""
+
+        await self._details(request)
 
         model_admin = self._find_model_admin(request.path_params["identity"])
-        if not model_admin.can_view_details:
-            return self._unathorized_response(request)
 
         model = await model_admin.get_model_by_pk(request.path_params["pk"])
         if not model:
-            return self._not_found_response(request)
+            raise HTTPException(status_code=404)
 
         context = {
             "request": request,
@@ -219,19 +248,19 @@ class Admin(BaseAdmin):
             "title": model_admin.name,
         }
 
-        return self.templates.TemplateResponse("detail.html", context)
+        return self.templates.TemplateResponse(model_admin.details_template, context)
 
     async def delete(self, request: Request) -> Response:
         """Delete route."""
 
+        await self._delete(request)
+
         identity = request.path_params["identity"]
         model_admin = self._find_model_admin(identity)
-        if not model_admin.can_delete:
-            return self._unathorized_response(request)
 
         model = await model_admin.get_model_by_pk(request.path_params["pk"])
         if not model:
-            return self._not_found_response(request)
+            raise HTTPException(status_code=404)
 
         await model_admin.delete_model(model)
 
@@ -240,10 +269,10 @@ class Admin(BaseAdmin):
     async def create(self, request: Request) -> Response:
         """Create model endpoint."""
 
+        await self._create(request)
+
         identity = request.path_params["identity"]
         model_admin = self._find_model_admin(identity)
-        if not model_admin.can_create:
-            return self._unathorized_response(request)
 
         Form = await model_admin.scaffold_form()
         form = Form(await request.form())
@@ -255,11 +284,11 @@ class Admin(BaseAdmin):
         }
 
         if request.method == "GET":
-            return self.templates.TemplateResponse("create.html", context)
+            return self.templates.TemplateResponse(model_admin.create_template, context)
 
         if not form.validate():
             return self.templates.TemplateResponse(
-                "create.html",
+                model_admin.create_template,
                 context,
                 status_code=400,
             )
