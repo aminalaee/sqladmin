@@ -22,6 +22,7 @@ from sqlalchemy.orm import (
     sessionmaker,
 )
 from sqlalchemy.orm.attributes import InstrumentedAttribute
+from sqlalchemy.sql.elements import ClauseElement
 from starlette.requests import Request
 from wtforms import Form
 
@@ -256,19 +257,21 @@ class ModelAdmin(BaseModelAdmin, metaclass=ModelAdminMeta):
     details_template: ClassVar[str] = "details.html"
     """Default details view template"""
 
-    async def _run_query(self, query, requires_commit: bool = False) -> Any:
+    async def _run_query(
+        self, query: ClauseElement, requires_commit: bool = False
+    ) -> Any:
         if self.async_engine:
             async with self.sessionmaker(expire_on_commit=False) as session:
                 result = await session.execute(query)
-                if requires_commit:
-                    await session.commit()
-                return result.scalars().all()
+                if not requires_commit:
+                    return result.scalars().all()
+                await session.commit()
         else:
             with self.sessionmaker(expire_on_commit=False) as session:
                 result = await anyio.to_thread.run_sync(session.execute, query)
-                if requires_commit:
-                    session.commit()
-                return result.scalars().all()
+                if not requires_commit:
+                    return result.scalars().all()
+                session.commit()
 
     async def count(self) -> int:
         query = select(func.count(self.pk_column))
@@ -394,7 +397,7 @@ class ModelAdmin(BaseModelAdmin, metaclass=ModelAdminMeta):
     async def delete_model(self, obj: Any) -> None:
         pk = inspect(obj).identity[0]  # Only support single PK
         query = delete(self.model).where(self.pk_column == pk)
-        await self._run_query(query, commit=True)
+        await self._run_query(query, requires_commit=True)
 
     async def insert_model(self, obj: type) -> Any:
         if not self.async_engine:
