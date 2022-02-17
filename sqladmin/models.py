@@ -11,7 +11,7 @@ from typing import (
 )
 
 import anyio
-from sqlalchemy import Column, delete, func, insert, inspect, select
+from sqlalchemy import Column, delete, func, inspect, select
 from sqlalchemy.engine.base import Engine
 from sqlalchemy.exc import NoInspectionAvailable
 from sqlalchemy.ext.asyncio import AsyncEngine
@@ -269,7 +269,6 @@ class ModelAdmin(BaseModelAdmin, metaclass=ModelAdminMeta):
                 if requires_commit:
                     session.commit()
                 return result.scalars().all()
-                
 
     async def count(self) -> int:
         query = select(func.count(self.pk_column))
