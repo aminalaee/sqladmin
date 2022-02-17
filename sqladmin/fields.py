@@ -4,6 +4,7 @@ import operator
 import time
 from typing import Any, Callable, Generator, List, Optional, Tuple, Union
 
+from sqlalchemy import inspect
 from wtforms import Form, ValidationError, fields, widgets
 
 from sqladmin import widgets as sqladmin_widgets
@@ -327,7 +328,8 @@ class QuerySelectField(fields.SelectFieldBase):
             yield ("__None", self.blank_text, self.data is None)
 
         for pk, obj in self._object_list:
-            yield (pk, self.get_label(obj), obj == self.data)
+            identity = inspect(self.data).identity[0] if self.data else None
+            yield (pk, self.get_label(obj), pk == str(identity))
 
     def process_formdata(self, valuelist: List[str]) -> None:
         if valuelist:

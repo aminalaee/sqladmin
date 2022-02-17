@@ -11,7 +11,7 @@ from typing import (
 )
 
 import anyio
-from sqlalchemy import Column, func, inspect, select
+from sqlalchemy import Column, func, inspect, select, update
 from sqlalchemy.engine.base import Engine
 from sqlalchemy.exc import NoInspectionAvailable
 from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession
@@ -244,6 +244,9 @@ class ModelAdmin(metaclass=ModelAdminMeta):
     details_template: ClassVar[str] = "details.html"
     """Default details view template"""
 
+    edit_template: ClassVar[str] = "create.html"
+    """Default edit template"""
+
     async def count(self) -> int:
         query = select(func.count(self.pk_column))
 
@@ -393,6 +396,14 @@ class ModelAdmin(metaclass=ModelAdminMeta):
                 await session.delete(obj)
 
     async def insert_model(self, obj: type) -> Any:
+        if isinstance(self.engine, Engine):
+            with self.sessionmaker.begin() as session:
+                await anyio.to_thread.run_sync(session.add, obj)
+        else:
+            async with self.sessionmaker.begin() as session:
+                session.add(obj)
+
+    async def update_model(self, obj: Any) -> None:
         if isinstance(self.engine, Engine):
             with self.sessionmaker.begin() as session:
                 await anyio.to_thread.run_sync(session.add, obj)

@@ -167,6 +167,12 @@ class Admin(BaseAdmin):
                     name="create",
                     methods=["GET", "POST"],
                 ),
+                Route(
+                    "/{identity}/edit/{pk}",
+                    endpoint=self.edit,
+                    name="edit",
+                    methods=["GET", "POST"],
+                ),
             ]
         )
         self.app.mount(base_url, app=router, name="admin")
@@ -262,6 +268,46 @@ class Admin(BaseAdmin):
 
         model = model_admin.model(**form.data)
         await model_admin.insert_model(model)
+
+        return RedirectResponse(
+            request.url_for("admin:list", identity=identity),
+            status_code=302,
+        )
+
+    async def edit(self, request: Request) -> Response:
+        """Edit model endpoint."""
+
+        identity = request.path_params["identity"]
+        model_admin = self._find_model_admin(identity)
+        if not model_admin.can_edit:
+            return self._unathorized_response(request)
+
+        model = await model_admin.get_model_by_pk(request.path_params["pk"])
+        if not model:
+            return self._not_found_response(request)
+
+        Form = await model_admin.scaffold_form()
+        form = Form(await request.form(), obj=model)
+
+        context = {
+            "request": request,
+            "model_admin": model_admin,
+            "form": form,
+        }
+
+        if request.method == "GET":
+            return self.templates.TemplateResponse(model_admin.edit_template, context)
+
+        if not form.validate():
+            return self.templates.TemplateResponse(
+                model_admin.edit_template,
+                context,
+                status_code=400,
+            )
+
+        form.populate_obj(model)
+
+        await model_admin.update_model(obj=model)
 
         return RedirectResponse(
             request.url_for("admin:list", identity=identity),
