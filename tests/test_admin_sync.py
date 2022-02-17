@@ -14,6 +14,7 @@ from sqlalchemy import (
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import Session, relationship, sessionmaker
 from starlette.applications import Starlette
+from starlette.requests import Request
 from starlette.testclient import TestClient
 
 from sqladmin import Admin, ModelAdmin
@@ -59,6 +60,12 @@ class Address(Base):
         return f"Address {self.id}"
 
 
+class Movie(Base):
+    __tablename__ = "movies"
+
+    id = Column(Integer, primary_key=True)
+
+
 @pytest.fixture(autouse=True, scope="function")
 def prepare_database() -> Generator[None, None, None]:
     Base.metadata.create_all(engine)
@@ -79,8 +86,17 @@ class AddressAdmin(ModelAdmin, model=Address):
     can_view_details = False
 
 
+class MovieAdmin(ModelAdmin, model=Movie):
+    def is_accessible(self, request: Request) -> bool:
+        return False
+
+    def is_visible(self, request: Request) -> bool:
+        return False
+
+
 admin.register_model(UserAdmin)
 admin.register_model(AddressAdmin)
+admin.register_model(MovieAdmin)
 
 
 def test_root_view() -> None:
@@ -198,7 +214,7 @@ def test_unauthorized_detail_page() -> None:
     with TestClient(app) as client:
         response = client.get("/admin/address/details/1")
 
-    assert response.status_code == 401
+    assert response.status_code == 403
 
 
 def test_not_found_detail_page() -> None:
@@ -262,7 +278,7 @@ def test_delete_endpoint_unauthorized_response() -> None:
     with TestClient(app) as client:
         response = client.delete("/admin/address/delete/1")
 
-    assert response.status_code == 401
+    assert response.status_code == 403
 
 
 def test_delete_endpoint_not_found_response() -> None:
@@ -293,7 +309,7 @@ def test_create_endpoint_unauthorized_response() -> None:
     with TestClient(app) as client:
         response = client.get("/admin/address/create")
 
-    assert response.status_code == 401
+    assert response.status_code == 403
 
     admin._model_admins[1].can_create = True  # type: ignore
 
@@ -377,3 +393,20 @@ def test_list_view_page_size_options() -> None:
     assert 'href="http://testserver/admin/user/list?page_size=25' in response.text
     assert 'href="http://testserver/admin/user/list?page_size=50' in response.text
     assert 'href="http://testserver/admin/user/list?page_size=100' in response.text
+
+
+def test_is_accessible_method() -> None:
+    with TestClient(app) as client:
+        response = client.get("/admin/movie/list")
+
+    assert response.status_code == 403
+
+
+def test_is_visible_method() -> None:
+    with TestClient(app) as client:
+        response = client.get("/admin")
+
+    assert response.status_code == 200
+    assert response.text.count('<span class="nav-link-title">Users</span>') == 1
+    assert response.text.count('<span class="nav-link-title">Addresses</span>') == 1
+    assert response.text.count("Movie") == 0
