@@ -11,7 +11,7 @@ from typing import (
 )
 
 import anyio
-from sqlalchemy import Column, func, inspect, select, update
+from sqlalchemy import Column, func, inspect, select
 from sqlalchemy.engine.base import Engine
 from sqlalchemy.exc import NoInspectionAvailable
 from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession
@@ -23,6 +23,7 @@ from sqlalchemy.orm import (
     sessionmaker,
 )
 from sqlalchemy.orm.attributes import InstrumentedAttribute
+from starlette.requests import Request
 from wtforms import Form
 
 from sqladmin.exceptions import InvalidColumnError, InvalidModelError
@@ -88,7 +89,25 @@ class ModelAdminMeta(type):
             return sessionmaker(bind=engine, class_=AsyncSession)
 
 
-class ModelAdmin(metaclass=ModelAdminMeta):
+class BaseModelAdmin:
+    def is_visible(self, request: Request) -> bool:
+        """Override this method if you want dynamically
+        hide or show administrative views from SQLAdmin menu structure
+        By default, item is visible in menu.
+        Both is_visible and is_accessible to be displayed in menu.
+        """
+        return True
+
+    def is_accessible(self, request: Request) -> bool:
+        """Override this method to add permission checks.
+        SQLAdmin does not make any assumptions about the authentication system
+        used in your application, so it is up to you to implement it.
+        By default, it will allow access for everyone.
+        """
+        return True
+
+
+class ModelAdmin(BaseModelAdmin, metaclass=ModelAdminMeta):
     """Base class for defining admnistrative behaviour for the model.
 
     ???+ usage
@@ -403,13 +422,36 @@ class ModelAdmin(metaclass=ModelAdminMeta):
             async with self.sessionmaker.begin() as session:
                 session.add(obj)
 
-    async def update_model(self, obj: Any) -> None:
+    async def update_model(self, pk: Any, data: Dict[str, Any]) -> None:
+        stmt = select(self.model).where(self.pk_column == pk)
+        relationships = inspect(self.model).relationships
+
+        for name in relationships.keys():
+            stmt = stmt.options(selectinload(name))
+
         if isinstance(self.engine, Engine):
             with self.sessionmaker.begin() as session:
-                await anyio.to_thread.run_sync(session.add, obj)
+                result = session.execute(stmt).scalars().first()
+                for name, value in data.items():
+                    if (
+                        name in relationships
+                        and relationships[name].direction.name != "MANYTOONE"
+                    ):
+                        # Load relationship objects into session
+                        session.add_all(value)
+                    setattr(result, name, value)
         else:
             async with self.sessionmaker.begin() as session:
-                session.add(obj)
+                result = await session.execute(stmt)
+                result = result.scalars().first()
+                for name, value in data.items():
+                    if (
+                        name in relationships
+                        and relationships[name].direction.name != "MANYTOONE"
+                    ):
+                        # Load relationship objects into session
+                        session.add_all(value)
+                    setattr(result, name, value)
 
     async def scaffold_form(self) -> Type[Form]:
         return await get_model_form(model=self.model, engine=self.engine)

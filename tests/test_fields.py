@@ -1,5 +1,5 @@
 from datetime import date, datetime
-from typing import Any, Generator, Tuple
+from typing import Any, Generator
 
 import pytest
 from sqlalchemy import Column, Integer, String, create_engine
@@ -181,19 +181,8 @@ def test_select2_tags_field() -> None:
 def test_query_select_field() -> None:
     object_list = [(str(i), User(id=i)) for i in range(5)]
 
-    def get_label(obj: Tuple[int, str]) -> str:
-        return getattr(obj, "__doc__", "")
-
     class F(Form):
         select = QuerySelectField(object_list=object_list, get_label="__doc__")
-
-    form = F()
-    assert form.validate() is False
-    assert '<select id="select" name="select">' in form.select()
-
-    form = F(DummyData(select=["1"]))
-    assert form.validate() is True
-    assert '<option selected value="1">' in form.select()
 
     form = F(DummyData(select=["1"]))
     form.select._object_list = []
@@ -203,12 +192,7 @@ def test_query_select_field() -> None:
         select = QuerySelectField(
             object_list=object_list,
             allow_blank=True,
-            get_label=get_label,
         )
-
-    form = F()
-    assert form.validate() is True
-    assert '<select id="select" name="select">' in form.select()
 
     form = F(DummyData(select=["__None"]))
     assert form.validate() is True
@@ -237,11 +221,3 @@ def test_query_select_multiple_field() -> None:
     form.select._object_list = object_list
     assert form.select.data == []
     assert form.validate() is False
-
-    form.select._invalid_formdata = False
-    form.select.data = ("100",)
-    assert form.validate() is False
-
-    assert '<select id="select" multiple name="select">' in form.select()
-    assert '<option value="1">' in form.select()
-    assert '<option value="2">' in form.select()
