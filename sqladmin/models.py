@@ -392,20 +392,20 @@ class ModelAdmin(BaseModelAdmin, metaclass=ModelAdminMeta):
         }
 
     async def delete_model(self, obj: Any) -> None:
-        if not self.async_engine:
-            with self.sessionmaker.begin() as session:
-                await anyio.to_thread.run_sync(session.delete, obj)
-        else:
+        if self.async_engine:
             async with self.sessionmaker.begin() as session:
                 await session.delete(obj)
+        else:
+            with self.sessionmaker.begin() as session:
+                await anyio.to_thread.run_sync(session.delete, obj)
 
     async def insert_model(self, obj: type) -> Any:
-        if not self.async_engine:
-            with self.sessionmaker.begin() as session:
-                await anyio.to_thread.run_sync(session.add, obj)
-        else:
+        if self.async_engine:
             async with self.sessionmaker.begin() as session:
                 session.add(obj)
+        else:
+            with self.sessionmaker.begin() as session:
+                await anyio.to_thread.run_sync(session.add, obj)
 
     async def scaffold_form(self) -> Type[Form]:
         return await get_model_form(model=self.model, engine=self.engine)
