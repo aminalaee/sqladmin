@@ -270,6 +270,14 @@ class ModelAdmin(BaseModelAdmin, metaclass=ModelAdminMeta):
         else:
             return await anyio.to_thread.run_sync(self._run_query_sync, query)
 
+    def _add_object_sync(self, obj: Any) -> None:
+        with self.sessionmaker.begin() as session:
+            session.add(obj)
+
+    def _delete_object_sync(self, obj: Any) -> None:
+        with self.sessionmaker.begin() as session:
+            session.delete(obj)
+
     async def count(self) -> int:
         query = select(func.count(self.pk_column))
         rows = await self._run_query(query)
@@ -396,16 +404,14 @@ class ModelAdmin(BaseModelAdmin, metaclass=ModelAdminMeta):
             async with self.sessionmaker.begin() as session:
                 await session.delete(obj)
         else:
-            with self.sessionmaker.begin() as session:
-                await anyio.to_thread.run_sync(session.delete, obj)
+            await anyio.to_thread.run_sync(self._delete_object_sync, obj)
 
     async def insert_model(self, obj: type) -> Any:
         if self.async_engine:
             async with self.sessionmaker.begin() as session:
                 session.add(obj)
         else:
-            with self.sessionmaker.begin() as session:
-                await anyio.to_thread.run_sync(session.add, obj)
+            await anyio.to_thread.run_sync(self._add_object_sync, obj)
 
     async def scaffold_form(self) -> Type[Form]:
         return await get_model_form(model=self.model, engine=self.engine)
