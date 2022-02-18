@@ -14,6 +14,7 @@ edit_uri: ""
 nav:
   - Introduction: 'index.md'
   - Configurations: 'configurations.md'
+  - Authentication: 'authentication.md'
   - Working with Templates: 'working_with_templates.md'
   - API Reference:
     - Application: 'api_reference/application.md'

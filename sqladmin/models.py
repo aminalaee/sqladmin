@@ -255,13 +255,13 @@ class ModelAdmin(BaseModelAdmin, metaclass=ModelAdminMeta):
 
     # Templates
     list_template: ClassVar[str] = "list.html"
-    """Default list view template"""
+    """List view template. Default is `list.html`."""
 
     create_template: ClassVar[str] = "create.html"
-    """Default create template"""
+    """Create view template. Default is `create.html`."""
 
     details_template: ClassVar[str] = "details.html"
-    """Default details view template"""
+    """Details view template. Default is `details.html`."""
 
     async def count(self) -> int:
         query = select(func.count(self.pk_column))
