@@ -11,7 +11,7 @@ from typing import (
 )
 
 import anyio
-from sqlalchemy import Column, delete, func, inspect, select
+from sqlalchemy import Column, func, inspect, select
 from sqlalchemy.engine.base import Engine
 from sqlalchemy.exc import NoInspectionAvailable
 from sqlalchemy.ext.asyncio import AsyncEngine
@@ -257,21 +257,18 @@ class ModelAdmin(BaseModelAdmin, metaclass=ModelAdminMeta):
     details_template: ClassVar[str] = "details.html"
     """Default details view template"""
 
-    async def _run_query(
-        self, query: ClauseElement, requires_commit: bool = False
-    ) -> Any:
+    def _run_query_sync(self, query: ClauseElement) -> Any:
+        with self.sessionmaker(expire_on_commit=False) as session:
+            result = session.execute(query)
+            return result.scalars().all()
+
+    async def _run_query(self, query: ClauseElement) -> Any:
         if self.async_engine:
             async with self.sessionmaker(expire_on_commit=False) as session:
                 result = await session.execute(query)
-                if not requires_commit:
-                    return result.scalars().all()
-                await session.commit()
+                return result.scalars().all()
         else:
-            with self.sessionmaker(expire_on_commit=False) as session:
-                result = await anyio.to_thread.run_sync(session.execute, query)
-                if not requires_commit:
-                    return result.scalars().all()
-                session.commit()
+            return await anyio.to_thread.run_sync(self._run_query_sync, query)
 
     async def count(self) -> int:
         query = select(func.count(self.pk_column))
@@ -395,9 +392,12 @@ class ModelAdmin(BaseModelAdmin, metaclass=ModelAdminMeta):
         }
 
     async def delete_model(self, obj: Any) -> None:
-        pk = inspect(obj).identity[0]  # Only support single PK
-        query = delete(self.model).where(self.pk_column == pk)
-        await self._run_query(query, requires_commit=True)
+        if not self.async_engine:
+            with self.sessionmaker.begin() as session:
+                await anyio.to_thread.run_sync(session.delete, obj)
+        else:
+            async with self.sessionmaker.begin() as session:
+                await session.delete(obj)
 
     async def insert_model(self, obj: type) -> Any:
         if not self.async_engine:
