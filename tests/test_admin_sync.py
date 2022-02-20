@@ -321,7 +321,7 @@ def test_create_endpoint_get_form() -> None:
         in response.text
     )
     assert (
-        '<input class="form-control" id="name" maxlength="16" name="name" type="text" value="">'
+        'id="name" maxlength="16" name="name" type="text" value="">'
         in response.text
     )
     assert (

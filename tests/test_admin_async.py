@@ -463,7 +463,7 @@ async def test_update_get_page() -> None:
     )
 
     with TestClient(app) as client:
-        response = client.get(f"/admin/address/edit/1")
+        response = client.get("/admin/address/edit/1")
 
     assert response.text.count('<select class="form-control" id="user" name="user">')
     assert response.text.count('<option value="__None"></option>')
