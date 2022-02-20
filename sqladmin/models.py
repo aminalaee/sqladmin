@@ -266,6 +266,18 @@ class ModelAdmin(BaseModelAdmin, metaclass=ModelAdminMeta):
     edit_template: ClassVar[str] = "edit.html"
     """Edit view template. Default is `edit.html`."""
 
+    def _update_modeL_sync(self, pk: Any, data: Dict[str, Any]) -> None:
+        stmt = select(self.model).where(self.pk_column == pk)
+        relationships = inspect(self.model).relationships
+
+        with self.sessionmaker.begin() as session:
+            result = session.execute(stmt).scalars().first()
+            for name, value in data.items():
+                if name in relationships and isinstance(value, list):
+                    # Load relationship objects into session
+                    session.add_all(value)
+                setattr(result, name, value)
+
     async def count(self) -> int:
         query = select(func.count(self.pk_column))
 
@@ -423,32 +435,20 @@ class ModelAdmin(BaseModelAdmin, metaclass=ModelAdminMeta):
                 session.add(obj)
 
     async def update_model(self, pk: Any, data: Dict[str, Any]) -> None:
-        stmt = select(self.model).where(self.pk_column == pk)
-        relationships = inspect(self.model).relationships
-
-        for name in relationships.keys():
-            stmt = stmt.options(selectinload(name))
-
         if isinstance(self.engine, Engine):
-            with self.sessionmaker.begin() as session:
-                result = session.execute(stmt).scalars().first()
-                for name, value in data.items():
-                    if (
-                        name in relationships
-                        and relationships[name].direction.name != "MANYTOONE"
-                    ):
-                        # Load relationship objects into session
-                        session.add_all(value)
-                    setattr(result, name, value)
+            await anyio.to_thread.run_sync(self._update_modeL_sync, pk, data)
         else:
+            stmt = select(self.model).where(self.pk_column == pk)
+            relationships = inspect(self.model).relationships
+
+            for name in relationships.keys():
+                stmt = stmt.options(selectinload(name))
+
             async with self.sessionmaker.begin() as session:
                 result = await session.execute(stmt)
                 result = result.scalars().first()
                 for name, value in data.items():
-                    if (
-                        name in relationships
-                        and relationships[name].direction.name != "MANYTOONE"
-                    ):
+                    if name in relationships and isinstance(value, list):
                         # Load relationship objects into session
                         session.add_all(value)
                     setattr(result, name, value)
