@@ -475,7 +475,7 @@ def test_update_submit_form() -> None:
     assert user.addresses == []
 
     with TestClient(app) as client:
-        data = {"name": "Jack", "addresses": address.id}
+        data = {"name": "Jack", "addresses": str(address.id)}
         response = client.post("/admin/user/edit/1", data=data)
 
     session.refresh(user)
