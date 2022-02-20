@@ -320,10 +320,7 @@ def test_create_endpoint_get_form() -> None:
         '<select class="form-control" id="addresses" multiple name="addresses">'
         in response.text
     )
-    assert (
-        'id="name" maxlength="16" name="name" type="text" value="">'
-        in response.text
-    )
+    assert 'id="name" maxlength="16" name="name" type="text" value="">' in response.text
     assert (
         '<input class="form-control" id="email" name="email" type="text" value="">'
         in response.text
