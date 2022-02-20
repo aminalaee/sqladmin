@@ -492,7 +492,7 @@ async def test_update_submit_form() -> None:
     assert user.addresses == []
 
     with TestClient(app) as client:
-        data = {"name": "Jack", "addresses": [1]}
+        data = {"name": "Jack", "addresses": 1}
         response = client.post("/admin/user/edit/1", data=data)
 
     stmt = select(Address).limit(1)
