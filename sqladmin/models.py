@@ -263,7 +263,7 @@ class ModelAdmin(BaseModelAdmin, metaclass=ModelAdminMeta):
     details_template: ClassVar[str] = "details.html"
     """Default details view template"""
 
-    edit_template: ClassVar[str] = "create.html"
+    edit_template: ClassVar[str] = "edit.html"
     """Default edit template"""
 
     async def count(self) -> int:

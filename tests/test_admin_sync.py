@@ -433,7 +433,7 @@ def test_update_get_page() -> None:
     session.commit()
 
     with TestClient(app) as client:
-        response = client.get(f"/admin/user/edit/1")
+        response = client.get("/admin/user/edit/1")
 
     assert response.status_code == 200
     assert (
@@ -445,13 +445,13 @@ def test_update_get_page() -> None:
     assert response.text.count('<option selected value="1">Address 1</option>') == 1
     assert (
         response.text.count(
-            '<input class="form-control" id="name" maxlength="16" name="name" type="text" value="Joe">'
+            'id="name" maxlength="16" name="name" type="text" value="Joe">'
         )
         == 1
     )
 
     with TestClient(app) as client:
-        response = client.get(f"/admin/address/edit/1")
+        response = client.get("/admin/address/edit/1")
 
     assert response.text.count('<select class="form-control" id="user" name="user">')
     assert response.text.count('<option value="__None"></option>')
@@ -469,7 +469,7 @@ def test_update_submit_form() -> None:
 
     with TestClient(app) as client:
         data = {"name": "Jack"}
-        response = client.post(f"/admin/user/edit/1", data=data)
+        response = client.post("/admin/user/edit/1", data=data)
 
     assert response.status_code == 302
 
@@ -479,7 +479,7 @@ def test_update_submit_form() -> None:
 
     with TestClient(app) as client:
         data = {"name": "Jack", "addresses": [address.id]}
-        response = client.post(f"/admin/user/edit/1", data=data)
+        response = client.post("/admin/user/edit/1", data=data)
 
     session.refresh(user)
     assert user.name == "Jack"
@@ -487,6 +487,6 @@ def test_update_submit_form() -> None:
 
     with TestClient(app) as client:
         data = {"name": "Jack" * 10}
-        response = client.post(f"/admin/user/edit/1", data=data)
+        response = client.post("/admin/user/edit/1", data=data)
 
     assert response.status_code == 400
