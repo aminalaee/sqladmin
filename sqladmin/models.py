@@ -264,7 +264,7 @@ class ModelAdmin(BaseModelAdmin, metaclass=ModelAdminMeta):
     """Details view template. Default is `details.html`."""
 
     edit_template: ClassVar[str] = "edit.html"
-    """Default edit template"""
+    """Edit view template. Default is `edit.html`."""
 
     async def count(self) -> int:
         query = select(func.count(self.pk_column))
