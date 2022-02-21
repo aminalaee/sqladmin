@@ -429,9 +429,7 @@ class ModelAdmin(BaseModelAdmin, metaclass=ModelAdminMeta):
             await anyio.to_thread.run_sync(self._add_object_sync, obj)
 
     async def update_model(self, pk: Any, data: Dict[str, Any]) -> None:
-        if isinstance(self.engine, Engine):
-            await anyio.to_thread.run_sync(self._update_modeL_sync, pk, data)
-        else:
+        if self.async_engine:
             stmt = select(self.model).where(self.pk_column == pk)
             relationships = inspect(self.model).relationships
 
@@ -446,6 +444,8 @@ class ModelAdmin(BaseModelAdmin, metaclass=ModelAdminMeta):
                         # Load relationship objects into session
                         session.add_all(value)
                     setattr(result, name, value)
+        else:
+            await anyio.to_thread.run_sync(self._update_modeL_sync, pk, data)
 
     async def scaffold_form(self) -> Type[Form]:
         return await get_model_form(model=self.model, engine=self.engine)
