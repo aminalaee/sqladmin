@@ -152,6 +152,7 @@ The pages available are:
 * `list_template`: Template to use for models list page. Default is `list.html`.
 * `create_template`: Template to use for model creation page. Default is `create.html`.
 * `details_template`: Template to use for model details page. Default is `details.html`.
+* `edit_template`: Template to use for model edit page. Default is `edit.html`.
 
 !!! example
 

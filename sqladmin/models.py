@@ -263,6 +263,21 @@ class ModelAdmin(BaseModelAdmin, metaclass=ModelAdminMeta):
     details_template: ClassVar[str] = "details.html"
     """Details view template. Default is `details.html`."""
 
+    edit_template: ClassVar[str] = "edit.html"
+    """Edit view template. Default is `edit.html`."""
+
+    def _update_modeL_sync(self, pk: Any, data: Dict[str, Any]) -> None:
+        stmt = select(self.model).where(self.pk_column == pk)
+        relationships = inspect(self.model).relationships
+
+        with self.sessionmaker.begin() as session:
+            result = session.execute(stmt).scalars().first()
+            for name, value in data.items():
+                if name in relationships and isinstance(value, list):
+                    # Load relationship objects into session
+                    session.add_all(value)
+                setattr(result, name, value)
+
     async def count(self) -> int:
         query = select(func.count(self.pk_column))
 
@@ -418,6 +433,25 @@ class ModelAdmin(BaseModelAdmin, metaclass=ModelAdminMeta):
         else:
             async with self.sessionmaker.begin() as session:
                 session.add(obj)
+
+    async def update_model(self, pk: Any, data: Dict[str, Any]) -> None:
+        if isinstance(self.engine, Engine):
+            await anyio.to_thread.run_sync(self._update_modeL_sync, pk, data)
+        else:
+            stmt = select(self.model).where(self.pk_column == pk)
+            relationships = inspect(self.model).relationships
+
+            for name in relationships.keys():
+                stmt = stmt.options(selectinload(name))
+
+            async with self.sessionmaker.begin() as session:
+                result = await session.execute(stmt)
+                result = result.scalars().first()
+                for name, value in data.items():
+                    if name in relationships and isinstance(value, list):
+                        # Load relationship objects into session
+                        session.add_all(value)
+                    setattr(result, name, value)
 
     async def scaffold_form(self) -> Type[Form]:
         return await get_model_form(model=self.model, engine=self.engine)
