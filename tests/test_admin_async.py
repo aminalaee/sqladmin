@@ -32,7 +32,7 @@ class User(Base):
     __tablename__ = "users"
 
     id = Column(Integer, primary_key=True)
-    name = Column(String)
+    name = Column(String(length=16))
     email = Column(String)
     date_of_birth = Column(Date)
 
@@ -79,12 +79,13 @@ class UserAdmin(ModelAdmin, model=User):
 class AddressAdmin(ModelAdmin, model=Address):
     column_list = ["id", "user_id", "user"]
     name_plural = "Addresses"
+
+
+class MovieAdmin(ModelAdmin, model=Movie):
     can_edit = False
     can_delete = False
     can_view_details = False
 
-
-class MovieAdmin(ModelAdmin, model=Movie):
     def is_accessible(self, request: Request) -> bool:
         return False
 
@@ -203,14 +204,14 @@ async def test_list_page_permission_actions() -> None:
         response = client.get("/admin/address/list")
 
     assert response.status_code == 200
-    assert response.text.count('<i class="fas fa-eye"></i>') == 0
+    assert response.text.count('<i class="fas fa-eye"></i>') == 10
     assert response.text.count('<i class="fas fa-pencil"></i>') == 0
-    assert response.text.count('<i class="fas fa-trash"></i>') == 0
+    assert response.text.count('<i class="fas fa-trash"></i>') == 10
 
 
 async def test_unauthorized_detail_page() -> None:
     with TestClient(app) as client:
-        response = client.get("/admin/address/details/1")
+        response = client.get("/admin/movie/details/1")
 
     assert response.status_code == 403
 
@@ -274,7 +275,7 @@ async def test_column_labels() -> None:
 
 async def test_delete_endpoint_unauthorized_response() -> None:
     with TestClient(app) as client:
-        response = client.delete("/admin/address/delete/1")
+        response = client.delete("/admin/movie/delete/1")
 
     assert response.status_code == 403
 
@@ -310,14 +311,10 @@ async def test_delete_endpoint() -> None:
 
 
 async def test_create_endpoint_unauthorized_response() -> None:
-    admin._model_admins[1].can_create = False  # type: ignore
-
     with TestClient(app) as client:
-        response = client.get("/admin/address/create")
+        response = client.get("/admin/movie/create")
 
     assert response.status_code == 403
-
-    admin._model_admins[1].can_create = True  # type: ignore
 
 
 async def test_create_endpoint_get_form() -> None:
@@ -330,7 +327,7 @@ async def test_create_endpoint_get_form() -> None:
         in response.text
     )
     assert (
-        '<input class="form-control" id="name" name="name" type="text" value="">'
+        '<input class="form-control" id="name" maxlength="16" name="name"'
         in response.text
     )
     assert (
@@ -422,3 +419,89 @@ async def test_is_visible_method() -> None:
     assert response.text.count('<span class="nav-link-title">Users</span>') == 1
     assert response.text.count('<span class="nav-link-title">Addresses</span>') == 1
     assert response.text.count("Movie") == 0
+
+
+async def test_edit_endpoint_unauthorized_response() -> None:
+    with TestClient(app) as client:
+        response = client.get("/admin/movie/edit/1")
+
+    assert response.status_code == 403
+
+
+async def test_not_found_edit_page() -> None:
+    with TestClient(app) as client:
+        response = client.get("/admin/user/edit/1")
+
+    assert response.status_code == 404
+
+
+async def test_update_get_page() -> None:
+    user = User(name="Joe")
+    session.add(user)
+    await session.flush()
+
+    address = Address(user=user)
+    session.add(address)
+    await session.commit()
+
+    with TestClient(app) as client:
+        response = client.get("/admin/user/edit/1")
+
+    assert response.status_code == 200
+    assert (
+        response.text.count(
+            '<select class="form-control" id="addresses" multiple name="addresses">'
+        )
+        == 1
+    )
+    assert response.text.count('<option selected value="1">Address 1</option>') == 1
+    assert (
+        response.text.count(
+            'id="name" maxlength="16" name="name" type="text" value="Joe">'
+        )
+        == 1
+    )
+
+    with TestClient(app) as client:
+        response = client.get("/admin/address/edit/1")
+
+    assert response.text.count('<select class="form-control" id="user" name="user">')
+    assert response.text.count('<option value="__None"></option>')
+    assert response.text.count('<option selected value="1">User 1</option>')
+
+
+async def test_update_submit_form() -> None:
+    user = User(name="Joe")
+    session.add(user)
+    await session.flush()
+
+    address = Address(user=user)
+    session.add(address)
+    await session.commit()
+
+    with TestClient(app) as client:
+        data = {"name": "Jack"}
+        response = client.post("/admin/user/edit/1", data=data)
+
+    assert response.status_code == 302
+
+    stmt = select(User).limit(1).options(selectinload(User.addresses))
+    result = await session.execute(stmt)
+    user = result.scalar_one()
+    assert user.name == "Jack"
+    assert user.addresses == []
+
+    with TestClient(app) as client:
+        data = {"name": "Jack", "addresses": "1"}
+        response = client.post("/admin/user/edit/1", data=data)
+
+    stmt = select(Address).limit(1)
+    result = await session.execute(stmt)
+    address = result.scalar_one()
+    assert address.user_id == 1
+
+    with TestClient(app) as client:
+        data = {"name": "Jack" * 10}
+        response = client.post("/admin/user/edit/1", data=data)
+
+    assert response.status_code == 400

@@ -120,6 +120,11 @@ class BaseAdminView(BaseAdmin):
         if not model_admin.can_delete or not model_admin.is_accessible(request):
             raise HTTPException(status_code=403)
 
+    async def _edit(self, request: Request) -> None:
+        model_admin = self._find_model_admin(request.path_params["identity"])
+        if not model_admin.can_edit or not model_admin.is_accessible(request):
+            raise HTTPException(status_code=403)
+
 
 class Admin(BaseAdminView):
     """Main entrypoint to admin interface.
@@ -197,6 +202,12 @@ class Admin(BaseAdminView):
                     "/{identity}/create",
                     endpoint=self.create,
                     name="create",
+                    methods=["GET", "POST"],
+                ),
+                Route(
+                    "/{identity}/edit/{pk}",
+                    endpoint=self.edit,
+                    name="edit",
                     methods=["GET", "POST"],
                 ),
             ],
@@ -295,6 +306,43 @@ class Admin(BaseAdminView):
 
         model = model_admin.model(**form.data)
         await model_admin.insert_model(model)
+
+        return RedirectResponse(
+            request.url_for("admin:list", identity=identity),
+            status_code=302,
+        )
+
+    async def edit(self, request: Request) -> Response:
+        """Edit model endpoint."""
+
+        await self._edit(request)
+
+        identity = request.path_params["identity"]
+        model_admin = self._find_model_admin(identity)
+
+        model = await model_admin.get_model_by_pk(request.path_params["pk"])
+        if not model:
+            raise HTTPException(status_code=404)
+
+        Form = await model_admin.scaffold_form()
+        context = {
+            "request": request,
+            "model_admin": model_admin,
+        }
+
+        if request.method == "GET":
+            context["form"] = Form(obj=model)
+            return self.templates.TemplateResponse(model_admin.edit_template, context)
+
+        form = Form(await request.form())
+        if not form.validate():
+            return self.templates.TemplateResponse(
+                model_admin.edit_template,
+                context,
+                status_code=400,
+            )
+
+        await model_admin.update_model(pk=request.path_params["pk"], data=form.data)
 
         return RedirectResponse(
             request.url_for("admin:list", identity=identity),
