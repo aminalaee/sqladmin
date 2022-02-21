@@ -14,15 +14,15 @@ import anyio
 from sqlalchemy import Column, func, inspect, select
 from sqlalchemy.engine.base import Engine
 from sqlalchemy.exc import NoInspectionAvailable
-from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession
+from sqlalchemy.ext.asyncio import AsyncEngine
 from sqlalchemy.orm import (
     ColumnProperty,
     RelationshipProperty,
-    Session,
     selectinload,
     sessionmaker,
 )
 from sqlalchemy.orm.attributes import InstrumentedAttribute
+from sqlalchemy.sql.elements import ClauseElement
 from starlette.requests import Request
 from wtforms import Form
 
@@ -81,13 +81,6 @@ class ModelAdminMeta(type):
         if all(k in attrs for k in keys):
             raise AssertionError(f"Cannot use {' and '.join(keys)} together.")
 
-    @classmethod
-    def _get_sessionmaker(mcls, engine: Union[Engine, AsyncEngine]) -> None:
-        if isinstance(engine, Engine):
-            return sessionmaker(bind=engine, class_=Session)
-        else:
-            return sessionmaker(bind=engine, class_=AsyncSession)
-
 
 class BaseModelAdmin:
     def is_visible(self, request: Request) -> bool:
@@ -122,12 +115,13 @@ class ModelAdmin(BaseModelAdmin, metaclass=ModelAdminMeta):
     """
 
     model: ClassVar[type]
-    engine: ClassVar[Union[Engine, AsyncEngine]]
-    sessionmaker: ClassVar[sessionmaker]
 
     # Internals
     pk_column: ClassVar[Column]
     identity: ClassVar[str]
+    sessionmaker: ClassVar[sessionmaker]
+    engine: ClassVar[Union[Engine, AsyncEngine]]
+    async_engine: ClassVar[bool]
 
     # Metadata
     name: ClassVar[str] = ""
@@ -266,6 +260,27 @@ class ModelAdmin(BaseModelAdmin, metaclass=ModelAdminMeta):
     edit_template: ClassVar[str] = "edit.html"
     """Edit view template. Default is `edit.html`."""
 
+    def _run_query_sync(self, stmt: ClauseElement) -> Any:
+        with self.sessionmaker(expire_on_commit=False) as session:
+            result = session.execute(stmt)
+            return result.scalars().all()
+
+    async def _run_query(self, stmt: ClauseElement) -> Any:
+        if self.async_engine:
+            async with self.sessionmaker(expire_on_commit=False) as session:
+                result = await session.execute(stmt)
+                return result.scalars().all()
+        else:
+            return await anyio.to_thread.run_sync(self._run_query_sync, stmt)
+
+    def _add_object_sync(self, obj: Any) -> None:
+        with self.sessionmaker.begin() as session:
+            session.add(obj)
+
+    def _delete_object_sync(self, obj: Any) -> None:
+        with self.sessionmaker.begin() as session:
+            session.delete(obj)
+
     def _update_modeL_sync(self, pk: Any, data: Dict[str, Any]) -> None:
         stmt = select(self.model).where(self.pk_column == pk)
         relationships = inspect(self.model).relationships
@@ -279,22 +294,15 @@ class ModelAdmin(BaseModelAdmin, metaclass=ModelAdminMeta):
                 setattr(result, name, value)
 
     async def count(self) -> int:
-        query = select(func.count(self.pk_column))
-
-        if isinstance(self.engine, Engine):
-            with self.sessionmaker() as session:
-                result = await anyio.to_thread.run_sync(session.execute, query)
-                return result.scalar_one()
-        else:
-            async with self.sessionmaker() as session:
-                result = await session.execute(query)
-                return result.scalar_one()
+        stmt = select(func.count(self.pk_column))
+        rows = await self._run_query(stmt)
+        return rows[0]
 
     async def list(self, page: int, page_size: int) -> Pagination:
         page_size = min(page_size or self.page_size, max(self.page_size_options))
 
         count = await self.count()
-        query = (
+        stmt = (
             select(self.model)
             .order_by(self.pk_column)
             .limit(page_size)
@@ -303,41 +311,29 @@ class ModelAdmin(BaseModelAdmin, metaclass=ModelAdminMeta):
 
         for _, attr in self.get_list_columns():
             if isinstance(attr, RelationshipProperty):
-                query = query.options(selectinload(attr.key))
+                stmt = stmt.options(selectinload(attr.key))
 
+        rows = await self._run_query(stmt)
         pagination = Pagination(
-            rows=[],
+            rows=rows,
             page=page,
             page_size=page_size,
             count=count,
         )
 
-        if isinstance(self.engine, Engine):
-            with self.sessionmaker() as session:
-                items = await anyio.to_thread.run_sync(session.execute, query)
-                pagination.rows = items.scalars().all()
-                return pagination
-        else:
-            async with self.sessionmaker() as session:
-                items = await session.execute(query)
-                pagination.rows = items.scalars().all()
-                return pagination
+        return pagination
 
     async def get_model_by_pk(self, value: Any) -> Any:
-        query = select(self.model).where(self.pk_column == value)
+        stmt = select(self.model).where(self.pk_column == value)
 
         for _, attr in self.get_details_columns():
             if isinstance(attr, RelationshipProperty):
-                query = query.options(selectinload(attr.key))
+                stmt = stmt.options(selectinload(attr.key))
 
-        if isinstance(self.engine, Engine):
-            with self.sessionmaker() as session:
-                result = await anyio.to_thread.run_sync(session.execute, query)
-                return result.scalar_one_or_none()
-        else:
-            async with self.sessionmaker() as session:
-                result = await session.execute(query)
-                return result.scalar_one_or_none()
+        rows = await self._run_query(stmt)
+        if rows:
+            return rows[0]
+        return None
 
     def get_attr_value(
         self, obj: type, attr: Union[Column, ColumnProperty, RelationshipProperty]
@@ -418,26 +414,22 @@ class ModelAdmin(BaseModelAdmin, metaclass=ModelAdminMeta):
             for column_label, value in self.column_labels.items()
         }
 
-    async def delete_model(self, obj: type) -> None:
-        if isinstance(self.engine, Engine):
-            with self.sessionmaker.begin() as session:
-                await anyio.to_thread.run_sync(session.delete, obj)
-        else:
+    async def delete_model(self, obj: Any) -> None:
+        if self.async_engine:
             async with self.sessionmaker.begin() as session:
                 await session.delete(obj)
+        else:
+            await anyio.to_thread.run_sync(self._delete_object_sync, obj)
 
     async def insert_model(self, obj: type) -> Any:
-        if isinstance(self.engine, Engine):
-            with self.sessionmaker.begin() as session:
-                await anyio.to_thread.run_sync(session.add, obj)
-        else:
+        if self.async_engine:
             async with self.sessionmaker.begin() as session:
                 session.add(obj)
+        else:
+            await anyio.to_thread.run_sync(self._add_object_sync, obj)
 
     async def update_model(self, pk: Any, data: Dict[str, Any]) -> None:
-        if isinstance(self.engine, Engine):
-            await anyio.to_thread.run_sync(self._update_modeL_sync, pk, data)
-        else:
+        if self.async_engine:
             stmt = select(self.model).where(self.pk_column == pk)
             relationships = inspect(self.model).relationships
 
@@ -452,6 +444,8 @@ class ModelAdmin(BaseModelAdmin, metaclass=ModelAdminMeta):
                         # Load relationship objects into session
                         session.add_all(value)
                     setattr(result, name, value)
+        else:
+            await anyio.to_thread.run_sync(self._update_modeL_sync, pk, data)
 
     async def scaffold_form(self) -> Type[Form]:
         return await get_model_form(model=self.model, engine=self.engine)
