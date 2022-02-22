@@ -22,3 +22,5 @@
         - edit_template
         - is_visible
         - is_accessible
+        - column_searchable_list
+        - search_placeholder

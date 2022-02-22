@@ -507,6 +507,10 @@ class ModelAdmin(BaseModelAdmin, metaclass=ModelAdminMeta):
             ```
         """
 
-        search_fields = [self.get_model_attr(attr) for attr in self.column_searchable_list]
-        field_names = [self._column_labels.get(field, field.key) for field in search_fields]
+        search_fields = [
+            self.get_model_attr(attr) for attr in self.column_searchable_list
+        ]
+        field_names = [
+            self._column_labels.get(field, field.key) for field in search_fields
+        ]
         return ", ".join(field_names)
