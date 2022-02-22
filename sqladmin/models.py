@@ -11,7 +11,7 @@ from typing import (
 )
 
 import anyio
-from sqlalchemy import Column, func, inspect, select
+from sqlalchemy import Column, func, inspect, or_, select
 from sqlalchemy.engine.base import Engine
 from sqlalchemy.exc import NoInspectionAvailable
 from sqlalchemy.ext.asyncio import AsyncEngine
@@ -208,6 +208,18 @@ class ModelAdmin(BaseModelAdmin, metaclass=ModelAdminMeta):
         ```
     """
 
+    column_searchable_list: ClassVar[Sequence[Union[str, InstrumentedAttribute]]] = []
+    """A collection of the searchable columns.
+    It is assumed that only text-only fields are searchable,
+    but it is up to the model implementation to decide.
+
+    ???+ example
+        ```python
+        class UserAdmin(ModelAdmin, model=User):
+            column_searchable_list = [User.name]
+        ```
+    """
+
     # Details page
     column_details_list: ClassVar[Sequence[Union[str, InstrumentedAttribute]]] = []
     """List of columns to display in `Detail` page.
@@ -260,6 +272,38 @@ class ModelAdmin(BaseModelAdmin, metaclass=ModelAdminMeta):
     edit_template: ClassVar[str] = "edit.html"
     """Edit view template. Default is `edit.html`."""
 
+    def __init__(self) -> None:
+        self._column_labels = self.get_column_labels()
+
+        self._list_attrs = self.get_list_columns()
+        self._list_columns = [
+            (name, attr)
+            for (name, attr) in self._list_attrs
+            if isinstance(attr, ColumnProperty)
+        ]
+        self._list_relations = [
+            (name, attr)
+            for (name, attr) in self._list_attrs
+            if isinstance(attr, RelationshipProperty)
+        ]
+
+        self._details_attrs = self.get_details_columns()
+        self._details_columns = [
+            (name, attr)
+            for (name, attr) in self._details_attrs
+            if isinstance(attr, ColumnProperty)
+        ]
+        self._details_relations = [
+            (name, attr)
+            for (name, attr) in self._details_attrs
+            if isinstance(attr, RelationshipProperty)
+        ]
+
+        self._search_fields = [
+            getattr(self.model, self.get_model_attr(attr).key)
+            for attr in self.column_searchable_list or []
+        ]
+
     def _run_query_sync(self, stmt: ClauseElement) -> Any:
         with self.sessionmaker(expire_on_commit=False) as session:
             result = session.execute(stmt)
@@ -298,7 +342,7 @@ class ModelAdmin(BaseModelAdmin, metaclass=ModelAdminMeta):
         rows = await self._run_query(stmt)
         return rows[0]
 
-    async def list(self, page: int, page_size: int) -> Pagination:
+    async def list(self, page: int, page_size: int, search: str) -> Pagination:
         page_size = min(page_size or self.page_size, max(self.page_size_options))
 
         count = await self.count()
@@ -309,9 +353,12 @@ class ModelAdmin(BaseModelAdmin, metaclass=ModelAdminMeta):
             .offset((page - 1) * page_size)
         )
 
-        for _, attr in self.get_list_columns():
-            if isinstance(attr, RelationshipProperty):
-                stmt = stmt.options(selectinload(attr.key))
+        for _, relation in self._list_relations:
+            stmt = stmt.options(selectinload(relation.key))
+
+        if search:
+            expressions = [attr.ilike(f"%{search}%") for attr in self._search_fields]
+            stmt = stmt.filter(or_(*expressions))
 
         rows = await self._run_query(stmt)
         pagination = Pagination(
@@ -326,9 +373,8 @@ class ModelAdmin(BaseModelAdmin, metaclass=ModelAdminMeta):
     async def get_model_by_pk(self, value: Any) -> Any:
         stmt = select(self.model).where(self.pk_column == value)
 
-        for _, attr in self.get_details_columns():
-            if isinstance(attr, RelationshipProperty):
-                stmt = stmt.options(selectinload(attr.key))
+        for _, relation in self._details_relations:
+            stmt = stmt.options(selectinload(relation.key))
 
         rows = await self._run_query(stmt)
         if rows:
@@ -385,8 +431,7 @@ class ModelAdmin(BaseModelAdmin, metaclass=ModelAdminMeta):
         else:
             attrs = [getattr(self.model, self.pk_column.name).prop]
 
-        labels = self.get_column_labels()
-        return [(labels.get(attr, attr.key), attr) for attr in attrs]
+        return [(self._column_labels.get(attr, attr.key), attr) for attr in attrs]
 
     def get_details_columns(self) -> List[Tuple[str, Column]]:
         """Get list of columns to display in Detail page."""
@@ -405,8 +450,7 @@ class ModelAdmin(BaseModelAdmin, metaclass=ModelAdminMeta):
         else:
             attrs = self.get_model_attributes()
 
-        labels = self.get_column_labels()
-        return [(labels.get(attr, attr.key), attr) for attr in attrs]
+        return [(self._column_labels.get(attr, attr.key), attr) for attr in attrs]
 
     def get_column_labels(self) -> Dict[Column, str]:
         return {
@@ -449,3 +493,20 @@ class ModelAdmin(BaseModelAdmin, metaclass=ModelAdminMeta):
 
     async def scaffold_form(self) -> Type[Form]:
         return await get_model_form(model=self.model, engine=self.engine)
+
+    def search_placeholder(self) -> str:
+        """Return search placeholder text.
+
+        ???+ example
+            ```python
+            class UserAdmin(ModelAdmin, model=User):
+                column_labels = dict(name="Name", email="Email")
+                column_searchable_list = [User.name, User.email]
+
+            # placeholder is: "Name, Email"
+            ```
+        """
+
+        search_fields = [self.get_model_attr(attr) for attr in self.column_searchable_list]
+        field_names = [self._column_labels.get(field, field.key) for field in search_fields]
+        return ", ".join(field_names)

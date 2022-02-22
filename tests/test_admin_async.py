@@ -74,6 +74,7 @@ async def prepare_database() -> AsyncGenerator[None, None]:
 class UserAdmin(ModelAdmin, model=User):
     column_list = [User.id, User.name, User.email, User.addresses]
     column_labels = {User.email: "Email"}
+    column_searchable_list = [User.name]
 
 
 class AddressAdmin(ModelAdmin, model=Address):
@@ -505,3 +506,32 @@ async def test_update_submit_form() -> None:
         response = client.post("/admin/user/edit/1", data=data)
 
     assert response.status_code == 400
+
+
+async def test_searchable_list() -> None:
+    user = User(name="Ross")
+    session.add(user)
+    await session.commit()
+
+    with TestClient(app) as client:
+        response = client.get("/admin/user/list")
+
+    assert (
+        response.text.count(
+            '<button id="search-button" class="btn" type="button">Search</button>'
+        )
+        == 1
+    )
+
+    assert response.text.count("Search: name") == 1
+    assert "http://testserver/admin/user/details/1" in response.text
+
+    with TestClient(app) as client:
+        response = client.get("/admin/user/list?search=ro")
+
+    assert "http://testserver/admin/user/details/1" in response.text
+
+    with TestClient(app) as client:
+        response = client.get("/admin/user/list?search=rose")
+
+    assert "http://testserver/admin/user/details/1" not in response.text

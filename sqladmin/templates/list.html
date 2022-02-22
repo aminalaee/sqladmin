@@ -28,12 +28,15 @@
             {% endfor %}
           </div>
         </div>
-        <!-- <div class="ms-auto text-muted">
-          Search:
-          <div class="ms-2 d-inline-block">
-              <input type="text" class="form-control form-control-sm" aria-label="Search">
+        {% if model_admin.column_searchable_list %}
+        <div class="ms-auto text-muted">
+          <div class="input-group ms-2">
+            <input id="search-input" type="text" class="form-control" placeholder="Search: {{ model_admin.search_placeholder() }}" value="{{ request.query_params.get('search', '') }}">
+            <button id="search-button" class="btn" type="button">Search</button>
+            <button id="search-reset" class="btn" type="button" {% if not request.query_params.get('search') %}disabled{% endif %}><i class="fas fa-times"></i></button>
           </div>
-          </div> -->
+        </div>
+        {% endif %}
       </div>
     </div>
     <div class="table-responsive">
@@ -42,7 +45,7 @@
           <tr>
             <th class="w-1"><input class="form-check-input m-0 align-middle" type="checkbox" aria-label="Select all"></th>
             <th class="w-1"></th>
-            {% for name, _ in model_admin.get_list_columns() %}
+            {% for name, _ in model_admin._list_attrs %}
             <th>{{ name }}</th>
             {% endfor %}
           </tr>
@@ -68,7 +71,7 @@
               </a>
               {% endif %}
             </td>
-            {% for _, column in model_admin.get_list_columns() %}
+            {% for _, column in model_admin._list_attrs %}
             <td>{{ model_admin.get_attr_value(row, column) }}</td>
             {% endfor %}
           </tr>
