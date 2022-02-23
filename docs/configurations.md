@@ -93,6 +93,7 @@ The options available are:
 
 * `column_list`: List of columns or column names to be displayed in the list page.
 * `column_exclude_list`: List of columns or column names to be excluded in the list page.
+* `column_searchable_list` List of columns or column names to be searchable in the list page.
 
 !!! example
 
@@ -105,6 +106,11 @@ The options available are:
     ```python
     class UserAdmin(ModelAdmin, model=User):
         column_exclude_list = [User.id]
+    ```
+
+    ```python
+    class UserAdmin(ModelAdmin, model=User):
+        column_searchable_list = [User.name]
     ```
 
 ## Details page

@@ -229,8 +229,9 @@ class Admin(BaseAdminView):
 
         page = int(request.query_params.get("page", 1))
         page_size = int(request.query_params.get("page_size", 0))
+        search = request.query_params.get("search", None)
 
-        pagination = await model_admin.list(page, page_size)
+        pagination = await model_admin.list(page, page_size, search)
         pagination.add_pagination_urls(request.url)
 
         context = {

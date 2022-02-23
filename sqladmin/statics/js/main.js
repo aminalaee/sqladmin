@@ -18,3 +18,25 @@ $(document).on('click','#modal-delete-button',function() {
     }
   });
 });
+
+// Search
+$(document).on('click','#search-button',function() {
+  var searchTerm = $("#search-input").val();
+
+  newUrl = "";
+  if (window.location.search && window.location.search.indexOf('search=') != -1) {
+    newUrl = window.location.search.replace( /search=\w*\d*/, "search=" + searchTerm);
+  } else if (window.location.search) {
+    newUrl = window.location.search + "&search=" + searchTerm;
+  } else {
+    newUrl = window.location.search + "?search=" + searchTerm;
+  }
+  window.location.href = newUrl;
+});
+
+// Reset search
+$(document).on('click','#search-reset',function() {
+  if (window.location.search && window.location.search.indexOf('search=') != -1) {
+    window.location.href = window.location.search.replace( /search=\w*\d*/, "");
+  }
+});
