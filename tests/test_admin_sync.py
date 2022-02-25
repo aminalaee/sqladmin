@@ -77,6 +77,7 @@ class UserAdmin(ModelAdmin, model=User):
     column_list = [User.id, User.name, User.email, User.addresses]
     column_labels = {User.email: "Email"}
     column_searchable_list = [User.name]
+    column_sortable_list = [User.id]
 
 
 class AddressAdmin(ModelAdmin, model=Address):
@@ -267,13 +268,13 @@ def test_column_labels() -> None:
         response = client.get("/admin/user/list")
 
     assert response.status_code == 200
-    assert response.text.count("<th>Email</th>") == 1
+    assert response.text.count("Email") == 1
 
     with TestClient(app) as client:
         response = client.get("/admin/user/details/1")
 
     assert response.status_code == 200
-    assert response.text.count("<td>Email</td>") == 1
+    assert response.text.count("Email") == 1
 
 
 def test_delete_endpoint_unauthorized_response() -> None:
@@ -384,10 +385,10 @@ def test_list_view_page_size_options() -> None:
         response = client.get("/admin/user/list")
 
     assert response.status_code == 200
-    assert 'href="http://testserver/admin/user/list?page_size=10' in response.text
-    assert 'href="http://testserver/admin/user/list?page_size=25' in response.text
-    assert 'href="http://testserver/admin/user/list?page_size=50' in response.text
-    assert 'href="http://testserver/admin/user/list?page_size=100' in response.text
+    assert 'href="http://testserver/admin/user/list?pageSize=10' in response.text
+    assert 'href="http://testserver/admin/user/list?pageSize=25' in response.text
+    assert 'href="http://testserver/admin/user/list?pageSize=50' in response.text
+    assert 'href="http://testserver/admin/user/list?pageSize=100' in response.text
 
 
 def test_is_accessible_method() -> None:
@@ -517,3 +518,25 @@ def test_searchable_list() -> None:
         response = client.get("/admin/user/list?search=rose")
 
     assert "http://testserver/admin/user/details/1" not in response.text
+
+
+def test_sortable_list() -> None:
+    user = User(name="Lisa")
+    session.add(user)
+    session.commit()
+
+    with TestClient(app) as client:
+        response = client.get("/admin/user/list?sortBy=id&sort=asc")
+
+    assert (
+        response.text.count("http://testserver/admin/user/list?sortBy=id&amp;sort=desc")
+        == 1
+    )
+
+    with TestClient(app) as client:
+        response = client.get("/admin/user/list?sortBy=id&sort=desc")
+
+    assert (
+        response.text.count("http://testserver/admin/user/list?sortBy=id&amp;sort=asc")
+        == 1
+    )
