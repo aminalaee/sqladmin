@@ -19,6 +19,7 @@ nav:
   - API Reference:
     - Application: 'api_reference/application.md'
     - ModelAdmin: 'api_reference/model_admin.md'
+  - Changelog: 'changelog.md'
 
 markdown_extensions:
   - markdown.extensions.codehilite:
