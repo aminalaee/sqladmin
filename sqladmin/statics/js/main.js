@@ -25,7 +25,7 @@ $(document).on('click','#search-button',function() {
 
   newUrl = "";
   if (window.location.search && window.location.search.indexOf('search=') != -1) {
-    newUrl = window.location.search.replace( /search=\w*\d*/, "search=" + searchTerm);
+    newUrl = window.location.search.replace( /search=[^&]*/, "search=" + searchTerm);
   } else if (window.location.search) {
     newUrl = window.location.search + "&search=" + searchTerm;
   } else {
