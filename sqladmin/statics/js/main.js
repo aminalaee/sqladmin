@@ -37,6 +37,6 @@ $(document).on('click','#search-button',function() {
 // Reset search
 $(document).on('click','#search-reset',function() {
   if (window.location.search && window.location.search.indexOf('search=') != -1) {
-    window.location.href = window.location.search.replace( /search=\w*\d*/, "");
+    window.location.href = window.location.search.replace( /search=[^&]*/, "");
   }
 });
