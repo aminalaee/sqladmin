@@ -181,12 +181,6 @@ class ModelConverter(ModelConverterBase):
         available_choices = [(e, e) for e in column.type.enums]
         accepted_values = [choice[0] for choice in available_choices]
 
-        if column.nullable:
-            accepted_values.append(None)
-            filters = field_args.get("filters", [])
-            filters.append(lambda x: x or None)
-            field_args["filters"] = filters
-
         field_args["choices"] = available_choices
         field_args["validators"].append(validators.AnyOf(accepted_values))
         field_args["coerce"] = lambda v: v.name if isinstance(v, Enum) else str(v)
