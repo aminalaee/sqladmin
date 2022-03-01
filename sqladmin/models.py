@@ -11,7 +11,7 @@ from typing import (
 )
 
 import anyio
-from sqlalchemy import Column, func, inspect, or_, select
+from sqlalchemy import Column, asc, desc, func, inspect, or_, select
 from sqlalchemy.engine.base import Engine
 from sqlalchemy.exc import NoInspectionAvailable
 from sqlalchemy.ext.asyncio import AsyncEngine
@@ -220,6 +220,16 @@ class ModelAdmin(BaseModelAdmin, metaclass=ModelAdminMeta):
         ```
     """
 
+    column_sortable_list: ClassVar[Sequence[Union[str, InstrumentedAttribute]]] = []
+    """Collection of the sortable columns for the list view.
+
+    ???+ example
+        ```python
+        class UserAdmin(ModelAdmin, model=User):
+            column_sortable_list = [User.name]
+        ```
+    """
+
     # Details page
     column_details_list: ClassVar[Sequence[Union[str, InstrumentedAttribute]]] = []
     """List of columns to display in `Detail` page.
@@ -304,6 +314,11 @@ class ModelAdmin(BaseModelAdmin, metaclass=ModelAdminMeta):
             for attr in self.column_searchable_list or []
         ]
 
+        self._sort_fields = [
+            getattr(self.model, self.get_model_attr(attr).key)
+            for attr in self.column_sortable_list or []
+        ]
+
     def _run_query_sync(self, stmt: ClauseElement) -> Any:
         with self.sessionmaker(expire_on_commit=False) as session:
             result = session.execute(stmt)
@@ -342,19 +357,22 @@ class ModelAdmin(BaseModelAdmin, metaclass=ModelAdminMeta):
         rows = await self._run_query(stmt)
         return rows[0]
 
-    async def list(self, page: int, page_size: int, search: str) -> Pagination:
+    async def list(
+        self, page: int, page_size: int, search: str, sort_by: str, sort: str
+    ) -> Pagination:
         page_size = min(page_size or self.page_size, max(self.page_size_options))
 
         count = await self.count()
-        stmt = (
-            select(self.model)
-            .order_by(self.pk_column)
-            .limit(page_size)
-            .offset((page - 1) * page_size)
-        )
+        stmt = select(self.model).limit(page_size).offset((page - 1) * page_size)
 
         for _, relation in self._list_relations:
             stmt = stmt.options(selectinload(relation.key))
+
+        sort_field = self.get_model_attr(sort_by) if sort_by else self.pk_column
+        if sort == "desc":
+            stmt = stmt.order_by(desc(sort_field))
+        else:
+            stmt = stmt.order_by(asc(sort_field))
 
         if search:
             expressions = [attr.ilike(f"%{search}%") for attr in self._search_fields]

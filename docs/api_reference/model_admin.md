@@ -24,3 +24,4 @@
         - is_accessible
         - column_searchable_list
         - search_placeholder
+        - column_sortable_list
