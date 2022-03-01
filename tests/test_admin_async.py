@@ -1,7 +1,8 @@
+import enum
 from typing import Any, AsyncGenerator
 
 import pytest
-from sqlalchemy import Column, Date, ForeignKey, Integer, String, func, select
+from sqlalchemy import Column, Date, Enum, ForeignKey, Integer, String, func, select
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship, selectinload, sessionmaker
@@ -28,6 +29,11 @@ app = Starlette()
 admin = Admin(app=app, engine=engine)
 
 
+class Status(enum.Enum):
+    ACTIVE = "ACTIVE"
+    DEACTIVE = "DEACTIVE"
+
+
 class User(Base):
     __tablename__ = "users"
 
@@ -35,6 +41,7 @@ class User(Base):
     name = Column(String(length=16))
     email = Column(String)
     date_of_birth = Column(Date)
+    status = Column(Enum(Status), default=Status.ACTIVE)
 
     addresses = relationship("Address", back_populates="user")
 
@@ -72,7 +79,7 @@ async def prepare_database() -> AsyncGenerator[None, None]:
 
 
 class UserAdmin(ModelAdmin, model=User):
-    column_list = [User.id, User.name, User.email, User.addresses]
+    column_list = [User.id, User.name, User.email, User.addresses, User.status]
     column_labels = {User.email: "Email"}
     column_searchable_list = [User.name]
     column_sortable_list = [User.id]

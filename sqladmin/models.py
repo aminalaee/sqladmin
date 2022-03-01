@@ -1,3 +1,4 @@
+from enum import Enum
 from typing import (
     Any,
     ClassVar,
@@ -408,6 +409,8 @@ class ModelAdmin(BaseModelAdmin, metaclass=ModelAdminMeta):
             value = getattr(obj, attr.key)
             if isinstance(value, list):
                 return ", ".join(map(str, value))
+            elif isinstance(value, Enum):
+                return value.value
             return value
 
     def get_model_attr(
@@ -418,7 +421,7 @@ class ModelAdmin(BaseModelAdmin, metaclass=ModelAdminMeta):
         if isinstance(attr, str):
             key = attr
         elif isinstance(attr.prop, ColumnProperty):
-            key = attr.name
+            key = attr.key
         elif isinstance(attr.prop, RelationshipProperty):
             key = attr.prop.key
 
@@ -426,7 +429,7 @@ class ModelAdmin(BaseModelAdmin, metaclass=ModelAdminMeta):
             return inspect(self.model).attrs[key]
         except KeyError:
             raise InvalidColumnError(
-                f"Model '{self.model.__name__}' has no attribute '{attr}'."
+                f"Model '{self.model.__name__}' has no attribute '{key}'."
             )
 
     def get_model_attributes(self) -> List[Column]:
