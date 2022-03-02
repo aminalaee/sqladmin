@@ -1,4 +1,5 @@
 import inspect
+from enum import Enum
 from typing import Any, Callable, Dict, Sequence, Type, Union, no_type_check
 
 import anyio
@@ -177,7 +178,12 @@ class ModelConverter(ModelConverterBase):
 
     @converts("Enum")
     def conv_Enum(self, column: Column, field_args: Dict, **kwargs: Any) -> Field:
-        field_args["choices"] = [(e, e) for e in column.type.enums]
+        available_choices = [(e, e) for e in column.type.enums]
+        accepted_values = [choice[0] for choice in available_choices]
+
+        field_args["choices"] = available_choices
+        field_args["validators"].append(validators.AnyOf(accepted_values))
+        field_args["coerce"] = lambda v: v.name if isinstance(v, Enum) else str(v)
         return SelectField(**field_args)
 
     @converts("Integer")  # includes BigInteger and SmallInteger

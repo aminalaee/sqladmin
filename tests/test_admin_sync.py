@@ -1,9 +1,11 @@
+import enum
 from typing import Any, Generator
 
 import pytest
 from sqlalchemy import (
     Column,
     Date,
+    Enum,
     ForeignKey,
     Integer,
     String,
@@ -34,6 +36,11 @@ app = Starlette()
 admin = Admin(app=app, engine=engine)
 
 
+class Status(enum.Enum):
+    ACTIVE = "ACTIVE"
+    DEACTIVE = "DEACTIVE"
+
+
 class User(Base):
     __tablename__ = "users"
 
@@ -41,6 +48,7 @@ class User(Base):
     name = Column(String(length=16))
     email = Column(String)
     birthdate = Column(Date)
+    status = Column(Enum(Status), default=Status.ACTIVE)
 
     addresses = relationship("Address", back_populates="user")
 
@@ -74,7 +82,7 @@ def prepare_database() -> Generator[None, None, None]:
 
 
 class UserAdmin(ModelAdmin, model=User):
-    column_list = [User.id, User.name, User.email, User.addresses]
+    column_list = [User.id, User.name, User.email, User.addresses, User.status]
     column_labels = {User.email: "Email"}
     column_searchable_list = [User.name]
     column_sortable_list = [User.id]
