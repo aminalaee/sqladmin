@@ -339,6 +339,7 @@ class Admin(BaseAdminView):
 
         form = Form(await request.form())
         if not form.validate():
+            context["form"] = form
             return self.templates.TemplateResponse(
                 model_admin.edit_template,
                 context,

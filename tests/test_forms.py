@@ -3,7 +3,6 @@ from typing import Any, AsyncGenerator
 
 import pytest
 from sqlalchemy import (
-    JSON,
     Boolean,
     Column,
     DateTime,
@@ -13,6 +12,7 @@ from sqlalchemy import (
     Numeric,
     String,
     Text,
+    TypeDecorator,
 )
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 from sqlalchemy.ext.declarative import declarative_base
@@ -76,14 +76,17 @@ async def prepare_database() -> AsyncGenerator[None, None]:
 
 
 async def test_model_form_converter_exception() -> None:
+    class CustomType(TypeDecorator):
+        impl = String
+
     class Example(User):
-        data = Column(JSON)
+        data = Column(CustomType)
 
     with pytest.raises(Exception):
         await get_model_form(model=Example, engine=engine)
 
 
-async def test_model_form_converter_with_defau() -> None:
+async def test_model_form_converter_with_default() -> None:
     class Point(Base):
         __tablename__ = "points"
 

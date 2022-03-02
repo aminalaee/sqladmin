@@ -23,7 +23,7 @@ from wtforms import (
 )
 from wtforms.fields.core import UnboundField
 
-from sqladmin.fields import QuerySelectField, QuerySelectMultipleField
+from sqladmin.fields import QuerySelectField, QuerySelectMultipleField, JSONField
 
 
 @no_type_check
@@ -222,6 +222,10 @@ class ModelConverter(ModelConverterBase):
     #     field_args.setdefault("label", "UUID")
     #     field_args["validators"].append(validators.UUID())
     #     return StringField(**field_args)
+
+    @converts("JSON")
+    def convert_JSON(self, field_args: dict, **extra: Any) -> Field:
+        return JSONField(**field_args)
 
     @converts("MANYTOONE")
     def conv_ManyToOne(self, field_args: Dict, **kwargs: Any) -> Field:
