@@ -2,7 +2,17 @@ import enum
 from typing import Any, AsyncGenerator
 
 import pytest
-from sqlalchemy import Column, Date, Enum, ForeignKey, Integer, String, func, select
+from sqlalchemy import (
+    JSON,
+    Column,
+    Date,
+    Enum,
+    ForeignKey,
+    Integer,
+    String,
+    func,
+    select,
+)
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship, selectinload, sessionmaker
@@ -42,6 +52,7 @@ class User(Base):
     email = Column(String)
     date_of_birth = Column(Date)
     status = Column(Enum(Status), default=Status.ACTIVE)
+    meta_data = Column(JSON)
 
     addresses = relationship("Address", back_populates="user")
 
@@ -445,7 +456,7 @@ async def test_not_found_edit_page() -> None:
 
 
 async def test_update_get_page() -> None:
-    user = User(name="Joe")
+    user = User(name="Joe", meta_data={"A": "B"})
     session.add(user)
     await session.flush()
 
