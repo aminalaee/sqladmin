@@ -23,7 +23,7 @@ from wtforms import (
 )
 from wtforms.fields.core import UnboundField
 
-from sqladmin.fields import QuerySelectField, QuerySelectMultipleField, JSONField
+from sqladmin.fields import JSONField, QuerySelectField, QuerySelectMultipleField
 
 
 @no_type_check
