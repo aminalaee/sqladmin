@@ -3,6 +3,7 @@ from typing import Any, Generator
 
 import pytest
 from sqlalchemy import (
+    JSON,
     Column,
     Date,
     Enum,
@@ -49,6 +50,7 @@ class User(Base):
     email = Column(String)
     birthdate = Column(Date)
     status = Column(Enum(Status), default=Status.ACTIVE)
+    meta_data = Column(JSON)
 
     addresses = relationship("Address", back_populates="user")
 
@@ -431,7 +433,7 @@ def test_not_found_edit_page() -> None:
 
 
 def test_update_get_page() -> None:
-    user = User(name="Joe")
+    user = User(name="Joe", meta_data={"A": "B"})
     session.add(user)
     session.flush()
 
