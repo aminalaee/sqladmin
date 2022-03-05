@@ -10,7 +10,6 @@ from sqlalchemy import (
     ForeignKey,
     Integer,
     String,
-    create_engine,
     func,
     select,
 )
@@ -21,13 +20,9 @@ from starlette.requests import Request
 from starlette.testclient import TestClient
 
 from sqladmin import Admin, ModelAdmin
-from tests.common import TEST_DATABASE_URI_SYNC
+from tests.common import sync_engine as engine
 
 Base = declarative_base()  # type: Any
-
-engine = create_engine(
-    TEST_DATABASE_URI_SYNC, connect_args={"check_same_thread": False}
-)
 
 LocalSession = sessionmaker(bind=engine)
 

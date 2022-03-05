@@ -1,20 +1,16 @@
 from typing import Any
 
 import pytest
-from sqlalchemy import Column, ForeignKey, Integer, String, create_engine
+from sqlalchemy import Column, ForeignKey, Integer, String
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship, sessionmaker
 from starlette.applications import Starlette
 
 from sqladmin import Admin, ModelAdmin
 from sqladmin.exceptions import InvalidColumnError, InvalidModelError
-from tests.common import TEST_DATABASE_URI_SYNC
+from tests.common import sync_engine as engine
 
 Base = declarative_base()  # type: Any
-
-engine = create_engine(
-    TEST_DATABASE_URI_SYNC, connect_args={"check_same_thread": False}
-)
 
 LocalSession = sessionmaker(bind=engine)
 

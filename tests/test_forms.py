@@ -14,20 +14,16 @@ from sqlalchemy import (
     Text,
     TypeDecorator,
 )
-from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
+from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship, sessionmaker
 
 from sqladmin.forms import get_model_form
-from tests.common import TEST_DATABASE_URI_ASYNC
+from tests.common import async_engine as engine
 
 pytestmark = pytest.mark.anyio
 
 Base = declarative_base()  # type: Any
-
-engine = create_async_engine(
-    TEST_DATABASE_URI_ASYNC, connect_args={"check_same_thread": False}
-)
 
 LocalSession = sessionmaker(bind=engine, class_=AsyncSession)
 

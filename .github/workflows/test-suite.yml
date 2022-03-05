@@ -16,6 +16,17 @@ jobs:
       matrix:
         python-version: ["3.7", "3.8", "3.9", "3.10"]
 
+    services:
+      postgres:
+        image: postgres:10.8
+        env:
+          POSTGRES_USER: username
+          POSTGRES_PASSWORD: password
+          POSTGRES_DB: test_db
+        ports:
+          - 5432:5432
+        options: --health-cmd pg_isready --health-interval 10s --health-timeout 5s --health-retries 5
+
     steps:
       - uses: "actions/checkout@v2"
       - uses: "actions/setup-python@v2"
@@ -27,7 +38,15 @@ jobs:
         run: "scripts/check"
       - name: "Build package & docs"
         run: "scripts/build"
-      - name: "Run tests"
+      - name: "Run tests with SQLite"
+        env:
+          TEST_DATABASE_URI_SYNC: "sqlite:///test.db"
+          TEST_DATABASE_URI_SYNC: "sqlite+aiosqlite:///test.db"
+        run: "scripts/test"
+      - name: "Run tests with PostgreSQL"
+        env:
+          TEST_DATABASE_URI_SYNC: "postgresql+asyncpg://username:password@localhost:5432/test_db"
+          TEST_DATABASE_URI_SYNC: "postgresql+asyncpg://username:password@localhost:5432/test_db"
         run: "scripts/test"
       - name: "Enforce coverage"
         run: "scripts/coverage"

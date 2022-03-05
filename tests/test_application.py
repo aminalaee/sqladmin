@@ -1,17 +1,14 @@
 from typing import Any
 
-from sqlalchemy import create_engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import Session, sessionmaker
 from starlette.applications import Starlette
 from starlette.testclient import TestClient
 
 from sqladmin import Admin
-from tests.common import TEST_DATABASE_URI_SYNC
+from tests.common import sync_engine as engine
 
 Base = declarative_base()  # type: Any
-
-engine = create_engine(TEST_DATABASE_URI_SYNC)
 
 LocalSession = sessionmaker(bind=engine)
 

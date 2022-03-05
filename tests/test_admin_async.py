@@ -13,7 +13,7 @@ from sqlalchemy import (
     func,
     select,
 )
-from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
+from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship, selectinload, sessionmaker
 from starlette.applications import Starlette
@@ -21,15 +21,11 @@ from starlette.requests import Request
 from starlette.testclient import TestClient
 
 from sqladmin import Admin, ModelAdmin
-from tests.common import TEST_DATABASE_URI_ASYNC
+from tests.common import async_engine as engine
 
 pytestmark = pytest.mark.anyio
 
 Base = declarative_base()  # type: Any
-
-engine = create_async_engine(
-    TEST_DATABASE_URI_ASYNC, connect_args={"check_same_thread": False}
-)
 
 LocalSession = sessionmaker(bind=engine, class_=AsyncSession)
 
