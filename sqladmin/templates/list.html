@@ -33,7 +33,7 @@
           <div class="input-group ms-2">
             <input id="search-input" type="text" class="form-control" placeholder="Search: {{ model_admin.search_placeholder() }}" value="{{ request.query_params.get('search', '') }}">
             <button id="search-button" class="btn" type="button">Search</button>
-            <button id="search-reset" class="btn" type="button" {% if not request.query_params.get('search') %}disabled{% endif %}><i class="fas fa-times"></i></button>
+            <button id="search-reset" class="btn" type="button" {% if not request.query_params.get('search') %}disabled{% endif %}><i class="fa-solid fa-times"></i></button>
           </div>
         </div>
         {% endif %}
@@ -49,9 +49,9 @@
             <th>
               {% if attr in model_admin._sort_fields %}
               {% if request.query_params.get("sortBy") == name and request.query_params.get("sort") == "asc" %}
-              <a href="{{ request.url.include_query_params(sort='desc') }}"><i class="fas fa-arrow-down"></i> {{ name }}</a>
+              <a href="{{ request.url.include_query_params(sort='desc') }}"><i class="fa-solid fa-arrow-down"></i> {{ name }}</a>
               {% elif request.query_params.get("sortBy") == name and request.query_params.get("sort") == "desc" %}
-              <a href="{{ request.url.include_query_params(sort='asc') }}"><i class="fas fa-arrow-up"></i> {{ name }}</a>
+              <a href="{{ request.url.include_query_params(sort='asc') }}"><i class="fa-solid fa-arrow-up"></i> {{ name }}</a>
               {% else %}
               <a href="{{ request.url.include_query_params(sortBy=name, sort='asc') }}">{{ name }}</a>
               {% endif %}
@@ -69,17 +69,17 @@
             <td class="text-end">
               {% if model_admin.can_view_details %}
               <a href="{{ url_for('admin:details', identity=model_admin.identity, pk=model_admin.get_attr_value(row, model_admin.pk_column)) }}" data-bs-toggle="tooltip" data-bs-placement="top" title="View">
-                <span class="me-1"><i class="fas fa-eye"></i></span>
+                <span class="me-1"><i class="fa-solid fa-eye"></i></span>
               </a>
               {% endif %}
               {% if model_admin.can_edit %}
               <a href="{{ url_for('admin:edit', identity=model_admin.identity, pk=model_admin.get_attr_value(row, model_admin.pk_column)) }}" data-bs-toggle="tooltip" data-bs-placement="top" title="Edit">
-                <span class="me-1"><i class="fas fa-edit"></i></span>
+                <span class="me-1"><i class="fa-solid fa-pen-to-square"></i></span>
               </a>
               {% endif %}
               {% if model_admin.can_delete %}
               <a href="#" data-name="{{ model_admin.name }}" data-pk="{{ model_admin.get_attr_value(row, model_admin.pk_column) }}" data-url="{{ url_for('admin:delete', identity=model_admin.identity, pk=model_admin.get_attr_value(row, model_admin.pk_column)) }}" data-bs-toggle="modal" data-bs-target="#modal-delete" title="Delete">
-                <span class="me-1"><i class="fas fa-trash"></i></span>
+                <span class="me-1"><i class="fa-solid fa-trash"></i></span>
               </a>
               {% endif %}
             </td>
@@ -100,7 +100,7 @@
           {% else %}
           <a class="page-link" href="#">
           {% endif %}
-          <i class="fas fa-chevron-left"></i>
+          <i class="fa-solid fa-chevron-left"></i>
           prev
           </a>
         </li>
@@ -114,7 +114,7 @@
           <a class="page-link" href="#">
           {% endif %}
           next
-          <i class="fas fa-chevron-right"></i>
+          <i class="fa-solid fa-chevron-right"></i>
           </a>
         </li>
       </ul>
