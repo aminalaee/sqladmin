@@ -2,6 +2,7 @@ import enum
 from typing import Any, AsyncGenerator
 
 import pytest
+from httpx import AsyncClient
 from sqlalchemy import (
     Boolean,
     Column,
@@ -14,20 +15,16 @@ from sqlalchemy import (
     Text,
     TypeDecorator,
 )
-from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
+from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship, sessionmaker
 
 from sqladmin.forms import get_model_form
-from tests.common import TEST_DATABASE_URI_ASYNC
+from tests.common import async_engine as engine
 
 pytestmark = pytest.mark.anyio
 
 Base = declarative_base()  # type: Any
-
-engine = create_async_engine(
-    TEST_DATABASE_URI_ASYNC, connect_args={"check_same_thread": False}
-)
 
 LocalSession = sessionmaker(bind=engine, class_=AsyncSession)
 
@@ -64,18 +61,24 @@ class Address(Base):
     user = relationship("User", back_populates="addresses")
 
 
-@pytest.fixture(autouse=True, scope="function")
+@pytest.fixture
 async def prepare_database() -> AsyncGenerator[None, None]:
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
-
     yield
-
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.drop_all)
 
+    await engine.dispose()
 
-async def test_model_form_converter_exception() -> None:
+
+@pytest.fixture
+async def client(prepare_database: Any) -> AsyncGenerator[AsyncClient, None]:
+    async with AsyncClient(base_url="http://testserver") as c:
+        yield c
+
+
+async def test_model_form_converter_exception(client: AsyncClient) -> None:
     class CustomType(TypeDecorator):
         impl = String
 
@@ -86,7 +89,7 @@ async def test_model_form_converter_exception() -> None:
         await get_model_form(model=Example, engine=engine)
 
 
-async def test_model_form_converter_with_default() -> None:
+async def test_model_form_converter_with_default(client: AsyncClient) -> None:
     class Point(Base):
         __tablename__ = "points"
 
@@ -96,11 +99,11 @@ async def test_model_form_converter_with_default() -> None:
     await get_model_form(model=Point, engine=engine)
 
 
-async def test_model_form_only() -> None:
+async def test_model_form_only(client: AsyncClient) -> None:
     Form = await get_model_form(model=User, engine=engine, only=["status"])
     assert len(Form()._fields) == 1
 
 
-async def test_model_form_exclude() -> None:
+async def test_model_form_exclude(client: AsyncClient) -> None:
     Form = await get_model_form(model=User, engine=engine, exclude=["status"])
     assert len(Form()._fields) == 8

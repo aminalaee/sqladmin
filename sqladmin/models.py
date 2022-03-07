@@ -342,7 +342,9 @@ class ModelAdmin(BaseModelAdmin, metaclass=ModelAdminMeta):
             session.delete(obj)
 
     def _update_modeL_sync(self, pk: Any, data: Dict[str, Any]) -> None:
-        stmt = select(self.model).where(self.pk_column == pk)
+        stmt = select(self.model).where(
+            self.pk_column == self.pk_column.type.python_type(pk)
+        )
         relationships = inspect(self.model).relationships
 
         with self.sessionmaker.begin() as session:
@@ -390,7 +392,9 @@ class ModelAdmin(BaseModelAdmin, metaclass=ModelAdminMeta):
         return pagination
 
     async def get_model_by_pk(self, value: Any) -> Any:
-        stmt = select(self.model).where(self.pk_column == value)
+        stmt = select(self.model).where(
+            self.pk_column == self.pk_column.type.python_type(value)
+        )
 
         for _, relation in self._details_relations:
             stmt = stmt.options(selectinload(relation.key))
@@ -495,7 +499,9 @@ class ModelAdmin(BaseModelAdmin, metaclass=ModelAdminMeta):
 
     async def update_model(self, pk: Any, data: Dict[str, Any]) -> None:
         if self.async_engine:
-            stmt = select(self.model).where(self.pk_column == pk)
+            stmt = select(self.model).where(
+                self.pk_column == self.pk_column.type.python_type(pk)
+            )
             relationships = inspect(self.model).relationships
 
             for name in relationships.keys():

@@ -10,24 +10,19 @@ from sqlalchemy import (
     ForeignKey,
     Integer,
     String,
-    create_engine,
     func,
     select,
 )
 from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import Session, relationship, sessionmaker
+from sqlalchemy.orm import Session, relationship, selectinload, sessionmaker
 from starlette.applications import Starlette
 from starlette.requests import Request
 from starlette.testclient import TestClient
 
 from sqladmin import Admin, ModelAdmin
-from tests.common import TEST_DATABASE_URI_SYNC
+from tests.common import sync_engine as engine
 
 Base = declarative_base()  # type: Any
-
-engine = create_engine(
-    TEST_DATABASE_URI_SYNC, connect_args={"check_same_thread": False}
-)
 
 LocalSession = sessionmaker(bind=engine)
 
@@ -76,11 +71,17 @@ class Movie(Base):
     id = Column(Integer, primary_key=True)
 
 
-@pytest.fixture(autouse=True, scope="function")
+@pytest.fixture
 def prepare_database() -> Generator[None, None, None]:
     Base.metadata.create_all(engine)
     yield
     Base.metadata.drop_all(engine)
+
+
+@pytest.fixture
+def client(prepare_database: Any) -> Generator[TestClient, None, None]:
+    with TestClient(app=app, base_url="http://testserver") as c:
+        yield c
 
 
 class UserAdmin(ModelAdmin, model=User):
@@ -112,30 +113,27 @@ admin.register_model(AddressAdmin)
 admin.register_model(MovieAdmin)
 
 
-def test_root_view() -> None:
-    with TestClient(app) as client:
-        response = client.get("/admin")
+def test_root_view(client: TestClient) -> None:
+    response = client.get("/admin")
 
     assert response.status_code == 200
     assert response.text.count('<span class="nav-link-title">Users</span>') == 1
     assert response.text.count('<span class="nav-link-title">Addresses</span>') == 1
 
 
-def test_invalid_list_page() -> None:
-    with TestClient(app) as client:
-        response = client.get("/admin/example/list")
+def test_invalid_list_page(client: TestClient) -> None:
+    response = client.get("/admin/example/list")
 
     assert response.status_code == 404
 
 
-def test_list_view_single_page() -> None:
+def test_list_view_single_page(client: TestClient) -> None:
     for _ in range(5):
         user = User(name="John Doe")
         session.add(user)
     session.commit()
 
-    with TestClient(app) as client:
-        response = client.get("/admin/user/list")
+    response = client.get("/admin/user/list")
 
     assert response.status_code == 200
     assert (
@@ -153,14 +151,13 @@ def test_list_view_single_page() -> None:
     assert response.text.count('<li class="page-item disabled">') == 2
 
 
-def test_list_view_multi_page() -> None:
+def test_list_view_multi_page(client: TestClient) -> None:
     for _ in range(45):
         user = User(name="John Doe")
         session.add(user)
     session.commit()
 
-    with TestClient(app) as client:
-        response = client.get("/admin/user/list")
+    response = client.get("/admin/user/list")
 
     assert response.status_code == 200
     assert (
@@ -172,8 +169,7 @@ def test_list_view_multi_page() -> None:
     assert response.text.count('<li class="page-item disabled">') == 1
     assert response.text.count('<li class="page-item ">') == 5
 
-    with TestClient(app) as client:
-        response = client.get("/admin/user/list?page=3")
+    response = client.get("/admin/user/list?page=3")
 
     assert response.status_code == 200
     assert (
@@ -182,8 +178,7 @@ def test_list_view_multi_page() -> None:
     )
     assert response.text.count('<li class="page-item ">') == 6
 
-    with TestClient(app) as client:
-        response = client.get("/admin/user/list?page=5")
+    response = client.get("/admin/user/list?page=5")
 
     assert response.status_code == 200
     assert (
@@ -196,7 +191,7 @@ def test_list_view_multi_page() -> None:
     assert response.text.count('<li class="page-item ">') == 5
 
 
-def test_list_page_permission_actions() -> None:
+def test_list_page_permission_actions(client: TestClient) -> None:
     for _ in range(10):
         user = User(name="John Doe")
         session.add(user)
@@ -207,15 +202,13 @@ def test_list_page_permission_actions() -> None:
 
     session.commit()
 
-    with TestClient(app) as client:
-        response = client.get("/admin/user/list")
+    response = client.get("/admin/user/list")
 
     assert response.status_code == 200
     assert response.text.count('<i class="fas fa-eye"></i>') == 10
     assert response.text.count('<i class="fas fa-trash"></i>') == 10
 
-    with TestClient(app) as client:
-        response = client.get("/admin/address/list")
+    response = client.get("/admin/address/list")
 
     assert response.status_code == 200
     assert response.text.count('<i class="fas fa-eye"></i>') == 10
@@ -223,21 +216,19 @@ def test_list_page_permission_actions() -> None:
     assert response.text.count('<i class="fas fa-trash"></i>') == 10
 
 
-def test_unauthorized_detail_page() -> None:
-    with TestClient(app) as client:
-        response = client.get("/admin/movie/details/1")
+def test_unauthorized_detail_page(client: TestClient) -> None:
+    response = client.get("/admin/movie/details/1")
 
     assert response.status_code == 403
 
 
-def test_not_found_detail_page() -> None:
-    with TestClient(app) as client:
-        response = client.get("/admin/user/details/1")
+def test_not_found_detail_page(client: TestClient) -> None:
+    response = client.get("/admin/user/details/1")
 
     assert response.status_code == 404
 
 
-def test_detail_page() -> None:
+def test_detail_page(client: TestClient) -> None:
     user = User(name="Amin Alaee")
     session.add(user)
     session.flush()
@@ -247,8 +238,7 @@ def test_detail_page() -> None:
         session.add(address)
     session.commit()
 
-    with TestClient(app) as client:
-        response = client.get("/admin/user/details/1")
+    response = client.get("/admin/user/details/1")
 
     assert response.status_code == 200
     assert response.text.count('<th class="w-1">Column</th>') == 1
@@ -269,63 +259,61 @@ def test_detail_page() -> None:
     assert response.text.count("Delete") == 2
 
 
-def test_column_labels() -> None:
+def test_column_labels(client: TestClient) -> None:
     user = User(name="Foo")
     session.add(user)
     session.commit()
 
-    with TestClient(app) as client:
-        response = client.get("/admin/user/list")
+    response = client.get("/admin/user/list")
 
     assert response.status_code == 200
     assert response.text.count("Email") == 1
 
-    with TestClient(app) as client:
-        response = client.get("/admin/user/details/1")
+    response = client.get("/admin/user/details/1")
 
     assert response.status_code == 200
     assert response.text.count("Email") == 1
 
 
-def test_delete_endpoint_unauthorized_response() -> None:
-    with TestClient(app) as client:
-        response = client.delete("/admin/movie/delete/1")
+def test_delete_endpoint_unauthorized_response(client: TestClient) -> None:
+    response = client.delete("/admin/movie/delete/1")
 
     assert response.status_code == 403
 
 
-def test_delete_endpoint_not_found_response() -> None:
-    with TestClient(app) as client:
-        response = client.delete("/admin/user/delete/1")
+def test_delete_endpoint_not_found_response(client: TestClient) -> None:
+    response = client.delete("/admin/user/delete/1")
 
     assert response.status_code == 404
-    assert session.query(User).count() == 0
+
+    with LocalSession() as s:
+        assert s.query(User).count() == 0
 
 
-def test_delete_endpoint() -> None:
+def test_delete_endpoint(client: TestClient) -> None:
     user = User(name="Bar")
     session.add(user)
     session.commit()
 
-    assert session.query(User).count() == 1
+    with LocalSession() as s:
+        assert s.query(User).count() == 1
 
-    with TestClient(app) as client:
-        response = client.delete("/admin/user/delete/1")
+    response = client.delete("/admin/user/delete/1")
 
     assert response.status_code == 200
-    assert session.query(User).count() == 0
+
+    with LocalSession() as s:
+        assert s.query(User).count() == 0
 
 
-def test_create_endpoint_unauthorized_response() -> None:
-    with TestClient(app) as client:
-        response = client.get("/admin/movie/create")
+def test_create_endpoint_unauthorized_response(client: TestClient) -> None:
+    response = client.get("/admin/movie/create")
 
     assert response.status_code == 403
 
 
-def test_create_endpoint_get_form() -> None:
-    with TestClient(app) as client:
-        response = client.get("/admin/user/create")
+def test_create_endpoint_get_form(client: TestClient) -> None:
+    response = client.get("/admin/user/create")
 
     assert response.status_code == 200
     assert (
@@ -339,10 +327,9 @@ def test_create_endpoint_get_form() -> None:
     )
 
 
-def test_create_endpoint_post_form() -> None:
+def test_create_endpoint_post_form(client: TestClient) -> None:
     data: dict = {"birthdate": "Wrong Date Format"}
-    with TestClient(app) as client:
-        response = client.post("/admin/user/create", data=data)
+    response = client.post("/admin/user/create", data=data)
 
     assert response.status_code == 400
     assert (
@@ -350,49 +337,51 @@ def test_create_endpoint_post_form() -> None:
     )
 
     data = {"name": "SQLAlchemy"}
-    with TestClient(app) as client:
-        response = client.post("/admin/user/create", data=data)
+    response = client.post("/admin/user/create", data=data)
 
     stmt = select(func.count(User.id))
-    assert session.execute(stmt).scalar_one() == 1
+    with LocalSession() as s:
+        assert s.execute(stmt).scalar_one() == 1
     assert response.status_code == 302
 
-    stmt = select(User).limit(1)
-    user = session.execute(stmt).scalar_one()
+    stmt = select(User).limit(1).options(selectinload(User.addresses))
+    with LocalSession() as s:
+        user = s.execute(stmt).scalar_one()
     assert user.name == "SQLAlchemy"
     assert user.email is None
     assert user.addresses == []
 
     data = {"user": user.id}
-    with TestClient(app) as client:
-        response = client.post("/admin/address/create", data=data)
+    response = client.post("/admin/address/create", data=data)
 
     stmt = select(func.count(Address.id))
-    assert session.execute(stmt).scalar_one() == 1
+    with LocalSession() as s:
+        assert s.execute(stmt).scalar_one() == 1
     assert response.status_code == 302
 
-    stmt = select(Address).limit(1)
-    address = session.execute(stmt).scalar_one()
-    assert address.user == user
+    stmt = select(Address).limit(1).options(selectinload(Address.user))
+    with LocalSession() as s:
+        address = s.execute(stmt).scalar_one()
+    assert address.user.id == user.id
     assert address.user_id == user.id
 
     data = {"name": "SQLAdmin", "addresses": [address.id]}
-    with TestClient(app) as client:
-        response = client.post("/admin/user/create", data=data)
+    response = client.post("/admin/user/create", data=data)
 
     stmt = select(func.count(User.id))
-    assert session.execute(stmt).scalar_one() == 2
+    with LocalSession() as s:
+        assert s.execute(stmt).scalar_one() == 2
     assert response.status_code == 302
 
-    stmt = select(User).offset(1).limit(1)
-    user = session.execute(stmt).scalar_one()
+    stmt = select(User).offset(1).limit(1).options(selectinload(User.addresses))
+    with LocalSession() as s:
+        user = s.execute(stmt).scalar_one()
     assert user.name == "SQLAdmin"
-    assert user.addresses == [address]
+    assert user.addresses[0].id == address.id
 
 
-def test_list_view_page_size_options() -> None:
-    with TestClient(app) as client:
-        response = client.get("/admin/user/list")
+def test_list_view_page_size_options(client: TestClient) -> None:
+    response = client.get("/admin/user/list")
 
     assert response.status_code == 200
     assert 'href="http://testserver/admin/user/list?pageSize=10' in response.text
@@ -401,16 +390,14 @@ def test_list_view_page_size_options() -> None:
     assert 'href="http://testserver/admin/user/list?pageSize=100' in response.text
 
 
-def test_is_accessible_method() -> None:
-    with TestClient(app) as client:
-        response = client.get("/admin/movie/list")
+def test_is_accessible_method(client: TestClient) -> None:
+    response = client.get("/admin/movie/list")
 
     assert response.status_code == 403
 
 
-def test_is_visible_method() -> None:
-    with TestClient(app) as client:
-        response = client.get("/admin")
+def test_is_visible_method(client: TestClient) -> None:
+    response = client.get("/admin")
 
     assert response.status_code == 200
     assert response.text.count('<span class="nav-link-title">Users</span>') == 1
@@ -418,21 +405,19 @@ def test_is_visible_method() -> None:
     assert response.text.count("Movie") == 0
 
 
-def test_edit_endpoint_unauthorized_response() -> None:
-    with TestClient(app) as client:
-        response = client.get("/admin/movie/edit/1")
+def test_edit_endpoint_unauthorized_response(client: TestClient) -> None:
+    response = client.get("/admin/movie/edit/1")
 
     assert response.status_code == 403
 
 
-def test_not_found_edit_page() -> None:
-    with TestClient(app) as client:
-        response = client.get("/admin/user/edit/1")
+def test_not_found_edit_page(client: TestClient) -> None:
+    response = client.get("/admin/user/edit/1")
 
     assert response.status_code == 404
 
 
-def test_update_get_page() -> None:
+def test_update_get_page(client: TestClient) -> None:
     user = User(name="Joe", meta_data={"A": "B"})
     session.add(user)
     session.flush()
@@ -441,8 +426,7 @@ def test_update_get_page() -> None:
     session.add(address)
     session.commit()
 
-    with TestClient(app) as client:
-        response = client.get("/admin/user/edit/1")
+    response = client.get("/admin/user/edit/1")
 
     assert response.status_code == 200
     assert (
@@ -459,15 +443,14 @@ def test_update_get_page() -> None:
         == 1
     )
 
-    with TestClient(app) as client:
-        response = client.get("/admin/address/edit/1")
+    response = client.get("/admin/address/edit/1")
 
     assert response.text.count('<select class="form-control" id="user" name="user">')
     assert response.text.count('<option value="__None"></option>')
     assert response.text.count('<option selected value="1">User 1</option>')
 
 
-def test_update_submit_form() -> None:
+def test_update_submit_form(client: TestClient) -> None:
     user = User(name="Joe")
     session.add(user)
     session.flush()
@@ -476,38 +459,37 @@ def test_update_submit_form() -> None:
     session.add(address)
     session.commit()
 
-    with TestClient(app) as client:
-        data = {"name": "Jack"}
-        response = client.post("/admin/user/edit/1", data=data)
+    data = {"name": "Jack"}
+    response = client.post("/admin/user/edit/1", data=data)
 
     assert response.status_code == 302
 
-    session.refresh(user)
+    stmt = select(User).limit(1).options(selectinload(User.addresses))
+    with LocalSession() as s:
+        user = s.execute(stmt).scalar_one()
     assert user.name == "Jack"
     assert user.addresses == []
 
-    with TestClient(app) as client:
-        data = {"name": "Jack", "addresses": str(address.id)}
-        response = client.post("/admin/user/edit/1", data=data)
+    data = {"name": "Jack", "addresses": "1"}
+    response = client.post("/admin/user/edit/1", data=data)
 
-    session.refresh(user)
-    assert user.name == "Jack"
-    assert user.addresses == [address]
+    stmt = select(Address).limit(1)
+    with LocalSession() as s:
+        address = s.execute(stmt).scalar_one()
+    assert address.user_id == 1
 
-    with TestClient(app) as client:
-        data = {"name": "Jack" * 10}
-        response = client.post("/admin/user/edit/1", data=data)
+    data = {"name": "Jack" * 10}
+    response = client.post("/admin/user/edit/1", data=data)
 
     assert response.status_code == 400
 
 
-def test_searchable_list() -> None:
+def test_searchable_list(client: TestClient) -> None:
     user = User(name="Ross")
     session.add(user)
     session.commit()
 
-    with TestClient(app) as client:
-        response = client.get("/admin/user/list")
+    response = client.get("/admin/user/list")
 
     assert (
         response.text.count(
@@ -519,32 +501,28 @@ def test_searchable_list() -> None:
     assert response.text.count("Search: name") == 1
     assert "http://testserver/admin/user/details/1" in response.text
 
-    with TestClient(app) as client:
-        response = client.get("/admin/user/list?search=ro")
+    response = client.get("/admin/user/list?search=ro")
 
     assert "http://testserver/admin/user/details/1" in response.text
 
-    with TestClient(app) as client:
-        response = client.get("/admin/user/list?search=rose")
+    response = client.get("/admin/user/list?search=rose")
 
     assert "http://testserver/admin/user/details/1" not in response.text
 
 
-def test_sortable_list() -> None:
+def test_sortable_list(client: TestClient) -> None:
     user = User(name="Lisa")
     session.add(user)
     session.commit()
 
-    with TestClient(app) as client:
-        response = client.get("/admin/user/list?sortBy=id&sort=asc")
+    response = client.get("/admin/user/list?sortBy=id&sort=asc")
 
     assert (
         response.text.count("http://testserver/admin/user/list?sortBy=id&amp;sort=desc")
         == 1
     )
 
-    with TestClient(app) as client:
-        response = client.get("/admin/user/list?sortBy=id&sort=desc")
+    response = client.get("/admin/user/list?sortBy=id&sort=desc")
 
     assert (
         response.text.count("http://testserver/admin/user/list?sortBy=id&amp;sort=asc")
