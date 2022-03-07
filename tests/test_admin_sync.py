@@ -205,15 +205,15 @@ def test_list_page_permission_actions(client: TestClient) -> None:
     response = client.get("/admin/user/list")
 
     assert response.status_code == 200
-    assert response.text.count('<i class="fas fa-eye"></i>') == 10
-    assert response.text.count('<i class="fas fa-trash"></i>') == 10
+    assert response.text.count('<i class="fa-solid fa-eye"></i>') == 10
+    assert response.text.count('<i class="fa-solid fa-trash"></i>') == 10
 
     response = client.get("/admin/address/list")
 
     assert response.status_code == 200
-    assert response.text.count('<i class="fas fa-eye"></i>') == 10
-    assert response.text.count('<i class="fas fa-pencil"></i>') == 0
-    assert response.text.count('<i class="fas fa-trash"></i>') == 10
+    assert response.text.count('<i class="fa-solid fa-eye"></i>') == 10
+    assert response.text.count('<i class="fa-solid fa-pencil"></i>') == 0
+    assert response.text.count('<i class="fa-solid fa-trash"></i>') == 10
 
 
 def test_unauthorized_detail_page(client: TestClient) -> None:
