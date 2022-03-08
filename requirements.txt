@@ -6,7 +6,7 @@ psycopg2==2.9.3
 # Tests
 autoflake==1.4
 black==22.1.0
-coverage==6.3.1
+coverage==6.3.2
 flake8==4.0.1
 httpx==0.22.0
 isort==5.10.1
