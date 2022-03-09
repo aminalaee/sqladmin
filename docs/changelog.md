@@ -4,6 +4,21 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## Version 0.1.6 - 2022-03-09
+
+### Added
+
+* FontAwesome6 icons in https://github.com/aminalaee/sqladmin/pull/78
+* Add `column_sortable_list` in https://github.com/aminalaee/sqladmin/pull/65
+* Add JSON column converters in https://github.com/aminalaee/sqladmin/pull/74
+
+### Fixed
+
+* Fix URL search regex in https://github.com/aminalaee/sqladmin/pull/67
+* Fix Enum in Edit page in https://github.com/aminalaee/sqladmin/pull/71
+
+**Full Changelog**: https://github.com/aminalaee/sqladmin/compare/0.1.5...0.1.6
+
 ## Version 0.1.5 - 2022-02-24
 
 ### Added
