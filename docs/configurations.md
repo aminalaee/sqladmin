@@ -81,7 +81,7 @@ The metadata for the model. The options are:
     class UserAdmin(ModelAdmin, model=User):
         name = "User"
         name_plural = "Users"
-        icon = "fas fa-user"
+        icon = "fa-solid fa-user"
     ```
 
 ## List page

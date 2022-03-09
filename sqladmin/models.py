@@ -142,7 +142,7 @@ class ModelAdmin(BaseModelAdmin, metaclass=ModelAdminMeta):
     ???+ example
         ```python
         class UserAdmin(ModelAdmin, model=User):
-            icon = "fas fa-user"
+            icon = "fa-solid fa-user"
         ```
     """
 
