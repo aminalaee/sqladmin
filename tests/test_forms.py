@@ -19,7 +19,6 @@ from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship, sessionmaker
-from wtforms import validators
 
 from sqladmin.forms import get_model_form
 from tests.common import async_engine as engine
