@@ -49,7 +49,6 @@ class User(Base):
     status = Column(Enum(Status))
     balance = Column(Numeric)
     number = Column(Integer)
-    uuid = Column(UUID)
 
     addresses = relationship("Address", back_populates="user")
 
@@ -108,4 +107,16 @@ async def test_model_form_only(client: AsyncClient) -> None:
 
 async def test_model_form_exclude(client: AsyncClient) -> None:
     Form = await get_model_form(model=User, engine=engine, exclude=["status"])
-    assert len(Form()._fields) == 9
+    assert len(Form()._fields) == 8
+
+
+@pytest.mark.skipif(engine.name != "postgresql", reason="PostgreSQL only")
+async def test_model_form_postgresql(client: AsyncClient) -> None:
+    class PostgresModel(Base):
+        __tablename__ = "postgres_model"
+
+        id = Column(Integer, primary_key=True)
+        uuid = Column(UUID)
+
+    Form = await get_model_form(model=PostgresModel, engine=engine)
+    assert len(Form()._fields) == 1
