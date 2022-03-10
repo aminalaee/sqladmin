@@ -15,9 +15,11 @@ from sqlalchemy import (
     Text,
     TypeDecorator,
 )
+from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship, sessionmaker
+from wtforms import validators
 
 from sqladmin.forms import get_model_form
 from tests.common import async_engine as engine
@@ -48,6 +50,7 @@ class User(Base):
     status = Column(Enum(Status))
     balance = Column(Numeric)
     number = Column(Integer)
+    uuid = Column(UUID)
 
     addresses = relationship("Address", back_populates="user")
 
@@ -106,4 +109,4 @@ async def test_model_form_only(client: AsyncClient) -> None:
 
 async def test_model_form_exclude(client: AsyncClient) -> None:
     Form = await get_model_form(model=User, engine=engine, exclude=["status"])
-    assert len(Form()._fields) == 8
+    assert len(Form()._fields) == 9
