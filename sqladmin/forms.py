@@ -52,6 +52,13 @@ class ModelConverterBase:
     def get_converter(self, column: Column) -> Callable:
         types = inspect.getmro(type(column.type))
 
+        # Search by module + name
+        for col_type in types:
+            type_string = f"{col_type.__module__}.{col_type.__name__}"
+
+            if type_string in self.converters:
+                return self.converters[type_string]
+
         # Search by name
         for col_type in types:
             if col_type.__name__ in self.converters:
@@ -205,20 +212,20 @@ class ModelConverter(ModelConverterBase):
     #     field_args["validators"].append(validators.NumberRange(min=1901, max=2155))
     #     return StringField(**field_args)
 
-    # @converts("dialects.postgresql.base.INET")
-    # def conv_PGInet(self, field_args: Dict, **kwargs: Any) -> Field:
-    #     field_args.setdefault("label", "IP Address")
-    #     field_args["validators"].append(validators.IPAddress())
-    #     return StringField(**field_args)
+    @converts("sqlalchemy.dialects.postgresql.base.INET")
+    def conv_PGInet(self, field_args: Dict, **kwargs: Any) -> Field:
+        field_args.setdefault("label", "IP Address")
+        field_args["validators"].append(validators.IPAddress())
+        return StringField(**field_args)
 
-    # @converts("dialects.postgresql.base.MACADDR")
-    # def conv_PGMacaddr(self, field_args: Dict, **kwargs: Any) -> Field:
-    #     field_args.setdefault("label", "MAC Address")
-    #     field_args["validators"].append(validators.MacAddress())
-    #     return StringField(**field_args)
+    @converts("sqlalchemy.dialects.postgresql.base.MACADDR")
+    def conv_PGMacaddr(self, field_args: Dict, **kwargs: Any) -> Field:
+        field_args.setdefault("label", "MAC Address")
+        field_args["validators"].append(validators.MacAddress())
+        return StringField(**field_args)
 
-    @converts("UUID")
-    def conv_uuid(self, field_args: Dict, **kwargs: Any) -> Field:
+    @converts("sqlalchemy.dialects.postgresql.base.UUID")
+    def conv_PgUuid(self, field_args: Dict, **kwargs: Any) -> Field:
         field_args.setdefault("label", "UUID")
         field_args["validators"].append(validators.UUID())
         return StringField(**field_args)
