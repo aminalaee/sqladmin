@@ -217,11 +217,11 @@ class ModelConverter(ModelConverterBase):
     #     field_args["validators"].append(validators.MacAddress())
     #     return StringField(**field_args)
 
-    # @converts("dialects.postgresql.base.UUID")
-    # def conv_PGUuid(self, field_args: Dict, **kwargs: Any) -> Field:
-    #     field_args.setdefault("label", "UUID")
-    #     field_args["validators"].append(validators.UUID())
-    #     return StringField(**field_args)
+    @converts("UUID")
+    def conv_uuid(self, field_args: Dict, **kwargs: Any) -> Field:
+        field_args.setdefault("label", "UUID")
+        field_args["validators"].append(validators.UUID())
+        return StringField(**field_args)
 
     @converts("JSON")
     def convert_JSON(self, field_args: dict, **extra: Any) -> Field:

@@ -40,8 +40,8 @@ jobs:
         run: "scripts/build"
       - name: "Run tests with SQLite"
         env:
-          TEST_DATABASE_URI_SYNC: "sqlite:///test.db"
-          TEST_DATABASE_URI_ASYNC: "sqlite+aiosqlite:///test.db"
+          TEST_DATABASE_URI_SYNC: "sqlite:///test.db?check_same_thread=False"
+          TEST_DATABASE_URI_ASYNC: "sqlite+aiosqlite:///test.db?check_same_thread=False"
         run: "scripts/test"
       - name: "Run tests with PostgreSQL"
         env:
