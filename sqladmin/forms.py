@@ -124,8 +124,9 @@ class ModelConverterBase:
 
             kwargs["allow_blank"] = nullable
 
-            pk = mapper.primary_key[0].name
-            stmt = select(prop.mapper.class_)
+            target_model = prop.mapper.class_
+            pk = sqlalchemy_inspect(target_model).primary_key[0].name
+            stmt = select(target_model)
 
             if isinstance(engine, Engine):
                 with Session(engine) as session:

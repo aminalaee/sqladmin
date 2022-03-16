@@ -343,7 +343,7 @@ class ModelAdmin(BaseModelAdmin, metaclass=ModelAdminMeta):
 
     def _update_modeL_sync(self, pk: Any, data: Dict[str, Any]) -> None:
         stmt = select(self.model).where(
-            self.pk_column == self.pk_column.type.python_type(pk)
+            self.pk_column == self._get_column_python_type(self.pk_column)(pk)
         )
         relationships = inspect(self.model).relationships
 
@@ -354,6 +354,12 @@ class ModelAdmin(BaseModelAdmin, metaclass=ModelAdminMeta):
                     # Load relationship objects into session
                     session.add_all(value)
                 setattr(result, name, value)
+
+    def _get_column_python_type(self, column: Column) -> type:
+        try:
+            return column.type.python_type
+        except NotImplementedError:
+            return str
 
     async def count(self) -> int:
         stmt = select(func.count(self.pk_column))
@@ -393,7 +399,7 @@ class ModelAdmin(BaseModelAdmin, metaclass=ModelAdminMeta):
 
     async def get_model_by_pk(self, value: Any) -> Any:
         stmt = select(self.model).where(
-            self.pk_column == self.pk_column.type.python_type(value)
+            self.pk_column == self._get_column_python_type(self.pk_column)(value)
         )
 
         for _, relation in self._details_relations:
@@ -500,7 +506,7 @@ class ModelAdmin(BaseModelAdmin, metaclass=ModelAdminMeta):
     async def update_model(self, pk: Any, data: Dict[str, Any]) -> None:
         if self.async_engine:
             stmt = select(self.model).where(
-                self.pk_column == self.pk_column.type.python_type(pk)
+                self.pk_column == self._get_column_python_type(self.pk_column)(pk)
             )
             relationships = inspect(self.model).relationships
 
