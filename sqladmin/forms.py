@@ -80,6 +80,7 @@ class ModelConverterBase:
             "filters": [],
             "default": None,
             "description": prop.doc,
+            "render_kw": {"class": "form-control"},
         }
 
         converter = None
@@ -173,6 +174,7 @@ class ModelConverter(ModelConverterBase):
 
     @converts("Boolean", "dialects.mssql.base.BIT")
     def conv_Boolean(self, field_args: Dict, **kwargs: Any) -> Field:
+        field_args["render_kw"]["class"] = "form-check-input"
         return BooleanField(**field_args)
 
     @converts("Date")
