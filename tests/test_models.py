@@ -2,6 +2,7 @@ from typing import Any
 
 import pytest
 from sqlalchemy import Column, ForeignKey, Integer, String
+from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship, sessionmaker
 from starlette.applications import Starlette
@@ -208,3 +209,16 @@ def test_column_labels_by_model_columns() -> None:
         column_labels = {Address.user_id: "User ID"}
 
     assert AddressAdmin().get_details_columns() == [("User ID", Address.user_id)]
+
+
+@pytest.mark.skipif(engine.name != "postgresql", reason="PostgreSQL only")
+def test_get_python_type_postgresql() -> None:
+    class PostgresModel(Base):
+        __tablename__ = "postgres_model"
+
+        uuid = Column(UUID, primary_key=True)
+
+    class PostgresModelAdmin(ModelAdmin, model=PostgresModel):
+        ...
+
+    PostgresModelAdmin()._get_column_python_type(PostgresModel.uuid) is str
