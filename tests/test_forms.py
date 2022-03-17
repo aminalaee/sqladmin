@@ -13,7 +13,6 @@ from sqlalchemy import (
     Numeric,
     String,
     Text,
-    TypeDecorator,
 )
 from sqlalchemy.dialects.postgresql import INET, MACADDR, UUID
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -77,17 +76,6 @@ async def prepare_database() -> AsyncGenerator[None, None]:
 async def client(prepare_database: Any) -> AsyncGenerator[AsyncClient, None]:
     async with AsyncClient(base_url="http://testserver") as c:
         yield c
-
-
-async def test_model_form_converter_exception(client: AsyncClient) -> None:
-    class CustomType(TypeDecorator):
-        impl = String
-
-    class Example(User):
-        data = Column(CustomType)
-
-    with pytest.raises(Exception):
-        await get_model_form(model=Example, engine=engine)
 
 
 async def test_model_form_converter_with_default(client: AsyncClient) -> None:

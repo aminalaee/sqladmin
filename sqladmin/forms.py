@@ -69,7 +69,7 @@ class ModelConverterBase:
                 if col_type.impl.__name__ in self.converters:  # type: ignore
                     return self.converters[col_type.impl.__name__]  # type: ignore
 
-        raise Exception(
+        raise Exception(  # pragma: nocover
             f"Could not find field converter for column {column.name} ({types[0]!r})."
         )
 
