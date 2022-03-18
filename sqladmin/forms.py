@@ -64,7 +64,12 @@ class ModelConverterBase:
             if col_type.__name__ in self.converters:
                 return self.converters[col_type.__name__]
 
-        raise Exception(
+            # Support for custom types like SQLModel which inherit TypeDecorator
+            if hasattr(col_type, "impl"):
+                if col_type.impl.__name__ in self.converters:  # type: ignore
+                    return self.converters[col_type.impl.__name__]  # type: ignore
+
+        raise Exception(  # pragma: nocover
             f"Could not find field converter for column {column.name} ({types[0]!r})."
         )
 
