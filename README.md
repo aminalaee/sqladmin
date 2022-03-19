@@ -39,7 +39,7 @@ Main features include:
 
 **Documentation**: [https://aminalaee.github.io/sqladmin](https://aminalaee.github.io/sqladmin)
 
-**Source Code**: [https://github.com/encode/starlette](https://github.com/encode/starlette)
+**Source Code**: [https://github.com/aminalaee/sqladmin](https://github.com/aminalaee/sqladmin)
 
 **Online Demo**: [Demo](https://python-sqladmin.herokuapp.com/admin/)
 
