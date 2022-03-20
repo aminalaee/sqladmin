@@ -25,3 +25,7 @@
         - column_searchable_list
         - search_placeholder
         - column_sortable_list
+        - form
+        - form_base_class
+        - form_columns
+        - form_excluded_columns

@@ -256,6 +256,7 @@ async def get_model_form(
     engine: Union[Engine, AsyncEngine],
     only: Sequence[str] = None,
     exclude: Sequence[str] = None,
+    form_class: Type[Form] = Form,
 ) -> Type[Form]:
     type_name = model.__name__ + "Form"
     converter = ModelConverter()
@@ -276,4 +277,4 @@ async def get_model_form(
         if field is not None:
             field_dict[name] = field
 
-    return type(type_name, (Form,), field_dict)
+    return type(type_name, (form_class,), field_dict)
