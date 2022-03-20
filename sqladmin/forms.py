@@ -1,6 +1,6 @@
 import inspect
 from enum import Enum
-from typing import Any, Callable, Dict, Sequence, Type, Union, no_type_check
+from typing import Any, Callable, Dict, Optional, Sequence, Type, Union, no_type_check
 
 import anyio
 from sqlalchemy import inspect as sqlalchemy_inspect, select
@@ -79,14 +79,21 @@ class ModelConverterBase:
         mapper: Mapper,
         prop: Union[ColumnProperty, RelationshipProperty],
         engine: Union[Engine, AsyncEngine],
+        label: Optional[str] = None,
+        field_args: Optional[Dict[str, Any]] = None
     ) -> UnboundField:
-        kwargs: Dict = {
-            "validators": [],
-            "filters": [],
-            "default": None,
-            "description": prop.doc,
-            "render_kw": {"class": "form-control"},
-        }
+        if field_args is not None:
+            kwargs = field_args.copy()
+        else:
+            kwargs = {}
+
+        kwargs: Dict[str, Any]
+        kwargs.setdefault("label", label)
+        kwargs.setdefault("validators", [])
+        kwargs.setdefault("filters", [])
+        kwargs.setdefault("default", None)
+        kwargs.setdefault("description", prop.doc)
+        kwargs.setdefault("render_kw", {"class": "form-control"})
 
         converter = None
         column = None
@@ -256,11 +263,15 @@ async def get_model_form(
     engine: Union[Engine, AsyncEngine],
     only: Sequence[str] = None,
     exclude: Sequence[str] = None,
+    column_labels: Dict[str, str] = None,
+    form_args: Optional[Dict[str, Dict[str, Any]]] = None,
     form_class: Type[Form] = Form,
 ) -> Type[Form]:
     type_name = model.__name__ + "Form"
     converter = ModelConverter()
     mapper = sqlalchemy_inspect(model)
+    form_args = form_args or {}
+    column_labels = column_labels or {}
 
     attributes = []
     for name, attr in mapper.attrs.items():
@@ -273,7 +284,9 @@ async def get_model_form(
 
     field_dict = {}
     for name, attr in attributes:
-        field = await converter.convert(model, mapper, attr, engine)
+        field_args = form_args.get(name, None)
+        label = column_labels.get(name, None)
+        field = await converter.convert(model, mapper, attr, engine, label, field_args)
         if field is not None:
             field_dict[name] = field
 

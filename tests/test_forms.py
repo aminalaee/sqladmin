@@ -98,6 +98,14 @@ async def test_model_form_exclude(client: AsyncClient) -> None:
     assert len(Form()._fields) == 8
 
 
+async def test_model_form_form_args(client: AsyncClient) -> None:
+    form_args = {
+        "name": {"label": "User Name"}
+    }
+    Form = await get_model_form(model=User, engine=engine, form_args=form_args)
+    assert Form()._fields["name"].label.text == "User Name"
+
+
 @pytest.mark.skipif(engine.name != "postgresql", reason="PostgreSQL only")
 async def test_model_form_postgresql(client: AsyncClient) -> None:
     class PostgresModel(Base):

@@ -320,6 +320,21 @@ class ModelAdmin(BaseModelAdmin, metaclass=ModelAdminMeta):
         ```
     """
 
+    form_args: ClassVar[Optional[Dict[str, Dict[str, Any]]]] = None
+    """Dictionary of form field arguments.
+    Refer to WTForms documentation for list of possible options.
+
+    ???+ example
+        ```python
+        from wtforms.validators import DataRequired
+
+        class MyModelAdmin(ModelAdmin, model=User):
+            form_args = dict(
+                name=dict(label="User Name", validators=[DataRequired()])
+            )
+        ```
+    """
+
     form_columns: ClassVar[Sequence[Union[str, InstrumentedAttribute]]] = []
     """List of columns to include in the form.
     Columns can either be string names or SQLAlchemy columns.
@@ -612,6 +627,8 @@ class ModelAdmin(BaseModelAdmin, metaclass=ModelAdminMeta):
             model=self.model,
             engine=self.engine,
             only=[i[1].key for i in self.get_form_columns()],
+            column_labels={k.key: v for k, v in self._column_labels.items()},
+            form_args=self.form_args,
             form_class=self.form_base_class,
         )
 
