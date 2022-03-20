@@ -99,11 +99,36 @@ async def test_model_form_exclude(client: AsyncClient) -> None:
 
 
 async def test_model_form_form_args(client: AsyncClient) -> None:
-    form_args = {
-        "name": {"label": "User Name"}
-    }
+    form_args = {"name": {"label": "User Name"}}
     Form = await get_model_form(model=User, engine=engine, form_args=form_args)
     assert Form()._fields["name"].label.text == "User Name"
+
+
+async def test_model_form_column_label(client: AsyncClient) -> None:
+    labels = {"name": "User Name"}
+    Form = await get_model_form(model=User, engine=engine, column_labels=labels)
+    assert Form()._fields["name"].label.text == "User Name"
+
+
+async def test_model_form_column_label_precedence(client: AsyncClient) -> None:
+    # Validator takes precedence over label.
+    form_args_user = {"name": {"label": "User Name (Use Me)"}}
+    labels_user = {"name": "User Name (Do Not Use Me)"}
+    Form = await get_model_form(
+        model=User, engine=engine, form_args=form_args_user, column_labels=labels_user
+    )
+    assert Form()._fields["name"].label.text == "User Name (Use Me)"
+
+    # If there are form args, but no "label", then read from labels mapping.
+    form_args_user = {"user": {}}
+    labels_user = {"user": "User (Use Me)"}
+    Form = await get_model_form(
+        model=Address,
+        engine=engine,
+        form_args=form_args_user,
+        column_labels=labels_user,
+    )
+    assert Form()._fields["user"].label.text == "User (Use Me)"
 
 
 @pytest.mark.skipif(engine.name != "postgresql", reason="PostgreSQL only")

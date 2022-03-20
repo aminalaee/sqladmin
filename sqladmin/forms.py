@@ -80,7 +80,7 @@ class ModelConverterBase:
         prop: Union[ColumnProperty, RelationshipProperty],
         engine: Union[Engine, AsyncEngine],
         label: Optional[str] = None,
-        field_args: Optional[Dict[str, Any]] = None
+        field_args: Optional[Dict[str, Any]] = None,
     ) -> UnboundField:
         if field_args is not None:
             kwargs = field_args.copy()
