@@ -27,7 +27,7 @@ from sqlalchemy.orm import (
 from sqlalchemy.orm.attributes import InstrumentedAttribute
 from sqlalchemy.sql.elements import ClauseElement
 from starlette.requests import Request
-from wtforms import Form
+from wtforms import Field, Form
 
 from sqladmin.exceptions import InvalidColumnError, InvalidModelError
 from sqladmin.forms import get_model_form
@@ -360,6 +360,16 @@ class ModelAdmin(BaseModelAdmin, metaclass=ModelAdminMeta):
         ```
     """
 
+    form_overrides: ClassVar[Optional[Dict[str, Type[Field]]]] = None
+    """Dictionary of form column overrides.
+
+    ???+ example
+        ```python
+        class UserAdmin(ModelAdmin, model=User):
+            form_overrides = dict(name=wtf.FileField)
+        ```
+    """
+
     def __init__(self) -> None:
         self._column_labels = self.get_column_labels()
 
@@ -630,6 +640,7 @@ class ModelAdmin(BaseModelAdmin, metaclass=ModelAdminMeta):
             column_labels={k.key: v for k, v in self._column_labels.items()},
             form_args=self.form_args,
             form_class=self.form_base_class,
+            form_overrides=self.form_overrides,
         )
 
     def search_placeholder(self) -> str:

@@ -18,6 +18,7 @@ from sqlalchemy.dialects.postgresql import INET, MACADDR, UUID
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship, sessionmaker
+from wtforms import Field
 
 from sqladmin.forms import get_model_form
 from tests.common import async_engine as engine
@@ -129,6 +130,17 @@ async def test_model_form_column_label_precedence(client: AsyncClient) -> None:
         column_labels=labels_user,
     )
     assert Form()._fields["user"].label.text == "User (Use Me)"
+
+
+async def test_model_form_override(client: AsyncClient) -> None:
+    class ExampleField(Field):
+        pass
+
+    Form = await get_model_form(
+        model=User, engine=engine, form_overrides={"name": ExampleField}
+    )
+    assert isinstance(Form()._fields["name"], ExampleField)
+    assert not isinstance(Form()._fields["email"], ExampleField)
 
 
 @pytest.mark.skipif(engine.name != "postgresql", reason="PostgreSQL only")
