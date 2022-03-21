@@ -538,9 +538,8 @@ class ModelAdmin(BaseModelAdmin, metaclass=ModelAdminMeta):
         exclude: Optional[Sequence[Union[str, InstrumentedAttribute]]] = None,
         default: Callable[[], List[Column]] = None,
     ) -> List[Tuple[str, Column]]:
-        """Many situations in the code call for constructing a list of columns.
-        This function generalizes this pattern for any sequence of inclusions
-        or exclusions.
+        """This function generalizes constructing a list of columns
+        for any sequence of inclusions or exclusions.
         """
         if include:
             attrs = [self.get_model_attr(attr) for attr in include]
