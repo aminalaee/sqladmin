@@ -192,9 +192,11 @@ def test_column_labels_by_string_name() -> None:
 
     class AddressAdmin(ModelAdmin, model=Address):
         column_details_list = [Address.user_id]
+        form_columns = ["user_id"]
         column_labels = {"user_id": "User ID"}
 
     assert AddressAdmin().get_details_columns() == [("User ID", Address.user_id)]
+    assert AddressAdmin().get_form_columns() == [("User ID", Address.user_id)]
 
 
 def test_column_labels_by_model_columns() -> None:
@@ -209,6 +211,74 @@ def test_column_labels_by_model_columns() -> None:
         column_labels = {Address.user_id: "User ID"}
 
     assert AddressAdmin().get_details_columns() == [("User ID", Address.user_id)]
+
+
+def test_form_columns_default() -> None:
+    class UserAdmin(ModelAdmin, model=User):
+        pass
+
+    assert UserAdmin().get_form_columns() == [
+        ("addresses", User.addresses.prop),
+        ("id", User.id),
+        ("name", User.name),
+    ]
+
+
+def test_form_columns_by_model_columns() -> None:
+    class UserAdmin(ModelAdmin, model=User):
+        form_columns = [User.id, User.name]
+
+    assert UserAdmin.form_columns == [User.id, User.name]
+
+
+def test_form_columns_by_str_name() -> None:
+    class AddressAdmin(ModelAdmin, model=Address):
+        form_columns = ["id", "user_id"]
+
+    assert AddressAdmin().get_form_columns() == [
+        ("id", Address.id),
+        ("user_id", Address.user_id),
+    ]
+
+
+def test_form_columns_invalid_attribute() -> None:
+    class ExampleAdmin(ModelAdmin, model=Address):
+        form_columns = ["example"]
+
+    with pytest.raises(InvalidColumnError) as exc:
+        ExampleAdmin().get_form_columns()
+
+    assert exc.match("Model 'Address' has no attribute 'example'.")
+
+
+def test_form_columns_both_include_and_exclude() -> None:
+    with pytest.raises(AssertionError) as exc:
+
+        class InvalidAdmin(ModelAdmin, model=User):
+            form_columns = ["id"]
+            form_excluded_columns = ["name"]
+
+    assert exc.match("Cannot use form_columns and form_excluded_columns together.")
+
+
+def test_form_excluded_columns_by_str_name() -> None:
+    class UserAdmin(ModelAdmin, model=User):
+        form_excluded_columns = ["id"]
+
+    assert sorted(UserAdmin().get_form_columns()) == [
+        ("addresses", User.addresses.prop),
+        ("name", User.name),
+    ]
+
+
+def test_form_excluded_columns_by_model_column() -> None:
+    class UserAdmin(ModelAdmin, model=User):
+        form_excluded_columns = [User.id]
+
+    assert sorted(UserAdmin().get_form_columns()) == [
+        ("addresses", User.addresses.prop),
+        ("name", User.name),
+    ]
 
 
 @pytest.mark.skipif(engine.name != "postgresql", reason="PostgreSQL only")

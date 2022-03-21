@@ -1,9 +1,11 @@
 from enum import Enum
 from typing import (
     Any,
+    Callable,
     ClassVar,
     Dict,
     List,
+    Optional,
     Sequence,
     Tuple,
     Type,
@@ -25,7 +27,7 @@ from sqlalchemy.orm import (
 from sqlalchemy.orm.attributes import InstrumentedAttribute
 from sqlalchemy.sql.elements import ClauseElement
 from starlette.requests import Request
-from wtforms import Form
+from wtforms import Field, Form
 
 from sqladmin.exceptions import InvalidColumnError, InvalidModelError
 from sqladmin.forms import get_model_form
@@ -71,6 +73,9 @@ class ModelAdminMeta(type):
         cls.icon = attrs.get("icon")
 
         mcls._check_conflicting_options(["column_list", "column_exclude_list"], attrs)
+        mcls._check_conflicting_options(
+            ["form_columns", "form_excluded_columns"], attrs
+        )
         mcls._check_conflicting_options(
             ["column_details_list", "column_details_exclude_list"], attrs
         )
@@ -283,6 +288,88 @@ class ModelAdmin(BaseModelAdmin, metaclass=ModelAdminMeta):
     edit_template: ClassVar[str] = "edit.html"
     """Edit view template. Default is `edit.html`."""
 
+    # Form
+    form: ClassVar[Optional[Type[Form]]] = None
+    """Form class.
+    Override if you want to use custom form for your model.
+    Will completely disable form scaffolding functionality.
+
+    ???+ example
+        ```python
+        class MyForm(Form):
+            name = StringField('Name')
+
+        class MyModelAdmin(ModelAdmin, model=User):
+            form = MyForm
+        ```
+    """
+
+    form_base_class: ClassVar[Type[Form]] = Form
+    """Base form class.
+    Will be used by form scaffolding function when creating model form.
+    Useful if you want to have custom constructor or override some fields.
+
+    ???+ example
+        ```python
+        class MyBaseForm(Form):
+            def do_something(self):
+                pass
+
+        class MyModelAdmin(ModelAdmin, model=User):
+            form_base_class = MyBaseForm
+        ```
+    """
+
+    form_args: ClassVar[Dict[str, Dict[str, Any]]] = {}
+    """Dictionary of form field arguments.
+    Refer to WTForms documentation for list of possible options.
+
+    ???+ example
+        ```python
+        from wtforms.validators import DataRequired
+
+        class MyModelAdmin(ModelAdmin, model=User):
+            form_args = dict(
+                name=dict(label="User Name", validators=[DataRequired()])
+            )
+        ```
+    """
+
+    form_columns: ClassVar[Sequence[Union[str, InstrumentedAttribute]]] = []
+    """List of columns to include in the form.
+    Columns can either be string names or SQLAlchemy columns.
+
+    ???+ note
+        By default all columns of Model are included in the form.
+
+    ???+ example
+        ```python
+        class UserAdmin(ModelAdmin, model=User):
+            form_columns = [User.name, User.mail]
+        ```
+    """
+
+    form_excluded_columns: ClassVar[Sequence[Union[str, InstrumentedAttribute]]] = []
+    """List of columns to exclude from the form.
+    Columns can either be string names or SQLAlchemy columns.
+
+    ???+ example
+        ```python
+        class UserAdmin(ModelAdmin, model=User):
+            form_excluded_columns = [User.id]
+        ```
+    """
+
+    form_overrides: ClassVar[Dict[str, Type[Field]]] = {}
+    """Dictionary of form column overrides.
+
+    ???+ example
+        ```python
+        class UserAdmin(ModelAdmin, model=User):
+            form_overrides = dict(name=wtf.FileField)
+        ```
+    """
+
     def __init__(self) -> None:
         self._column_labels = self.get_column_labels()
 
@@ -445,24 +532,37 @@ class ModelAdmin(BaseModelAdmin, metaclass=ModelAdminMeta):
     def get_model_attributes(self) -> List[Column]:
         return list(inspect(self.model).attrs)
 
+    def _build_column_list(
+        self,
+        include: Optional[Sequence[Union[str, InstrumentedAttribute]]] = None,
+        exclude: Optional[Sequence[Union[str, InstrumentedAttribute]]] = None,
+        default: Callable[[], List[Column]] = None,
+    ) -> List[Tuple[str, Column]]:
+        """This function generalizes constructing a list of columns
+        for any sequence of inclusions or exclusions.
+        """
+        if include:
+            attrs = [self.get_model_attr(attr) for attr in include]
+        elif exclude:
+            exclude_columns = [self.get_model_attr(attr) for attr in exclude]
+            all_attrs = self.get_model_attributes()
+            attrs = list(set(all_attrs) - set(exclude_columns))
+        else:
+            attrs = default()
+
+        return [(self._column_labels.get(attr, attr.key), attr) for attr in attrs]
+
     def get_list_columns(self) -> List[Tuple[str, Column]]:
         """Get list of columns to display in List page."""
 
         column_list = getattr(self, "column_list", None)
         column_exclude_list = getattr(self, "column_exclude_list", None)
 
-        if column_list:
-            attrs = [self.get_model_attr(attr) for attr in self.column_list]
-        elif column_exclude_list:
-            exclude_columns = [
-                self.get_model_attr(attr) for attr in column_exclude_list
-            ]
-            all_attrs = self.get_model_attributes()
-            attrs = list(set(all_attrs) - set(exclude_columns))
-        else:
-            attrs = [getattr(self.model, self.pk_column.name).prop]
-
-        return [(self._column_labels.get(attr, attr.key), attr) for attr in attrs]
+        return self._build_column_list(
+            include=column_list,
+            exclude=column_exclude_list,
+            default=lambda: [getattr(self.model, self.pk_column.name).prop],
+        )
 
     def get_details_columns(self) -> List[Tuple[str, Column]]:
         """Get list of columns to display in Detail page."""
@@ -470,18 +570,23 @@ class ModelAdmin(BaseModelAdmin, metaclass=ModelAdminMeta):
         column_details_list = getattr(self, "column_details_list", None)
         column_details_exclude_list = getattr(self, "column_details_exclude_list", None)
 
-        if column_details_list:
-            attrs = [self.get_model_attr(attr) for attr in column_details_list]
-        elif column_details_exclude_list:
-            exclude_columns = [
-                self.get_model_attr(attr) for attr in column_details_exclude_list
-            ]
-            all_attrs = self.get_model_attributes()
-            attrs = list(set(all_attrs) - set(exclude_columns))
-        else:
-            attrs = self.get_model_attributes()
+        return self._build_column_list(
+            include=column_details_list,
+            exclude=column_details_exclude_list,
+            default=self.get_model_attributes,
+        )
 
-        return [(self._column_labels.get(attr, attr.key), attr) for attr in attrs]
+    def get_form_columns(self) -> List[Tuple[str, Column]]:
+        """Get list of columns to display in the form."""
+
+        form_columns = getattr(self, "form_columns", None)
+        form_excluded_columns = getattr(self, "form_excluded_columns", None)
+
+        return self._build_column_list(
+            include=form_columns,
+            exclude=form_excluded_columns,
+            default=self.get_model_attributes,
+        )
 
     def get_column_labels(self) -> Dict[Column, str]:
         return {
@@ -525,7 +630,17 @@ class ModelAdmin(BaseModelAdmin, metaclass=ModelAdminMeta):
             await anyio.to_thread.run_sync(self._update_modeL_sync, pk, data)
 
     async def scaffold_form(self) -> Type[Form]:
-        return await get_model_form(model=self.model, engine=self.engine)
+        if self.form is not None:
+            return self.form
+        return await get_model_form(
+            model=self.model,
+            engine=self.engine,
+            only=[i[1].key for i in self.get_form_columns()],
+            column_labels={k.key: v for k, v in self._column_labels.items()},
+            form_args=self.form_args,
+            form_class=self.form_base_class,
+            form_overrides=self.form_overrides,
+        )
 
     def search_placeholder(self) -> str:
         """Return search placeholder text.

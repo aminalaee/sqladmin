@@ -1,6 +1,6 @@
 import inspect
 from enum import Enum
-from typing import Any, Callable, Dict, Sequence, Type, Union, no_type_check
+from typing import Any, Callable, Dict, Optional, Sequence, Type, Union, no_type_check
 
 import anyio
 from sqlalchemy import inspect as sqlalchemy_inspect, select
@@ -49,7 +49,13 @@ class ModelConverterBase:
 
         self.converters = converters
 
-    def get_converter(self, column: Column) -> Callable:
+    def get_converter(
+        self, prop: Union[ColumnProperty, RelationshipProperty]
+    ) -> Callable:
+        if not isinstance(prop, ColumnProperty):
+            return self.converters[prop.direction.name]
+
+        column = prop.columns[0]
         types = inspect.getmro(type(column.type))
 
         # Search by module + name
@@ -79,16 +85,24 @@ class ModelConverterBase:
         mapper: Mapper,
         prop: Union[ColumnProperty, RelationshipProperty],
         engine: Union[Engine, AsyncEngine],
+        field_args: Dict[str, Any] = None,
+        label: Optional[str] = None,
+        override: Optional[Type[Field]] = None,
     ) -> UnboundField:
-        kwargs: Dict = {
-            "validators": [],
-            "filters": [],
-            "default": None,
-            "description": prop.doc,
-            "render_kw": {"class": "form-control"},
-        }
+        if field_args:
+            kwargs = field_args.copy()
+        else:
+            kwargs = {}
 
-        converter = None
+        kwargs: Dict[str, Any]
+        kwargs.setdefault("label", label)
+        kwargs.setdefault("validators", [])
+        kwargs.setdefault("filters", [])
+        kwargs.setdefault("default", None)
+        kwargs.setdefault("description", prop.doc)
+        kwargs.setdefault("render_kw", {"class": "form-control"})
+
+        converter = self.get_converter(prop)
         column = None
 
         if isinstance(prop, ColumnProperty):
@@ -119,8 +133,6 @@ class ModelConverterBase:
                 kwargs["validators"].append(validators.Optional())
             else:
                 kwargs["validators"].append(validators.InputRequired())
-
-            converter = self.get_converter(column)
         else:
             nullable = True
             for pair in prop.local_remote_pairs:
@@ -150,9 +162,9 @@ class ModelConverterBase:
                     ]
                     kwargs["object_list"] = object_list
 
-            converter = self.converters[prop.direction.name]
-
-        assert converter is not None
+        if override is not None:
+            assert issubclass(override, Field)
+            return override(**kwargs)
 
         return converter(
             model=model, mapper=mapper, prop=prop, column=column, field_args=kwargs
@@ -256,10 +268,17 @@ async def get_model_form(
     engine: Union[Engine, AsyncEngine],
     only: Sequence[str] = None,
     exclude: Sequence[str] = None,
+    column_labels: Dict[str, str] = None,
+    form_args: Dict[str, Dict[str, Any]] = None,
+    form_class: Type[Form] = Form,
+    form_overrides: Dict[str, Dict[str, Type[Field]]] = None,
 ) -> Type[Form]:
     type_name = model.__name__ + "Form"
     converter = ModelConverter()
     mapper = sqlalchemy_inspect(model)
+    form_args = form_args or {}
+    column_labels = column_labels or {}
+    form_overrides = form_overrides or {}
 
     attributes = []
     for name, attr in mapper.attrs.items():
@@ -272,8 +291,13 @@ async def get_model_form(
 
     field_dict = {}
     for name, attr in attributes:
-        field = await converter.convert(model, mapper, attr, engine)
+        field_args = form_args.get(name, {})
+        label = column_labels.get(name, None)
+        override = form_overrides.get(name, None)
+        field = await converter.convert(
+            model, mapper, attr, engine, field_args, label, override
+        )
         if field is not None:
             field_dict[name] = field
 
-    return type(type_name, (Form,), field_dict)
+    return type(type_name, (form_class,), field_dict)

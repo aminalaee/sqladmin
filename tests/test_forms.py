@@ -18,7 +18,9 @@ from sqlalchemy.dialects.postgresql import INET, MACADDR, UUID
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship, sessionmaker
+from wtforms import Field, Form, StringField
 
+from sqladmin import ModelAdmin
 from sqladmin.forms import get_model_form
 from tests.common import async_engine as engine
 
@@ -98,6 +100,51 @@ async def test_model_form_exclude(client: AsyncClient) -> None:
     assert len(Form()._fields) == 8
 
 
+async def test_model_form_form_args(client: AsyncClient) -> None:
+    form_args = {"name": {"label": "User Name"}}
+    Form = await get_model_form(model=User, engine=engine, form_args=form_args)
+    assert Form()._fields["name"].label.text == "User Name"
+
+
+async def test_model_form_column_label(client: AsyncClient) -> None:
+    labels = {"name": "User Name"}
+    Form = await get_model_form(model=User, engine=engine, column_labels=labels)
+    assert Form()._fields["name"].label.text == "User Name"
+
+
+@pytest.mark.filterwarnings("ignore:^Dialect sqlite\\+aiosqlite.*$")
+async def test_model_form_column_label_precedence(client: AsyncClient) -> None:
+    # Validator takes precedence over label.
+    form_args_user = {"name": {"label": "User Name (Use Me)"}}
+    labels_user = {"name": "User Name (Do Not Use Me)"}
+    Form = await get_model_form(
+        model=User, engine=engine, form_args=form_args_user, column_labels=labels_user
+    )
+    assert Form()._fields["name"].label.text == "User Name (Use Me)"
+
+    # If there are form args, but no "label", then read from labels mapping.
+    form_args_user = {"user": {}}
+    labels_user = {"user": "User (Use Me)"}
+    Form = await get_model_form(
+        model=Address,
+        engine=engine,
+        form_args=form_args_user,
+        column_labels=labels_user,
+    )
+    assert Form()._fields["user"].label.text == "User (Use Me)"
+
+
+async def test_model_form_override(client: AsyncClient) -> None:
+    class ExampleField(Field):
+        pass
+
+    Form = await get_model_form(
+        model=User, engine=engine, form_overrides={"name": ExampleField}
+    )
+    assert isinstance(Form()._fields["name"], ExampleField)
+    assert not isinstance(Form()._fields["email"], ExampleField)
+
+
 @pytest.mark.skipif(engine.name != "postgresql", reason="PostgreSQL only")
 async def test_model_form_postgresql(client: AsyncClient) -> None:
     class PostgresModel(Base):
@@ -110,3 +157,17 @@ async def test_model_form_postgresql(client: AsyncClient) -> None:
 
     Form = await get_model_form(model=PostgresModel, engine=engine)
     assert len(Form()._fields) == 3
+
+
+async def test_form_override_scaffold(client: AsyncClient) -> None:
+    class MyForm(Form):
+        foo = StringField("Foo")
+
+    class UserAdmin(ModelAdmin, model=User):
+        form = MyForm
+
+    form_type = await UserAdmin().scaffold_form()
+    form = form_type()
+    assert isinstance(form, MyForm)
+    assert len(form._fields) == 1
+    assert "foo" in form._fields
