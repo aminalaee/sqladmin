@@ -4,6 +4,27 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## Version 0.1.7 - 2022-03-22
+
+### Added
+
+* Add SQLModel support by @aminalaee in https://github.com/aminalaee/sqladmin/pull/94
+* Add form-specific functionality to ModelAdmin by @dwreeves in https://github.com/aminalaee/sqladmin/pull/97
+* Add `UUID` field converter by @aminalaee in https://github.com/aminalaee/sqladmin/pull/82
+* Add PostgreSQL `INET` and `MACADDR` converters by @aminalaee in https://github.com/aminalaee/sqladmin/pull/83
+
+### Fixed
+
+* Fix Boolean field checkbox UI by @aminalaee in https://github.com/aminalaee/sqladmin/pull/88
+* Fix PostgreSQL UUID PrimaryKey by @aminalaee in https://github.com/aminalaee/sqladmin/pull/92
+* Fix Source Code Link by @baurt in https://github.com/aminalaee/sqladmin/pull/95
+
+## New Contributors
+* @baurt made their first contribution in https://github.com/aminalaee/sqladmin/pull/95
+* @dwreeves made their first contribution in https://github.com/aminalaee/sqladmin/pull/97
+
+**Full Changelog**: https://github.com/aminalaee/sqladmin/compare/0.1.6...0.1.7
+
 ## Version 0.1.6 - 2022-03-09
 
 ### Added
