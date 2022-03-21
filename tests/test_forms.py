@@ -23,7 +23,6 @@ from wtforms import Field, Form, StringField
 from sqladmin import ModelAdmin
 from sqladmin.forms import get_model_form
 from tests.common import async_engine as engine
-from tests.test_models import User
 
 pytestmark = pytest.mark.anyio
 
