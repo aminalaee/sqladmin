@@ -304,7 +304,7 @@ class ModelAdmin(BaseModelAdmin, metaclass=ModelAdminMeta):
         ```
     """
 
-    form_base_class: ClassVar[Optional[Type[Form]]] = Form
+    form_base_class: ClassVar[Type[Form]] = Form
     """Base form class.
     Will be used by form scaffolding function when creating model form.
     Useful if you want to have custom constructor or override some fields.
@@ -320,7 +320,7 @@ class ModelAdmin(BaseModelAdmin, metaclass=ModelAdminMeta):
         ```
     """
 
-    form_args: ClassVar[Optional[Dict[str, Dict[str, Any]]]] = None
+    form_args: ClassVar[Dict[str, Dict[str, Any]]] = {}
     """Dictionary of form field arguments.
     Refer to WTForms documentation for list of possible options.
 
@@ -360,7 +360,7 @@ class ModelAdmin(BaseModelAdmin, metaclass=ModelAdminMeta):
         ```
     """
 
-    form_overrides: ClassVar[Optional[Dict[str, Type[Field]]]] = None
+    form_overrides: ClassVar[Dict[str, Type[Field]]] = {}
     """Dictionary of form column overrides.
 
     ???+ example

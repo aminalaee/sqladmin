@@ -18,10 +18,12 @@ from sqlalchemy.dialects.postgresql import INET, MACADDR, UUID
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship, sessionmaker
-from wtforms import Field
+from wtforms import Field, Form, StringField
 
+from sqladmin import ModelAdmin
 from sqladmin.forms import get_model_form
 from tests.common import async_engine as engine
+from tests.test_models import User
 
 pytestmark = pytest.mark.anyio
 
@@ -111,6 +113,7 @@ async def test_model_form_column_label(client: AsyncClient) -> None:
     assert Form()._fields["name"].label.text == "User Name"
 
 
+@pytest.mark.filterwarnings("ignore:^Dialect sqlite\\+aiosqlite.*$")
 async def test_model_form_column_label_precedence(client: AsyncClient) -> None:
     # Validator takes precedence over label.
     form_args_user = {"name": {"label": "User Name (Use Me)"}}
@@ -155,3 +158,17 @@ async def test_model_form_postgresql(client: AsyncClient) -> None:
 
     Form = await get_model_form(model=PostgresModel, engine=engine)
     assert len(Form()._fields) == 3
+
+
+async def test_form_override_scaffold(client: AsyncClient) -> None:
+    class MyForm(Form):
+        foo = StringField("Foo")
+
+    class UserAdmin(ModelAdmin, model=User):
+        form = MyForm
+
+    form_type = await UserAdmin().scaffold_form()
+    form = form_type()
+    assert isinstance(form, MyForm)
+    assert len(form._fields) == 1
+    assert "foo" in form._fields

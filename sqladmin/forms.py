@@ -85,11 +85,11 @@ class ModelConverterBase:
         mapper: Mapper,
         prop: Union[ColumnProperty, RelationshipProperty],
         engine: Union[Engine, AsyncEngine],
+        field_args: Dict[str, Any] = None,
         label: Optional[str] = None,
-        field_args: Optional[Dict[str, Any]] = None,
         override: Optional[Type[Field]] = None,
     ) -> UnboundField:
-        if field_args is not None:
+        if field_args:
             kwargs = field_args.copy()
         else:
             kwargs = {}
@@ -269,9 +269,9 @@ async def get_model_form(
     only: Sequence[str] = None,
     exclude: Sequence[str] = None,
     column_labels: Dict[str, str] = None,
-    form_args: Optional[Dict[str, Dict[str, Any]]] = None,
+    form_args: Dict[str, Dict[str, Any]] = None,
     form_class: Type[Form] = Form,
-    form_overrides: Optional[Dict[str, Dict[str, Type[Field]]]] = None,
+    form_overrides: Dict[str, Dict[str, Type[Field]]] = None,
 ) -> Type[Form]:
     type_name = model.__name__ + "Form"
     converter = ModelConverter()
@@ -291,11 +291,11 @@ async def get_model_form(
 
     field_dict = {}
     for name, attr in attributes:
-        field_args = form_args.get(name, None)
+        field_args = form_args.get(name, {})
         label = column_labels.get(name, None)
         override = form_overrides.get(name, None)
         field = await converter.convert(
-            model, mapper, attr, engine, label, field_args, override
+            model, mapper, attr, engine, field_args, label, override
         )
         if field is not None:
             field_dict[name] = field
