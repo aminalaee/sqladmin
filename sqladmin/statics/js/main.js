@@ -40,3 +40,10 @@ $(document).on('click','#search-reset',function() {
     window.location.href = window.location.search.replace( /search=[^&]*/, "");
   }
 });
+
+// Press enter to search
+$(document).on('keypress','#search-input',function(e) {
+  if (e.which === 13) {
+    $('#search-button').click();
+  }
+});
