@@ -30,9 +30,10 @@ SQLAdmin is a flexible Admin interface for SQLAlchemy models.
 
 Main features include:
 
-* SQLAlchemy sync/async engines
+* [SQLAlchemy](https://github.com/sqlalchemy/sqlalchemy) sync/async engines
 * [Starlette](https://github.com/encode/starlette) integration
 * [FastAPI](https://github.com/tiangolo/fastapi) integration
+* [SQLModel](https://github.com/tiangolo/sqlmodel) support
 * Modern UI using [Tabler](https://github.com/tabler/tabler)
 
 ---
