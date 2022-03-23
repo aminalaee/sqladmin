@@ -125,6 +125,13 @@ class BaseAdminView(BaseAdmin):
         if not model_admin.can_edit or not model_admin.is_accessible(request):
             raise HTTPException(status_code=403)
 
+    async def _export(self, request: Request) -> None:
+        model_admin = self._find_model_admin(request.path_params["identity"])
+        if not model_admin.can_export or not model_admin.is_accessible(request):
+            raise HTTPException(status_code=403)
+        if request.path_params["export_type"] not in model_admin.export_types:
+            raise HTTPException(status_code=404)
+
 
 class Admin(BaseAdminView):
     """Main entrypoint to admin interface.
@@ -209,6 +216,12 @@ class Admin(BaseAdminView):
                     endpoint=self.edit,
                     name="edit",
                     methods=["GET", "POST"],
+                ),
+                Route(
+                    "/{identity}/export/{export_type}",
+                    endpoint=self.export,
+                    name="export",
+                    methods=["GET"],
                 ),
             ],
             exception_handlers={HTTPException: http_exception},
@@ -352,3 +365,19 @@ class Admin(BaseAdminView):
             request.url_for("admin:list", identity=identity),
             status_code=302,
         )
+
+    async def export(self, request: Request) -> Response:
+        """Edit model endpoint."""
+
+        await self._export(request)
+
+        identity = request.path_params["identity"]
+        export_type = request.path_params["export_type"]
+
+        model_admin = self._find_model_admin(identity)
+        if model_admin.export_max_rows is not None:
+            row_limit = model_admin.export_max_rows
+        else:
+            row_limit = model_admin.page_size
+        pagination = await model_admin.list(1, row_limit)
+        return model_admin.export_data(pagination.rows, export_type=export_type)

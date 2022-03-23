@@ -281,6 +281,86 @@ def test_form_excluded_columns_by_model_column() -> None:
     ]
 
 
+def test_export_columns_default() -> None:
+    class UserAdmin(ModelAdmin, model=User):
+        pass
+
+    assert UserAdmin().get_export_columns() == [
+        ("id", User.id),
+    ]
+
+
+def test_export_columns_default_to_list_columns() -> None:
+    class UserAdmin(ModelAdmin, model=User):
+        column_list = [User.id, User.name]
+
+    assert UserAdmin().get_export_columns() == [("id", User.id), ("name", User.name)]
+
+    class UserAdmin2(ModelAdmin, model=User):
+        column_list = [User.id]
+
+    assert UserAdmin2().get_export_columns() == [("id", User.id)]
+
+
+def test_export_columns_by_model_columns() -> None:
+    class UserAdmin(ModelAdmin, model=User):
+        column_export_list = [User.id, User.name]
+
+    assert UserAdmin.column_export_list == [User.id, User.name]
+
+
+def test_export_columns_by_str_name() -> None:
+    class AddressAdmin(ModelAdmin, model=Address):
+        column_export_list = ["id", "user_id"]
+
+    assert AddressAdmin().get_export_columns() == [
+        ("id", Address.id),
+        ("user_id", Address.user_id),
+    ]
+
+
+def test_export_columns_invalid_attribute() -> None:
+    class ExampleAdmin(ModelAdmin, model=Address):
+        column_export_list = ["example"]
+
+    with pytest.raises(InvalidColumnError) as exc:
+        ExampleAdmin().get_export_columns()
+
+    assert exc.match("Model 'Address' has no attribute 'example'.")
+
+
+def test_export_columns_both_include_and_exclude() -> None:
+    with pytest.raises(AssertionError) as exc:
+
+        class InvalidAdmin(ModelAdmin, model=User):
+            column_export_list = ["id"]
+            column_export_exclude_list = ["name"]
+
+    assert exc.match(
+        "Cannot use column_export_list and" " column_export_exclude_list together."
+    )
+
+
+def test_export_excluded_columns_by_str_name() -> None:
+    class UserAdmin(ModelAdmin, model=User):
+        column_export_exclude_list = ["id"]
+
+    assert sorted(UserAdmin().get_export_columns()) == [
+        ("addresses", User.addresses.prop),
+        ("name", User.name),
+    ]
+
+
+def test_export_excluded_columns_by_model_column() -> None:
+    class UserAdmin(ModelAdmin, model=User):
+        column_export_exclude_list = [User.id]
+
+    assert sorted(UserAdmin().get_export_columns()) == [
+        ("addresses", User.addresses.prop),
+        ("name", User.name),
+    ]
+
+
 @pytest.mark.skipif(engine.name != "postgresql", reason="PostgreSQL only")
 def test_get_python_type_postgresql() -> None:
     class PostgresModel(Base):

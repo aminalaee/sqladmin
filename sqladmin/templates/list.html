@@ -5,11 +5,33 @@
     <div class="card-header">
       <h3 class="card-title">{{ model_admin.name_plural }}</h3>
       <div class="ms-auto">
+        {% if model_admin.can_export %}
+        {% if model_admin.export_types | length > 1 %}
+        <div class="ms-3 d-inline-block dropdown">
+          <a href="#" class="btn btn-secondary dropdown-toggle" id="dropdownMenuButton1" data-bs-toggle="dropdown" aria-expanded="false">
+            Export
+          </a>
+          <ul class="dropdown-menu" aria-labelledby="dropdownMenuButton1">
+            {% for export_type in model_admin.export_types %}
+            <li><a class="dropdown-item" href="{{ url_for('admin:export', identity=model_admin.identity, export_type=export_type) }}">{{ export_type | upper }}</a></li>
+            {% endfor %}
+          </ul>
+        </div>
+        {% elif model_admin.export_types | length == 1 %}
+        <div class="ms-3 d-inline-block">
+          <a href="{{ url_for('admin:export', identity=model_admin.identity, export_type=model_admin.export_types[0]) }}" class="btn btn-secondary">
+            Export
+          </a>
+        </div>
+        {% endif %}
+        {% endif %}
+        {% if model_admin.can_create %}
         <div class="ms-3 d-inline-block">
           <a href="{{ url_for('admin:create', identity=model_admin.identity) }}" class="btn btn-primary">
             + New {{ model_admin.name }}
           </a>
         </div>
+        {% endif %}
       </div>
     </div>
     <div class="card-body border-bottom py-3">
