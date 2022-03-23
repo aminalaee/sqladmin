@@ -25,6 +25,10 @@
         - column_searchable_list
         - search_placeholder
         - column_sortable_list
+        - column_export_list
+        - column_export_exclude_list
+        - export_types
+        - export_max_rows
         - form
         - form_base_class
         - form_args
