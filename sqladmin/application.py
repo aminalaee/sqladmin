@@ -367,7 +367,7 @@ class Admin(BaseAdminView):
         )
 
     async def export(self, request: Request) -> Response:
-        """Edit model endpoint."""
+        """Export model endpoint."""
 
         await self._export(request)
 
