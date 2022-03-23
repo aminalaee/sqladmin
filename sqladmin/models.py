@@ -304,7 +304,7 @@ class ModelAdmin(BaseModelAdmin, metaclass=ModelAdminMeta):
         ```
     """
 
-    form_base_class: ClassVar[Type[Form]] = Form
+    form_base_class: ClassVar[Type[Form]] = Type[Form]
     """Base form class.
     Will be used by form scaffolding function when creating model form.
     Useful if you want to have custom constructor or override some fields.
