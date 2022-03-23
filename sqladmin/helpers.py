@@ -5,6 +5,9 @@ import unicodedata
 from abc import ABC, abstractmethod
 from typing import Callable, Generator, List, TypeVar, Union
 
+T = TypeVar("T")
+
+
 _filename_ascii_strip_re = re.compile(r"[^A-Za-z0-9_.-]")
 _windows_device_files = (
     "CON",
@@ -19,9 +22,6 @@ _windows_device_files = (
     "PRN",
     "NUL",
 )
-
-
-T = TypeVar("T")
 
 
 def as_str(s: Union[str, bytes]) -> str:
@@ -90,7 +90,7 @@ class Writer(ABC):
         pass  # pragma: no cover
 
 
-class _Echo(object):
+class _PseudoBuffer(object):
     """An object that implements just the write method of the file-like
     interface.
     """
@@ -104,11 +104,12 @@ def stream_to_csv(
 ) -> Generator[T, None, None]:
     """Function that takes a callable (that yields from a CSV Writer), and
     provides it a writer that streams the output directly instead of
-    storing it in a buffer.
+    storing it in a buffer. The direct output stream is intended to go
+    inside a `starlette.responses.StreamingResponse`.
 
     Loosely adapted from here:
 
     https://docs.djangoproject.com/en/1.8/howto/outputting-csv/
     """
-    writer = csv.writer(_Echo())
+    writer = csv.writer(_PseudoBuffer())
     return callback(writer)
