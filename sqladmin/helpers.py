@@ -1,7 +1,9 @@
+import csv
 import os
 import re
 import unicodedata
-from typing import Union
+from abc import ABC, abstractmethod
+from typing import Callable, Generator, List, TypeVar, Union
 
 _filename_ascii_strip_re = re.compile(r"[^A-Za-z0-9_.-]")
 _windows_device_files = (
@@ -17,6 +19,9 @@ _windows_device_files = (
     "PRN",
     "NUL",
 )
+
+
+T = TypeVar("T")
 
 
 def as_str(s: Union[str, bytes]) -> str:
@@ -66,3 +71,44 @@ def secure_filename(filename: str) -> str:
         filename = f"_{filename}"
 
     return filename
+
+
+class Writer(ABC):
+    """https://docs.python.org/3/library/csv.html#writer-objects"""
+
+    @abstractmethod
+    def writerow(self, row: List[str]) -> None:
+        pass
+
+    @abstractmethod
+    def writerows(self, rows: List[List[str]]) -> None:
+        pass
+
+    @property
+    @abstractmethod
+    def dialect(self) -> csv.Dialect:
+        pass
+
+
+class _Echo(object):
+    """An object that implements just the write method of the file-like
+    interface.
+    """
+
+    def write(self, value: T) -> T:
+        return value
+
+
+def stream_to_csv(
+    callback: Callable[[Writer], Generator[T, None, None]]
+) -> Generator[T, None, None]:
+    """Function that takes a callable (that yields from a CSV Writer), and
+    provides it a writer that streams the output directly instead of
+    storing it in a buffer.
+
+    Loosely adapted from here:
+
+    https://docs.djangoproject.com/en/1.8/howto/outputting-csv/
+    """
+    writer = csv.writer(_Echo())
+    return callback(writer)

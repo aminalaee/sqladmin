@@ -1,4 +1,3 @@
-import csv
 import time
 from enum import Enum
 from typing import (
@@ -6,6 +5,7 @@ from typing import (
     Callable,
     ClassVar,
     Dict,
+    Generator,
     List,
     Optional,
     Sequence,
@@ -35,10 +35,12 @@ from wtforms import Field, Form
 from sqladmin.exceptions import InvalidColumnError, InvalidModelError
 from sqladmin.forms import get_model_form
 from sqladmin.helpers import (
+    Writer,
     as_str,
     prettify_class_name,
     secure_filename,
     slugify_class_name,
+    stream_to_csv,
 )
 from sqladmin.pagination import Pagination
 
@@ -755,23 +757,8 @@ class ModelAdmin(BaseModelAdmin, metaclass=ModelAdminMeta):
         self,
         data: List[Any],
     ) -> StreamingResponse:
-        # https://docs.djangoproject.com/en/1.8/howto/outputting-csv/
-        class Echo(object):
-            """
-            An object that implements just the write method of the file-like
-            interface.
-            """
 
-            def write(self, value):
-                """
-                Write the value by returning it, instead of storing
-                in a buffer.
-                """
-                return value
-
-        writer = csv.writer(Echo())
-
-        def generate():
+        def generate(writer: Writer) -> Generator[List[str], None, None]:
             # Append the column titles at the beginning
             titles = [c[0] for c in self._export_attrs]
             yield writer.writerow(titles)
@@ -787,7 +774,7 @@ class ModelAdmin(BaseModelAdmin, metaclass=ModelAdminMeta):
         filename = secure_filename(self.get_export_name(export_type="csv"))
 
         return StreamingResponse(
-            content=generate(),
+            content=stream_to_csv(generate),
             media_type="text/csv",
             headers={"Content-Disposition": f"attachment;filename={filename}"},
         )
