@@ -334,10 +334,9 @@ class ModelAdmin(BaseModelAdmin, metaclass=ModelAdminMeta):
     Currently only `csv` is supported.
     """
 
-    export_max_rows: ClassVar[Optional[int]] = 0
+    export_max_rows: ClassVar[int] = 0
     """Maximum number of rows allowed for export.
-
-    Unlimited by default. Uses `page_size` if set to `None`.
+    Unlimited by default.
     """
 
     # Form
@@ -660,7 +659,7 @@ class ModelAdmin(BaseModelAdmin, metaclass=ModelAdminMeta):
         return self._build_column_list(
             include=columns,
             exclude=excluded_columns,
-            default=lambda: [getattr(self.model, self.pk_column.name).prop],
+            default=lambda: self._list_columns,
         )
 
     def get_column_labels(self) -> Dict[Column, str]:
@@ -757,7 +756,6 @@ class ModelAdmin(BaseModelAdmin, metaclass=ModelAdminMeta):
         self,
         data: List[Any],
     ) -> StreamingResponse:
-
         def generate(writer: Writer) -> Generator[List[str], None, None]:
             # Append the column titles at the beginning
             titles = [c[0] for c in self._export_attrs]

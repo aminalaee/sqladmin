@@ -375,9 +375,5 @@ class Admin(BaseAdminView):
         export_type = request.path_params["export_type"]
 
         model_admin = self._find_model_admin(identity)
-        if model_admin.export_max_rows is not None:
-            row_limit = model_admin.export_max_rows
-        else:
-            row_limit = model_admin.page_size
-        pagination = await model_admin.list(1, row_limit)
+        pagination = await model_admin.list(1, model_admin.export_max_rows)
         return model_admin.export_data(pagination.rows, export_type=export_type)

@@ -68,7 +68,7 @@ def secure_filename(filename: str) -> str:
         and filename
         and filename.split(".")[0].upper() in _windows_device_files
     ):
-        filename = f"_{filename}"
+        filename = f"_{filename}"  # pragma: no cover
 
     return filename
 
@@ -78,16 +78,16 @@ class Writer(ABC):
 
     @abstractmethod
     def writerow(self, row: List[str]) -> None:
-        pass
+        pass  # pragma: no cover
 
     @abstractmethod
     def writerows(self, rows: List[List[str]]) -> None:
-        pass
+        pass  # pragma: no cover
 
     @property
     @abstractmethod
     def dialect(self) -> csv.Dialect:
-        pass
+        pass  # pragma: no cover
 
 
 class _Echo(object):
