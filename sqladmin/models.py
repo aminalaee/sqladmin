@@ -738,11 +738,7 @@ class ModelAdmin(BaseModelAdmin, metaclass=ModelAdminMeta):
 
     def get_export_name(self, export_type: str) -> str:
         """The file name when exporting."""
-        filename = "%s_%s.%s" % (
-            self.name,
-            time.strftime("%Y-%m-%d_%H-%M-%S"),
-            export_type,
-        )
+        filename = f"{self.name}_{time.strftime('%Y-%m-%d_%H-%M-%S')}.{export_type}"
         return filename
 
     def export_data(
