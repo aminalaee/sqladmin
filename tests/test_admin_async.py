@@ -96,6 +96,7 @@ class UserAdmin(ModelAdmin, model=User):
     column_labels = {User.email: "Email"}
     column_searchable_list = [User.name]
     column_sortable_list = [User.id]
+    column_export_list = [User.name, User.status]
 
 
 class AddressAdmin(ModelAdmin, model=Address):
@@ -553,3 +554,22 @@ async def test_sortable_list(client: AsyncClient) -> None:
         response.text.count("http://testserver/admin/user/list?sortBy=id&amp;sort=asc")
         == 1
     )
+
+
+async def test_export_csv(client: AsyncClient) -> None:
+    user = User(name="Daniel", status="ACTIVE")
+    session.add(user)
+    await session.commit()
+
+    response = await client.get("/admin/user/export/csv")
+    assert response.text == "name,status\r\nDaniel,ACTIVE\r\n"
+
+
+async def test_export_bad_type_is_404(client: AsyncClient) -> None:
+    response = await client.get("/admin/user/export/bad_type")
+    assert response.status_code == 404
+
+
+async def test_export_permission(client: AsyncClient) -> None:
+    response = await client.get("/admin/movie/export/csv")
+    assert response.status_code == 403

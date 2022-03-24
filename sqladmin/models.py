@@ -1,9 +1,11 @@
+import time
 from enum import Enum
 from typing import (
     Any,
     Callable,
     ClassVar,
     Dict,
+    Generator,
     List,
     Optional,
     Sequence,
@@ -27,11 +29,19 @@ from sqlalchemy.orm import (
 from sqlalchemy.orm.attributes import InstrumentedAttribute
 from sqlalchemy.sql.elements import ClauseElement
 from starlette.requests import Request
+from starlette.responses import StreamingResponse
 from wtforms import Field, Form
 
 from sqladmin.exceptions import InvalidColumnError, InvalidModelError
 from sqladmin.forms import get_model_form
-from sqladmin.helpers import prettify_class_name, slugify_class_name
+from sqladmin.helpers import (
+    Writer,
+    as_str,
+    prettify_class_name,
+    secure_filename,
+    slugify_class_name,
+    stream_to_csv,
+)
 from sqladmin.pagination import Pagination
 
 __all__ = [
@@ -78,6 +88,9 @@ class ModelAdminMeta(type):
         )
         mcls._check_conflicting_options(
             ["column_details_list", "column_details_exclude_list"], attrs
+        )
+        mcls._check_conflicting_options(
+            ["column_export_list", "column_export_exclude_list"], attrs
         )
 
         return cls
@@ -163,6 +176,11 @@ class ModelAdmin(BaseModelAdmin, metaclass=ModelAdminMeta):
 
     can_view_details: ClassVar[bool] = True
     """Permission for viewing full details of Models.
+    Default value is set to `True`.
+    """
+
+    can_export: ClassVar[bool] = True
+    """Permission for exporting lists of Models.
     Default value is set to `True`.
     """
 
@@ -288,6 +306,39 @@ class ModelAdmin(BaseModelAdmin, metaclass=ModelAdminMeta):
     edit_template: ClassVar[str] = "edit.html"
     """Edit view template. Default is `edit.html`."""
 
+    # Export
+    column_export_list: ClassVar[List[Union[str, InstrumentedAttribute]]] = []
+    """List of columns to include when exporting.
+    Columns can either be string names or SQLAlchemy columns.
+
+    ???+ example
+        ```python
+        class UserAdmin(ModelAdmin, model=User):
+            column_export_list = [User.id, User.name]
+        ```
+    """
+
+    column_export_exclude_list: ClassVar[List[Union[str, InstrumentedAttribute]]] = []
+    """List of columns to exclude when exporting.
+    Columns can either be string names or SQLAlchemy columns.
+
+    ???+ example
+        ```python
+        class UserAdmin(ModelAdmin, model=User):
+            column_export_exclude_list = [User.id, User.name]
+        ```
+    """
+
+    export_types: ClassVar[List[str]] = ["csv"]
+    """A list of available export filetypes.
+    Currently only `csv` is supported.
+    """
+
+    export_max_rows: ClassVar[int] = 0
+    """Maximum number of rows allowed for export.
+    Unlimited by default.
+    """
+
     # Form
     form: ClassVar[Optional[Type[Form]]] = None
     """Form class.
@@ -397,6 +448,10 @@ class ModelAdmin(BaseModelAdmin, metaclass=ModelAdminMeta):
             if isinstance(attr, RelationshipProperty)
         ]
 
+        self._form_attrs = self.get_form_columns()
+
+        self._export_attrs = self.get_export_columns()
+
         self._search_fields = [
             getattr(self.model, self.get_model_attr(attr).key)
             for attr in self.column_searchable_list or []
@@ -454,7 +509,12 @@ class ModelAdmin(BaseModelAdmin, metaclass=ModelAdminMeta):
         return rows[0]
 
     async def list(
-        self, page: int, page_size: int, search: str, sort_by: str, sort: str
+        self,
+        page: int,
+        page_size: int,
+        search: Optional[str] = None,
+        sort_by: Optional[str] = None,
+        sort: str = "asc",
     ) -> Pagination:
         page_size = min(page_size or self.page_size, max(self.page_size_options))
 
@@ -588,6 +648,20 @@ class ModelAdmin(BaseModelAdmin, metaclass=ModelAdminMeta):
             default=self.get_model_attributes,
         )
 
+    def get_export_columns(self) -> List[Tuple[str, Column]]:
+        """Get list of columns to export."""
+
+        columns = getattr(self, "column_export_list", None)
+        excluded_columns = getattr(self, "column_export_exclude_list", None)
+        if not columns and not excluded_columns:
+            return self.get_list_columns()
+
+        return self._build_column_list(
+            include=columns,
+            exclude=excluded_columns,
+            default=lambda: self._list_columns,
+        )
+
     def get_column_labels(self) -> Dict[Column, str]:
         return {
             self.get_model_attr(column_label): value
@@ -635,7 +709,7 @@ class ModelAdmin(BaseModelAdmin, metaclass=ModelAdminMeta):
         return await get_model_form(
             model=self.model,
             engine=self.engine,
-            only=[i[1].key for i in self.get_form_columns()],
+            only=[i[1].key for i in self._form_attrs],
             column_labels={k.key: v for k, v in self._column_labels.items()},
             form_args=self.form_args,
             form_class=self.form_base_class,
@@ -662,3 +736,43 @@ class ModelAdmin(BaseModelAdmin, metaclass=ModelAdminMeta):
             self._column_labels.get(field, field.key) for field in search_fields
         ]
         return ", ".join(field_names)
+
+    def get_export_name(self, export_type: str) -> str:
+        """The file name when exporting."""
+        filename = f"{self.name}_{time.strftime('%Y-%m-%d_%H-%M-%S')}.{export_type}"
+        return filename
+
+    def export_data(
+        self,
+        data: List[Any],
+        export_type: str = "csv",
+    ) -> StreamingResponse:
+        if export_type == "csv":
+            return self._export_csv(data)
+        else:
+            raise NotImplementedError("Only export_type='csv' is implemented.")
+
+    def _export_csv(
+        self,
+        data: List[Any],
+    ) -> StreamingResponse:
+        def generate(writer: Writer) -> Generator[List[str], None, None]:
+            # Append the column titles at the beginning
+            titles = [c[0] for c in self._export_attrs]
+            yield writer.writerow(titles)
+
+            for row in data:
+                vals = [
+                    as_str(self.get_attr_value(row, c[1])) for c in self._export_attrs
+                ]
+                yield writer.writerow(vals)
+
+        # `get_export_name` can be subclassed.
+        # So we want to keep the filename secure outside that method.
+        filename = secure_filename(self.get_export_name(export_type="csv"))
+
+        return StreamingResponse(
+            content=stream_to_csv(generate),
+            media_type="text/csv",
+            headers={"Content-Disposition": f"attachment;filename={filename}"},
+        )
