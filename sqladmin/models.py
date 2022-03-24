@@ -544,6 +544,17 @@ class ModelAdmin(BaseModelAdmin, metaclass=ModelAdminMeta):
 
         return pagination
 
+    async def get_model_objects(self, limit: int = 0) -> List[Any]:
+        # For unlimited rows this should pass None
+        limit = None if limit == 0 else limit
+        stmt = select(self.model).limit(limit=limit)
+
+        for _, relation in self._list_relations:
+            stmt = stmt.options(selectinload(relation.key))
+
+        rows = await self._run_query(stmt)
+        return rows
+
     async def get_model_by_pk(self, value: Any) -> Any:
         stmt = select(self.model).where(
             self.pk_column == self._get_column_python_type(self.pk_column)(value)
