@@ -22,6 +22,7 @@ class User(Base):
 
     id = Column(Integer, primary_key=True)
     name = Column(String)
+    email = Column(String)
 
 
 Base.metadata.create_all(engine)  # Create tables
@@ -148,6 +149,27 @@ The pagination options in the list page can be configured. The available options
     class UserAdmin(ModelAdmin, model=User):
         page_size = 50
         page_size_options = [25, 50, 100, 200]
+    ```
+
+## Form options
+
+SQLAdmin allows customizing how forms work with your models.
+The forms are based on `WTForms` package and include the following options:
+
+* `form`: Default form to be used for creating or editing the model. Default is `None` and form is created dynamically.
+* `form_base_class`: Default base class for creating forms. Default is `wtforms.Form`.
+* `form_args`: Dictionary of form field arguments supported by WTForms.
+* `form_columns`: List of model columns to be included in the form. Default is all model columns.
+* `form_excluded_columns`: List of model columns to be excluded from the form.
+* `form_overrides`: Dictionary of form fields to override when creating the form.
+
+!!! example
+
+    ```python
+    class UserAdmin(ModelAdmin, model=User):
+        form_columns = [User.name]
+        form_args = dict(name=dict(label="Full name"))
+        form_overrides = dict(email=wtforms.EmailField)
     ```
 
 ## Templates
