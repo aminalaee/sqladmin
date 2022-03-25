@@ -102,6 +102,7 @@ class UserAdmin(ModelAdmin, model=User):
 class AddressAdmin(ModelAdmin, model=Address):
     column_list = ["id", "user_id", "user"]
     name_plural = "Addresses"
+    export_max_rows = 3
 
 
 class MovieAdmin(ModelAdmin, model=Movie):
@@ -563,6 +564,27 @@ async def test_export_csv(client: AsyncClient) -> None:
 
     response = await client.get("/admin/user/export/csv")
     assert response.text == "name,status\r\nDaniel,ACTIVE\r\n"
+
+
+async def test_export_csv_row_count(client: AsyncClient) -> None:
+    def row_count(resp) -> int:
+        return resp.text.count("\r\n") - 1
+
+    for _ in range(20):
+        user = User(name="Raymond")
+        session.add(user)
+        await session.flush()
+
+        address = Address(user_id=user.id)
+        session.add(address)
+
+    await session.commit()
+
+    response = await client.get("/admin/user/export/csv")
+    assert row_count(response) == 20
+
+    response = await client.get("/admin/address/export/csv")
+    assert row_count(response) == 3
 
 
 async def test_export_bad_type_is_404(client: AsyncClient) -> None:

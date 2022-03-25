@@ -16,6 +16,7 @@ isort==5.10.1
 mypy==0.931
 pytest==7.0.1
 greenlet==1.1.2
+jinja2==3.0.3
 
 # Documentation
 mkdocs==1.2.3
