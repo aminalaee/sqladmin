@@ -160,7 +160,7 @@ The forms are based on `WTForms` package and include the following options:
 * `form`: Default form to be used for creating or editing the model. Default value is `None` and form is created dynamically.
 * `form_base_class`: Default base class for creating forms. Default value is `wtforms.Form`.
 * `form_args`: Dictionary of form field arguments supported by WTForms.
-* `form_columns`: List of model columns to be included in the form. Default value is all model columns.
+* `form_columns`: List of model columns to be included in the form. Default is all model columns.
 * `form_excluded_columns`: List of model columns to be excluded from the form.
 * `form_overrides`: Dictionary of form fields to override when creating the form.
 
@@ -179,7 +179,7 @@ SQLAdmin supports exporting data in the list page. Currently only CSV export is 
 The export options can be set per model and includes the following options:
 
 * `can_export`: If the model can be exported. Default value is `True`.
-* `column_export_list`: List of columns to include in the export data. Default value is all columns.
+* `column_export_list`: List of columns to include in the export data. Default is all model columns.
 * `column_export_exclude_list`: List of columns to exclude in the export data.
 * `export_max_rows`: Maximum number of rows to be exported. Default value is `0` which means unlimited.
 * `export_types`: List of export types to be enabled. Default value is `["csv"]`.
