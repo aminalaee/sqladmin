@@ -580,11 +580,9 @@ async def test_export_csv_row_count(client: AsyncClient) -> None:
 
     await session.commit()
 
-    # UserAdmin uses default --> returns all rows
     response = await client.get("/admin/user/export/csv")
     assert row_count(response) == 20
 
-    # Address has export_max_rows == 3 --> return 3 rows
     response = await client.get("/admin/address/export/csv")
     assert row_count(response) == 3
 
