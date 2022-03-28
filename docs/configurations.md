@@ -22,6 +22,7 @@ class User(Base):
 
     id = Column(Integer, primary_key=True)
     name = Column(String)
+    email = Column(String)
 
 
 Base.metadata.create_all(engine)  # Create tables
@@ -52,10 +53,11 @@ As you can see the `UserAdmin` class inherits from `ModelAdmin` and accepts some
 You can configure a few general permissions for this model.
 The following options are available:
 
-* `can_create`: If the model can create new instances via SQLAdmin.
-* `can_edit`: If the model instances can be edited via SQLAdmin.
-* `can_delete`: If the model instances can be deleted via SQLAdmin.
-* `can_view_details`: If the model instance details can be viewed via SQLAdmin.
+* `can_create`: If the model can create new instances via SQLAdmin. Default value is `True`.
+* `can_edit`: If the model instances can be edited via SQLAdmin. Default value is `True`.
+* `can_delete`: If the model instances can be deleted via SQLAdmin. Default value is `True`.
+* `can_view_details`: If the model instance details can be viewed via SQLAdmin. Default value is `True`.
+* `can_export`: If the model data can be exported in the list page. Default value is `True`.
 
 !!! example
 
@@ -149,6 +151,38 @@ The pagination options in the list page can be configured. The available options
         page_size = 50
         page_size_options = [25, 50, 100, 200]
     ```
+
+## Form options
+
+SQLAdmin allows customizing how forms work with your models.
+The forms are based on `WTForms` package and include the following options:
+
+* `form`: Default form to be used for creating or editing the model. Default value is `None` and form is created dynamically.
+* `form_base_class`: Default base class for creating forms. Default value is `wtforms.Form`.
+* `form_args`: Dictionary of form field arguments supported by WTForms.
+* `form_columns`: List of model columns to be included in the form. Default is all model columns.
+* `form_excluded_columns`: List of model columns to be excluded from the form.
+* `form_overrides`: Dictionary of form fields to override when creating the form.
+
+!!! example
+
+    ```python
+    class UserAdmin(ModelAdmin, model=User):
+        form_columns = [User.name]
+        form_args = dict(name=dict(label="Full name"))
+        form_overrides = dict(email=wtforms.EmailField)
+    ```
+
+## Export options
+
+SQLAdmin supports exporting data in the list page. Currently only CSV export is supported.
+The export options can be set per model and includes the following options:
+
+* `can_export`: If the model can be exported. Default value is `True`.
+* `column_export_list`: List of columns to include in the export data. Default is all model columns.
+* `column_export_exclude_list`: List of columns to exclude in the export data.
+* `export_max_rows`: Maximum number of rows to be exported. Default value is `0` which means unlimited.
+* `export_types`: List of export types to be enabled. Default value is `["csv"]`.
 
 ## Templates
 
