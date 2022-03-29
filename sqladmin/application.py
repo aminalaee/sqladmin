@@ -177,7 +177,9 @@ class Admin(BaseAdminView):
         """
 
         assert isinstance(engine, (Engine, AsyncEngine))
-        super().__init__(app=app, engine=engine, base_url=base_url, title=title, logo_url=logo_url)
+        super().__init__(
+            app=app, engine=engine, base_url=base_url, title=title, logo_url=logo_url
+        )
 
         statics = StaticFiles(packages=["sqladmin"])
 
@@ -188,14 +190,18 @@ class Admin(BaseAdminView):
                 "status_code": exc.status_code,
                 "message": exc.detail,
             }
-            return self.templates.TemplateResponse("error.html", context, status_code=exc.status_code)
+            return self.templates.TemplateResponse(
+                "error.html", context, status_code=exc.status_code
+            )
 
         admin = Starlette(
             routes=[
                 Mount("/statics", app=statics, name="statics"),
                 Route("/", endpoint=self.index, name="index"),
                 Route("/{identity}/list", endpoint=self.list, name="list"),
-                Route("/{identity}/details/{pk}", endpoint=self.details, name="details"),
+                Route(
+                    "/{identity}/details/{pk}", endpoint=self.details, name="details"
+                ),
                 Route(
                     "/{identity}/delete/{pk}",
                     endpoint=self.delete,
