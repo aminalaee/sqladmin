@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING, List, Type, Union
+from typing import TYPE_CHECKING, List, Sequence, Type, Union, Optional, Dict, Any
 
 from jinja2 import ChoiceLoader, FileSystemLoader, PackageLoader
 from sqlalchemy.engine import Engine
@@ -11,6 +11,7 @@ from starlette.responses import RedirectResponse, Response
 from starlette.routing import Mount, Route
 from starlette.staticfiles import StaticFiles
 from starlette.templating import Jinja2Templates
+from starlette.middleware import Middleware
 
 if TYPE_CHECKING:
     from sqladmin.models import ModelAdmin
@@ -163,6 +164,8 @@ class Admin(BaseAdminView):
         base_url: str = "/admin",
         title: str = "Admin",
         logo_url: str = None,
+        middleware: Sequence[Middleware] = None,
+        debug: bool = False,
     ) -> None:
         """
         Args:
@@ -225,6 +228,8 @@ class Admin(BaseAdminView):
                 ),
             ],
             exception_handlers={HTTPException: http_exception},
+            middleware=middleware,
+            debug=debug,
         )
         self.app.mount(base_url, app=admin, name="admin")
 
