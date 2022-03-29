@@ -38,15 +38,15 @@ T_MP = TypeVar("T_MP", ColumnProperty, RelationshipProperty)
 
 class Validator(Protocol):
     def __init__(self, *args: Any, **kwargs: Any) -> None:
-        ...
+        ...  # pragma: no cover
 
     def __call__(self, form: Form, field: Field) -> None:
-        ...
+        ...  # pragma: no cover
 
 
 class ConverterCallback(Protocol):
     def __call__(self, model: type, prop: T_MP, kwargs: Dict[str, Any]) -> UnboundField:
-        ...
+        ...  # pragma: no cover
 
 
 T_CC = TypeVar("T_CC", bound=ConverterCallback)
@@ -82,7 +82,7 @@ class AdminAttribute:
         if self.is_relationship:
             return False
         else:
-            return bool(self.sqla_column.primary_key or self.sqla_column.foreign_keys)
+            return bool(self.column.primary_key or self.column.foreign_keys)
 
     @property
     def is_relationship(self) -> bool:
@@ -93,7 +93,7 @@ class AdminAttribute:
         return self.attribute.prop
 
     @property
-    def sqla_column(self) -> Column:
+    def column(self) -> Column:
         assert isinstance(
             self.sqla_property, ColumnProperty
         ), "Relationship properties don't have a column attr"
@@ -107,7 +107,7 @@ class AdminAttribute:
         if self.is_relationship:
             return None
 
-        default = getattr(self.sqla_column, "default", None)
+        default = getattr(self.column, "default", None)
 
         if default is not None:
             # Only actually change default if it has an attribute named
@@ -129,7 +129,7 @@ class AdminAttribute:
         if self.is_relationship:
             return []
         li = []
-        if self.sqla_column.nullable:
+        if self.column.nullable:
             li.append(validators.Optional())
         else:
             li.append(validators.InputRequired())
