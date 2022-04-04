@@ -21,7 +21,7 @@ jinja2==3.0.3
 # Documentation
 mkdocs==1.2.3
 mkdocs-material==8.2.3
-mkdocstrings==0.18.0
+mkdocstrings==0.18.1
 
 # Packaging
 twine==4.0.0
