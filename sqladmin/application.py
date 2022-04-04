@@ -164,7 +164,7 @@ class Admin(BaseAdminView):
         base_url: str = "/admin",
         title: str = "Admin",
         logo_url: str = None,
-        middleware: Sequence[Middleware] = None,
+        middlewares: Sequence[Middleware] = None,
         debug: bool = False,
     ) -> None:
         """
@@ -228,7 +228,7 @@ class Admin(BaseAdminView):
                 ),
             ],
             exception_handlers={HTTPException: http_exception},
-            middleware=middleware,
+            middleware=middlewares,
             debug=debug,
         )
         self.app.mount(base_url, app=admin, name="admin")
