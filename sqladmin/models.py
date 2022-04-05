@@ -185,7 +185,7 @@ class ModelAdmin(BaseModelAdmin, metaclass=ModelAdminMeta):
     """
 
     # List page
-    column_list: ClassVar[Sequence[Union[str, InstrumentedAttribute]]] = []
+    column_list: ClassVar[Sequence[Union[str, Column, RelationshipProperty]]] = []
     """List of columns to display in `List` page.
     Columns can either be string names or SQLAlchemy columns.
 
@@ -199,7 +199,9 @@ class ModelAdmin(BaseModelAdmin, metaclass=ModelAdminMeta):
         ```
     """
 
-    column_exclude_list: ClassVar[Sequence[Union[str, InstrumentedAttribute]]] = []
+    column_exclude_list: ClassVar[
+        Sequence[Union[str, Column, RelationshipProperty]]
+    ] = []
     """List of columns to exclude in `List` page.
     Columns can either be string names or SQLAlchemy columns.
 
@@ -232,7 +234,9 @@ class ModelAdmin(BaseModelAdmin, metaclass=ModelAdminMeta):
         ```
     """
 
-    column_searchable_list: ClassVar[Sequence[Union[str, InstrumentedAttribute]]] = []
+    column_searchable_list: ClassVar[
+        Sequence[Union[str, Column, RelationshipProperty]]
+    ] = []
     """A collection of the searchable columns.
     It is assumed that only text-only fields are searchable,
     but it is up to the model implementation to decide.
@@ -244,7 +248,9 @@ class ModelAdmin(BaseModelAdmin, metaclass=ModelAdminMeta):
         ```
     """
 
-    column_sortable_list: ClassVar[Sequence[Union[str, InstrumentedAttribute]]] = []
+    column_sortable_list: ClassVar[
+        Sequence[Union[str, Column, RelationshipProperty]]
+    ] = []
     """Collection of the sortable columns for the list view.
 
     ???+ example
@@ -255,7 +261,9 @@ class ModelAdmin(BaseModelAdmin, metaclass=ModelAdminMeta):
     """
 
     # Details page
-    column_details_list: ClassVar[Sequence[Union[str, InstrumentedAttribute]]] = []
+    column_details_list: ClassVar[
+        Sequence[Union[str, Column, RelationshipProperty]]
+    ] = []
     """List of columns to display in `Detail` page.
     Columns can either be string names or SQLAlchemy columns.
 
@@ -270,7 +278,7 @@ class ModelAdmin(BaseModelAdmin, metaclass=ModelAdminMeta):
     """
 
     column_details_exclude_list: ClassVar[
-        Sequence[Union[str, InstrumentedAttribute]]
+        Sequence[Union[str, Column, RelationshipProperty]]
     ] = []
     """List of columns to exclude from displaying in `Detail` page.
     Columns can either be string names or SQLAlchemy columns.
@@ -282,7 +290,7 @@ class ModelAdmin(BaseModelAdmin, metaclass=ModelAdminMeta):
         ```
     """
 
-    column_labels: ClassVar[Dict[Union[str, InstrumentedAttribute], str]] = {}
+    column_labels: ClassVar[Dict[Union[str, Column, RelationshipProperty], str]] = {}
     """A mapping of column labels, used to map column names to new names.
     Dictionary keys can be string names or SQLAlchemy columns with string values.
 
@@ -307,7 +315,7 @@ class ModelAdmin(BaseModelAdmin, metaclass=ModelAdminMeta):
     """Edit view template. Default is `edit.html`."""
 
     # Export
-    column_export_list: ClassVar[List[Union[str, InstrumentedAttribute]]] = []
+    column_export_list: ClassVar[List[Union[str, Column, RelationshipProperty]]] = []
     """List of columns to include when exporting.
     Columns can either be string names or SQLAlchemy columns.
 
@@ -318,7 +326,9 @@ class ModelAdmin(BaseModelAdmin, metaclass=ModelAdminMeta):
         ```
     """
 
-    column_export_exclude_list: ClassVar[List[Union[str, InstrumentedAttribute]]] = []
+    column_export_exclude_list: ClassVar[
+        List[Union[str, Column, RelationshipProperty]]
+    ] = []
     """List of columns to exclude when exporting.
     Columns can either be string names or SQLAlchemy columns.
 
@@ -386,7 +396,7 @@ class ModelAdmin(BaseModelAdmin, metaclass=ModelAdminMeta):
         ```
     """
 
-    form_columns: ClassVar[Sequence[Union[str, InstrumentedAttribute]]] = []
+    form_columns: ClassVar[Sequence[Union[str, Column, RelationshipProperty]]] = []
     """List of columns to include in the form.
     Columns can either be string names or SQLAlchemy columns.
 
@@ -400,7 +410,9 @@ class ModelAdmin(BaseModelAdmin, metaclass=ModelAdminMeta):
         ```
     """
 
-    form_excluded_columns: ClassVar[Sequence[Union[str, InstrumentedAttribute]]] = []
+    form_excluded_columns: ClassVar[
+        Sequence[Union[str, Column, RelationshipProperty]]
+    ] = []
     """List of columns to exclude from the form.
     Columns can either be string names or SQLAlchemy columns.
 
@@ -605,8 +617,8 @@ class ModelAdmin(BaseModelAdmin, metaclass=ModelAdminMeta):
 
     def _build_column_list(
         self,
-        include: Optional[Sequence[Union[str, InstrumentedAttribute]]] = None,
-        exclude: Optional[Sequence[Union[str, InstrumentedAttribute]]] = None,
+        include: Optional[Sequence[Union[str, Column, RelationshipProperty]]] = None,
+        exclude: Optional[Sequence[Union[str, Column, RelationshipProperty]]] = None,
         default: Callable[[], List[Column]] = None,
     ) -> List[Tuple[str, Column]]:
         """This function generalizes constructing a list of columns
