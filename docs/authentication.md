@@ -94,3 +94,44 @@ class UserAdmin(AuthModelAdmin, model=User):
 class AddressAdmin(AuthModelAdmin, model=Address):
     list_display = [Address.id]
 ```
+
+## Authentication Backend
+
+You can integrate the Starlette [Authentication](https://www.starlette.io/authentication/)
+backend into SQLadmin :
+
+```python
+from sqladmin import Admin, ModelAdmin
+from starlette.applications import Starlette
+from starlette.requests import Request
+
+# AuthenticationMiddleware explained in Starlette docs
+
+middlewares = [
+    Middleware(AuthenticationMiddleware, backend=BasicAuthBackend())
+]
+
+app = Starlette()
+admin = Admin(app=app, engine=engine, middlewares=middlewares)
+
+
+class AuthModelAdmin(ModelAdmin):
+    def is_accessible(self, request: Request) -> bool:
+        # With Authentication backend you can now access request.user.
+        if request.user.is_authenticated:
+            return True
+        return False
+```
+
+With the `middlewares` argument in SQLAdmin you can have full control over the
+`Admin` created and you can mofiy the behaviour. For example you can implement a SessionMiddleware:
+
+```python
+from sqladmin import Admin
+from starlette.applications import Starlette
+from starlette.middleware.sessions import SessionMiddleware
+
+
+app = Starlette()
+admin = Admin(app=app, engine=engine, middlewares=[SessionMiddleware(...)])
+```
