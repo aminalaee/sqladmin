@@ -213,7 +213,7 @@ def test_column_labels_by_model_columns() -> None:
     assert AddressAdmin().get_details_columns() == [("User ID", Address.user_id)]
 
 
-def test_get_model_attr_with_column_labels() -> None:
+def test_get_model_attr_by_column() -> None:
     class UserAdmin(ModelAdmin, model=User):
         ...
 
@@ -221,7 +221,7 @@ def test_get_model_attr_with_column_labels() -> None:
     assert UserAdmin().get_model_attr(User.name) == User.name
 
 
-def test_get_model_attr_with_column_labels() -> None:
+def test_get_model_attr_by_column_labels() -> None:
     class UserAdmin(ModelAdmin, model=User):
         column_labels = {User.name: "Name"}
 
