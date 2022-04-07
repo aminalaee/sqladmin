@@ -102,7 +102,6 @@ class ModelConverterBase:
         kwargs.setdefault("description", prop.doc)
         kwargs.setdefault("render_kw", {"class": "form-control"})
 
-        converter = self.get_converter(prop)
         column = None
 
         if isinstance(prop, ColumnProperty):
@@ -165,6 +164,8 @@ class ModelConverterBase:
         if override is not None:
             assert issubclass(override, Field)
             return override(**kwargs)
+
+        converter = self.get_converter(prop)
 
         return converter(
             model=model, mapper=mapper, prop=prop, column=column, field_args=kwargs
