@@ -423,6 +423,9 @@ class ModelAdmin(BaseModelAdmin, metaclass=ModelAdminMeta):
 
     def __init__(self) -> None:
         self._column_labels = self.get_column_labels()
+        self._column_labels_value_by_key = {
+            v: k for k, v in self._column_labels.items()
+        }
 
         self._list_attrs = self.get_list_columns()
         self._list_columns = [
@@ -593,12 +596,16 @@ class ModelAdmin(BaseModelAdmin, metaclass=ModelAdminMeta):
         elif isinstance(attr.prop, RelationshipProperty):
             key = attr.prop.key
 
-        try:
+        if key in inspect(self.model).attrs:
             return inspect(self.model).attrs[key]
-        except KeyError:
-            raise InvalidColumnError(
-                f"Model '{self.model.__name__}' has no attribute '{key}'."
-            )
+
+        # Get value by column label
+        if key in self._column_labels_value_by_key:
+            return self._column_labels_value_by_key[key]
+
+        raise InvalidColumnError(
+            f"Model '{self.model.__name__}' has no attribute '{key}'."
+        )
 
     def get_model_attributes(self) -> List[Column]:
         return list(inspect(self.model).attrs)
