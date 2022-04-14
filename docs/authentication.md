@@ -124,7 +124,7 @@ class AuthModelAdmin(ModelAdmin):
 ```
 
 With the `middlewares` argument in SQLAdmin you can have full control over the
-`Admin` created and you can mofiy the behaviour. For example you can implement a SessionMiddleware:
+`Admin` created and you can modify the behaviour. For example you can implement a SessionMiddleware:
 
 ```python
 from sqladmin import Admin
