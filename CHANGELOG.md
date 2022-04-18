@@ -4,6 +4,27 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## Version 0.1.8 - 2022-04-18
+
+### Added
+
+* Add csv export support by @dwreeves in https://github.com/aminalaee/sqladmin/pull/101
+* Expose Starlette middlewares and debug to the Admin by @tr11 in https://github.com/aminalaee/sqladmin/pull/114
+
+### Fixed
+
+* Fix Export unlimited rows by @aminalaee in https://github.com/aminalaee/sqladmin/pull/107
+* Add form and export options docs by @aminalaee in https://github.com/aminalaee/sqladmin/pull/110
+* fix docstring issues by adding an explicit handler by @dwreeves in https://github.com/aminalaee/sqladmin/pull/106
+* Fix get_model_attr with column labels by @aminalaee in https://github.com/aminalaee/sqladmin/pull/128
+* Delay call to `self.get_converter` by @lovetoburnswhen in https://github.com/aminalaee/sqladmin/pull/129
+
+## New Contributors
+* @tr11 made their first contribution in https://github.com/aminalaee/sqladmin/pull/114
+* @lovetoburnswhen made their first contribution in https://github.com/aminalaee/sqladmin/pull/129
+
+**Full Changelog**: https://github.com/aminalaee/sqladmin/compare/0.1.7...0.1.8
+
 ## Version 0.1.7 - 2022-03-22
 
 ### Added
