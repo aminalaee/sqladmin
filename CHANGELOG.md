@@ -17,7 +17,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * Add form and export options docs by @aminalaee in https://github.com/aminalaee/sqladmin/pull/110
 * fix docstring issues by adding an explicit handler by @dwreeves in https://github.com/aminalaee/sqladmin/pull/106
 * Fix get_model_attr with column labels by @aminalaee in https://github.com/aminalaee/sqladmin/pull/128
-* Delay call to `self.get_converter` by @lovetoburnswhen in https://github.com/aminalaee/sqladmin/pull/129
+* Delay call to `self.get_converter` to use `form_overrides` by @lovetoburnswhen in https://github.com/aminalaee/sqladmin/pull/129
 
 ## New Contributors
 * @tr11 made their first contribution in https://github.com/aminalaee/sqladmin/pull/114
