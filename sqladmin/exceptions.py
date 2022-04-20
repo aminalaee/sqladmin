@@ -1,6 +1,14 @@
-class InvalidModelError(Exception):
+class SQLAdminException(Exception):
     pass
 
 
-class InvalidColumnError(Exception):
+class InvalidModelError(SQLAdminException):
+    pass
+
+
+class InvalidColumnError(SQLAdminException):
+    pass
+
+
+class NoConverterFound(SQLAdminException):
     pass
