@@ -1,6 +1,17 @@
 import inspect
 from enum import Enum
-from typing import Any, Callable, Dict, Optional, Sequence, Type, Union, no_type_check
+from typing import (
+    Any,
+    Callable,
+    Dict,
+    List,
+    Optional,
+    Sequence,
+    Type,
+    TypeVar,
+    Union,
+    no_type_check,
+)
 
 import anyio
 from sqlalchemy import inspect as sqlalchemy_inspect, select
@@ -8,6 +19,7 @@ from sqlalchemy.engine import Engine
 from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession
 from sqlalchemy.orm import ColumnProperty, Mapper, RelationshipProperty, Session
 from sqlalchemy.sql.schema import Column
+from typing_extensions import Protocol
 from wtforms import (
     BooleanField,
     DateField,
@@ -23,12 +35,34 @@ from wtforms import (
 )
 from wtforms.fields.core import UnboundField
 
+from sqladmin.exceptions import NoConverterFound
 from sqladmin.fields import JSONField, QuerySelectField, QuerySelectMultipleField
 
 
+class Validator(Protocol):
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
+        ...  # pragma: no cover
+
+    def __call__(self, form: Form, field: Field) -> None:
+        ...  # pragma: no cover
+
+
+class ConverterCallable(Protocol):
+    def __call__(
+        self,
+        model: type,
+        prop: Union[ColumnProperty, RelationshipProperty],
+        kwargs: Dict[str, Any],
+    ) -> UnboundField:
+        ...  # pragma: no cover
+
+
+T_CC = TypeVar("T_CC", bound=ConverterCallable)
+
+
 @no_type_check
-def converts(*args: str) -> Callable:
-    def _inner(func: Callable) -> Callable:
+def converts(*args: str) -> Callable[[T_CC], T_CC]:
+    def _inner(func: T_CC) -> T_CC:
         func._converter_for = frozenset(args)
         return func
 
@@ -36,9 +70,13 @@ def converts(*args: str) -> Callable:
 
 
 class ModelConverterBase:
-    _convert_for = None
+    _converters: Dict[str, ConverterCallable] = {}
 
     def __init__(self) -> None:
+        super().__init__()
+        self._register_converters()
+
+    def _register_converters(self):
         converters = {}
 
         for name in dir(self):
@@ -47,13 +85,13 @@ class ModelConverterBase:
                 for classname in obj._converter_for:
                     converters[classname] = obj
 
-        self.converters = converters
+        self._converters = converters
 
     def get_converter(
-        self, prop: Union[ColumnProperty, RelationshipProperty]
-    ) -> Callable:
+        self, model: type, prop: Union[ColumnProperty, RelationshipProperty]
+    ) -> ConverterCallable:
         if not isinstance(prop, ColumnProperty):
-            return self.converters[prop.direction.name]
+            return self._converters[prop.direction.name]
 
         column = prop.columns[0]
         types = inspect.getmro(type(column.type))
@@ -62,24 +100,24 @@ class ModelConverterBase:
         for col_type in types:
             type_string = f"{col_type.__module__}.{col_type.__name__}"
 
-            if type_string in self.converters:
-                return self.converters[type_string]
+            if type_string in self._converters:
+                return self._converters[type_string]
 
         # Search by name
         for col_type in types:
-            if col_type.__name__ in self.converters:
-                return self.converters[col_type.__name__]
+            if col_type.__name__ in self._converters:
+                return self._converters[col_type.__name__]
 
             # Support for custom types like SQLModel which inherit TypeDecorator
             if hasattr(col_type, "impl"):
-                if col_type.impl.__name__ in self.converters:  # type: ignore
-                    return self.converters[col_type.impl.__name__]  # type: ignore
+                if col_type.impl.__name__ in self._converters:  # type: ignore
+                    return self._converters[col_type.impl.__name__]  # type: ignore
 
-        raise Exception(  # pragma: nocover
+        raise NoConverterFound(  # pragma: nocover
             f"Could not find field converter for column {column.name} ({types[0]!r})."
         )
 
-    async def convert(
+    async def _prepare_kwargs(
         self,
         model: type,
         mapper: Mapper,
@@ -88,7 +126,7 @@ class ModelConverterBase:
         field_args: Dict[str, Any] = None,
         label: Optional[str] = None,
         override: Optional[Type[Field]] = None,
-    ) -> UnboundField:
+    ) -> Optional[Dict[str, Any]]:
         if field_args:
             kwargs = field_args.copy()
         else:
@@ -161,72 +199,116 @@ class ModelConverterBase:
                     ]
                     kwargs["object_list"] = object_list
 
+        return kwargs
+
+    async def convert(
+        self,
+        model: type,
+        mapper: Mapper,
+        prop: Union[ColumnProperty, RelationshipProperty],
+        engine: Union[Engine, AsyncEngine],
+        field_args: Dict[str, Any] = None,
+        label: Optional[str] = None,
+        override: Optional[Type[Field]] = None,
+    ) -> Optional[UnboundField]:
+
+        kwargs = await self._prepare_kwargs(
+            model=model,
+            mapper=mapper,
+            prop=prop,
+            engine=engine,
+            field_args=field_args,
+            label=label,
+            override=override,
+        )
+
+        if kwargs is None:
+            return None
+
         if override is not None:
             assert issubclass(override, Field)
             return override(**kwargs)
 
-        converter = self.get_converter(prop)
-
-        return converter(
-            model=model, mapper=mapper, prop=prop, column=column, field_args=kwargs
-        )
+        converter = self.get_converter(model=model, prop=prop)
+        return converter(model=model, prop=prop, kwargs=kwargs)
 
     def get_pk(self, o: Any, pk_name: str) -> Any:
         return getattr(o, pk_name)
 
 
 class ModelConverter(ModelConverterBase):
-    @classmethod
-    def _string_common(cls, column: Column, field_args: Dict, **kwargs: Any) -> None:
+    @staticmethod
+    def _string_common(prop: ColumnProperty) -> List[Validator]:
+        li = []
+        column: Column = prop.columns[0]
         if isinstance(column.type.length, int) and column.type.length:
-            field_args["validators"].append(validators.Length(max=column.type.length))
+            li.append(validators.Length(max=column.type.length))
+        return li
 
     @converts("String")  # includes Unicode
-    def conv_String(self, field_args: Dict, **kwargs: Any) -> Field:
-        self._string_common(field_args=field_args, **kwargs)
-        return StringField(**field_args)
+    def conv_String(
+        self, model: type, prop: ColumnProperty, kwargs: Dict[str, Any]
+    ) -> UnboundField:
+        extra_validators = self._string_common(prop)
+        kwargs.setdefault("validators", [])
+        kwargs["validators"].extend(extra_validators)
+        return StringField(**kwargs)
 
     @converts("Text", "LargeBinary", "Binary")  # includes UnicodeText
-    def conv_Text(self, field_args: Dict, **kwargs: Any) -> Field:
-        self._string_common(field_args=field_args, **kwargs)
-        return TextAreaField(**field_args)
+    def conv_Text(
+        self, model: type, prop: ColumnProperty, kwargs: Dict[str, Any]
+    ) -> UnboundField:
+        kwargs.setdefault("validators", [])
+        extra_validators = self._string_common(prop)
+        kwargs["validators"].extend(extra_validators)
+        return TextAreaField(**kwargs)
 
     @converts("Boolean", "dialects.mssql.base.BIT")
-    def conv_Boolean(self, field_args: Dict, **kwargs: Any) -> Field:
-        field_args["render_kw"]["class"] = "form-check-input"
-        return BooleanField(**field_args)
+    def conv_Boolean(
+        self, model: type, prop: ColumnProperty, kwargs: Dict[str, Any]
+    ) -> UnboundField:
+        kwargs.setdefault("render_kw", {})
+        kwargs["render_kw"]["class"] = "form-check-input"
+        return BooleanField(**kwargs)
 
     @converts("Date")
-    def conv_Date(self, field_args: Dict, **kwargs: Any) -> Field:
-        return DateField(**field_args)
+    def conv_Date(
+        self, model: type, prop: ColumnProperty, kwargs: Dict[str, Any]
+    ) -> UnboundField:
+        return DateField(**kwargs)
 
     @converts("DateTime")
-    def conv_DateTime(self, field_args: Dict, **kwargs: Any) -> Field:
-        return DateTimeField(**field_args)
+    def conv_DateTime(
+        self, model: type, prop: ColumnProperty, kwargs: Dict[str, Any]
+    ) -> UnboundField:
+        return DateTimeField(**kwargs)
 
     @converts("Enum")
-    def conv_Enum(self, column: Column, field_args: Dict, **kwargs: Any) -> Field:
-        available_choices = [(e, e) for e in column.type.enums]
+    def conv_Enum(
+        self, model: type, prop: ColumnProperty, kwargs: Dict[str, Any]
+    ) -> UnboundField:
+        available_choices = [(e, e) for e in prop.columns[0].type.enums]
         accepted_values = [choice[0] for choice in available_choices]
 
-        field_args["choices"] = available_choices
-        field_args["validators"].append(validators.AnyOf(accepted_values))
-        field_args["coerce"] = lambda v: v.name if isinstance(v, Enum) else str(v)
-        return SelectField(**field_args)
+        kwargs["choices"] = available_choices
+        kwargs.setdefault("validators", [])
+        kwargs["validators"].append(validators.AnyOf(accepted_values))
+        kwargs["coerce"] = lambda v: v.name if isinstance(v, Enum) else str(v)
+        return SelectField(**kwargs)
 
     @converts("Integer")  # includes BigInteger and SmallInteger
     def handle_integer_types(
-        self, column: Column, field_args: Dict, **kwargs: Any
-    ) -> Field:
-        return IntegerField(**field_args)
+        self, model: type, prop: ColumnProperty, kwargs: Dict[str, Any]
+    ) -> UnboundField:
+        return IntegerField(**kwargs)
 
     @converts("Numeric")  # includes DECIMAL, Float/FLOAT, REAL, and DOUBLE
     def handle_decimal_types(
-        self, column: Column, field_args: Dict, **kwargs: Any
-    ) -> Field:
+        self, model: type, prop: ColumnProperty, kwargs: Dict[str, Any]
+    ) -> UnboundField:
         # override default decimal places limit, use database defaults instead
-        field_args.setdefault("places", None)
-        return DecimalField(**field_args)
+        kwargs.setdefault("places", None)
+        return DecimalField(**kwargs)
 
     # @converts("dialects.mysql.types.YEAR", "dialects.mysql.base.YEAR")
     # def conv_MSYear(self, field_args: Dict, **kwargs: Any) -> Field:
@@ -234,34 +316,49 @@ class ModelConverter(ModelConverterBase):
     #     return StringField(**field_args)
 
     @converts("sqlalchemy.dialects.postgresql.base.INET")
-    def conv_PGInet(self, field_args: Dict, **kwargs: Any) -> Field:
-        field_args.setdefault("label", "IP Address")
-        field_args["validators"].append(validators.IPAddress())
-        return StringField(**field_args)
+    def conv_PGInet(
+        self, model: type, prop: ColumnProperty, kwargs: Dict[str, Any]
+    ) -> UnboundField:
+        kwargs.setdefault("label", "IP Address")
+        kwargs.setdefault("validators", [])
+        kwargs["validators"].append(validators.IPAddress())
+        return StringField(**kwargs)
 
     @converts("sqlalchemy.dialects.postgresql.base.MACADDR")
-    def conv_PGMacaddr(self, field_args: Dict, **kwargs: Any) -> Field:
-        field_args.setdefault("label", "MAC Address")
-        field_args["validators"].append(validators.MacAddress())
-        return StringField(**field_args)
+    def conv_PGMacaddr(
+        self, model: type, prop: ColumnProperty, kwargs: Dict[str, Any]
+    ) -> UnboundField:
+        kwargs.setdefault("label", "MAC Address")
+        kwargs.setdefault("validators", [])
+        kwargs["validators"].append(validators.MacAddress())
+        return StringField(**kwargs)
 
     @converts("sqlalchemy.dialects.postgresql.base.UUID")
-    def conv_PgUuid(self, field_args: Dict, **kwargs: Any) -> Field:
-        field_args.setdefault("label", "UUID")
-        field_args["validators"].append(validators.UUID())
-        return StringField(**field_args)
+    def conv_PgUuid(
+        self, model: type, prop: ColumnProperty, kwargs: Dict[str, Any]
+    ) -> UnboundField:
+        kwargs.setdefault("label", "UUID")
+        kwargs.setdefault("validators", [])
+        kwargs["validators"].append(validators.UUID())
+        return StringField(**kwargs)
 
     @converts("JSON")
-    def convert_JSON(self, field_args: dict, **extra: Any) -> Field:
-        return JSONField(**field_args)
+    def convert_JSON(
+        self, model: type, prop: ColumnProperty, kwargs: Dict[str, Any]
+    ) -> UnboundField:
+        return JSONField(**kwargs)
 
     @converts("MANYTOONE")
-    def conv_ManyToOne(self, field_args: Dict, **kwargs: Any) -> Field:
-        return QuerySelectField(**field_args)
+    def conv_ManyToOne(
+        self, model: type, prop: RelationshipProperty, kwargs: Dict[str, Any]
+    ) -> UnboundField:
+        return QuerySelectField(**kwargs)
 
     @converts("MANYTOMANY", "ONETOMANY")
-    def conv_ManyToMany(self, field_args: Dict, **kwargs: Any) -> Field:
-        return QuerySelectMultipleField(**field_args)
+    def conv_ManyToMany(
+        self, model: type, prop: RelationshipProperty, kwargs: Dict[str, Any]
+    ) -> UnboundField:
+        return QuerySelectMultipleField(**kwargs)
 
 
 async def get_model_form(
