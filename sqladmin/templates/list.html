@@ -106,7 +106,7 @@
               {% endif %}
             </td>
             {% for _, column in model_admin._list_attrs %}
-            <td>{{ model_admin.get_attr_value(row, column) }}</td>
+            <td>{{ model_admin.get_list_value(row, column) }}</td>
             {% endfor %}
           </tr>
           {% endfor %}

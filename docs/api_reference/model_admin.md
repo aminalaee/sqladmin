@@ -11,6 +11,7 @@
         - can_view_details
         - column_list
         - column_exclude_list
+        - column_formatters
         - page_size
         - page_size_options
         - column_details_list
