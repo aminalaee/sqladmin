@@ -210,6 +210,28 @@ class ModelAdmin(BaseModelAdmin, metaclass=ModelAdminMeta):
         ```
     """
 
+    column_formatters: ClassVar[
+        Dict[Union[str, InstrumentedAttribute], Callable[[type, Column], Any]]
+    ] = {}
+    """Dictionary of list view column formatters.
+    Columns can either be string names or SQLAlchemy columns.
+
+    ???+ example
+        ```python
+        class UserAdmin(ModelAdmin, model=User):
+            column_formatters = {User.name: lambda m, a: m.name[:10]}
+        ```
+
+    The format function has the prototype:
+    ???+ formatter
+        ```python
+        def formatter(model, attribute):
+            # `model` is model instance
+            # `attribute` is a Union[Column, ColumnProperty, RelationshipProperty]
+            pass
+        ```
+    """
+
     page_size: ClassVar[int] = 10
     """Default number of items to display in `List` page pagination.
     Default value is set to `10`.
@@ -451,6 +473,12 @@ class ModelAdmin(BaseModelAdmin, metaclass=ModelAdminMeta):
             if isinstance(attr, RelationshipProperty)
         ]
 
+        column_formatters = getattr(self, "column_formatters", {})
+        self._list_formatters = {
+            self.get_model_attr(attr): formatter
+            for (attr, formatter) in column_formatters.items()
+        }
+
         self._form_attrs = self.get_form_columns()
 
         self._export_attrs = self.get_export_columns()
@@ -583,6 +611,14 @@ class ModelAdmin(BaseModelAdmin, metaclass=ModelAdminMeta):
             elif isinstance(value, Enum):
                 return value.value
             return value
+
+    def get_list_value(
+        self, obj: type, attr: Union[Column, ColumnProperty, RelationshipProperty]
+    ) -> Any:
+        formatter = self._list_formatters.get(attr)
+        if formatter:
+            return formatter(obj, attr)
+        return self.get_attr_value(obj, attr)
 
     def get_model_attr(
         self, attr: Union[str, InstrumentedAttribute]
