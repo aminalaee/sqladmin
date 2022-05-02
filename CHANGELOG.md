@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 * Add `column_formatters` by @skarrok in https://github.com/aminalaee/sqladmin/pull/140
+* Add `column_formatters_detail` by @aminalaee in https://github.com/aminalaee/sqladmin/pull/141
 
 ## Version 0.1.8 - 2022-04-19
 
