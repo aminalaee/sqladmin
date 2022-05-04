@@ -304,6 +304,28 @@ class ModelAdmin(BaseModelAdmin, metaclass=ModelAdminMeta):
         ```
     """
 
+    column_formatters_detail: ClassVar[
+        Dict[Union[str, InstrumentedAttribute], Callable[[type, Column], Any]]
+    ] = {}
+    """Dictionary of details view column formatters.
+    Columns can either be string names or SQLAlchemy columns.
+
+    ???+ example
+        ```python
+        class UserAdmin(ModelAdmin, model=User):
+            column_formatters_detail = {User.name: lambda m, a: m.name[:10]}
+        ```
+
+    The format function has the prototype:
+    ???+ formatter
+        ```python
+        def formatter(model, attribute):
+            # `model` is model instance
+            # `attribute` is a Union[Column, ColumnProperty, RelationshipProperty]
+            pass
+        ```
+    """
+
     column_labels: ClassVar[Dict[Union[str, InstrumentedAttribute], str]] = {}
     """A mapping of column labels, used to map column names to new names.
     Dictionary keys can be string names or SQLAlchemy columns with string values.
@@ -479,6 +501,12 @@ class ModelAdmin(BaseModelAdmin, metaclass=ModelAdminMeta):
             for (attr, formatter) in column_formatters.items()
         }
 
+        column_formatters_detail = getattr(self, "column_formatters_detail", {})
+        self._detail_formatters = {
+            self.get_model_attr(attr): formatter
+            for (attr, formatter) in column_formatters_detail.items()
+        }
+
         self._form_attrs = self.get_form_columns()
 
         self._export_attrs = self.get_export_columns()
@@ -615,7 +643,17 @@ class ModelAdmin(BaseModelAdmin, metaclass=ModelAdminMeta):
     def get_list_value(
         self, obj: type, attr: Union[Column, ColumnProperty, RelationshipProperty]
     ) -> Any:
+        """Get instancee values for the list view."""
         formatter = self._list_formatters.get(attr)
+        if formatter:
+            return formatter(obj, attr)
+        return self.get_attr_value(obj, attr)
+
+    def get_detail_value(
+        self, obj: type, attr: Union[Column, ColumnProperty, RelationshipProperty]
+    ) -> Any:
+        """Get instancee values for the detail view."""
+        formatter = self._detail_formatters.get(attr)
         if formatter:
             return formatter(obj, attr)
         return self.get_attr_value(obj, attr)

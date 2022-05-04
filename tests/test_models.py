@@ -156,6 +156,19 @@ def test_column_list_formatters() -> None:
     assert UserAdmin().get_list_value(user, User.name.prop) == "L"
 
 
+def test_column_formatters_detail() -> None:
+    class UserAdmin(ModelAdmin, model=User):
+        column_formatters_detail = {
+            "id": lambda *args: 2,
+            User.name: lambda m, a: m.name[:1],
+        }
+
+    user = User(id=1, name="Long Name")
+
+    assert UserAdmin().get_detail_value(user, User.id.prop) == 2
+    assert UserAdmin().get_detail_value(user, User.name.prop) == "L"
+
+
 def test_column_details_list_both_include_and_exclude() -> None:
     with pytest.raises(AssertionError) as exc:
 

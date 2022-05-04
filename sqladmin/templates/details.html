@@ -18,7 +18,7 @@
             {% for name, attr in model_admin._details_attrs %}
             <tr>
               <td>{{ name }}</td>
-              <td>{{ model_admin.get_attr_value(model, attr) }}</td>
+              <td>{{ model_admin.get_detail_value(model, attr) }}</td>
             </tr>
             {% endfor %}
           </tbody>

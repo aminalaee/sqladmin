@@ -12,6 +12,7 @@
         - column_list
         - column_exclude_list
         - column_formatters
+        - column_formatters_detail
         - page_size
         - page_size_options
         - column_details_list
