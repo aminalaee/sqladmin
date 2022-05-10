@@ -245,10 +245,7 @@ class ModelConverter(ModelConverterBase):
             li.append(validators.Length(max=column.type.length))
         return li
 
-    @converts(
-        "String",
-        
-    )  # includes Unicode
+    @converts("String")  # includes Unicode
     def conv_String(
         self, model: type, prop: ColumnProperty, kwargs: Dict[str, Any]
     ) -> UnboundField:
@@ -354,7 +351,9 @@ class ModelConverter(ModelConverterBase):
         kwargs["validators"].append(validators.Email())
         return StringField(**kwargs)
 
-    @converts("sqlalchemy_utils.types.ip_address.IPAddressType",)
+    @converts(
+        "sqlalchemy_utils.types.ip_address.IPAddressType",
+    )
     def conv_UtilsIP(
         self, model: type, prop: ColumnProperty, kwargs: Dict[str, Any]
     ) -> UnboundField:
