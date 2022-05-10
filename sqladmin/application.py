@@ -1,6 +1,7 @@
 from typing import TYPE_CHECKING, List, Sequence, Type, Union
 
 from jinja2 import ChoiceLoader, FileSystemLoader, PackageLoader
+from pyparsing import identbodychars
 from sqlalchemy.engine import Engine
 from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession
 from sqlalchemy.orm import Session, sessionmaker
@@ -8,10 +9,12 @@ from starlette.applications import Starlette
 from starlette.exceptions import HTTPException
 from starlette.middleware import Middleware
 from starlette.requests import Request
-from starlette.responses import RedirectResponse, Response
+from starlette.responses import JSONResponse, RedirectResponse, Response
 from starlette.routing import Mount, Route
 from starlette.staticfiles import StaticFiles
 from starlette.templating import Jinja2Templates
+
+from sqladmin.ajax import QueryAjaxModelLoader
 
 if TYPE_CHECKING:
     from sqladmin.models import ModelAdmin
@@ -90,6 +93,7 @@ class BaseAdmin:
 
         # Set database engine from Admin instance
         model.engine = self.engine
+        model.ajax_lookup_url = f"{self.base_url}/{model.identity}/ajax/lookup"
         if isinstance(model.engine, Engine):
             model.sessionmaker = sessionmaker(bind=model.engine, class_=Session)
             model.async_engine = False
@@ -226,6 +230,12 @@ class Admin(BaseAdminView):
                     name="export",
                     methods=["GET"],
                 ),
+                Route(
+                    "/{identity}/ajax/lookup",
+                    endpoint=self.ajax_lookup,
+                    name="ajax_lookup",
+                    methods=["GET"],
+                ),
             ],
             exception_handlers={HTTPException: http_exception},
             middleware=middlewares,
@@ -325,8 +335,7 @@ class Admin(BaseAdminView):
                 status_code=400,
             )
 
-        model = model_admin.model(**form.data)
-        await model_admin.insert_model(model)
+        await model_admin.insert_model(**form.data)
 
         return RedirectResponse(
             request.url_for("admin:list", identity=identity),
@@ -382,3 +391,21 @@ class Admin(BaseAdminView):
         model_admin = self._find_model_admin(identity)
         rows = await model_admin.get_model_objects(limit=model_admin.export_max_rows)
         return model_admin.export_data(rows, export_type=export_type)
+
+    async def ajax_lookup(self, request: Request) -> Response:
+        """Ajax lookup route."""
+
+        identity = request.path_params["identity"]
+        model_admin = self._find_model_admin(identity)
+
+        name = request.query_params.get("name")
+        limit = int(request.query_params.get("limit", 0))
+        offset = int(request.query_params.get("offset", 0))
+
+        try:
+            loader: QueryAjaxModelLoader = model_admin._form_ajax_refs[name]
+        except KeyError:
+            raise HTTPException(status_code=404)
+
+        data = [loader.format(m) for m in await loader.get_list("", offset, limit)]
+        return JSONResponse({"results": data})

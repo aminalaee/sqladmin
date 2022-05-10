@@ -9,23 +9,23 @@ $(document).on('shown.bs.modal', '#modal-delete', function (event) {
   $("#modal-delete-button").attr("data-url", element.data("url"));
 });
 
-$(document).on('click','#modal-delete-button',function() {
+$(document).on('click', '#modal-delete-button', function () {
   $.ajax({
     url: $(this).attr('data-url'),
     method: 'DELETE',
-    success: function(result) {
-        window.location.href = result;
+    success: function (result) {
+      window.location.href = result;
     }
   });
 });
 
 // Search
-$(document).on('click','#search-button',function() {
+$(document).on('click', '#search-button', function () {
   var searchTerm = $("#search-input").val();
 
   newUrl = "";
   if (window.location.search && window.location.search.indexOf('search=') != -1) {
-    newUrl = window.location.search.replace( /search=[^&]*/, "search=" + searchTerm);
+    newUrl = window.location.search.replace(/search=[^&]*/, "search=" + searchTerm);
   } else if (window.location.search) {
     newUrl = window.location.search + "&search=" + searchTerm;
   } else {
@@ -35,15 +35,33 @@ $(document).on('click','#search-button',function() {
 });
 
 // Reset search
-$(document).on('click','#search-reset',function() {
+$(document).on('click', '#search-reset', function () {
   if (window.location.search && window.location.search.indexOf('search=') != -1) {
-    window.location.href = window.location.search.replace( /search=[^&]*/, "");
+    window.location.href = window.location.search.replace(/search=[^&]*/, "");
   }
 });
 
 // Press enter to search
-$(document).on('keypress','#search-input',function(e) {
+$(document).on('keypress', '#search-input', function (e) {
   if (e.which === 13) {
     $('#search-button').click();
   }
+});
+
+$('*[data-role="select2-ajax"]').each(function (_, obj) {
+  $(obj).select2({
+    placeholder: 'Search for a repository',
+    minimumInputLength: 1,
+    ajax: {
+      url: $(this).data("url"),
+      dataType: 'json',
+      data: function (params) {
+        var query = {
+          name: $(this).attr("name"),
+          limit: 20,
+        }
+        return query;
+      }
+    }
+  });
 });

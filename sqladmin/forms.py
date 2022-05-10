@@ -36,7 +36,14 @@ from wtforms import (
 from wtforms.fields.core import UnboundField
 
 from sqladmin.exceptions import NoConverterFound
-from sqladmin.fields import JSONField, QuerySelectField, QuerySelectMultipleField
+from sqladmin.fields import (
+    AjaxSelectField,
+    AjaxSelectMultipleField,
+    JSONField,
+    QuerySelectField,
+    QuerySelectMultipleField,
+)
+from sqladmin.helpers import is_association_proxy, is_relationship
 
 
 class Validator(Protocol):
@@ -119,13 +126,10 @@ class ModelConverterBase:
 
     async def _prepare_kwargs(
         self,
-        model: type,
-        mapper: Mapper,
         prop: Union[ColumnProperty, RelationshipProperty],
         engine: Union[Engine, AsyncEngine],
         field_args: Dict[str, Any] = None,
         label: Optional[str] = None,
-        override: Optional[Type[Field]] = None,
     ) -> Optional[Dict[str, Any]]:
         if field_args:
             kwargs = field_args.copy()
@@ -204,22 +208,19 @@ class ModelConverterBase:
     async def convert(
         self,
         model: type,
-        mapper: Mapper,
         prop: Union[ColumnProperty, RelationshipProperty],
         engine: Union[Engine, AsyncEngine],
         field_args: Dict[str, Any] = None,
         label: Optional[str] = None,
         override: Optional[Type[Field]] = None,
+        form_ajax_refs: Dict[str, dict] = {},
     ) -> Optional[UnboundField]:
 
         kwargs = await self._prepare_kwargs(
-            model=model,
-            mapper=mapper,
             prop=prop,
             engine=engine,
             field_args=field_args,
             label=label,
-            override=override,
         )
 
         if kwargs is None:
@@ -228,6 +229,19 @@ class ModelConverterBase:
         if override is not None:
             assert issubclass(override, Field)
             return override(**kwargs)
+
+        loader = form_ajax_refs.get(prop.key)
+        multiple = is_association_proxy(prop) or (
+            is_relationship(prop)
+            and prop.direction.name in ("ONETOMANY", "MANYTOMANY")
+            and prop.uselist
+        )
+
+        if loader:
+            if multiple:
+                return AjaxSelectMultipleField(loader, **kwargs)
+            else:
+                return AjaxSelectField(loader, **kwargs)
 
         converter = self.get_converter(model=model, prop=prop)
         return converter(model=model, prop=prop, kwargs=kwargs)
@@ -370,6 +384,7 @@ async def get_model_form(
     form_args: Dict[str, Dict[str, Any]] = None,
     form_class: Type[Form] = Form,
     form_overrides: Dict[str, Dict[str, Type[Field]]] = None,
+    form_ajax_refs: Dict[str, dict] = None,
 ) -> Type[Form]:
     type_name = model.__name__ + "Form"
     converter = ModelConverter()
@@ -377,6 +392,7 @@ async def get_model_form(
     form_args = form_args or {}
     column_labels = column_labels or {}
     form_overrides = form_overrides or {}
+    form_ajax_refs = form_ajax_refs or {}
 
     attributes = []
     for name, attr in mapper.attrs.items():
@@ -393,7 +409,13 @@ async def get_model_form(
         label = column_labels.get(name, None)
         override = form_overrides.get(name, None)
         field = await converter.convert(
-            model, mapper, attr, engine, field_args, label, override
+            model=model,
+            prop=attr,
+            engine=engine,
+            field_args=field_args,
+            label=label,
+            override=override,
+            form_ajax_refs=form_ajax_refs,
         )
         if field is not None:
             field_dict[name] = field

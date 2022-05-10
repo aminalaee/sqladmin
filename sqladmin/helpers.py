@@ -5,6 +5,9 @@ import unicodedata
 from abc import ABC, abstractmethod
 from typing import Callable, Generator, List, TypeVar, Union
 
+from sqlalchemy.ext.associationproxy import ASSOCIATION_PROXY
+from sqlalchemy.inspection import inspect
+
 T = TypeVar("T")
 
 
@@ -113,3 +116,31 @@ def stream_to_csv(
     """
     writer = csv.writer(_PseudoBuffer())
     return callback(writer)
+
+
+def has_multiple_pks(model: type) -> bool:
+    mapper = inspect(model)
+    return len(mapper.primary_key) > 1
+
+
+def get_primary_key(model: type):
+    """Return primary key name from a model.
+    If the primary key consists of multiple columns, return the corresponding tuple
+    """
+    pks = inspect(model).primary_key
+    if len(pks) == 1:
+        return pks[0]
+    elif len(pks) > 1:
+        return tuple(pks)
+    else:
+        return None
+
+
+def is_association_proxy(attr) -> bool:
+    if hasattr(attr, "parent"):
+        attr = attr.parent
+    return hasattr(attr, "extension_type") and attr.extension_type == ASSOCIATION_PROXY
+
+
+def is_relationship(attr) -> bool:
+    return hasattr(attr, "property") and hasattr(attr.property, "direction")
