@@ -247,8 +247,7 @@ class ModelConverter(ModelConverterBase):
 
     @converts(
         "String",
-        "sqlalchemy_utils.types.email.EmailType",
-        "sqlalchemy_utils.types.ip_address.IPAddressType",
+        
     )  # includes Unicode
     def conv_String(
         self, model: type, prop: ColumnProperty, kwargs: Dict[str, Any]
@@ -344,6 +343,24 @@ class ModelConverter(ModelConverterBase):
         kwargs.setdefault("label", "UUID")
         kwargs.setdefault("validators", [])
         kwargs["validators"].append(validators.UUID())
+        return StringField(**kwargs)
+
+    @converts("sqlalchemy_utils.types.email.EmailType")
+    def conv_UtilsEmail(
+        self, model: type, prop: ColumnProperty, kwargs: Dict[str, Any]
+    ) -> UnboundField:
+        kwargs.setdefault("label", "Email")
+        kwargs.setdefault("validators", [])
+        kwargs["validators"].append(validators.Email())
+        return StringField(**kwargs)
+
+    @converts("sqlalchemy_utils.types.ip_address.IPAddressType",)
+    def conv_UtilsIP(
+        self, model: type, prop: ColumnProperty, kwargs: Dict[str, Any]
+    ) -> UnboundField:
+        kwargs.setdefault("label", "IPAddress")
+        kwargs.setdefault("validators", [])
+        kwargs["validators"].append(validators.IPAddress(ipv4=True, ipv6=True))
         return StringField(**kwargs)
 
     @converts("JSON")
