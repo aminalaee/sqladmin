@@ -5,7 +5,6 @@ psycopg2==2.9.3
 
 # Integrations
 sqlmodel==0.0.6
-email-validator==1.2.1
 
 # Tests
 autoflake==1.4
