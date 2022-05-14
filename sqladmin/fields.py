@@ -5,12 +5,14 @@ import time
 from typing import Any, Callable, Generator, List, Optional, Tuple, Union
 
 from sqlalchemy import inspect
-from wtforms import Form, ValidationError, fields, widgets
+from wtforms import Form, SelectFieldBase, ValidationError, fields, widgets
 
 from sqladmin import widgets as sqladmin_widgets
 from sqladmin.helpers import as_str
 
 __all__ = [
+    "AjaxSelectField",
+    "AjaxSelectMultipleField",
     "DateField",
     "DateTimeField",
     "JSONField",
@@ -425,3 +427,92 @@ class QuerySelectMultipleField(QuerySelectField):
                 identity = inspect(v).identity
                 if identity and str(identity[0]) not in pk_list:  # pragma: no cover
                     raise ValidationError(self.gettext("Not a valid choice"))
+
+
+class AjaxSelectField(SelectFieldBase):
+    """Ajax Model Select Field"""
+
+    widget = sqladmin_widgets.AjaxSelect2Widget()
+
+    separator = ","
+
+    def __init__(
+        self,
+        loader,
+        label=None,
+        validators=None,
+        allow_blank=False,
+        blank_text="",
+        object_list=None,
+        **kwargs,
+    ):
+        super().__init__(label, validators, **kwargs)
+        self.loader = loader
+
+        self.allow_blank = allow_blank
+        self.blank_text = blank_text
+
+    @property
+    def data(self) -> Any:
+        if self._formdata:
+            self.data = self._formdata
+
+        return self._data
+
+    @data.setter
+    def data(self, data: Any) -> None:
+        self._data = data
+        self._formdata = None
+
+    def _format_item(self, item):
+        value = self.loader.format(self.data)
+        return (value[0], value[1], True)
+
+    def process_formdata(self, valuelist):
+        if valuelist:
+            if self.allow_blank and valuelist[0] == "__None":
+                self.data = None
+            else:
+                self._data = None
+                self._formdata = valuelist[0]
+
+    def pre_validate(self, form):
+        if not self.allow_blank and self.data is None:
+            raise ValidationError("Not a valid choice")
+
+
+class AjaxSelectMultipleField(AjaxSelectField):
+    """Ajax-enabled model multi-select field."""
+
+    widget = sqladmin_widgets.AjaxSelect2Widget(multiple=True)
+
+    def __init__(self, loader, label=None, validators=None, default=None, **kwargs):
+        if default is None:
+            default = []
+
+        super().__init__(loader, label, validators, default=default, **kwargs)
+        self._invalid_formdata = False
+
+    def _get_data(self):
+        formdata = self._formdata
+        if formdata:
+            self._set_data(formdata)
+
+        return self._data
+
+    def _set_data(self, data):
+        self._data = data
+        self._formdata = None
+
+    data = property(_get_data, _set_data)
+
+    def process_formdata(self, valuelist):
+        self._formdata = set()
+
+        for field in valuelist:
+            for n in field.split(self.separator):
+                self._formdata.add(n)
+
+    def pre_validate(self, form):
+        if self._invalid_formdata:
+            raise ValidationError("Not a valid choice")

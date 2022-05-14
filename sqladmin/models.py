@@ -32,6 +32,7 @@ from starlette.requests import Request
 from starlette.responses import StreamingResponse
 from wtforms import Field, Form
 
+from sqladmin.ajax import create_ajax_loader
 from sqladmin.exceptions import InvalidColumnError, InvalidModelError
 from sqladmin.forms import get_model_form
 from sqladmin.helpers import (
@@ -141,6 +142,7 @@ class ModelAdmin(BaseModelAdmin, metaclass=ModelAdminMeta):
     sessionmaker: ClassVar[sessionmaker]
     engine: ClassVar[Union[Engine, AsyncEngine]]
     async_engine: ClassVar[bool]
+    ajax_lookup_url: ClassVar[str] = ""
 
     # Metadata
     name: ClassVar[str] = ""
@@ -465,6 +467,25 @@ class ModelAdmin(BaseModelAdmin, metaclass=ModelAdminMeta):
         ```
     """
 
+    form_ajax_refs: ClassVar[Dict[str, dict]] = {}
+    """Use AJAX for foreign key model loading.
+    Should contain dictionary, where key is field name and
+    value is a dictionary which configures AJAX lookups.
+
+    ???+example
+        ```python
+        class UserAdmin(ModelAdmin, model=User):
+            form_ajax_refs = {
+                'address': {
+                    'fields': ('street', 'zip_code'),
+                    'placeholder': 'Please select',
+                    'page_size': 10,
+                    'minimum_input_length': 0,
+                }
+            }
+        ```
+    """
+
     def __init__(self) -> None:
         self._column_labels = self.get_column_labels()
         self._column_labels_value_by_key = {
@@ -521,6 +542,10 @@ class ModelAdmin(BaseModelAdmin, metaclass=ModelAdminMeta):
             for attr in self.column_sortable_list or []
         ]
 
+        self._form_ajax_refs = {}
+        for name, options in self.form_ajax_refs.items():
+            self._form_ajax_refs[name] = create_ajax_loader(self, name, name, options)
+
     def _run_query_sync(self, stmt: ClauseElement) -> Any:
         with self.sessionmaker(expire_on_commit=False) as session:
             result = session.execute(stmt)
@@ -534,7 +559,11 @@ class ModelAdmin(BaseModelAdmin, metaclass=ModelAdminMeta):
         else:
             return await anyio.to_thread.run_sync(self._run_query_sync, stmt)
 
-    def _add_object_sync(self, obj: Any) -> None:
+    async def _insert_model_async(self, obj: Any) -> None:
+        async with self.sessionmaker.begin() as session:
+            session.add(obj)
+
+    def _insert_model_sync(self, obj: Any) -> None:
         with self.sessionmaker.begin() as session:
             session.add(obj)
 
@@ -767,12 +796,11 @@ class ModelAdmin(BaseModelAdmin, metaclass=ModelAdminMeta):
         else:
             await anyio.to_thread.run_sync(self._delete_object_sync, obj)
 
-    async def insert_model(self, obj: type) -> Any:
+    async def insert_model(self, data: dict) -> Any:
         if self.async_engine:
-            async with self.sessionmaker.begin() as session:
-                session.add(obj)
+            await self._insert_model_async(data)
         else:
-            await anyio.to_thread.run_sync(self._add_object_sync, obj)
+            await anyio.to_thread.run_sync(self._insert_model_sync, data)
 
     async def update_model(self, pk: Any, data: Dict[str, Any]) -> None:
         if self.async_engine:
@@ -806,6 +834,7 @@ class ModelAdmin(BaseModelAdmin, metaclass=ModelAdminMeta):
             form_args=self.form_args,
             form_class=self.form_base_class,
             form_overrides=self.form_overrides,
+            form_ajax_refs=self._form_ajax_refs,
         )
 
     def search_placeholder(self) -> str:
