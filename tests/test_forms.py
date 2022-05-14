@@ -18,6 +18,7 @@ from sqlalchemy.dialects.postgresql import INET, MACADDR, UUID
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship, sessionmaker
+from sqlalchemy_utils import EmailType, IPAddressType
 from wtforms import Field, Form, StringField
 
 from sqladmin import ModelAdmin
@@ -157,6 +158,18 @@ async def test_model_form_postgresql(client: AsyncClient) -> None:
 
     Form = await get_model_form(model=PostgresModel, engine=engine)
     assert len(Form()._fields) == 3
+
+
+async def test_model_form_sqlalchemy_utils(client: AsyncClient) -> None:
+    class SQLAlchemyUtilsModel(Base):
+        __tablename__ = "sqlalchemy_utils_model"
+
+        id = Column(Integer, primary_key=True)
+        email = Column(EmailType)
+        ip = Column(IPAddressType)
+
+    Form = await get_model_form(model=SQLAlchemyUtilsModel, engine=engine)
+    assert len(Form()._fields) == 2
 
 
 async def test_form_override_scaffold(client: AsyncClient) -> None:
