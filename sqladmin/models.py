@@ -141,6 +141,7 @@ class ModelAdmin(BaseModelAdmin, metaclass=ModelAdminMeta):
     sessionmaker: ClassVar[sessionmaker]
     engine: ClassVar[Union[Engine, AsyncEngine]]
     async_engine: ClassVar[bool]
+    url_path_for: ClassVar[Callable]
 
     # Metadata
     name: ClassVar[str] = ""
@@ -562,6 +563,39 @@ class ModelAdmin(BaseModelAdmin, metaclass=ModelAdminMeta):
         except NotImplementedError:
             return str
 
+    def _url_for_details(self, obj: Any) -> str:
+        pk = getattr(obj, inspect(obj).mapper.primary_key[0].name)
+        return self.url_path_for(
+            "admin:details",
+            identity=slugify_class_name(obj.__class__.__name__),
+            pk=pk,
+        )
+
+    def _url_for_edit(self, obj: Any) -> str:
+        pk = getattr(obj, inspect(obj).mapper.primary_key[0].name)
+        return self.url_path_for(
+            "admin:edit",
+            identity=slugify_class_name(obj.__class__.__name__),
+            pk=pk,
+        )
+
+    def _url_for_delete(self, obj: Any) -> str:
+        pk = getattr(obj, inspect(obj).mapper.primary_key[0].name)
+        return self.url_path_for(
+            "admin:delete",
+            identity=slugify_class_name(obj.__class__.__name__),
+            pk=pk,
+        )
+
+    def _url_for_details_with_attr(self, obj: Any, attr: RelationshipProperty) -> str:
+        target = getattr(obj, attr.key)
+        pk = getattr(target, attr.mapper.primary_key[0].name)
+        return self.url_path_for(
+            "admin:details",
+            identity=slugify_class_name(target.__class__.__name__),
+            pk=pk,
+        )
+
     async def count(self) -> int:
         stmt = select(func.count(self.pk_column))
         rows = await self._run_query(stmt)
@@ -632,13 +666,12 @@ class ModelAdmin(BaseModelAdmin, metaclass=ModelAdminMeta):
     ) -> Any:
         if isinstance(attr, Column):
             return getattr(obj, attr.name)
-        else:
-            value = getattr(obj, attr.key)
-            if isinstance(value, list):
-                return ", ".join(map(str, value))
-            elif isinstance(value, Enum):
-                return value.value
-            return value
+
+        value = getattr(obj, attr.key)
+        if isinstance(value, Enum):
+            return value.value
+
+        return value
 
     def get_list_value(
         self, obj: type, attr: Union[Column, ColumnProperty, RelationshipProperty]

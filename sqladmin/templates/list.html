@@ -90,23 +90,35 @@
             <td><input class="form-check-input m-0 align-middle" type="checkbox" aria-label="Select item"></td>
             <td class="text-end">
               {% if model_admin.can_view_details %}
-              <a href="{{ url_for('admin:details', identity=model_admin.identity, pk=model_admin.get_attr_value(row, model_admin.pk_column)) }}" data-bs-toggle="tooltip" data-bs-placement="top" title="View">
+              <a href="{{ model_admin._url_for_details(row) }}" data-bs-toggle="tooltip" data-bs-placement="top" title="View">
                 <span class="me-1"><i class="fa-solid fa-eye"></i></span>
               </a>
               {% endif %}
               {% if model_admin.can_edit %}
-              <a href="{{ url_for('admin:edit', identity=model_admin.identity, pk=model_admin.get_attr_value(row, model_admin.pk_column)) }}" data-bs-toggle="tooltip" data-bs-placement="top" title="Edit">
+              <a href="{{ model_admin._url_for_edit(row) }}" data-bs-toggle="tooltip" data-bs-placement="top" title="Edit">
                 <span class="me-1"><i class="fa-solid fa-pen-to-square"></i></span>
               </a>
               {% endif %}
               {% if model_admin.can_delete %}
-              <a href="#" data-name="{{ model_admin.name }}" data-pk="{{ model_admin.get_attr_value(row, model_admin.pk_column) }}" data-url="{{ url_for('admin:delete', identity=model_admin.identity, pk=model_admin.get_attr_value(row, model_admin.pk_column)) }}" data-bs-toggle="modal" data-bs-target="#modal-delete" title="Delete">
+              <a href="#" data-name="{{ model_admin.name }}" data-pk="{{ model_admin.get_attr_value(row, model_admin.pk_column) }}" data-url="{{ model_admin._url_for_delete(row) }}" data-bs-toggle="modal" data-bs-target="#modal-delete" title="Delete">
                 <span class="me-1"><i class="fa-solid fa-trash"></i></span>
               </a>
               {% endif %}
             </td>
-            {% for _, column in model_admin._list_attrs %}
+            {% for name, column in model_admin._list_attrs %}
+            {% if (name, column) in model_admin._list_relations %}
+            {% if is_list( model_admin.get_list_value(row, column) ) %}
+            <td>
+            {% for value in model_admin.get_list_value(row, column) %}
+            <a href="{{ model_admin._url_for_details(value) }}">({{ value }})</a>
+            {% endfor %}
+            </td>
+            {% else %}
+            <td><a href="{{ model_admin._url_for_details_with_attr(row, column) }}">{{ model_admin.get_list_value(row, column) }}</a></td>
+            {% endif %}
+            {% else %}
             <td>{{ model_admin.get_list_value(row, column) }}</td>
+            {% endif %}
             {% endfor %}
           </tr>
           {% endfor %}

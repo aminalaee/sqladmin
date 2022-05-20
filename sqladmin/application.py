@@ -53,6 +53,7 @@ class BaseAdmin:
         self.templates.env.globals["admin_title"] = title
         self.templates.env.globals["admin_logo_url"] = logo_url
         self.templates.env.globals["model_admins"] = self.model_admins
+        self.templates.env.globals["is_list"] = lambda x: isinstance(x, list)
 
     @property
     def model_admins(self) -> List["ModelAdmin"]:
@@ -90,6 +91,8 @@ class BaseAdmin:
 
         # Set database engine from Admin instance
         model.engine = self.engine
+        model.url_path_for = self.app.url_path_for
+
         if isinstance(model.engine, Engine):
             model.sessionmaker = sessionmaker(bind=model.engine, class_=Session)
             model.async_engine = False
