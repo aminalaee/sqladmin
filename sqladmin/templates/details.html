@@ -18,7 +18,19 @@
             {% for name, attr in model_admin._details_attrs %}
             <tr>
               <td>{{ name }}</td>
+              {% if (name, attr) in model_admin._details_relations %}
+              {% if is_list( model_admin.get_list_value(model, attr) ) %}
+              <td>
+              {% for value in model_admin.get_detail_value(model, attr) %}
+              <a href="{{ model_admin._url_for_details(value) }}">({{ value }})</a>
+              {% endfor %}
+              </td>
+              {% else %}
+              <td><a href="{{ model_admin._url_for_details_with_attr(model, attr) }}">{{ model_admin.get_detail_value(model, attr) }}</a></td>
+              {% endif %}
+              {% else %}
               <td>{{ model_admin.get_detail_value(model, attr) }}</td>
+              {% endif %}
             </tr>
             {% endfor %}
           </tbody>
@@ -33,7 +45,7 @@
           </div>
           {% if model_admin.can_delete %}
           <div class="col">
-            <a href="#" data-name="{{ model_admin.name }}" data-pk="{{ model_admin.get_attr_value(model, model_admin.pk_column) }}" data-url="{{ url_for('admin:delete', identity=model_admin.identity, pk=model_admin.get_attr_value(model, model_admin.pk_column)) }}" data-bs-toggle="modal" data-bs-target="#modal-delete" class="btn btn-danger">
+            <a href="#" data-name="{{ model_admin.name }}" data-pk="{{ model_admin.get_attr_value(model, model_admin.pk_column) }}" data-url="{{ model_admin._url_for_delete(model) }}" data-bs-toggle="modal" data-bs-target="#modal-delete" class="btn btn-danger">
               Delete
             </a>
           </div>

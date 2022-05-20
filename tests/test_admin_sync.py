@@ -250,7 +250,9 @@ def test_detail_page(client: TestClient) -> None:
     assert response.text.count("<td>name</td>") == 1
     assert response.text.count("<td>Amin Alaee</td>") == 1
     assert response.text.count("<td>addresses</td>") == 1
-    assert response.text.count("<td>Address 1, Address 2</td>") == 1
+    assert (
+        response.text.count('<a href="/admin/address/details/1">(Address 1)</a>') == 1
+    )
 
     # Action Buttons
     assert response.text.count("http://testserver/admin/user/list") == 2
@@ -501,15 +503,13 @@ def test_searchable_list(client: TestClient) -> None:
     )
 
     assert response.text.count("Search: name") == 1
-    assert "http://testserver/admin/user/details/1" in response.text
+    assert "/admin/user/details/1" in response.text
 
     response = client.get("/admin/user/list?search=ro")
-
-    assert "http://testserver/admin/user/details/1" in response.text
+    assert "/admin/user/details/1" in response.text
 
     response = client.get("/admin/user/list?search=rose")
-
-    assert "http://testserver/admin/user/details/1" not in response.text
+    assert "/admin/user/details/1" not in response.text
 
 
 def test_sortable_list(client: TestClient) -> None:
