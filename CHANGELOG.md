@@ -4,12 +4,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## Unrealeased
+## Version 0.1.9 - 2022-05-27
 
 ### Added
 
-* Add `column_formatters` by @skarrok in https://github.com/aminalaee/sqladmin/pull/140
-* Add `column_formatters_detail` by @aminalaee in https://github.com/aminalaee/sqladmin/pull/141
+* Add column_formatters by @skarrok in https://github.com/aminalaee/sqladmin/pull/140
+* Add column_formatters_detail by @aminalaee in https://github.com/aminalaee/sqladmin/pull/141
+* Handling for sqlalchemy_utils EmailType and IPAddressType by @colin99d in https://github.com/aminalaee/sqladmin/pull/150
+* Link relationships to detail page by @aminalaee in https://github.com/aminalaee/sqladmin/pull/153
+
+### Fixed
+
+* Function signature typing, and renames by @dwreeves in https://github.com/aminalaee/sqladmin/pull/116
+* Fix SQLModel UUID type by @aminalaee in https://github.com/aminalaee/sqladmin/pull/158
 
 ## Version 0.1.8 - 2022-04-19
 
