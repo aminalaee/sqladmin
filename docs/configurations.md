@@ -186,7 +186,7 @@ The export options can be set per model and includes the following options:
 
 ## Templates
 
-The template files are built using Jinja2 and can be completely overriden in the configurations.
+The template files are built using Jinja2 and can be completely overridden in the configurations.
 The pages available are:
 
 * `list_template`: Template to use for models list page. Default is `list.html`.

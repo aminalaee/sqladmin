@@ -237,7 +237,7 @@ class Admin(BaseAdminView):
         self.app.mount(base_url, app=admin, name="admin")
 
     async def index(self, request: Request) -> Response:
-        """Index route which can be overriden to create dashboards."""
+        """Index route which can be overridden to create dashboards."""
 
         return self.templates.TemplateResponse("index.html", {"request": request})
 
