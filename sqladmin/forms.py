@@ -1,5 +1,6 @@
 import inspect
 from enum import Enum
+from syslog import LOG_WARNING
 from typing import (
     Any,
     Callable,
@@ -119,13 +120,10 @@ class ModelConverterBase:
 
     async def _prepare_kwargs(
         self,
-        model: type,
-        mapper: Mapper,
         prop: Union[ColumnProperty, RelationshipProperty],
         engine: Union[Engine, AsyncEngine],
         field_args: Dict[str, Any] = None,
         label: Optional[str] = None,
-        override: Optional[Type[Field]] = None,
     ) -> Optional[Dict[str, Any]]:
         if field_args:
             kwargs = field_args.copy()
@@ -178,28 +176,34 @@ class ModelConverterBase:
 
             kwargs["allow_blank"] = nullable
 
-            target_model = prop.mapper.class_
-            pk = sqlalchemy_inspect(target_model).primary_key[0].name
-            stmt = select(target_model)
-
-            if isinstance(engine, Engine):
-                with Session(engine) as session:
-                    objects = await anyio.to_thread.run_sync(session.execute, stmt)
-                    object_list = [
-                        (str(self.get_pk(obj, pk)), obj)
-                        for obj in objects.scalars().all()
-                    ]
-                    kwargs["object_list"] = object_list
-            else:
-                async with AsyncSession(engine) as session:
-                    objects = await session.execute(stmt)
-                    object_list = [
-                        (str(self.get_pk(obj, pk)), obj)
-                        for obj in objects.scalars().all()
-                    ]
-                    kwargs["object_list"] = object_list
+            if "object_list" not in kwargs:
+                kwargs["object_list"] = await self._prepare_object_list(prop, engine)
 
         return kwargs
+
+    async def _prepare_object_list(
+        self,
+        prop: Union[ColumnProperty, RelationshipProperty],
+        engine: Union[Engine, AsyncEngine],
+    ):
+        target_model = prop.mapper.class_
+        pk = sqlalchemy_inspect(target_model).primary_key[0].name
+        stmt = select(target_model)
+
+        if isinstance(engine, Engine):
+            with Session(engine) as session:
+                objects = await anyio.to_thread.run_sync(session.execute, stmt)
+                object_list = [
+                    (str(self.get_pk(obj, pk)), obj) for obj in objects.scalars().all()
+                ]
+        else:
+            async with AsyncSession(engine) as session:
+                objects = await session.execute(stmt)
+                object_list = [
+                    (str(self.get_pk(obj, pk)), obj) for obj in objects.scalars().all()
+                ]
+
+        return object_list
 
     async def convert(
         self,
@@ -213,13 +217,10 @@ class ModelConverterBase:
     ) -> Optional[UnboundField]:
 
         kwargs = await self._prepare_kwargs(
-            model=model,
-            mapper=mapper,
             prop=prop,
             engine=engine,
             field_args=field_args,
             label=label,
-            override=override,
         )
 
         if kwargs is None:
