@@ -7,6 +7,7 @@ from typing import (
     List,
     Optional,
     Sequence,
+    Tuple,
     Type,
     TypeVar,
     Union,
@@ -87,46 +88,13 @@ class ModelConverterBase:
 
         self._converters = converters
 
-    def get_converter(
-        self, model: type, prop: Union[ColumnProperty, RelationshipProperty]
-    ) -> ConverterCallable:
-        if not isinstance(prop, ColumnProperty):
-            return self._converters[prop.direction.name]
-
-        column = prop.columns[0]
-        types = inspect.getmro(type(column.type))
-
-        # Search by module + name
-        for col_type in types:
-            type_string = f"{col_type.__module__}.{col_type.__name__}"
-
-            if type_string in self._converters:
-                return self._converters[type_string]
-
-        # Search by name
-        for col_type in types:
-            if col_type.__name__ in self._converters:
-                return self._converters[col_type.__name__]
-
-            # Support for custom types like SQLModel which inherit TypeDecorator
-            if hasattr(col_type, "impl"):
-                if col_type.impl.__name__ in self._converters:  # type: ignore
-                    return self._converters[col_type.impl.__name__]  # type: ignore
-
-        raise NoConverterFound(  # pragma: nocover
-            f"Could not find field converter for column {column.name} ({types[0]!r})."
-        )
-
     async def _prepare_kwargs(
         self,
-        model: type,
-        mapper: Mapper,
         prop: Union[ColumnProperty, RelationshipProperty],
         engine: Union[Engine, AsyncEngine],
         field_args: Dict[str, Any] = None,
         label: Optional[str] = None,
-        override: Optional[Type[Field]] = None,
-    ) -> Optional[Dict[str, Any]]:
+    ) -> Dict[str, Any]:
         if field_args:
             kwargs = field_args.copy()
         else:
@@ -177,29 +145,65 @@ class ModelConverterBase:
                     nullable = False
 
             kwargs["allow_blank"] = nullable
-
-            target_model = prop.mapper.class_
-            pk = sqlalchemy_inspect(target_model).primary_key[0].name
-            stmt = select(target_model)
-
-            if isinstance(engine, Engine):
-                with Session(engine) as session:
-                    objects = await anyio.to_thread.run_sync(session.execute, stmt)
-                    object_list = [
-                        (str(self.get_pk(obj, pk)), obj)
-                        for obj in objects.scalars().all()
-                    ]
-                    kwargs["object_list"] = object_list
-            else:
-                async with AsyncSession(engine) as session:
-                    objects = await session.execute(stmt)
-                    object_list = [
-                        (str(self.get_pk(obj, pk)), obj)
-                        for obj in objects.scalars().all()
-                    ]
-                    kwargs["object_list"] = object_list
+            kwargs.setdefault(
+                "object_list", await self._prepare_object_list(prop, engine)
+            )
 
         return kwargs
+
+    async def _prepare_object_list(
+        self,
+        prop: Union[ColumnProperty, RelationshipProperty],
+        engine: Union[Engine, AsyncEngine],
+    ) -> List[Tuple[str, object]]:
+        target_model = prop.mapper.class_
+        pk = sqlalchemy_inspect(target_model).primary_key[0].name
+        stmt = select(target_model)
+
+        if isinstance(engine, Engine):
+            with Session(engine) as session:
+                objects = await anyio.to_thread.run_sync(session.execute, stmt)
+                object_list = [
+                    (str(self.get_pk(obj, pk)), obj) for obj in objects.scalars().all()
+                ]
+        else:
+            async with AsyncSession(engine) as session:
+                objects = await session.execute(stmt)
+                object_list = [
+                    (str(self.get_pk(obj, pk)), obj) for obj in objects.scalars().all()
+                ]
+
+        return object_list
+
+    def get_converter(
+        self, prop: Union[ColumnProperty, RelationshipProperty]
+    ) -> ConverterCallable:
+        if not isinstance(prop, ColumnProperty):
+            return self._converters[prop.direction.name]
+
+        column = prop.columns[0]
+        types = inspect.getmro(type(column.type))
+
+        # Search by module + name
+        for col_type in types:
+            type_string = f"{col_type.__module__}.{col_type.__name__}"
+
+            if type_string in self._converters:
+                return self._converters[type_string]
+
+        # Search by name
+        for col_type in types:
+            if col_type.__name__ in self._converters:
+                return self._converters[col_type.__name__]
+
+            # Support for custom types like SQLModel which inherit TypeDecorator
+            if hasattr(col_type, "impl"):
+                if col_type.impl.__name__ in self._converters:  # type: ignore
+                    return self._converters[col_type.impl.__name__]  # type: ignore
+
+        raise NoConverterFound(  # pragma: nocover
+            f"Could not find field converter for column {column.name} ({types[0]!r})."
+        )
 
     async def convert(
         self,
@@ -213,13 +217,10 @@ class ModelConverterBase:
     ) -> Optional[UnboundField]:
 
         kwargs = await self._prepare_kwargs(
-            model=model,
-            mapper=mapper,
             prop=prop,
             engine=engine,
             field_args=field_args,
             label=label,
-            override=override,
         )
 
         if kwargs is None:
@@ -229,7 +230,7 @@ class ModelConverterBase:
             assert issubclass(override, Field)
             return override(**kwargs)
 
-        converter = self.get_converter(model=model, prop=prop)
+        converter = self.get_converter(prop=prop)
         return converter(model=model, prop=prop, kwargs=kwargs)
 
     def get_pk(self, o: Any, pk_name: str) -> Any:
