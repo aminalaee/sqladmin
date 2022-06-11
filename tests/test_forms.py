@@ -2,7 +2,6 @@ import enum
 from typing import Any, AsyncGenerator
 
 import pytest
-from httpx import AsyncClient
 from sqlalchemy import (
     Boolean,
     Column,
@@ -64,7 +63,7 @@ class Address(Base):
     user = relationship("User", back_populates="addresses")
 
 
-@pytest.fixture
+@pytest.fixture(autouse=True)
 async def prepare_database() -> AsyncGenerator[None, None]:
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
@@ -75,13 +74,7 @@ async def prepare_database() -> AsyncGenerator[None, None]:
     await engine.dispose()
 
 
-@pytest.fixture
-async def client(prepare_database: Any) -> AsyncGenerator[AsyncClient, None]:
-    async with AsyncClient(base_url="http://testserver") as c:
-        yield c
-
-
-async def test_model_form_converter_with_default(client: AsyncClient) -> None:
+async def test_model_form_converter_with_default() -> None:
     class Point(Base):
         __tablename__ = "points"
 
@@ -91,30 +84,30 @@ async def test_model_form_converter_with_default(client: AsyncClient) -> None:
     await get_model_form(model=Point, engine=engine)
 
 
-async def test_model_form_only(client: AsyncClient) -> None:
+async def test_model_form_only() -> None:
     Form = await get_model_form(model=User, engine=engine, only=["status"])
     assert len(Form()._fields) == 1
 
 
-async def test_model_form_exclude(client: AsyncClient) -> None:
+async def test_model_form_exclude() -> None:
     Form = await get_model_form(model=User, engine=engine, exclude=["status"])
     assert len(Form()._fields) == 8
 
 
-async def test_model_form_form_args(client: AsyncClient) -> None:
+async def test_model_form_form_args() -> None:
     form_args = {"name": {"label": "User Name"}}
     Form = await get_model_form(model=User, engine=engine, form_args=form_args)
     assert Form()._fields["name"].label.text == "User Name"
 
 
-async def test_model_form_column_label(client: AsyncClient) -> None:
+async def test_model_form_column_label() -> None:
     labels = {"name": "User Name"}
     Form = await get_model_form(model=User, engine=engine, column_labels=labels)
     assert Form()._fields["name"].label.text == "User Name"
 
 
 @pytest.mark.filterwarnings("ignore:^Dialect sqlite\\+aiosqlite.*$")
-async def test_model_form_column_label_precedence(client: AsyncClient) -> None:
+async def test_model_form_column_label_precedence() -> None:
     # Validator takes precedence over label.
     form_args_user = {"name": {"label": "User Name (Use Me)"}}
     labels_user = {"name": "User Name (Do Not Use Me)"}
@@ -135,7 +128,7 @@ async def test_model_form_column_label_precedence(client: AsyncClient) -> None:
     assert Form()._fields["user"].label.text == "User (Use Me)"
 
 
-async def test_model_form_override(client: AsyncClient) -> None:
+async def test_model_form_override() -> None:
     class ExampleField(Field):
         pass
 
@@ -147,7 +140,7 @@ async def test_model_form_override(client: AsyncClient) -> None:
 
 
 @pytest.mark.skipif(engine.name != "postgresql", reason="PostgreSQL only")
-async def test_model_form_postgresql(client: AsyncClient) -> None:
+async def test_model_form_postgresql() -> None:
     class PostgresModel(Base):
         __tablename__ = "postgres_model"
 
@@ -160,7 +153,7 @@ async def test_model_form_postgresql(client: AsyncClient) -> None:
     assert len(Form()._fields) == 3
 
 
-async def test_model_form_sqlalchemy_utils(client: AsyncClient) -> None:
+async def test_model_form_sqlalchemy_utils() -> None:
     class SQLAlchemyUtilsModel(Base):
         __tablename__ = "sqlalchemy_utils_model"
 
@@ -172,7 +165,7 @@ async def test_model_form_sqlalchemy_utils(client: AsyncClient) -> None:
     assert len(Form()._fields) == 2
 
 
-async def test_form_override_scaffold(client: AsyncClient) -> None:
+async def test_form_override_scaffold() -> None:
     class MyForm(Form):
         foo = StringField("Foo")
 
