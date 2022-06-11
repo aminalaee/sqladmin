@@ -19,7 +19,7 @@
             <tr>
               <td>{{ name }}</td>
               {% if (name, attr) in model_admin._details_relations %}
-              {% if is_list( model_admin.get_list_value(model, attr) ) %}
+              {% if is_iterable( model_admin.get_list_value(model, attr) ) %}
               <td>
               {% for value in model_admin.get_detail_value(model, attr) %}
               <a href="{{ model_admin._url_for_details(value) }}">({{ value }})</a>

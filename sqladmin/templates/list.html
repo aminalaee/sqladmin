@@ -107,7 +107,7 @@
             </td>
             {% for name, column in model_admin._list_attrs %}
             {% if (name, column) in model_admin._list_relations %}
-            {% if is_list( model_admin.get_list_value(row, column) ) %}
+            {% if is_iterable( model_admin.get_list_value(row, column) ) %}
             <td>
             {% for value in model_admin.get_list_value(row, column) %}
             <a href="{{ model_admin._url_for_details(value) }}">({{ value }})</a>
