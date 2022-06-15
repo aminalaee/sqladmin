@@ -198,8 +198,11 @@ class ModelConverterBase:
 
             # Support for custom types like SQLModel which inherit TypeDecorator
             if hasattr(col_type, "impl"):
-                if col_type.impl.__name__ in self._converters:  # type: ignore
-                    return self._converters[col_type.impl.__name__]  # type: ignore
+                # See https://github.com/aminalaee/sqladmin/issues/176.
+                impl = col_type.impl if callable(col_type.impl) else col_type.__class__  # type: ignore
+
+                if impl.__name__ in self._converters:  # type: ignore
+                    return self._converters[impl.__name__]  # type: ignore
 
         raise NoConverterFound(  # pragma: nocover
             f"Could not find field converter for column {column.name} ({types[0]!r})."
