@@ -199,7 +199,11 @@ class ModelConverterBase:
             # Support for custom types like SQLModel which inherit TypeDecorator
             if hasattr(col_type, "impl"):
                 # See https://github.com/aminalaee/sqladmin/issues/176.
-                impl = col_type.impl if callable(col_type.impl) else col_type.__class__  # type: ignore
+                impl = (
+                    col_type.impl  # type: ignore
+                    if callable(col_type.impl)  # type: ignore
+                    else col_type.__class__
+                )
 
                 if impl.__name__ in self._converters:  # type: ignore
                     return self._converters[impl.__name__]  # type: ignore
