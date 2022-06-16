@@ -1,10 +1,10 @@
-from typing import Any
+from typing import Any, Generator
 
 import pytest
 from sqlalchemy import Column, ForeignKey, Integer, String
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import relationship, sessionmaker
+from sqlalchemy.orm import Session, relationship, sessionmaker
 from starlette.applications import Starlette
 
 from sqladmin import Admin, ModelAdmin
@@ -14,6 +14,7 @@ from tests.common import sync_engine as engine
 Base = declarative_base()  # type: Any
 
 LocalSession = sessionmaker(bind=engine)
+session: Session = LocalSession()
 
 app = Starlette()
 admin = Admin(app=app, engine=engine)
@@ -35,6 +36,14 @@ class Address(Base):
     user_id = Column(Integer, ForeignKey("users.id"))
 
     user = relationship("User", back_populates="addresses")
+
+
+@pytest.fixture(autouse=True)
+def prepare_database() -> Generator[None, None, None]:
+    Base.metadata.create_all(engine)
+    yield
+    session.close_all()
+    Base.metadata.drop_all(engine)
 
 
 def test_model_setup() -> None:
@@ -415,3 +424,48 @@ def test_get_python_type_postgresql() -> None:
         ...
 
     PostgresModelAdmin()._get_column_python_type(PostgresModel.uuid) is str
+
+
+def test_get_url_for_details_from_object() -> None:
+    class UserAdmin(ModelAdmin, model=User):
+        ...
+
+    admin = Admin(app=Starlette(), engine=engine)
+    admin.register_model(UserAdmin)
+
+    user = User()
+    session.add(user)
+    session.commit()
+
+    url = UserAdmin()._url_for_details(user)
+    assert url == "/admin/user/details/1"
+
+
+def test_get_url_for_details_from_object_with_attr() -> None:
+    class UserAdmin(ModelAdmin, model=User):
+        ...
+
+    class AddressAdmin(ModelAdmin, model=Address):
+        ...
+
+    admin = Admin(app=Starlette(), engine=engine)
+    admin.register_model(UserAdmin)
+    admin.register_model(AddressAdmin)
+
+    user = User()
+    session.add(user)
+    session.flush()
+
+    address = Address(user_id=user.id)
+    session.add(address)
+    session.commit()
+
+    address2 = Address()
+    session.add(address2)
+    session.commit()
+
+    url = UserAdmin()._url_for_details_with_attr(address, Address.user)
+    assert url == "/admin/user/details/1"
+
+    url = UserAdmin()._url_for_details_with_attr(address2, Address.user)
+    assert url == ""

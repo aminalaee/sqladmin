@@ -589,6 +589,9 @@ class ModelAdmin(BaseModelAdmin, metaclass=ModelAdminMeta):
 
     def _url_for_details_with_attr(self, obj: Any, attr: RelationshipProperty) -> str:
         target = getattr(obj, attr.key)
+        if target is None:
+            return ""
+
         pk = getattr(target, attr.mapper.primary_key[0].name)
         return self.url_path_for(
             "admin:details",
@@ -664,14 +667,16 @@ class ModelAdmin(BaseModelAdmin, metaclass=ModelAdminMeta):
     def get_attr_value(
         self, obj: type, attr: Union[Column, ColumnProperty, RelationshipProperty]
     ) -> Any:
+        result = None
+
         if isinstance(attr, Column):
-            return getattr(obj, attr.name)
+            result = getattr(obj, attr.name)
 
-        value = getattr(obj, attr.key)
-        if isinstance(value, Enum):
-            return value.value
+        if isinstance(attr, (ColumnProperty, RelationshipProperty)):
+            result = getattr(obj, attr.key)
+            result = result.value if isinstance(result, Enum) else result
 
-        return value
+        return result or ""
 
     def get_list_value(
         self, obj: type, attr: Union[Column, ColumnProperty, RelationshipProperty]
