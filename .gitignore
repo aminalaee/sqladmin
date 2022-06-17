@@ -1,6 +1,7 @@
 *.egg-info
 *.pyc
 .env
+.venv/
 venv/
 __pycache__/
 htmlcov/

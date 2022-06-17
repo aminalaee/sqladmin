@@ -179,7 +179,10 @@ class ModelConverterBase:
         self, prop: Union[ColumnProperty, RelationshipProperty]
     ) -> ConverterCallable:
         if not isinstance(prop, ColumnProperty):
-            return self._converters[prop.direction.name]
+            name = prop.direction.name
+            if name == "ONETOMANY" and not prop.uselist:
+                name = "ONETOONE"
+            return self._converters[name]
 
         column = prop.columns[0]
         types = inspect.getmro(type(column.type))
@@ -368,6 +371,13 @@ class ModelConverter(ModelConverterBase):
         self, model: type, prop: ColumnProperty, kwargs: Dict[str, Any]
     ) -> UnboundField:
         return JSONField(**kwargs)
+
+    @converts("ONETOONE")
+    def conv_OneToOne(
+        self, model: type, prop: RelationshipProperty, kwargs: Dict[str, Any]
+    ) -> UnboundField:
+        kwargs["allow_blank"] = True
+        return QuerySelectField(**kwargs)
 
     @converts("MANYTOONE")
     def conv_ManyToOne(

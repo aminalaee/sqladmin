@@ -599,6 +599,9 @@ class ModelAdmin(BaseModelAdmin, metaclass=ModelAdminMeta):
             pk=pk,
         )
 
+    def _has_attr(self, obj: Any, attr: RelationshipProperty) -> bool:
+        return getattr(obj, attr.key, None) is not None
+
     async def count(self) -> int:
         stmt = select(func.count(self.pk_column))
         rows = await self._run_query(stmt)
