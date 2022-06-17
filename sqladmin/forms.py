@@ -334,8 +334,11 @@ class ModelConverter(ModelConverterBase):
         kwargs["validators"].append(validators.MacAddress())
         return StringField(**kwargs)
 
-    @converts("sqlalchemy.dialects.postgresql.base.UUID")
-    def conv_PgUuid(
+    @converts(
+        "sqlalchemy.dialects.postgresql.base.UUID",
+        "sqlalchemy_utils.types.uuid.UUIDType",
+    )
+    def conv_Uuid(
         self, model: type, prop: ColumnProperty, kwargs: Dict[str, Any]
     ) -> UnboundField:
         kwargs.setdefault("label", "UUID")
