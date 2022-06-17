@@ -400,13 +400,11 @@ async def get_model_form(
     form_overrides = form_overrides or {}
 
     attributes = []
-    for name, attr in mapper.attrs.items():
-        if only and name not in only:
+    names = only or mapper.attrs.keys()
+    for name in names:
+        if exclude and name in exclude:
             continue
-        elif exclude and name in exclude:
-            continue
-
-        attributes.append((name, attr))
+        attributes.append((name, mapper.attrs[name]))
 
     field_dict = {}
     for name, attr in attributes:
