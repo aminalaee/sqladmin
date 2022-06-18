@@ -36,6 +36,7 @@ from wtforms import (
 )
 from wtforms.fields.core import UnboundField
 
+from sqladmin._validators import CurrencyValidator, TimezoneValidator
 from sqladmin.exceptions import NoConverterFound
 from sqladmin.fields import JSONField, QuerySelectField, QuerySelectMultipleField
 
@@ -315,18 +316,27 @@ class ModelConverter(ModelConverterBase):
         kwargs.setdefault("places", None)
         return DecimalField(**kwargs)
 
+    @converts("JSON")
+    def convert_JSON(
+        self, model: type, prop: ColumnProperty, kwargs: Dict[str, Any]
+    ) -> UnboundField:
+        return JSONField(**kwargs)
+
     # @converts("dialects.mysql.types.YEAR", "dialects.mysql.base.YEAR")
     # def conv_MSYear(self, field_args: Dict, **kwargs: Any) -> Field:
     #     field_args["validators"].append(validators.NumberRange(min=1901, max=2155))
     #     return StringField(**field_args)
 
-    @converts("sqlalchemy.dialects.postgresql.base.INET")
-    def conv_PGInet(
+    @converts(
+        "sqlalchemy.dialects.postgresql.base.INET",
+        "sqlalchemy_utils.types.ip_address.IPAddressType",
+    )
+    def conv_IPAddress(
         self, model: type, prop: ColumnProperty, kwargs: Dict[str, Any]
     ) -> UnboundField:
         kwargs.setdefault("label", "IP Address")
         kwargs.setdefault("validators", [])
-        kwargs["validators"].append(validators.IPAddress())
+        kwargs["validators"].append(validators.IPAddress(ipv4=True, ipv6=True))
         return StringField(**kwargs)
 
     @converts("sqlalchemy.dialects.postgresql.base.MACADDR")
@@ -359,22 +369,31 @@ class ModelConverter(ModelConverterBase):
         kwargs["validators"].append(validators.Email())
         return StringField(**kwargs)
 
-    @converts(
-        "sqlalchemy_utils.types.ip_address.IPAddressType",
-    )
-    def conv_UtilsIP(
+    @converts("sqlalchemy_utils.types.url.URLType")
+    def convert_UtilsUrl(
         self, model: type, prop: ColumnProperty, kwargs: Dict[str, Any]
-    ) -> UnboundField:
-        kwargs.setdefault("label", "IPAddress")
+    ):
         kwargs.setdefault("validators", [])
-        kwargs["validators"].append(validators.IPAddress(ipv4=True, ipv6=True))
+        kwargs["validators"].append(validators.URL())
         return StringField(**kwargs)
 
-    @converts("JSON")
-    def convert_JSON(
+    @converts("sqlalchemy_utils.types.currency.CurrencyType")
+    def convert_UtilsCurrency(
         self, model: type, prop: ColumnProperty, kwargs: Dict[str, Any]
-    ) -> UnboundField:
-        return JSONField(**kwargs)
+    ):
+        kwargs.setdefault("validators", [])
+        kwargs["validators"].append(CurrencyValidator())
+        return StringField(**kwargs)
+
+    @converts("sqlalchemy_utils.types.timezone.TimezoneType")
+    def convert_UtilsTimezone(
+        self, model: type, prop: ColumnProperty, kwargs: Dict[str, Any]
+    ):
+        kwargs.setdefault("validators", [])
+        kwargs["validators"].append(
+            TimezoneValidator(coerce_function=prop.columns[0].type._coerce)
+        )
+        return StringField(**kwargs)
 
     @converts("MANYTOONE")
     def conv_ManyToOne(

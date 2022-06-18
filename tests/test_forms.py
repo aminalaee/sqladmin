@@ -18,12 +18,19 @@ from sqlalchemy.dialects.postgresql import INET, MACADDR, UUID
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship, sessionmaker
-from sqlalchemy_utils import EmailType, IPAddressType, UUIDType
+from sqlalchemy_utils import (
+    CurrencyType,
+    EmailType,
+    IPAddressType,
+    TimezoneType,
+    URLType,
+    UUIDType,
+)
 from wtforms import Field, Form, StringField
 
 from sqladmin import ModelAdmin
 from sqladmin.forms import get_model_form
-from tests.common import async_engine as engine
+from tests.common import DummyData, async_engine as engine
 
 pytestmark = pytest.mark.anyio
 
@@ -162,9 +169,13 @@ async def test_model_form_sqlalchemy_utils() -> None:
         email = Column(EmailType)
         ip = Column(IPAddressType)
         uuid = Column(UUIDType)
+        url = Column(URLType)
+        currency = Column(CurrencyType)
+        timezone = Column(TimezoneType)
 
     Form = await get_model_form(model=SQLAlchemyUtilsModel, engine=engine)
-    assert len(Form()._fields) == 3
+    form = Form(DummyData(currency="IRR", timezone=["Asia/Tehran"]))
+    assert form.validate() is True
 
 
 async def test_form_override_scaffold() -> None:
