@@ -252,7 +252,7 @@ class ModelConverter(ModelConverterBase):
         return li
 
     @converts("String", "CHAR")  # includes Unicode
-    def conv_String(
+    def conv_string(
         self, model: type, prop: ColumnProperty, kwargs: Dict[str, Any]
     ) -> UnboundField:
         extra_validators = self._string_common(prop)
@@ -261,7 +261,7 @@ class ModelConverter(ModelConverterBase):
         return StringField(**kwargs)
 
     @converts("Text", "LargeBinary", "Binary")  # includes UnicodeText
-    def conv_Text(
+    def conv_text(
         self, model: type, prop: ColumnProperty, kwargs: Dict[str, Any]
     ) -> UnboundField:
         kwargs.setdefault("validators", [])
@@ -270,7 +270,7 @@ class ModelConverter(ModelConverterBase):
         return TextAreaField(**kwargs)
 
     @converts("Boolean", "dialects.mssql.base.BIT")
-    def conv_Boolean(
+    def conv_boolean(
         self, model: type, prop: ColumnProperty, kwargs: Dict[str, Any]
     ) -> UnboundField:
         kwargs.setdefault("render_kw", {})
@@ -278,19 +278,19 @@ class ModelConverter(ModelConverterBase):
         return BooleanField(**kwargs)
 
     @converts("Date")
-    def conv_Date(
+    def conv_date(
         self, model: type, prop: ColumnProperty, kwargs: Dict[str, Any]
     ) -> UnboundField:
         return DateField(**kwargs)
 
     @converts("DateTime")
-    def conv_DateTime(
+    def conv_datetime(
         self, model: type, prop: ColumnProperty, kwargs: Dict[str, Any]
     ) -> UnboundField:
         return DateTimeField(**kwargs)
 
     @converts("Enum")
-    def conv_Enum(
+    def conv_enum(
         self, model: type, prop: ColumnProperty, kwargs: Dict[str, Any]
     ) -> UnboundField:
         available_choices = [(e, e) for e in prop.columns[0].type.enums]
@@ -303,13 +303,13 @@ class ModelConverter(ModelConverterBase):
         return SelectField(**kwargs)
 
     @converts("Integer")  # includes BigInteger and SmallInteger
-    def handle_integer_types(
+    def conv_integer(
         self, model: type, prop: ColumnProperty, kwargs: Dict[str, Any]
     ) -> UnboundField:
         return IntegerField(**kwargs)
 
     @converts("Numeric")  # includes DECIMAL, Float/FLOAT, REAL, and DOUBLE
-    def handle_decimal_types(
+    def conv_decimal(
         self, model: type, prop: ColumnProperty, kwargs: Dict[str, Any]
     ) -> UnboundField:
         # override default decimal places limit, use database defaults instead
@@ -317,7 +317,7 @@ class ModelConverter(ModelConverterBase):
         return DecimalField(**kwargs)
 
     @converts("JSON")
-    def convert_JSON(
+    def conv_json(
         self, model: type, prop: ColumnProperty, kwargs: Dict[str, Any]
     ) -> UnboundField:
         return JSONField(**kwargs)
@@ -331,7 +331,7 @@ class ModelConverter(ModelConverterBase):
         "sqlalchemy.dialects.postgresql.base.INET",
         "sqlalchemy_utils.types.ip_address.IPAddressType",
     )
-    def conv_IPAddress(
+    def conv_ip_address(
         self, model: type, prop: ColumnProperty, kwargs: Dict[str, Any]
     ) -> UnboundField:
         kwargs.setdefault("label", "IP Address")
@@ -340,7 +340,7 @@ class ModelConverter(ModelConverterBase):
         return StringField(**kwargs)
 
     @converts("sqlalchemy.dialects.postgresql.base.MACADDR")
-    def conv_PGMacaddr(
+    def conv_mac_address(
         self, model: type, prop: ColumnProperty, kwargs: Dict[str, Any]
     ) -> UnboundField:
         kwargs.setdefault("label", "MAC Address")
@@ -352,7 +352,7 @@ class ModelConverter(ModelConverterBase):
         "sqlalchemy.dialects.postgresql.base.UUID",
         "sqlalchemy_utils.types.uuid.UUIDType",
     )
-    def conv_Uuid(
+    def conv_uuid(
         self, model: type, prop: ColumnProperty, kwargs: Dict[str, Any]
     ) -> UnboundField:
         kwargs.setdefault("label", "UUID")
@@ -361,7 +361,7 @@ class ModelConverter(ModelConverterBase):
         return StringField(**kwargs)
 
     @converts("sqlalchemy_utils.types.email.EmailType")
-    def conv_UtilsEmail(
+    def conv_email(
         self, model: type, prop: ColumnProperty, kwargs: Dict[str, Any]
     ) -> UnboundField:
         kwargs.setdefault("label", "Email")
@@ -370,25 +370,19 @@ class ModelConverter(ModelConverterBase):
         return StringField(**kwargs)
 
     @converts("sqlalchemy_utils.types.url.URLType")
-    def convert_UtilsUrl(
-        self, model: type, prop: ColumnProperty, kwargs: Dict[str, Any]
-    ):
+    def conv_url(self, model: type, prop: ColumnProperty, kwargs: Dict[str, Any]):
         kwargs.setdefault("validators", [])
         kwargs["validators"].append(validators.URL())
         return StringField(**kwargs)
 
     @converts("sqlalchemy_utils.types.currency.CurrencyType")
-    def convert_UtilsCurrency(
-        self, model: type, prop: ColumnProperty, kwargs: Dict[str, Any]
-    ):
+    def conv_currency(self, model: type, prop: ColumnProperty, kwargs: Dict[str, Any]):
         kwargs.setdefault("validators", [])
         kwargs["validators"].append(CurrencyValidator())
         return StringField(**kwargs)
 
     @converts("sqlalchemy_utils.types.timezone.TimezoneType")
-    def convert_UtilsTimezone(
-        self, model: type, prop: ColumnProperty, kwargs: Dict[str, Any]
-    ):
+    def conv_timezone(self, model: type, prop: ColumnProperty, kwargs: Dict[str, Any]):
         kwargs.setdefault("validators", [])
         kwargs["validators"].append(
             TimezoneValidator(coerce_function=prop.columns[0].type._coerce)
@@ -396,13 +390,13 @@ class ModelConverter(ModelConverterBase):
         return StringField(**kwargs)
 
     @converts("MANYTOONE")
-    def conv_ManyToOne(
+    def conv_many_to_one(
         self, model: type, prop: RelationshipProperty, kwargs: Dict[str, Any]
     ) -> UnboundField:
         return QuerySelectField(**kwargs)
 
     @converts("MANYTOMANY", "ONETOMANY")
-    def conv_ManyToMany(
+    def conv_many_to_many(
         self, model: type, prop: RelationshipProperty, kwargs: Dict[str, Any]
     ) -> UnboundField:
         return QuerySelectMultipleField(**kwargs)
