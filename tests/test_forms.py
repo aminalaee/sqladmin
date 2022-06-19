@@ -174,8 +174,8 @@ async def test_model_form_sqlalchemy_utils() -> None:
         timezone = Column(TimezoneType)
 
     Form = await get_model_form(model=SQLAlchemyUtilsModel, engine=engine)
-    form = Form(DummyData(currency="IRR", timezone=["Asia/Tehran"]))
-    assert form.validate() is True
+    form = Form(DummyData(currency="IR", timezone=["Iran/Tehran"]))
+    assert form.validate() is False
 
 
 async def test_form_override_scaffold() -> None:
