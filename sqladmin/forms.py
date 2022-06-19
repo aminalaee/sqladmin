@@ -77,7 +77,7 @@ class ModelConverterBase:
         super().__init__()
         self._register_converters()
 
-    def _register_converters(self):
+    def _register_converters(self) -> None:
         converters = {}
 
         for name in dir(self):
@@ -94,13 +94,12 @@ class ModelConverterBase:
         engine: Union[Engine, AsyncEngine],
         field_args: Dict[str, Any] = None,
         label: Optional[str] = None,
-    ) -> Dict[str, Any]:
+    ) -> Optional[Dict[str, Any]]:
         if field_args:
             kwargs = field_args.copy()
         else:
             kwargs = {}
 
-        kwargs: Dict[str, Any]
         kwargs.setdefault("label", label)
         kwargs.setdefault("validators", [])
         kwargs.setdefault("filters", [])
@@ -115,7 +114,7 @@ class ModelConverterBase:
             column = prop.columns[0]
 
             if column.primary_key or column.foreign_keys:
-                return
+                return None
 
             default = getattr(column, "default", None)
 
@@ -201,8 +200,13 @@ class ModelConverterBase:
 
             # Support for custom types like SQLModel which inherit TypeDecorator
             if hasattr(col_type, "impl"):
-                if col_type.impl.__name__ in self._converters:  # type: ignore
-                    return self._converters[col_type.impl.__name__]  # type: ignore
+                if callable(col_type.impl):  # type: ignore
+                    impl = col_type.impl  # type: ignore
+                else:
+                    impl = col_type.impl.__class__  # type: ignore
+
+                if impl.__name__ in self._converters:
+                    return self._converters[impl.__name__]
 
         raise NoConverterFound(  # pragma: nocover
             f"Could not find field converter for column {column.name} ({types[0]!r})."
@@ -337,8 +341,11 @@ class ModelConverter(ModelConverterBase):
         kwargs["validators"].append(validators.MacAddress())
         return StringField(**kwargs)
 
-    @converts("sqlalchemy.dialects.postgresql.base.UUID")
-    def conv_PgUuid(
+    @converts(
+        "sqlalchemy.dialects.postgresql.base.UUID",
+        "sqlalchemy_utils.types.uuid.UUIDType",
+    )
+    def conv_Uuid(
         self, model: type, prop: ColumnProperty, kwargs: Dict[str, Any]
     ) -> UnboundField:
         kwargs.setdefault("label", "UUID")
@@ -410,13 +417,11 @@ async def get_model_form(
     form_overrides = form_overrides or {}
 
     attributes = []
-    for name, attr in mapper.attrs.items():
-        if only and name not in only:
+    names = only or mapper.attrs.keys()
+    for name in names:
+        if exclude and name in exclude:
             continue
-        elif exclude and name in exclude:
-            continue
-
-        attributes.append((name, attr))
+        attributes.append((name, mapper.attrs[name]))
 
     field_dict = {}
     for name, attr in attributes:

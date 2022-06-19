@@ -16,12 +16,13 @@ from sqlalchemy import (
     Numeric,
     String,
     Text,
+    TypeDecorator,
 )
 from sqlalchemy.dialects.postgresql import INET, MACADDR, UUID
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship, sessionmaker
-from sqlalchemy_utils import EmailType, IPAddressType
+from sqlalchemy_utils import EmailType, IPAddressType, UUIDType
 from wtforms import Field, Form, StringField
 
 from sqladmin import ModelAdmin
@@ -217,9 +218,10 @@ async def test_model_form_sqlalchemy_utils() -> None:
         id = Column(Integer, primary_key=True)
         email = Column(EmailType)
         ip = Column(IPAddressType)
+        uuid = Column(UUIDType)
 
     Form = await get_model_form(model=SQLAlchemyUtilsModel, engine=engine)
-    assert len(Form()._fields) == 2
+    assert len(Form()._fields) == 3
 
 
 async def test_form_override_scaffold() -> None:
@@ -234,3 +236,31 @@ async def test_form_override_scaffold() -> None:
     assert isinstance(form, MyForm)
     assert len(form._fields) == 1
     assert "foo" in form._fields
+
+
+async def test_form_converter_when_impl_is_callable() -> None:
+    class MyType(TypeDecorator):
+        impl = String
+
+    class CustomModel(Base):
+        __tablename__ = "impl_callable"
+
+        id = Column(Integer, primary_key=True)
+        custom = Column(MyType)
+
+    Form = await get_model_form(model=CustomModel, engine=engine)
+    assert "custom" in Form()._fields
+
+
+async def test_form_converter_when_impl_not_callable() -> None:
+    class MyType(TypeDecorator):
+        impl = String(length=100)
+
+    class CustomModel(Base):
+        __tablename__ = "impl_non_callable"
+
+        id = Column(Integer, primary_key=True)
+        custom = Column(MyType)
+
+    Form = await get_model_form(model=CustomModel, engine=engine)
+    assert "custom" in Form()._fields
