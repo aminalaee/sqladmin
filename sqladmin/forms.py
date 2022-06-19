@@ -93,20 +93,20 @@ class ModelConverterBase:
         self,
         prop: Union[ColumnProperty, RelationshipProperty],
         engine: Union[Engine, AsyncEngine],
-        field_args: Dict[str, Any] = None,
+        field_args: Dict[str, Any],
+        field_widget_args: Dict[str, Any],
         label: Optional[str] = None,
     ) -> Optional[Dict[str, Any]]:
-        if field_args:
-            kwargs = field_args.copy()
-        else:
-            kwargs = {}
+        kwargs = field_args.copy()
+        widget_args = field_widget_args.copy()
+        widget_args.setdefault("class", "form-control")
 
         kwargs.setdefault("label", label)
         kwargs.setdefault("validators", [])
         kwargs.setdefault("filters", [])
         kwargs.setdefault("default", None)
         kwargs.setdefault("description", prop.doc)
-        kwargs.setdefault("render_kw", {"class": "form-control"})
+        kwargs.setdefault("render_kw", widget_args)
 
         column = None
 
@@ -213,10 +213,10 @@ class ModelConverterBase:
     async def convert(
         self,
         model: type,
-        mapper: Mapper,
         prop: Union[ColumnProperty, RelationshipProperty],
         engine: Union[Engine, AsyncEngine],
-        field_args: Dict[str, Any] = None,
+        field_args: Dict[str, Any],
+        field_widget_args: Dict[str, Any],
         label: Optional[str] = None,
         override: Optional[Type[Field]] = None,
     ) -> Optional[UnboundField]:
@@ -225,6 +225,7 @@ class ModelConverterBase:
             prop=prop,
             engine=engine,
             field_args=field_args,
+            field_widget_args=field_widget_args,
             label=label,
         )
 
@@ -409,6 +410,7 @@ async def get_model_form(
     exclude: Sequence[str] = None,
     column_labels: Dict[str, str] = None,
     form_args: Dict[str, Dict[str, Any]] = None,
+    form_widget_args: Dict[str, Dict[str, Any]] = None,
     form_class: Type[Form] = Form,
     form_overrides: Dict[str, Dict[str, Type[Field]]] = None,
 ) -> Type[Form]:
@@ -416,6 +418,7 @@ async def get_model_form(
     converter = ModelConverter()
     mapper = sqlalchemy_inspect(model)
     form_args = form_args or {}
+    form_widget_args = form_widget_args or {}
     column_labels = column_labels or {}
     form_overrides = form_overrides or {}
 
@@ -429,10 +432,17 @@ async def get_model_form(
     field_dict = {}
     for name, attr in attributes:
         field_args = form_args.get(name, {})
+        field_widget_args = form_widget_args.get(name, {})
         label = column_labels.get(name, None)
         override = form_overrides.get(name, None)
         field = await converter.convert(
-            model, mapper, attr, engine, field_args, label, override
+            model=model,
+            prop=attr,
+            engine=engine,
+            field_args=field_args,
+            field_widget_args=field_widget_args,
+            label=label,
+            override=override,
         )
         if field is not None:
             field_dict[name] = field
