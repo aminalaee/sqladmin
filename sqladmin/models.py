@@ -431,6 +431,21 @@ class ModelAdmin(BaseModelAdmin, metaclass=ModelAdminMeta):
         ```
     """
 
+    form_widget_args: ClassVar[Dict[str, Dict[str, Any]]] = {}
+    """Dictionary of form widget rendering arguments.
+    Use this to customize how widget is rendered without using custom template.
+
+    ???+ example
+        ```python
+        class UserAdmin(ModelAdmin, model=User):
+            form_widget_args = {
+                "email": {
+                    "readonly": True,
+                },
+            }
+        ```
+    """
+
     form_columns: ClassVar[Sequence[Union[str, InstrumentedAttribute]]] = []
     """List of columns to include in the form.
     Columns can either be string names or SQLAlchemy columns.
@@ -842,6 +857,7 @@ class ModelAdmin(BaseModelAdmin, metaclass=ModelAdminMeta):
             only=[i[1].key for i in self._form_attrs],
             column_labels={k.key: v for k, v in self._column_labels.items()},
             form_args=self.form_args,
+            form_widget_args=self.form_widget_args,
             form_class=self.form_base_class,
             form_overrides=self.form_overrides,
         )
