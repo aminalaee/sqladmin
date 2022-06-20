@@ -48,6 +48,7 @@ class User(Base):
     meta_data = Column(JSON)
 
     addresses = relationship("Address", back_populates="user")
+    profile = relationship("Profile", back_populates="user", uselist=False)
 
     def __str__(self) -> str:
         return f"User {self.id}"
@@ -63,6 +64,18 @@ class Address(Base):
 
     def __str__(self) -> str:
         return f"Address {self.id}"
+
+
+class Profile(Base):
+    __tablename__ = "profiles"
+
+    id = Column(Integer, primary_key=True)
+    user_id = Column(Integer, ForeignKey("users.id"), unique=True)
+
+    user = relationship("User", back_populates="profile")
+
+    def __str__(self) -> str:
+        return f"Profile {self.id}"
 
 
 class Movie(Base):
@@ -85,7 +98,14 @@ def client(prepare_database: Any) -> Generator[TestClient, None, None]:
 
 
 class UserAdmin(ModelAdmin, model=User):
-    column_list = [User.id, User.name, User.email, User.addresses, User.status]
+    column_list = [
+        User.id,
+        User.name,
+        User.email,
+        User.addresses,
+        User.profile,
+        User.status,
+    ]
     column_labels = {User.email: "Email"}
     column_searchable_list = [User.name]
     column_sortable_list = [User.id]
@@ -96,6 +116,10 @@ class AddressAdmin(ModelAdmin, model=Address):
     column_list = ["id", "user_id", "user"]
     name_plural = "Addresses"
     export_max_rows = 3
+
+
+class ProfileAdmin(ModelAdmin, model=Profile):
+    column_list = ["id", "user_id", "user"]
 
 
 class MovieAdmin(ModelAdmin, model=Movie):
@@ -112,6 +136,7 @@ class MovieAdmin(ModelAdmin, model=Movie):
 
 admin.register_model(UserAdmin)
 admin.register_model(AddressAdmin)
+admin.register_model(ProfileAdmin)
 admin.register_model(MovieAdmin)
 
 
@@ -238,6 +263,8 @@ def test_detail_page(client: TestClient) -> None:
     for _ in range(2):
         address = Address(user_id=user.id)
         session.add(address)
+    profile = Profile(user=user)
+    session.add(profile)
     session.commit()
 
     response = client.get("/admin/user/details/1")
@@ -253,6 +280,8 @@ def test_detail_page(client: TestClient) -> None:
     assert (
         response.text.count('<a href="/admin/address/details/1">(Address 1)</a>') == 1
     )
+    assert response.text.count("<td>profile</td>") == 1
+    assert response.text.count('<a href="/admin/profile/details/1">Profile 1</a>') == 1
 
     # Action Buttons
     assert response.text.count("http://testserver/admin/user/list") == 2
@@ -324,6 +353,7 @@ def test_create_endpoint_get_form(client: TestClient) -> None:
         '<select class="form-control" id="addresses" multiple name="addresses">'
         in response.text
     )
+    assert '<select class="form-control" id="profile" name="profile">' in response.text
     assert 'id="name" maxlength="16" name="name" type="text" value="">' in response.text
     assert (
         '<input class="form-control" id="email" name="email" type="text" value="">'
@@ -348,12 +378,18 @@ def test_create_endpoint_post_form(client: TestClient) -> None:
         assert s.execute(stmt).scalar_one() == 1
     assert response.status_code == 302
 
-    stmt = select(User).limit(1).options(selectinload(User.addresses))
+    stmt = (
+        select(User)
+        .limit(1)
+        .options(selectinload(User.addresses))
+        .options(selectinload(User.profile))
+    )
     with LocalSession() as s:
         user = s.execute(stmt).scalar_one()
     assert user.name == "SQLAlchemy"
     assert user.email is None
     assert user.addresses == []
+    assert user.profile is None
 
     data = {"user": user.id}
     response = client.post("/admin/address/create", data=data)
@@ -369,7 +405,25 @@ def test_create_endpoint_post_form(client: TestClient) -> None:
     assert address.user.id == user.id
     assert address.user_id == user.id
 
-    data = {"name": "SQLAdmin", "addresses": [address.id]}
+    data = {"user": user.id}
+    response = client.post("/admin/profile/create", data=data)
+
+    stmt = select(func.count(Profile.id))
+    with LocalSession() as s:
+        assert s.execute(stmt).scalar_one() == 1
+    assert response.status_code == 302
+
+    stmt = select(Profile).limit(1).options(selectinload(Profile.user))
+    with LocalSession() as s:
+        profile = s.execute(stmt).scalar_one()
+    assert profile.user.id == user.id
+    assert profile.user_id == user.id
+
+    data = {
+        "name": "SQLAdmin",
+        "addresses": [address.id],
+        "profile": profile.id,
+    }
     response = client.post("/admin/user/create", data=data)
 
     stmt = select(func.count(User.id))
@@ -377,11 +431,18 @@ def test_create_endpoint_post_form(client: TestClient) -> None:
         assert s.execute(stmt).scalar_one() == 2
     assert response.status_code == 302
 
-    stmt = select(User).offset(1).limit(1).options(selectinload(User.addresses))
+    stmt = (
+        select(User)
+        .offset(1)
+        .limit(1)
+        .options(selectinload(User.addresses))
+        .options(selectinload(User.profile))
+    )
     with LocalSession() as s:
         user = s.execute(stmt).scalar_one()
     assert user.name == "SQLAdmin"
     assert user.addresses[0].id == address.id
+    assert user.profile.id == profile.id
 
 
 def test_list_view_page_size_options(client: TestClient) -> None:
@@ -428,6 +489,8 @@ def test_update_get_page(client: TestClient) -> None:
 
     address = Address(user=user)
     session.add(address)
+    profile = Profile(user=user)
+    session.add(profile)
     session.commit()
 
     response = client.get("/admin/user/edit/1")
@@ -441,6 +504,11 @@ def test_update_get_page(client: TestClient) -> None:
     )
     assert response.text.count('<option selected value="1">Address 1</option>') == 1
     assert (
+        response.text.count('<select class="form-control" id="profile" name="profile">')
+        == 1
+    )
+    assert response.text.count('<option selected value="1">Profile 1</option>') == 1
+    assert (
         response.text.count(
             'id="name" maxlength="16" name="name" type="text" value="Joe">'
         )
@@ -448,6 +516,12 @@ def test_update_get_page(client: TestClient) -> None:
     )
 
     response = client.get("/admin/address/edit/1")
+
+    assert response.text.count('<select class="form-control" id="user" name="user">')
+    assert response.text.count('<option value="__None"></option>')
+    assert response.text.count('<option selected value="1">User 1</option>')
+
+    response = client.get("/admin/profile/edit/1")
 
     assert response.text.count('<select class="form-control" id="user" name="user">')
     assert response.text.count('<option value="__None"></option>')
@@ -461,6 +535,8 @@ def test_update_submit_form(client: TestClient) -> None:
 
     address = Address(user=user)
     session.add(address)
+    profile = Profile(user=user)
+    session.add(profile)
     session.commit()
 
     data = {"name": "Jack"}
@@ -468,19 +544,30 @@ def test_update_submit_form(client: TestClient) -> None:
 
     assert response.status_code == 302
 
-    stmt = select(User).limit(1).options(selectinload(User.addresses))
+    stmt = (
+        select(User)
+        .limit(1)
+        .options(selectinload(User.addresses))
+        .options(selectinload(User.profile))
+    )
     with LocalSession() as s:
         user = s.execute(stmt).scalar_one()
     assert user.name == "Jack"
     assert user.addresses == []
+    assert user.profile is None
 
-    data = {"name": "Jack", "addresses": "1"}
+    data = {"name": "Jack", "addresses": "1", "profile": "1"}
     response = client.post("/admin/user/edit/1", data=data)
 
     stmt = select(Address).limit(1)
     with LocalSession() as s:
         address = s.execute(stmt).scalar_one()
     assert address.user_id == 1
+
+    stmt = select(Profile).limit(1)
+    with LocalSession() as s:
+        profile = s.execute(stmt).scalar_one()
+    assert profile.user_id == 1
 
     data = {"name": "Jack" * 10}
     response = client.post("/admin/user/edit/1", data=data)

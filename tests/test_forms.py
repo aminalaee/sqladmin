@@ -60,6 +60,7 @@ class User(Base):
     number = Column(Integer)
 
     addresses = relationship("Address", back_populates="user")
+    profile = relationship("Profile", back_populates="user", uselist=False)
 
 
 class Address(Base):
@@ -71,6 +72,15 @@ class Address(Base):
     user = relationship("User", back_populates="addresses")
 
 
+class Profile(Base):
+    __tablename__ = "profiles"
+
+    id = Column(Integer, primary_key=True)
+    user_id = Column(Integer, ForeignKey("users.id"), unique=True)
+
+    user = relationship("User", back_populates="profile")
+
+
 @pytest.fixture(autouse=True)
 async def prepare_database() -> AsyncGenerator[None, None]:
     async with engine.begin() as conn:
@@ -80,6 +90,11 @@ async def prepare_database() -> AsyncGenerator[None, None]:
         await conn.run_sync(Base.metadata.drop_all)
 
     await engine.dispose()
+
+
+async def test_model_form() -> None:
+    Form = await get_model_form(model=User, engine=engine)
+    assert len(Form()._fields) == 10
 
 
 async def test_model_form_converter_with_default() -> None:
@@ -99,7 +114,7 @@ async def test_model_form_only() -> None:
 
 async def test_model_form_exclude() -> None:
     Form = await get_model_form(model=User, engine=engine, exclude=["status"])
-    assert len(Form()._fields) == 8
+    assert len(Form()._fields) == 9
 
 
 async def test_model_form_form_args() -> None:

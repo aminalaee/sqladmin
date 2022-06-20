@@ -27,6 +27,7 @@ class User(Base):
     name = Column(String)
 
     addresses = relationship("Address", back_populates="user")
+    profile = relationship("Profile", back_populates="user", uselist=False)
 
 
 class Address(Base):
@@ -36,6 +37,15 @@ class Address(Base):
     user_id = Column(Integer, ForeignKey("users.id"))
 
     user = relationship("User", back_populates="addresses")
+
+
+class Profile(Base):
+    __tablename__ = "profiles"
+
+    id = Column(Integer, primary_key=True)
+    user_id = Column(Integer, ForeignKey("users.id"), unique=True)
+
+    user = relationship("User", back_populates="profile")
 
 
 @pytest.fixture(autouse=True)
@@ -57,6 +67,11 @@ def test_model_setup() -> None:
         pass
 
     assert AddressAdmin.model == Address
+
+    class ProfileAdmin(ModelAdmin, model=Profile):
+        pass
+
+    assert ProfileAdmin.model == Profile
 
 
 def test_metadata_setup() -> None:
@@ -106,7 +121,7 @@ def test_column_list_by_str_name() -> None:
     class AddressAdmin(ModelAdmin, model=Address):
         column_list = ["id", "user_id"]
 
-    assert AddressAdmin().get_list_columns() == [
+    assert sorted(AddressAdmin().get_list_columns()) == [
         ("id", Address.id),
         ("user_id", Address.user_id),
     ]
@@ -139,6 +154,7 @@ def test_column_exclude_list_by_str_name() -> None:
     assert sorted(UserAdmin().get_list_columns()) == [
         ("addresses", User.addresses.prop),
         ("name", User.name),
+        ("profile", User.profile.prop),
     ]
 
 
@@ -149,6 +165,7 @@ def test_column_exclude_list_by_model_column() -> None:
     assert sorted(UserAdmin().get_list_columns()) == [
         ("addresses", User.addresses.prop),
         ("name", User.name),
+        ("profile", User.profile.prop),
     ]
 
 
@@ -194,10 +211,11 @@ def test_column_details_list_default() -> None:
     class UserAdmin(ModelAdmin, model=User):
         pass
 
-    assert UserAdmin().get_details_columns() == [
+    assert sorted(UserAdmin().get_details_columns()) == [
         ("addresses", User.addresses.prop),
         ("id", User.id),
         ("name", User.name),
+        ("profile", User.profile.prop),
     ]
 
 
@@ -215,6 +233,7 @@ def test_column_details_exclude_list_by_model_column() -> None:
     assert sorted(UserAdmin().get_details_columns()) == [
         ("addresses", User.addresses.prop),
         ("name", User.name),
+        ("profile", User.profile.prop),
     ]
 
 
@@ -269,10 +288,11 @@ def test_form_columns_default() -> None:
     class UserAdmin(ModelAdmin, model=User):
         pass
 
-    assert UserAdmin().get_form_columns() == [
+    assert sorted(UserAdmin().get_form_columns()) == [
         ("addresses", User.addresses.prop),
         ("id", User.id),
         ("name", User.name),
+        ("profile", User.profile.prop),
     ]
 
 
@@ -287,7 +307,7 @@ def test_form_columns_by_str_name() -> None:
     class AddressAdmin(ModelAdmin, model=Address):
         form_columns = ["id", "user_id"]
 
-    assert AddressAdmin().get_form_columns() == [
+    assert sorted(AddressAdmin().get_form_columns()) == [
         ("id", Address.id),
         ("user_id", Address.user_id),
     ]
@@ -320,6 +340,7 @@ def test_form_excluded_columns_by_str_name() -> None:
     assert sorted(UserAdmin().get_form_columns()) == [
         ("addresses", User.addresses.prop),
         ("name", User.name),
+        ("profile", User.profile.prop),
     ]
 
 
@@ -330,6 +351,7 @@ def test_form_excluded_columns_by_model_column() -> None:
     assert sorted(UserAdmin().get_form_columns()) == [
         ("addresses", User.addresses.prop),
         ("name", User.name),
+        ("profile", User.profile.prop),
     ]
 
 
@@ -337,7 +359,7 @@ def test_export_columns_default() -> None:
     class UserAdmin(ModelAdmin, model=User):
         pass
 
-    assert UserAdmin().get_export_columns() == [
+    assert sorted(UserAdmin().get_export_columns()) == [
         ("id", User.id),
     ]
 
@@ -400,6 +422,7 @@ def test_export_excluded_columns_by_str_name() -> None:
     assert sorted(UserAdmin().get_export_columns()) == [
         ("addresses", User.addresses.prop),
         ("name", User.name),
+        ("profile", User.profile.prop),
     ]
 
 
@@ -410,6 +433,7 @@ def test_export_excluded_columns_by_model_column() -> None:
     assert sorted(UserAdmin().get_export_columns()) == [
         ("addresses", User.addresses.prop),
         ("name", User.name),
+        ("profile", User.profile.prop),
     ]
 
 
