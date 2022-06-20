@@ -4,7 +4,7 @@ import pytest
 from sqlalchemy import Column, ForeignKey, Integer, String
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import Session, relationship, sessionmaker
+from sqlalchemy.orm import relationship, sessionmaker
 from starlette.applications import Starlette
 
 from sqladmin import Admin, ModelAdmin
@@ -13,8 +13,7 @@ from tests.common import sync_engine as engine
 
 Base = declarative_base()  # type: Any
 
-LocalSession = sessionmaker(bind=engine)
-session: Session = LocalSession()
+Session = sessionmaker(bind=engine)
 
 app = Starlette()
 admin = Admin(app=app, engine=engine)
@@ -52,7 +51,6 @@ class Profile(Base):
 def prepare_database() -> Generator[None, None, None]:
     Base.metadata.create_all(engine)
     yield
-    session.close_all()
     Base.metadata.drop_all(engine)
 
 
@@ -457,11 +455,13 @@ def test_get_url_for_details_from_object() -> None:
     admin = Admin(app=Starlette(), engine=engine)
     admin.register_model(UserAdmin)
 
-    user = User()
-    session.add(user)
-    session.commit()
+    with Session() as session:
+        user = User()
+        session.add(user)
+        session.commit()
 
-    url = UserAdmin()._url_for_details(user)
+        url = UserAdmin()._url_for_details(user)
+
     assert url == "/admin/user/details/1"
 
 
@@ -476,20 +476,43 @@ def test_get_url_for_details_from_object_with_attr() -> None:
     admin.register_model(UserAdmin)
     admin.register_model(AddressAdmin)
 
-    user = User()
-    session.add(user)
-    session.flush()
+    with Session() as session:
+        user = User()
+        session.add(user)
+        session.flush()
 
-    address = Address(user_id=user.id)
-    session.add(address)
-    session.commit()
+        address = Address(user_id=user.id)
+        session.add(address)
+        session.commit()
 
-    address2 = Address()
-    session.add(address2)
-    session.commit()
+        address2 = Address()
+        session.add(address2)
+        session.commit()
 
-    url = UserAdmin()._url_for_details_with_attr(address, Address.user)
+        url = UserAdmin()._url_for_details_with_attr(address, Address.user)
+        url_empty = UserAdmin()._url_for_details_with_attr(address2, Address.user)
+
     assert url == "/admin/user/details/1"
+    assert url_empty == ""
 
-    url = UserAdmin()._url_for_details_with_attr(address2, Address.user)
-    assert url == ""
+
+def test_model_default_sort() -> None:
+    class UserAdmin(ModelAdmin, model=User):
+        ...
+
+    assert UserAdmin()._get_default_sort() == [("id", False)]
+
+    class UserAdmin(ModelAdmin, model=User):
+        column_default_sort = "name"
+
+    assert UserAdmin()._get_default_sort() == [("name", False)]
+
+    class UserAdmin(ModelAdmin, model=User):
+        column_default_sort = ("name", True)
+
+    assert UserAdmin()._get_default_sort() == [("name", True)]
+
+    class UserAdmin(ModelAdmin, model=User):
+        column_default_sort = [("name", True), ("id", False)]
+
+    assert UserAdmin()._get_default_sort() == [("name", True), ("id", False)]
