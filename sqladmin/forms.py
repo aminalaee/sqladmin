@@ -18,7 +18,7 @@ import anyio
 from sqlalchemy import inspect as sqlalchemy_inspect, select
 from sqlalchemy.engine import Engine
 from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession
-from sqlalchemy.orm import ColumnProperty, Mapper, RelationshipProperty, Session
+from sqlalchemy.orm import ColumnProperty, RelationshipProperty, Session
 from sqlalchemy.sql.schema import Column
 from typing_extensions import Protocol
 from wtforms import (
