@@ -449,7 +449,6 @@ def test_get_python_type_postgresql() -> None:
     PostgresModelAdmin()._get_column_python_type(PostgresModel.uuid) is str
 
 
-@pytest.mark.skipif(engine.name == "postgresql", reason="PostgreSQL only")
 def test_get_url_for_details_from_object() -> None:
     class UserAdmin(ModelAdmin, model=User):
         ...
@@ -465,7 +464,6 @@ def test_get_url_for_details_from_object() -> None:
     assert url == "/admin/user/details/1"
 
 
-@pytest.mark.skipif(engine.name == "postgresql", reason="PostgreSQL only")
 def test_get_url_for_details_from_object_with_attr() -> None:
     class UserAdmin(ModelAdmin, model=User):
         ...
