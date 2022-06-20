@@ -277,6 +277,21 @@ class ModelAdmin(BaseModelAdmin, metaclass=ModelAdminMeta):
         ```
     """
 
+    column_default_sort = None
+    """Default sort column if no sorting is applied.
+        Example::
+            class MyModelView(BaseModelView):
+                column_default_sort = 'user'
+        You can use tuple to control ascending descending order. In following example, items
+        will be sorted in descending order::
+            class MyModelView(BaseModelView):
+                column_default_sort = ('user', True)
+        If you want to sort by more than one column,
+        you can pass a list of tuples::
+            class MyModelView(BaseModelView):
+                column_default_sort = [('name', True), ('last_name', True)]
+    """
+
     # Details page
     column_details_list: ClassVar[Sequence[Union[str, InstrumentedAttribute]]] = []
     """List of columns to display in `Detail` page.
@@ -534,7 +549,7 @@ class ModelAdmin(BaseModelAdmin, metaclass=ModelAdminMeta):
 
         self._sort_fields = [
             getattr(self.model, self.get_model_attr(attr).key)
-            for attr in self.column_sortable_list or []
+            for attr in self.column_sortable_list or self._get_default_sort()
         ]
 
     def _run_query_sync(self, stmt: ClauseElement) -> Any:
@@ -613,6 +628,17 @@ class ModelAdmin(BaseModelAdmin, metaclass=ModelAdminMeta):
             identity=slugify_class_name(target.__class__.__name__),
             pk=pk,
         )
+
+    def _get_default_sort(self) -> Union[list, None]:
+        if self.column_default_sort:
+            if isinstance(self.column_default_sort, list):
+                return self.column_default_sort
+            if isinstance(self.column_default_sort, tuple):
+                return [self.column_default_sort]
+            else:
+                return [(self.column_default_sort, False)]
+
+        return None
 
     async def count(self) -> int:
         stmt = select(func.count(self.pk_column))
