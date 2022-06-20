@@ -277,19 +277,31 @@ class ModelAdmin(BaseModelAdmin, metaclass=ModelAdminMeta):
         ```
     """
 
-    column_default_sort = None
+    column_default_sort: ClassVar[Union[str, tuple, list]] = []
     """Default sort column if no sorting is applied.
-        Example::
-            class MyModelView(BaseModelView):
-                column_default_sort = 'user'
-        You can use tuple to control ascending descending order. In following example, items
-        will be sorted in descending order::
-            class MyModelView(BaseModelView):
-                column_default_sort = ('user', True)
-        If you want to sort by more than one column,
-        you can pass a list of tuples::
-            class MyModelView(BaseModelView):
-                column_default_sort = [('name', True), ('last_name', True)]
+
+    ???+ example
+        ```python
+        class UserAdmin(ModelAdmin, model=User):
+            column_default_sort = "email"
+        ```
+
+    You can use tuple to control ascending descending order. In following example, items
+    will be sorted in descending order:
+
+    ???+ example
+        ```python
+        class UserAdmin(ModelAdmin, model=User):
+            column_default_sort = ("email", True)
+        ```
+
+    If you want to sort by more than one column, you can pass a list of tuples
+
+    ???+ example
+        ```python
+        class UserAdmin(ModelAdmin, model=User):
+            column_default_sort = [("email", True), ("name", False)]
+        ```
     """
 
     # Details page
@@ -544,12 +556,12 @@ class ModelAdmin(BaseModelAdmin, metaclass=ModelAdminMeta):
 
         self._search_fields = [
             getattr(self.model, self.get_model_attr(attr).key)
-            for attr in self.column_searchable_list or []
+            for attr in self.column_searchable_list
         ]
 
         self._sort_fields = [
             getattr(self.model, self.get_model_attr(attr).key)
-            for attr in self.column_sortable_list or self._get_default_sort()
+            for attr in self.column_sortable_list
         ]
 
     def _run_query_sync(self, stmt: ClauseElement) -> Any:
@@ -629,7 +641,7 @@ class ModelAdmin(BaseModelAdmin, metaclass=ModelAdminMeta):
             pk=pk,
         )
 
-    def _get_default_sort(self) -> Union[list, None]:
+    def _get_default_sort(self) -> List[tuple]:
         if self.column_default_sort:
             if isinstance(self.column_default_sort, list):
                 return self.column_default_sort
@@ -638,7 +650,7 @@ class ModelAdmin(BaseModelAdmin, metaclass=ModelAdminMeta):
             else:
                 return [(self.column_default_sort, False)]
 
-        return None
+        return [(self.pk_column.name, False)]
 
     async def count(self) -> int:
         stmt = select(func.count(self.pk_column))
@@ -661,11 +673,16 @@ class ModelAdmin(BaseModelAdmin, metaclass=ModelAdminMeta):
         for _, relation in self._list_relations:
             stmt = stmt.options(selectinload(relation.key))
 
-        sort_field = self.get_model_attr(sort_by) if sort_by else self.pk_column
-        if sort == "desc":
-            stmt = stmt.order_by(desc(sort_field))
+        if sort_by:
+            sort_fields = [(sort_by, sort == "desc")]
         else:
-            stmt = stmt.order_by(asc(sort_field))
+            sort_fields = self._get_default_sort()
+
+        for sort_field, is_desc in sort_fields:
+            if is_desc:
+                stmt = stmt.order_by(desc(sort_field))
+            else:
+                stmt = stmt.order_by(asc(sort_field))
 
         if search:
             expressions = [attr.ilike(f"%{search}%") for attr in self._search_fields]
