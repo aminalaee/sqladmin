@@ -52,6 +52,7 @@ class Profile(Base):
 def prepare_database() -> Generator[None, None, None]:
     Base.metadata.create_all(engine)
     yield
+    session.close_all()
     Base.metadata.drop_all(engine)
 
 
