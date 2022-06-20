@@ -92,7 +92,7 @@ async def prepare_database() -> AsyncGenerator[None, None]:
     await engine.dispose()
 
 
-async def test_model_form(user: User) -> None:
+async def test_model_form() -> None:
     Form = await get_model_form(model=User, engine=engine)
     assert len(Form()._fields) == 10
 
