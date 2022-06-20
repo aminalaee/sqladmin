@@ -76,6 +76,7 @@ The metadata for the model. The options are:
 * `name`: Display name for this model. Default value is the class name.
 * `name_plural`: Display plural name for this model. Default value is class name + `s`.
 * `icon`: Icon to be displayed for this model in the admin. Only FontAwesome names are supported.
+* `column_labels`: A mapping of column labels, used to map column names to new names in all places.
 
 !!! example
 
@@ -84,6 +85,7 @@ The metadata for the model. The options are:
         name = "User"
         name_plural = "Users"
         icon = "fa-solid fa-user"
+        column_labels = {User.mail: "Email"}
     ```
 
 ## List page
@@ -95,7 +97,9 @@ The options available are:
 
 * `column_list`: List of columns or column names to be displayed in the list page.
 * `column_exclude_list`: List of columns or column names to be excluded in the list page.
-* `column_searchable_list` List of columns or column names to be searchable in the list page.
+* `column_formatters`: Dictionary of column formatters in the list page.
+* `column_searchable_list`: List of columns or column names to be searchable in the list page.
+* `column_sortable_list`: List of columns or column names to be sortable in the list page.
 
 !!! example
 
@@ -113,6 +117,8 @@ The options available are:
     ```python
     class UserAdmin(ModelAdmin, model=User):
         column_searchable_list = [User.name]
+        column_sortable_list = [User.id]
+        column_formatters = {User.name: lambda m, a: m.name[:10]}
     ```
 
 ## Details page
@@ -124,6 +130,7 @@ The options available are:
 
 * `column_details_list`: List of columns or column names to be displayed in the details page.
 * `column_details_exclude_list`: List of columns or column names to be excluded in the details page.
+* `column_formatters_detail`: Dictionary of column formatters in the details page.
 
 !!! example
 
@@ -135,6 +142,11 @@ The options available are:
     ```python
     class UserAdmin(ModelAdmin, model=User):
         column_details_exclude_list = [User.id]
+    ```
+
+    ```python
+    class UserAdmin(ModelAdmin, model=User):
+        column_formatters_detail = {User.name: lambda m, a: m.name[:10]}
     ```
 
 ## Pagination options
@@ -160,6 +172,7 @@ The forms are based on `WTForms` package and include the following options:
 * `form`: Default form to be used for creating or editing the model. Default value is `None` and form is created dynamically.
 * `form_base_class`: Default base class for creating forms. Default value is `wtforms.Form`.
 * `form_args`: Dictionary of form field arguments supported by WTForms.
+* `form_widget_args`: Dictionary of form widget rendering arguments supported by WTForms.
 * `form_columns`: List of model columns to be included in the form. Default is all model columns.
 * `form_excluded_columns`: List of model columns to be excluded from the form.
 * `form_overrides`: Dictionary of form fields to override when creating the form.
@@ -170,6 +183,7 @@ The forms are based on `WTForms` package and include the following options:
     class UserAdmin(ModelAdmin, model=User):
         form_columns = [User.name]
         form_args = dict(name=dict(label="Full name"))
+        form_widget_args = dict(email=dict(readonly=True))
         form_overrides = dict(email=wtforms.EmailField)
     ```
 
