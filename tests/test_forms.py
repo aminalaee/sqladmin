@@ -2,10 +2,10 @@ import enum
 import random
 from typing import Any, AsyncGenerator
 
+import pytest
 from faker import Faker
 from httpx import AsyncClient
 from markupsafe import Markup
-import pytest
 from sqlalchemy import (
     Boolean,
     Column,

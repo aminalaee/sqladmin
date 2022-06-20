@@ -113,10 +113,8 @@
             <a href="{{ model_admin._url_for_details(value) }}">({{ value }})</a>
             {% endfor %}
             </td>
-            {% elif model_admin._has_attr(row, column) %}
-            <td><a href="{{ model_admin._url_for_details_with_attr(row, column) }}">{{ model_admin.get_list_value(row, column) }}</a></td>
             {% else %}
-            <td>{{ model_admin.get_list_value(row, column) }}</td>
+            <td><a href="{{ model_admin._url_for_details_with_attr(row, column) }}">{{ model_admin.get_list_value(row, column) }}</a></td>
             {% endif %}
             {% else %}
             <td>{{ model_admin.get_list_value(row, column) }}</td>

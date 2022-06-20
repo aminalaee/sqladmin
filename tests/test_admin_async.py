@@ -254,13 +254,6 @@ async def test_list_page_permission_actions(client: AsyncClient) -> None:
     assert response.text.count('<i class="fa-solid fa-pencil"></i>') == 0
     assert response.text.count('<i class="fa-solid fa-trash"></i>') == 10
 
-    response = await client.get("/admin/profile/list")
-
-    assert response.status_code == 200
-    assert response.text.count('<i class="fa-solid fa-eye"></i>') == 10
-    assert response.text.count('<i class="fa-solid fa-pencil"></i>') == 0
-    assert response.text.count('<i class="fa-solid fa-trash"></i>') == 10
-
 
 async def test_unauthorized_detail_page(client: AsyncClient) -> None:
     response = await client.get("/admin/movie/details/1")
@@ -504,7 +497,6 @@ async def test_is_visible_method(client: AsyncClient) -> None:
     assert response.status_code == 200
     assert response.text.count('<span class="nav-link-title">Users</span>') == 1
     assert response.text.count('<span class="nav-link-title">Addresses</span>') == 1
-    assert response.text.count('<span class="nav-link-title">Profiles</span>') == 1
     assert response.text.count("Movie") == 0
 
 

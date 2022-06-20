@@ -247,13 +247,6 @@ def test_list_page_permission_actions(client: TestClient) -> None:
     assert response.text.count('<i class="fa-solid fa-pencil"></i>') == 0
     assert response.text.count('<i class="fa-solid fa-trash"></i>') == 10
 
-    response = client.get("/admin/profile/list")
-
-    assert response.status_code == 200
-    assert response.text.count('<i class="fa-solid fa-eye"></i>') == 10
-    assert response.text.count('<i class="fa-solid fa-pencil"></i>') == 0
-    assert response.text.count('<i class="fa-solid fa-trash"></i>') == 10
-
 
 def test_unauthorized_detail_page(client: TestClient) -> None:
     response = client.get("/admin/movie/details/1")
@@ -479,7 +472,6 @@ def test_is_visible_method(client: TestClient) -> None:
     assert response.status_code == 200
     assert response.text.count('<span class="nav-link-title">Users</span>') == 1
     assert response.text.count('<span class="nav-link-title">Addresses</span>') == 1
-    assert response.text.count('<span class="nav-link-title">Profiles</span>') == 1
     assert response.text.count("Movie") == 0
 
 

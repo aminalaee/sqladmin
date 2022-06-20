@@ -25,10 +25,8 @@
               <a href="{{ model_admin._url_for_details(value) }}">({{ value }})</a>
               {% endfor %}
               </td>
-              {% elif model_admin._has_attr(model, attr) %}
-              <td><a href="{{ model_admin._url_for_details_with_attr(model, attr) }}">{{ model_admin.get_detail_value(model, attr) }}</a></td>
               {% else %}
-              <td>{{ model_admin.get_detail_value(model, attr) }}</td>
+              <td><a href="{{ model_admin._url_for_details_with_attr(model, attr) }}">{{ model_admin.get_detail_value(model, attr) }}</a></td>
               {% endif %}
               {% else %}
               <td>{{ model_admin.get_detail_value(model, attr) }}</td>
