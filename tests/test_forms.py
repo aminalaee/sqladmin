@@ -1,11 +1,7 @@
 import enum
-import random
 from typing import Any, AsyncGenerator
 
 import pytest
-from faker import Faker
-from httpx import AsyncClient
-from markupsafe import Markup
 from sqlalchemy import (
     Boolean,
     Column,
@@ -36,8 +32,6 @@ from sqladmin import ModelAdmin
 from sqladmin.forms import get_model_form
 from tests.common import DummyData, async_engine as engine
 
-fake = Faker()
-
 pytestmark = pytest.mark.anyio
 
 Base = declarative_base()  # type: Any
@@ -65,10 +59,8 @@ class User(Base):
     balance = Column(Numeric)
     number = Column(Integer)
 
-    addresses = relationship("Address", back_populates="user", lazy="joined")
-    profile = relationship(
-        "Profile", back_populates="user", uselist=False, lazy="joined"
-    )
+    addresses = relationship("Address", back_populates="user")
+    profile = relationship("Profile", back_populates="user", uselist=False)
 
 
 class Address(Base):
@@ -100,43 +92,9 @@ async def prepare_database() -> AsyncGenerator[None, None]:
     await engine.dispose()
 
 
-@pytest.fixture
-async def client(prepare_database: Any) -> AsyncGenerator[AsyncClient, None]:
-    async with AsyncClient(base_url="http://testserver") as c:
-        yield c
-
-
-@pytest.fixture
-async def user(prepare_database: Any) -> AsyncGenerator[User, None]:
-    user = User(
-        name=fake.user_name(),
-        email=fake.email(),
-        bio=fake.sentence(),
-        active=fake.boolean(),
-        registered_at=fake.date_time(),
-        status=fake.random_sample(tuple(Status), 1)[0],
-        balance=random.random() * 1000,
-        number=fake.random_number(),
-    )
-    user.addresses.append(Address())
-    user.profile = Profile()
-    session.add(user)
-
-    await session.flush([user])
-    await session.commit()
-    await session.refresh(user)
-
-    yield user
-
-
 async def test_model_form(user: User) -> None:
     Form = await get_model_form(model=User, engine=engine)
     assert len(Form()._fields) == 10
-
-    form = Form(obj=user)
-    for field in form:
-        html = field()  # render the field as HTML
-        assert isinstance(html, Markup)
 
 
 async def test_model_form_converter_with_default() -> None:
