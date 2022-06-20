@@ -127,8 +127,6 @@ class AddressAdmin(ModelAdmin, model=Address):
 
 class ProfileAdmin(ModelAdmin, model=Profile):
     column_list = ["id", "user_id", "user"]
-    name_plural = "Profiles"
-    export_max_rows = 3
 
 
 class MovieAdmin(ModelAdmin, model=Movie):
@@ -155,7 +153,6 @@ async def test_root_view(client: AsyncClient) -> None:
     assert response.status_code == 200
     assert response.text.count('<span class="nav-link-title">Users</span>') == 1
     assert response.text.count('<span class="nav-link-title">Addresses</span>') == 1
-    assert response.text.count('<span class="nav-link-title">Profiles</span>') == 1
 
 
 async def test_invalid_list_page(client: AsyncClient) -> None:
@@ -236,8 +233,6 @@ async def test_list_page_permission_actions(client: AsyncClient) -> None:
 
         address = Address(user_id=user.id)
         session.add(address)
-        profile = Profile(user_id=user.id)
-        session.add(profile)
 
     await session.commit()
 
@@ -445,7 +440,6 @@ async def test_create_endpoint_post_form(client: AsyncClient) -> None:
         result = await s.execute(stmt)
     profile = result.scalar_one()
     assert profile.user.id == user.id
-    assert profile.user_id == user.id
 
     data = {
         "name": "SQLAdmin",
@@ -674,8 +668,6 @@ async def test_export_csv_row_count(client: AsyncClient) -> None:
 
         address = Address(user_id=user.id)
         session.add(address)
-        profile = Profile(user=user)
-        session.add(profile)
 
     await session.commit()
 
@@ -683,9 +675,6 @@ async def test_export_csv_row_count(client: AsyncClient) -> None:
     assert row_count(response) == 20
 
     response = await client.get("/admin/address/export/csv")
-    assert row_count(response) == 3
-
-    response = await client.get("/admin/profile/export/csv")
     assert row_count(response) == 3
 
 
