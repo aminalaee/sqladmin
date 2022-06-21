@@ -4,6 +4,24 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## Version 0.1.10 - 2022-06-21
+
+### Added
+
+* Add support for one-to-one relationship in [#186](https://github.com/aminalaee/sqladmin/pull/182)
+* Add support for UUIDType from sqlalchemy_utils in [#183](https://github.com/aminalaee/sqladmin/pull/183)
+* Add sqlalchemy_utils URL, Currency and  Timezone in [#185](https://github.com/aminalaee/sqladmin/pull/185)
+* Add form_widget_args in [#188](https://github.com/aminalaee/sqladmin/pull/188)
+* Add column_default_sort in [#191](https://github.com/aminalaee/sqladmin/pull/191)
+
+### Fixed
+
+* Fix link relationship to details page when null in [#174](https://github.com/aminalaee/sqladmin/pull/174)
+* docs: fix typos in [#161](https://github.com/aminalaee/sqladmin/pull/161)
+* Allow QuerySelectField override object_list with form_args in [#171](https://github.com/aminalaee/sqladmin/pull/171)
+* Fix form fields order when specifying columns in [#184](https://github.com/aminalaee/sqladmin/pull/184)
+* Fix ModelConverter when `impl` is not callable in [#186](https://github.com/aminalaee/sqladmin/pull/186)
+
 ## Version 0.1.9 - 2022-05-27
 
 ### Added
