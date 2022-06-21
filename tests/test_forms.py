@@ -94,7 +94,12 @@ async def prepare_database() -> AsyncGenerator[None, None]:
 
 async def test_model_form() -> None:
     Form = await get_model_form(model=User, engine=engine)
-    assert len(Form()._fields) == 10
+    form = Form()
+
+    assert len(form._fields) == 10
+    assert form._fields["active"].flags.required is None
+    assert form._fields["name"].flags.required is None
+    assert form._fields["email"].flags.required is True
 
 
 async def test_model_form_converter_with_default() -> None:
