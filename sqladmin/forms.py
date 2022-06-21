@@ -15,6 +15,7 @@ from typing import (
 )
 
 import anyio
+import sqlalchemy
 from sqlalchemy import inspect as sqlalchemy_inspect, select
 from sqlalchemy.engine import Engine
 from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession
@@ -133,8 +134,7 @@ class ModelConverterBase:
                     )
 
             kwargs["default"] = default
-
-            if column.nullable:
+            if column.nullable or column.type.python_type == bool:
                 kwargs["validators"].append(validators.Optional())
             else:
                 kwargs["validators"].append(validators.InputRequired())
