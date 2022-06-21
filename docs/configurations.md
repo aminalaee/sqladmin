@@ -100,6 +100,8 @@ The options available are:
 * `column_formatters`: Dictionary of column formatters in the list page.
 * `column_searchable_list`: List of columns or column names to be searchable in the list page.
 * `column_sortable_list`: List of columns or column names to be sortable in the list page.
+* `column_default_sort`: Default sorting if no sorting is applied, tuple of (column, is_descending)
+or list of the tuple for multiple columns.
 
 !!! example
 
@@ -119,6 +121,7 @@ The options available are:
         column_searchable_list = [User.name]
         column_sortable_list = [User.id]
         column_formatters = {User.name: lambda m, a: m.name[:10]}
+        column_default_sort = [(User.email, True), (User.name, False)]
     ```
 
 ## Details page
