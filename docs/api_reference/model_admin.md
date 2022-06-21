@@ -5,6 +5,7 @@
         - name
         - name_plural
         - icon
+        - column_labels
         - can_create
         - can_edit
         - can_delete
@@ -37,3 +38,4 @@
         - form_columns
         - form_excluded_columns
         - form_overrides
+        - form_widget_args
