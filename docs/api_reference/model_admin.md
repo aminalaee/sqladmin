@@ -28,6 +28,7 @@
         - column_searchable_list
         - search_placeholder
         - column_sortable_list
+        - column_default_sort
         - can_export
         - column_export_list
         - column_export_exclude_list
