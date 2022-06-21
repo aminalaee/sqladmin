@@ -15,7 +15,7 @@ from typing import (
 )
 
 import anyio
-from sqlalchemy import inspect as sqlalchemy_inspect, select
+from sqlalchemy import Boolean, inspect as sqlalchemy_inspect, select
 from sqlalchemy.engine import Engine
 from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession
 from sqlalchemy.orm import ColumnProperty, RelationshipProperty, Session
@@ -133,10 +133,17 @@ class ModelConverterBase:
                     )
 
             kwargs["default"] = default
+            optional_types = (Boolean,)
 
             if column.nullable:
                 kwargs["validators"].append(validators.Optional())
-            else:
+
+            if (
+                not column.nullable
+                and not isinstance(column.type, optional_types)
+                and not column.default
+                and not column.server_default
+            ):
                 kwargs["validators"].append(validators.InputRequired())
         else:
             nullable = True
