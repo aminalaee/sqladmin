@@ -13,7 +13,7 @@ from starlette.routing import Mount, Route
 from starlette.staticfiles import StaticFiles
 from starlette.templating import Jinja2Templates
 
-from sqladmin.utils import is_iterable
+from sqladmin.helpers import is_iterable
 
 if TYPE_CHECKING:
     from sqladmin.models import ModelAdmin
