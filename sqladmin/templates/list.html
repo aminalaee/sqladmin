@@ -106,18 +106,19 @@
               {% endif %}
             </td>
             {% for name, column in model_admin._list_attrs %}
+            {% set value, formatted_value = model_admin.get_list_value(row, column) %}
             {% if (name, column) in model_admin._list_relations %}
-            {% if is_iterable( model_admin.get_list_value(row, column) ) %}
+            {% if is_iterable( value ) %}
             <td>
-            {% for value in model_admin.get_list_value(row, column) %}
-            <a href="{{ model_admin._url_for_details(value) }}">({{ value }})</a>
+            {% for elem in value %}
+            <a href="{{ model_admin._url_for_details(elem) }}">({{ formatted_value[loop.index0] }})</a>
             {% endfor %}
             </td>
             {% else %}
-            <td><a href="{{ model_admin._url_for_details_with_attr(row, column) }}">{{ model_admin.get_list_value(row, column) }}</a></td>
+            <td><a href="{{ model_admin._url_for_details_with_attr(row, column) }}">{{ formatted_value }}</a></td>
             {% endif %}
             {% else %}
-            <td>{{ model_admin.get_list_value(row, column) }}</td>
+            <td>{{ formatted_value }}</td>
             {% endif %}
             {% endfor %}
           </tr>

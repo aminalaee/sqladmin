@@ -1,5 +1,5 @@
 from collections.abc import Iterable
-from typing import TYPE_CHECKING, List, Sequence, Type, Union
+from typing import TYPE_CHECKING, Any, List, Sequence, Type, Union
 
 from jinja2 import ChoiceLoader, FileSystemLoader, PackageLoader
 from sqlalchemy.engine import Engine
@@ -54,7 +54,7 @@ class BaseAdmin:
         self.templates.env.globals["admin_title"] = title
         self.templates.env.globals["admin_logo_url"] = logo_url
         self.templates.env.globals["model_admins"] = self.model_admins
-        self.templates.env.globals["is_iterable"] = lambda x: isinstance(x, Iterable)
+        self.templates.env.globals["is_iterable"] = _is_iterable
 
     @property
     def model_admins(self) -> List["ModelAdmin"]:
@@ -102,6 +102,10 @@ class BaseAdmin:
             model.async_engine = True
 
         self._model_admins.append((model()))
+
+
+def _is_iterable(obj: Any) -> bool:
+    return isinstance(obj, Iterable) and not isinstance(obj, (str, bytes))
 
 
 class BaseAdminView(BaseAdmin):

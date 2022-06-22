@@ -734,25 +734,27 @@ class ModelAdmin(BaseModelAdmin, metaclass=ModelAdminMeta):
             result = getattr(obj, attr.key)
             result = result.value if isinstance(result, Enum) else result
 
-        return result or ""
+        return result
 
     def get_list_value(
         self, obj: type, attr: Union[Column, ColumnProperty, RelationshipProperty]
-    ) -> Any:
+    ) -> Tuple[Any, Any]:
         """Get instancee values for the list view."""
+        value = formatted_value = self.get_attr_value(obj, attr)
         formatter = self._list_formatters.get(attr)
         if formatter:
-            return formatter(obj, attr)
-        return self.get_attr_value(obj, attr)
+            formatted_value = formatter(obj, attr)
+        return value, formatted_value
 
     def get_detail_value(
         self, obj: type, attr: Union[Column, ColumnProperty, RelationshipProperty]
-    ) -> Any:
+    ) -> Tuple[Any, Any]:
         """Get instancee values for the detail view."""
+        value = formatted_value = self.get_attr_value(obj, attr)
         formatter = self._detail_formatters.get(attr)
         if formatter:
-            return formatter(obj, attr)
-        return self.get_attr_value(obj, attr)
+            formatted_value = formatter(obj, attr)
+        return value, formatted_value
 
     def get_model_attr(
         self, attr: Union[str, InstrumentedAttribute]
