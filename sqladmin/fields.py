@@ -16,7 +16,7 @@ __all__ = [
     "JSONField",
     "QuerySelectField",
     "QuerySelectMultipleField",
-    "Select2Field",
+    "SelectField",
     "Select2TagsField",
     "TimeField",
 ]
@@ -132,13 +132,7 @@ class TimeField(fields.Field):
                 self.data = None
 
 
-class Select2Field(fields.SelectField):
-    """
-    `Select2 <https://github.com/select2/select2>`_ styled select widget.
-    """
-
-    widget = sqladmin_widgets.Select2Widget()
-
+class SelectField(fields.SelectField):
     def __init__(
         self,
         label: str = None,
