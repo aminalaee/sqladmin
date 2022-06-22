@@ -739,7 +739,7 @@ class ModelAdmin(BaseModelAdmin, metaclass=ModelAdminMeta):
     def get_list_value(
         self, obj: type, attr: Union[Column, ColumnProperty, RelationshipProperty]
     ) -> Tuple[Any, Any]:
-        """Get instancee values for the list view."""
+        """Get tuple of (value, formatted_value) for the list view."""
         value = formatted_value = self.get_attr_value(obj, attr)
         formatter = self._list_formatters.get(attr)
         if formatter:
@@ -749,7 +749,7 @@ class ModelAdmin(BaseModelAdmin, metaclass=ModelAdminMeta):
     def get_detail_value(
         self, obj: type, attr: Union[Column, ColumnProperty, RelationshipProperty]
     ) -> Tuple[Any, Any]:
-        """Get instancee values for the detail view."""
+        """Get tuple of (value, formatted_value) for the detail view."""
         value = formatted_value = self.get_attr_value(obj, attr)
         formatter = self._detail_formatters.get(attr)
         if formatter:
