@@ -29,7 +29,6 @@ from wtforms import (
     Field,
     Form,
     IntegerField,
-    SelectField,
     StringField,
     TextAreaField,
     validators,
@@ -38,7 +37,12 @@ from wtforms.fields.core import UnboundField
 
 from sqladmin._validators import CurrencyValidator, TimezoneValidator
 from sqladmin.exceptions import NoConverterFound
-from sqladmin.fields import JSONField, QuerySelectField, QuerySelectMultipleField
+from sqladmin.fields import (
+    JSONField,
+    QuerySelectField,
+    QuerySelectMultipleField,
+    SelectField,
+)
 
 
 class Validator(Protocol):
@@ -307,6 +311,13 @@ class ModelConverter(ModelConverterBase):
         available_choices = [(e, e) for e in prop.columns[0].type.enums]
         accepted_values = [choice[0] for choice in available_choices]
 
+        if prop.columns[0].nullable:
+            kwargs["allow_blank"] = True
+            accepted_values.append(None)
+            filters = kwargs.get("filters", [])
+            filters.append(lambda x: x or None)
+            kwargs["filters"] = filters
+
         kwargs["choices"] = available_choices
         kwargs.setdefault("validators", [])
         kwargs["validators"].append(validators.AnyOf(accepted_values))
@@ -401,7 +412,7 @@ class ModelConverter(ModelConverterBase):
         return StringField(**kwargs)
 
     @converts("ONETOONE")
-    def conv_OneToOne(
+    def conv_one_to_one(
         self, model: type, prop: RelationshipProperty, kwargs: Dict[str, Any]
     ) -> UnboundField:
         kwargs["allow_blank"] = True
