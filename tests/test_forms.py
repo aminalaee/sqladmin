@@ -238,3 +238,8 @@ async def test_form_converter_when_impl_not_callable() -> None:
 
     Form = await get_model_form(model=CustomModel, engine=engine)
     assert "custom" in Form()._fields
+
+
+async def test_model_form_include_pk() -> None:
+    Form = await get_model_form(model=User, engine=engine, form_include_pk=True)
+    assert "id" in Form()._fields
