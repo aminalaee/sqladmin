@@ -22,8 +22,8 @@
               {% if (name, attr) in model_admin._details_relations %}
               {% if is_iterable( value ) %}
               <td>
-              {% for elem in value %}
-              <a href="{{ model_admin._url_for_details(elem) }}">({{ formatted_value[loop.index0] }})</a>
+              {% for elem, formatted_elem in zip(value, formatted_value) %}
+              <a href="{{ model_admin._url_for_details(elem) }}">({{ formatted_elem }})</a>
               {% endfor %}
               </td>
               {% else %}
