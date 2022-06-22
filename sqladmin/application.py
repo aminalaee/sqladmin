@@ -13,8 +13,6 @@ from starlette.routing import Mount, Route
 from starlette.staticfiles import StaticFiles
 from starlette.templating import Jinja2Templates
 
-from sqladmin.helpers import is_iterable
-
 if TYPE_CHECKING:
     from sqladmin.models import ModelAdmin
 
@@ -56,7 +54,7 @@ class BaseAdmin:
         self.templates.env.globals["admin_title"] = title
         self.templates.env.globals["admin_logo_url"] = logo_url
         self.templates.env.globals["model_admins"] = self.model_admins
-        self.templates.env.globals["is_iterable"] = is_iterable
+        self.templates.env.globals["is_list"] = lambda x: isinstance(x, list)
 
     @property
     def model_admins(self) -> List["ModelAdmin"]:
