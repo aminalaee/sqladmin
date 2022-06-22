@@ -176,8 +176,10 @@ def test_column_list_formatters() -> None:
 
     user = User(id=1, name="Long Name")
 
-    assert UserAdmin().get_list_value(user, User.id.prop) == 2
-    assert UserAdmin().get_list_value(user, User.name.prop) == "L"
+    assert UserAdmin().get_list_value(user, User.id.prop)[0] == 1
+    assert UserAdmin().get_list_value(user, User.id.prop)[1] == 2
+    assert UserAdmin().get_list_value(user, User.name.prop)[0] == "Long Name"
+    assert UserAdmin().get_list_value(user, User.name.prop)[1] == "L"
 
 
 def test_column_formatters_detail() -> None:
@@ -189,8 +191,10 @@ def test_column_formatters_detail() -> None:
 
     user = User(id=1, name="Long Name")
 
-    assert UserAdmin().get_detail_value(user, User.id.prop) == 2
-    assert UserAdmin().get_detail_value(user, User.name.prop) == "L"
+    assert UserAdmin().get_detail_value(user, User.id.prop)[0] == 1
+    assert UserAdmin().get_detail_value(user, User.id.prop)[1] == 2
+    assert UserAdmin().get_detail_value(user, User.name.prop)[0] == "Long Name"
+    assert UserAdmin().get_detail_value(user, User.name.prop)[1] == "L"
 
 
 def test_column_details_list_both_include_and_exclude() -> None:

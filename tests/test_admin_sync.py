@@ -50,6 +50,11 @@ class User(Base):
     addresses = relationship("Address", back_populates="user")
     profile = relationship("Profile", back_populates="user", uselist=False)
 
+    addresses_formattable = relationship("AddressFormattable", back_populates="user")
+    profile_formattable = relationship(
+        "ProfileFormattable", back_populates="user", uselist=False
+    )
+
     def __str__(self) -> str:
         return f"User {self.id}"
 
@@ -73,6 +78,30 @@ class Profile(Base):
     user_id = Column(Integer, ForeignKey("users.id"), unique=True)
 
     user = relationship("User", back_populates="profile")
+
+    def __str__(self) -> str:
+        return f"Profile {self.id}"
+
+
+class AddressFormattable(Base):
+    __tablename__ = "addresses_formattable"
+
+    id = Column(Integer, primary_key=True)
+    user_id = Column(Integer, ForeignKey("users.id"))
+
+    user = relationship("User", back_populates="addresses_formattable")
+
+    def __str__(self) -> str:
+        return f"Address {self.id}"
+
+
+class ProfileFormattable(Base):
+    __tablename__ = "profiles_formattable"
+
+    id = Column(Integer, primary_key=True)
+    user_id = Column(Integer, ForeignKey("users.id"), unique=True)
+
+    user = relationship("User", back_populates="profile_formattable")
 
     def __str__(self) -> str:
         return f"Profile {self.id}"
@@ -104,12 +133,26 @@ class UserAdmin(ModelAdmin, model=User):
         User.email,
         User.addresses,
         User.profile,
+        User.addresses_formattable,
+        User.profile_formattable,
         User.status,
     ]
     column_labels = {User.email: "Email"}
     column_searchable_list = [User.name]
     column_sortable_list = [User.id]
     column_export_list = [User.name, User.status]
+    column_formatters = {
+        User.addresses_formattable: lambda m, a: [
+            f"Formatted {a}" for a in m.addresses_formattable
+        ],
+        User.profile_formattable: lambda m, a: f"Formatted {m.profile_formattable}",
+    }
+    column_formatters_detail = {
+        User.addresses_formattable: lambda m, a: [
+            f"Formatted {a}" for a in m.addresses_formattable
+        ],
+        User.profile_formattable: lambda m, a: f"Formatted {m.profile_formattable}",
+    }
 
 
 class AddressAdmin(ModelAdmin, model=Address):
@@ -176,6 +219,52 @@ def test_list_view_single_page(client: TestClient) -> None:
 
     # Next/Previous disabled
     assert response.text.count('<li class="page-item disabled">') == 2
+
+
+def test_list_view_with_relationships(client: TestClient) -> None:
+    for _ in range(5):
+        user = User(name="John Doe")
+        user.addresses.append(Address())
+        user.profile = Profile()
+        session.add(user)
+    session.commit()
+
+    response = client.get("/admin/user/list")
+
+    assert response.status_code == 200
+
+    # Show values of relationships
+    assert (
+        response.text.count('<a href="/admin/address/details/1">(Address 1)</a>') == 1
+    )
+    assert response.text.count('<a href="/admin/profile/details/1">Profile 1</a>') == 1
+
+
+def test_list_view_with_formatted_relationships(client: TestClient) -> None:
+    for _ in range(5):
+        user = User(name="John Doe")
+        user.addresses_formattable.append(AddressFormattable())
+        user.profile_formattable = ProfileFormattable()
+        session.add(user)
+    session.commit()
+
+    response = client.get("/admin/user/list")
+
+    assert response.status_code == 200
+
+    # Show formatted values of relationships
+    assert (
+        response.text.count(
+            '<a href="/admin/address-formattable/details/1">(Formatted Address 1)</a>'
+        )
+        == 1
+    )
+    assert (
+        response.text.count(
+            '<a href="/admin/profile-formattable/details/1">Formatted Profile 1</a>'
+        )
+        == 1
+    )
 
 
 def test_list_view_multi_page(client: TestClient) -> None:
@@ -263,8 +352,12 @@ def test_detail_page(client: TestClient) -> None:
     for _ in range(2):
         address = Address(user_id=user.id)
         session.add(address)
+        address_formattable = AddressFormattable(user_id=user.id)
+        session.add(address_formattable)
     profile = Profile(user=user)
     session.add(profile)
+    profile_formattable = ProfileFormattable(user=user)
+    session.add(profile_formattable)
     session.commit()
 
     response = client.get("/admin/user/details/1")
@@ -282,6 +375,20 @@ def test_detail_page(client: TestClient) -> None:
     )
     assert response.text.count("<td>profile</td>") == 1
     assert response.text.count('<a href="/admin/profile/details/1">Profile 1</a>') == 1
+    assert response.text.count("<td>addresses_formattable</td>") == 1
+    assert (
+        response.text.count(
+            '<a href="/admin/address-formattable/details/1">(Formatted Address 1)</a>'
+        )
+        == 1
+    )
+    assert response.text.count("<td>profile_formattable</td>") == 1
+    assert (
+        response.text.count(
+            '<a href="/admin/profile-formattable/details/1">Formatted Profile 1</a>'
+        )
+        == 1
+    )
 
     # Action Buttons
     assert response.text.count("http://testserver/admin/user/list") == 2

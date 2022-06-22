@@ -3,7 +3,8 @@ import os
 import re
 import unicodedata
 from abc import ABC, abstractmethod
-from typing import Callable, Generator, List, TypeVar, Union
+from collections.abc import Iterable
+from typing import Any, Callable, Generator, List, TypeVar, Union
 
 T = TypeVar("T")
 
@@ -22,6 +23,10 @@ _windows_device_files = (
     "PRN",
     "NUL",
 )
+
+
+def is_iterable(obj: Any) -> bool:
+    return isinstance(obj, Iterable) and not isinstance(obj, (str, bytes))
 
 
 def as_str(s: Union[str, bytes]) -> str:
