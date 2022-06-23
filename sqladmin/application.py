@@ -52,6 +52,7 @@ class BaseAdmin:
             ]
         )
         self.templates.env.globals["min"] = min
+        self.templates.env.globals["zip"] = zip
         self.templates.env.globals["admin_title"] = title
         self.templates.env.globals["admin_logo_url"] = logo_url
         self.templates.env.globals["model_admins"] = self.model_admins
