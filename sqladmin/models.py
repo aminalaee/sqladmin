@@ -660,7 +660,7 @@ class ModelAdmin(BaseModelAdmin, metaclass=ModelAdminMeta):
             else:
                 return [(self.column_default_sort, False)]
 
-        return [(self.pk_column.name, False)]
+        return [(self.pk_column, False)]
 
     async def count(self) -> int:
         stmt = select(func.count(self.pk_column))
