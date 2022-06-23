@@ -179,6 +179,7 @@ The forms are based on `WTForms` package and include the following options:
 * `form_columns`: List of model columns to be included in the form. Default is all model columns.
 * `form_excluded_columns`: List of model columns to be excluded from the form.
 * `form_overrides`: Dictionary of form fields to override when creating the form.
+* `form_include_pk`: Control if primary key column should be included in create/edit forms. Default is `False`.
 
 !!! example
 
@@ -188,6 +189,7 @@ The forms are based on `WTForms` package and include the following options:
         form_args = dict(name=dict(label="Full name"))
         form_widget_args = dict(email=dict(readonly=True))
         form_overrides = dict(email=wtforms.EmailField)
+        form_include_pk = True
     ```
 
 ## Export options

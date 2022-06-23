@@ -508,6 +508,16 @@ class ModelAdmin(BaseModelAdmin, metaclass=ModelAdminMeta):
         ```
     """
 
+    form_include_pk: ClassVar[bool] = False
+    """Control if form should include primary key columns or not.
+
+    ???+ example
+        ```python
+        class UserAdmin(ModelAdmin, model=User):
+            form_include_pk = True
+        ```
+    """
+
     def __init__(self) -> None:
         self._column_labels = self.get_column_labels()
         self._column_labels_value_by_key = {
@@ -905,6 +915,7 @@ class ModelAdmin(BaseModelAdmin, metaclass=ModelAdminMeta):
             form_widget_args=self.form_widget_args,
             form_class=self.form_base_class,
             form_overrides=self.form_overrides,
+            form_include_pk=self.form_include_pk,
         )
 
     def search_placeholder(self) -> str:

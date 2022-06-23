@@ -99,6 +99,7 @@ class ModelConverterBase:
         engine: Union[Engine, AsyncEngine],
         field_args: Dict[str, Any],
         field_widget_args: Dict[str, Any],
+        form_include_pk: bool,
         label: Optional[str] = None,
     ) -> Optional[Dict[str, Any]]:
         kwargs = field_args.copy()
@@ -118,7 +119,7 @@ class ModelConverterBase:
             assert len(prop.columns) == 1, "Multiple-column properties not supported"
             column = prop.columns[0]
 
-            if column.primary_key or column.foreign_keys:
+            if (column.primary_key or column.foreign_keys) and not form_include_pk:
                 return None
 
             default = getattr(column, "default", None)
@@ -231,6 +232,7 @@ class ModelConverterBase:
         engine: Union[Engine, AsyncEngine],
         field_args: Dict[str, Any],
         field_widget_args: Dict[str, Any],
+        form_include_pk: bool,
         label: Optional[str] = None,
         override: Optional[Type[Field]] = None,
     ) -> Optional[UnboundField]:
@@ -241,6 +243,7 @@ class ModelConverterBase:
             field_args=field_args,
             field_widget_args=field_widget_args,
             label=label,
+            form_include_pk=form_include_pk,
         )
 
         if kwargs is None:
@@ -441,6 +444,7 @@ async def get_model_form(
     form_widget_args: Dict[str, Dict[str, Any]] = None,
     form_class: Type[Form] = Form,
     form_overrides: Dict[str, Dict[str, Type[Field]]] = None,
+    form_include_pk: bool = False,
 ) -> Type[Form]:
     type_name = model.__name__ + "Form"
     converter = ModelConverter()
@@ -471,6 +475,7 @@ async def get_model_form(
             field_widget_args=field_widget_args,
             label=label,
             override=override,
+            form_include_pk=form_include_pk,
         )
         if field is not None:
             field_dict[name] = field
