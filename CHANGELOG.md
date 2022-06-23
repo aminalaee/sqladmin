@@ -14,7 +14,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 * Fix handling of iterable fields by @okapies in https://github.com/aminalaee/sqladmin/pull/204
 * Fix nullable Enum form by @aminalaee in https://github.com/aminalaee/sqladmin/pull/205
-* Use zip for iterating over the formatted values by @okapies in https://github.com/aminalaee/sqladmin/pull/206
 
 **Full Changelog**: https://github.com/aminalaee/sqladmin/compare/0.1.10...0.1.11
 
