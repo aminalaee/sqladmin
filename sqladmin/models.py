@@ -524,6 +524,8 @@ class ModelAdmin(BaseModelAdmin, metaclass=ModelAdminMeta):
             v: k for k, v in self._column_labels.items()
         }
 
+        self._relations = list(inspect(self.model).relationships)
+
         self._list_attrs = self.get_list_columns()
         self._list_columns = [
             (name, attr)
@@ -680,7 +682,7 @@ class ModelAdmin(BaseModelAdmin, metaclass=ModelAdminMeta):
         count = await self.count()
         stmt = select(self.model).limit(page_size).offset((page - 1) * page_size)
 
-        for _, relation in self._list_relations:
+        for relation in self._relations:
             stmt = stmt.options(selectinload(relation.key))
 
         if sort_by:
