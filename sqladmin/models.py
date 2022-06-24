@@ -44,6 +44,7 @@ from sqladmin.helpers import (
     stream_to_csv,
 )
 from sqladmin.pagination import Pagination
+from sqladmin.types import _MODEL_ATTR_TYPE
 
 __all__ = [
     "ModelAdmin",
@@ -229,7 +230,7 @@ class ModelAdmin(BaseModelAdmin, metaclass=ModelAdminMeta):
         ```python
         def formatter(model, attribute):
             # `model` is model instance
-            # `attribute` is a Union[Column, ColumnProperty, RelationshipProperty]
+            # `attribute` is a Union[ColumnProperty, RelationshipProperty]
             pass
         ```
     """
@@ -278,7 +279,7 @@ class ModelAdmin(BaseModelAdmin, metaclass=ModelAdminMeta):
         ```
     """
 
-    column_default_sort: ClassVar[Union[str, tuple, list]] = []
+    column_default_sort: ClassVar[Union[str, Tuple[str, bool], list]] = []
     """Default sort column if no sorting is applied.
 
     ???+ example
@@ -350,7 +351,7 @@ class ModelAdmin(BaseModelAdmin, metaclass=ModelAdminMeta):
         ```python
         def formatter(model, attribute):
             # `model` is model instance
-            # `attribute` is a Union[Column, ColumnProperty, RelationshipProperty]
+            # `attribute` is a Union[ColumnProperty, RelationshipProperty]
             pass
         ```
     """
@@ -662,7 +663,7 @@ class ModelAdmin(BaseModelAdmin, metaclass=ModelAdminMeta):
             pk=pk,
         )
 
-    def _get_default_sort(self) -> List[tuple]:
+    def _get_default_sort(self) -> List[Tuple[str, bool]]:
         if self.column_default_sort:
             if isinstance(self.column_default_sort, list):
                 return self.column_default_sort
@@ -726,7 +727,7 @@ class ModelAdmin(BaseModelAdmin, metaclass=ModelAdminMeta):
 
         return pagination
 
-    async def get_model_objects(self, limit: int = 0) -> List[Any]:
+    async def get_model_objects(self, limit: Union[int, None] = 0) -> List[Any]:
         # For unlimited rows this should pass None
         limit = None if limit == 0 else limit
         stmt = select(self.model).limit(limit=limit)
@@ -764,9 +765,7 @@ class ModelAdmin(BaseModelAdmin, metaclass=ModelAdminMeta):
 
         return result
 
-    def get_list_value(
-        self, obj: type, attr: Union[Column, ColumnProperty, RelationshipProperty]
-    ) -> Tuple[Any, Any]:
+    def get_list_value(self, obj: type, attr: _MODEL_ATTR_TYPE) -> Tuple[Any, Any]:
         """Get tuple of (value, formatted_value) for the list view."""
         value = self.get_attr_value(obj, attr)
         formatted_value = self._default_formatter(value)
@@ -776,9 +775,7 @@ class ModelAdmin(BaseModelAdmin, metaclass=ModelAdminMeta):
             formatted_value = formatter(obj, attr)
         return value, formatted_value
 
-    def get_detail_value(
-        self, obj: type, attr: Union[Column, ColumnProperty, RelationshipProperty]
-    ) -> Tuple[Any, Any]:
+    def get_detail_value(self, obj: type, attr: _MODEL_ATTR_TYPE) -> Tuple[Any, Any]:
         """Get tuple of (value, formatted_value) for the detail view."""
         value = self.get_attr_value(obj, attr)
         formatted_value = self._default_formatter(value)
@@ -790,7 +787,7 @@ class ModelAdmin(BaseModelAdmin, metaclass=ModelAdminMeta):
 
     def get_model_attr(
         self, attr: Union[str, InstrumentedAttribute]
-    ) -> Union[ColumnProperty, RelationshipProperty]:
+    ) -> _MODEL_ATTR_TYPE:
         assert isinstance(attr, (str, InstrumentedAttribute))
 
         if isinstance(attr, str):
@@ -805,21 +802,21 @@ class ModelAdmin(BaseModelAdmin, metaclass=ModelAdminMeta):
 
         # Get value by column label
         if key in self._column_labels_value_by_key:
-            return self._column_labels_value_by_key[key]
+            return self._column_labels_value_by_key[str(key)]
 
         raise InvalidColumnError(
             f"Model '{self.model.__name__}' has no attribute '{key}'."
         )
 
-    def get_model_attributes(self) -> List[Column]:
+    def get_model_attributes(self) -> List[_MODEL_ATTR_TYPE]:
         return list(inspect(self.model).attrs)
 
     def _build_column_list(
         self,
+        default: Callable[[], List[_MODEL_ATTR_TYPE]],
         include: Optional[Sequence[Union[str, InstrumentedAttribute]]] = None,
         exclude: Optional[Sequence[Union[str, InstrumentedAttribute]]] = None,
-        default: Callable[[], List[Column]] = None,
-    ) -> List[Tuple[str, Column]]:
+    ) -> List[Tuple[str, _MODEL_ATTR_TYPE]]:
         """This function generalizes constructing a list of columns
         for any sequence of inclusions or exclusions.
         """
@@ -834,7 +831,7 @@ class ModelAdmin(BaseModelAdmin, metaclass=ModelAdminMeta):
 
         return [(self._column_labels.get(attr, attr.key), attr) for attr in attrs]
 
-    def get_list_columns(self) -> List[Tuple[str, Column]]:
+    def get_list_columns(self) -> List[Tuple[str, _MODEL_ATTR_TYPE]]:
         """Get list of columns to display in List page."""
 
         column_list = getattr(self, "column_list", None)
@@ -846,7 +843,7 @@ class ModelAdmin(BaseModelAdmin, metaclass=ModelAdminMeta):
             default=lambda: [getattr(self.model, self.pk_column.name).prop],
         )
 
-    def get_details_columns(self) -> List[Tuple[str, Column]]:
+    def get_details_columns(self) -> List[Tuple[str, _MODEL_ATTR_TYPE]]:
         """Get list of columns to display in Detail page."""
 
         column_details_list = getattr(self, "column_details_list", None)
@@ -858,7 +855,7 @@ class ModelAdmin(BaseModelAdmin, metaclass=ModelAdminMeta):
             default=self.get_model_attributes,
         )
 
-    def get_form_columns(self) -> List[Tuple[str, Column]]:
+    def get_form_columns(self) -> List[Tuple[str, _MODEL_ATTR_TYPE]]:
         """Get list of columns to display in the form."""
 
         form_columns = getattr(self, "form_columns", None)
@@ -870,21 +867,21 @@ class ModelAdmin(BaseModelAdmin, metaclass=ModelAdminMeta):
             default=self.get_model_attributes,
         )
 
-    def get_export_columns(self) -> List[Tuple[str, Column]]:
+    def get_export_columns(self) -> List[Tuple[str, _MODEL_ATTR_TYPE]]:
         """Get list of columns to export."""
 
         columns = getattr(self, "column_export_list", None)
         excluded_columns = getattr(self, "column_export_exclude_list", None)
-        if not columns and not excluded_columns:
-            return self.get_list_columns()
 
         return self._build_column_list(
             include=columns,
             exclude=excluded_columns,
-            default=lambda: self._list_columns,
+            default=lambda: [item[1] for item in self.get_list_columns()],
         )
 
-    def get_column_labels(self) -> Dict[Column, str]:
+    def get_column_labels(
+        self,
+    ) -> Dict[_MODEL_ATTR_TYPE, str]:
         return {
             self.get_model_attr(column_label): value
             for column_label, value in self.column_labels.items()
@@ -932,7 +929,7 @@ class ModelAdmin(BaseModelAdmin, metaclass=ModelAdminMeta):
         return await get_model_form(
             model=self.model,
             engine=self.engine,
-            only=[i[1].key for i in self._form_attrs],
+            only=[i[1].key or i[1].name for i in self._form_attrs],
             column_labels={k.key: v for k, v in self._column_labels.items()},
             form_args=self.form_args,
             form_widget_args=self.form_widget_args,
@@ -981,7 +978,7 @@ class ModelAdmin(BaseModelAdmin, metaclass=ModelAdminMeta):
         self,
         data: List[Any],
     ) -> StreamingResponse:
-        def generate(writer: Writer) -> Generator[List[str], None, None]:
+        def generate(writer: Writer) -> Generator[None, None, None]:
             # Append the column titles at the beginning
             titles = [c[0] for c in self._export_attrs]
             yield writer.writerow(titles)

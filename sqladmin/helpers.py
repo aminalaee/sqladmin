@@ -90,7 +90,7 @@ class Writer(ABC):
         pass  # pragma: no cover
 
 
-class _PseudoBuffer(object):
+class _PseudoBuffer:
     """An object that implements just the write method of the file-like
     interface.
     """
@@ -112,4 +112,4 @@ def stream_to_csv(
     https://docs.djangoproject.com/en/1.8/howto/outputting-csv/
     """
     writer = csv.writer(_PseudoBuffer())
-    return callback(writer)
+    return callback(writer)  # type: ignore

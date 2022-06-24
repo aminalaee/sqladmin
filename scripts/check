@@ -11,4 +11,4 @@ set -x
 ${PREFIX}isort --check --diff --project=sqladmin $SOURCE_FILES
 ${PREFIX}black --check --diff $SOURCE_FILES
 ${PREFIX}flake8 $SOURCE_FILES
-# ${PREFIX}mypy $SOURCE_FILES
+${PREFIX}mypy sqladmin
