@@ -19,7 +19,7 @@
             <tr>
               <td>{{ name }}</td>
               {% set value, formatted_value = model_admin.get_detail_value(model, attr) %}
-              {% if (name, attr) in model_admin._details_relations %}
+              {% if attr in model_admin._relations %}
               {% if is_list( value ) %}
               <td>
               {% for elem, formatted_elem in zip(value, formatted_value) %}

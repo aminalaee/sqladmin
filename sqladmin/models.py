@@ -23,7 +23,7 @@ from sqlalchemy.ext.asyncio import AsyncEngine
 from sqlalchemy.orm import (
     ColumnProperty,
     RelationshipProperty,
-    selectinload,
+    joinedload,
     sessionmaker,
 )
 from sqlalchemy.orm.attributes import InstrumentedAttribute
@@ -532,22 +532,12 @@ class ModelAdmin(BaseModelAdmin, metaclass=ModelAdminMeta):
             for (name, attr) in self._list_attrs
             if isinstance(attr, ColumnProperty)
         ]
-        self._list_relations = [
-            (name, attr)
-            for (name, attr) in self._list_attrs
-            if isinstance(attr, RelationshipProperty)
-        ]
 
         self._details_attrs = self.get_details_columns()
         self._details_columns = [
             (name, attr)
             for (name, attr) in self._details_attrs
             if isinstance(attr, ColumnProperty)
-        ]
-        self._details_relations = [
-            (name, attr)
-            for (name, attr) in self._details_attrs
-            if isinstance(attr, RelationshipProperty)
         ]
 
         column_formatters = getattr(self, "column_formatters", {})
@@ -579,13 +569,13 @@ class ModelAdmin(BaseModelAdmin, metaclass=ModelAdminMeta):
     def _run_query_sync(self, stmt: ClauseElement) -> Any:
         with self.sessionmaker(expire_on_commit=False) as session:
             result = session.execute(stmt)
-            return result.scalars().all()
+            return result.scalars().unique().all()
 
     async def _run_query(self, stmt: ClauseElement) -> Any:
         if self.async_engine:
             async with self.sessionmaker(expire_on_commit=False) as session:
                 result = await session.execute(stmt)
-                return result.scalars().all()
+                return result.scalars().unique().all()
         else:
             return await anyio.to_thread.run_sync(self._run_query_sync, stmt)
 
@@ -683,7 +673,7 @@ class ModelAdmin(BaseModelAdmin, metaclass=ModelAdminMeta):
         stmt = select(self.model).limit(page_size).offset((page - 1) * page_size)
 
         for relation in self._relations:
-            stmt = stmt.options(selectinload(relation.key))
+            stmt = stmt.options(joinedload(relation.key))
 
         if sort_by:
             sort_fields = [(sort_by, sort == "desc")]
@@ -715,8 +705,8 @@ class ModelAdmin(BaseModelAdmin, metaclass=ModelAdminMeta):
         limit = None if limit == 0 else limit
         stmt = select(self.model).limit(limit=limit)
 
-        for _, relation in self._list_relations:
-            stmt = stmt.options(selectinload(relation.key))
+        for relation in self._relations:
+            stmt = stmt.options(joinedload(relation.key))
 
         rows = await self._run_query(stmt)
         return rows
@@ -726,8 +716,8 @@ class ModelAdmin(BaseModelAdmin, metaclass=ModelAdminMeta):
             self.pk_column == self._get_column_python_type(self.pk_column)(value)
         )
 
-        for _, relation in self._details_relations:
-            stmt = stmt.options(selectinload(relation.key))
+        for relation in self._relations:
+            stmt = stmt.options(joinedload(relation.key))
 
         rows = await self._run_query(stmt)
         if rows:
@@ -889,16 +879,17 @@ class ModelAdmin(BaseModelAdmin, metaclass=ModelAdminMeta):
             stmt = select(self.model).where(
                 self.pk_column == self._get_column_python_type(self.pk_column)(pk)
             )
-            relationships = inspect(self.model).relationships
 
-            for name in relationships.keys():
-                stmt = stmt.options(selectinload(name))
+            for relation in self._relations:
+                stmt = stmt.options(joinedload(relation.key))
 
             async with self.sessionmaker.begin() as session:
                 result = await session.execute(stmt)
                 result = result.scalars().first()
                 for name, value in data.items():
-                    if name in relationships and isinstance(value, list):
+                    if isinstance(value, list) and name in [
+                        relation.key for relation in self._relations
+                    ]:
                         # Load relationship objects into session
                         session.add_all(value)
                     setattr(result, name, value)
