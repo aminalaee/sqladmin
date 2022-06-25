@@ -31,6 +31,7 @@ from wtforms import (
     IntegerField,
     StringField,
     TextAreaField,
+    TimeField,
     validators,
 )
 from wtforms.fields.core import UnboundField
@@ -300,6 +301,12 @@ class ModelConverter(ModelConverterBase):
         self, model: type, prop: ColumnProperty, kwargs: Dict[str, Any]
     ) -> UnboundField:
         return DateField(**kwargs)
+
+    @converts("Time")
+    def conv_time(
+        self, model: type, prop: ColumnProperty, kwargs: Dict[str, Any]
+    ) -> UnboundField:
+        return TimeField(**kwargs)
 
     @converts("DateTime")
     def conv_datetime(
