@@ -29,7 +29,6 @@ from wtforms import (
     Field,
     Form,
     IntegerField,
-    SelectField,
     StringField,
     TextAreaField,
     validators,
