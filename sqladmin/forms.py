@@ -29,9 +29,9 @@ from wtforms import (
     Field,
     Form,
     IntegerField,
+    SelectField,
     StringField,
     TextAreaField,
-    SelectField,
     validators,
 )
 from wtforms.widgets import ColorInput
