@@ -446,6 +446,11 @@ class ModelConverter(ModelConverterBase):
         kwargs.setdefault("validators", [])
         return StringField(**kwargs)
 
+    @converts("sqlalchemy_utils.types.scalar_list.ScalarListType")
+    def conv_scaler_list(self, model: type, prop: ColumnProperty, kwargs: Dict[str, Any]):
+        kwargs.setdefault("validators", [])
+        return StringField(**kwargs)
+
     @converts("sqlalchemy_utils.types.timezone.TimezoneType")
     def conv_timezone(self, model: type, prop: ColumnProperty, kwargs: Dict[str, Any]):
         kwargs.setdefault("validators", [])
