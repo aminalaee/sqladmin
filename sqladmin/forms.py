@@ -343,7 +343,7 @@ class ModelConverter(ModelConverterBase):
         kwargs.setdefault("places", None)
         return DecimalField(**kwargs)
 
-    @converts("JSON")
+    @converts("JSON", "sqlalchemy_utils.types.json.JSONType")
     def conv_json(
         self, model: type, prop: ColumnProperty, kwargs: Dict[str, Any]
     ) -> UnboundField:
@@ -416,8 +416,6 @@ class ModelConverter(ModelConverterBase):
     def conv_color(
         self, model: type, prop: ColumnProperty, kwargs: Dict[str, Any]
     ) -> UnboundField:
-        # kwargs.setdefault("label", "Color")
-        # kwargs.setdefault("validators", [])
         return StringField(widget=ColorInput(), **kwargs)
 
     @converts("sqlalchemy_utils.types.url.URLType")
@@ -426,10 +424,21 @@ class ModelConverter(ModelConverterBase):
         kwargs["validators"].append(validators.URL())
         return StringField(**kwargs)
 
+    @converts("sqlalchemy_utils.primitives.country.Country")
+    def conv_country(self, model: type, prop: ColumnProperty, kwargs: Dict[str, Any]):
+        # TODO: get this working
+        kwargs.setdefault("validators", [])
+        return StringField(**kwargs)
+
     @converts("sqlalchemy_utils.types.currency.CurrencyType")
     def conv_currency(self, model: type, prop: ColumnProperty, kwargs: Dict[str, Any]):
         kwargs.setdefault("validators", [])
         kwargs["validators"].append(CurrencyValidator())
+        return StringField(**kwargs)
+
+    @converts("sqlalchemy_utils.types.locale.LocaleType")
+    def conv_locale(self, model: type, prop: ColumnProperty, kwargs: Dict[str, Any]):
+        kwargs.setdefault("validators", [])
         return StringField(**kwargs)
 
     @converts("sqlalchemy_utils.types.timezone.TimezoneType")
