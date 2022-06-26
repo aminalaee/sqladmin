@@ -188,6 +188,7 @@ async def test_model_form_postgresql() -> None:
 
 async def test_model_form_sqlalchemy_utils() -> None:
     class SQLAlchemyUtilsModel(Base):
+        choice_TYPES = [("admin", "Admin"), ("regular-user", "Regular user")]
         __tablename__ = "sqlalchemy_utils_model"
 
         id = Column(Integer, primary_key=True)
@@ -197,7 +198,7 @@ async def test_model_form_sqlalchemy_utils() -> None:
         url = Column(URLType)
         currency = Column(CurrencyType)
         timezone = Column(TimezoneType)
-        choice = Column(ChoiceType)
+        choice = Column(ChoiceType(choice_TYPES))
         color = Column(ColorType)
         json = Column(JSONType)
         password = Column(PasswordType)
