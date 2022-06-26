@@ -34,8 +34,8 @@ from wtforms import (
     TextAreaField,
     validators,
 )
-from wtforms.widgets import ColorInput
 from wtforms.fields.core import UnboundField
+from wtforms.widgets import ColorInput
 
 from sqladmin._validators import CurrencyValidator, TimezoneValidator
 from sqladmin.exceptions import NoConverterFound
