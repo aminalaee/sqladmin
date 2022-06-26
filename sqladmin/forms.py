@@ -31,6 +31,7 @@ from wtforms import (
     IntegerField,
     StringField,
     TextAreaField,
+    SelectField,
     validators,
 )
 from wtforms.fields.core import UnboundField
@@ -363,6 +364,20 @@ class ModelConverter(ModelConverterBase):
         kwargs.setdefault("validators", [])
         kwargs["validators"].append(validators.IPAddress(ipv4=True, ipv6=True))
         return StringField(**kwargs)
+
+    @converts("sqlalchemy_utils.types.choice.ChoiceType")
+    def conv_choice(
+        self, model: type, prop: ColumnProperty, kwargs: Dict[str, Any]
+    ) -> UnboundField:
+        # TODO: This is hacky but the only way I could get it to work
+        column_name = str(prop).split(".")[1]
+        try:
+            choices = getattr(model, f"{column_name}_TYPES")
+        except AttributeError:
+            text1 = " '[column_name]CHOICES' as a class variable for choices."
+            raise ValueError(f"Class variable '{column_name}' not found. Please use format{text1}")
+        kwargs["choices"] = choices
+        return SelectField(**kwargs)
 
     @converts("sqlalchemy.dialects.postgresql.base.MACADDR")
     def conv_mac_address(
