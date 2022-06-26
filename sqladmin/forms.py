@@ -441,6 +441,11 @@ class ModelConverter(ModelConverterBase):
         kwargs.setdefault("validators", [])
         return StringField(**kwargs)
 
+    @converts("sqlalchemy_utils.types.password.PasswordType")
+    def conv_password(self, model: type, prop: ColumnProperty, kwargs: Dict[str, Any]):
+        kwargs.setdefault("validators", [])
+        return StringField(**kwargs)
+
     @converts("sqlalchemy_utils.types.timezone.TimezoneType")
     def conv_timezone(self, model: type, prop: ColumnProperty, kwargs: Dict[str, Any]):
         kwargs.setdefault("validators", [])
