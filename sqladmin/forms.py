@@ -34,6 +34,7 @@ from wtforms import (
     SelectField,
     validators,
 )
+from wtforms.widgets import ColorInput
 from wtforms.fields.core import UnboundField
 
 from sqladmin._validators import CurrencyValidator, TimezoneValidator
@@ -375,7 +376,9 @@ class ModelConverter(ModelConverterBase):
             choices = getattr(model, f"{column_name}_TYPES")
         except AttributeError:
             text1 = " '[column_name]CHOICES' as a class variable for choices."
-            raise ValueError(f"Class variable '{column_name}' not found. Please use format{text1}")
+            raise ValueError(
+                f"Class variable '{column_name}' not found. Please use format{text1}"
+            )
         kwargs["choices"] = choices
         return SelectField(**kwargs)
 
@@ -408,6 +411,14 @@ class ModelConverter(ModelConverterBase):
         kwargs.setdefault("validators", [])
         kwargs["validators"].append(validators.Email())
         return StringField(**kwargs)
+
+    @converts("sqlalchemy_utils.types.color.ColorType")
+    def conv_color(
+        self, model: type, prop: ColumnProperty, kwargs: Dict[str, Any]
+    ) -> UnboundField:
+        # kwargs.setdefault("label", "Color")
+        # kwargs.setdefault("validators", [])
+        return StringField(widget=ColorInput(), **kwargs)
 
     @converts("sqlalchemy_utils.types.url.URLType")
     def conv_url(self, model: type, prop: ColumnProperty, kwargs: Dict[str, Any]):
