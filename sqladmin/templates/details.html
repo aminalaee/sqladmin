@@ -51,6 +51,13 @@
             </a>
           </div>
           {% endif %}
+          {% if model_admin.can_edit %}
+          <div class="col">
+            <a href="{{ model_admin._url_for_edit(model) }}" class="btn btn-primary">
+              Edit
+            </a>
+          </div>
+          {% endif %}
         </div>
       </div>
     </div>
