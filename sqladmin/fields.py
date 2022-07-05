@@ -21,6 +21,8 @@ __all__ = [
     "TimeField",
 ]
 
+from sqladmin.widgets import ListWidget, RadioInput
+
 
 class DateField(fields.DateField):
     """
@@ -419,3 +421,25 @@ class QuerySelectMultipleField(QuerySelectField):
                 identity = inspect(v).identity
                 if identity and str(identity[0]) not in pk_list:  # pragma: no cover
                     raise ValidationError(self.gettext("Not a valid choice"))
+
+
+class RadioField(SelectField):
+    """
+    A field that lets the user select one option from a set of radio buttons.
+    """
+
+    widget = ListWidget(sub_render_kw={"class": "form-check"}, prefix_label=False)
+    option_widget = RadioInput()
+
+    def __init__(
+        self,
+        label: str = None,
+        validators: list = None,
+        default: Any = None,
+        **kwargs: Any,
+    ):
+        try:
+            del kwargs["render_kw"]["class"]
+        except KeyError:
+            pass
+        super().__init__(label=label, validators=validators, default=default, **kwargs)
