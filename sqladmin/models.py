@@ -226,6 +226,7 @@ class ModelAdmin(BaseModelAdmin, metaclass=ModelAdminMeta):
                 if getattr(model, attribute.key):
                     icon_class = 'fa-check text-success'
                 return Markup(f"<i class='fa {icon_class}'></i>")
+
             class UserAdmin(ModelAdmin, model=User):
                 column_formatters = {
                     User.name: lambda m, a: m.name[:10],
