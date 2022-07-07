@@ -219,8 +219,18 @@ class ModelAdmin(BaseModelAdmin, metaclass=ModelAdminMeta):
 
     ???+ example
         ```python
-        class UserAdmin(ModelAdmin, model=User):
-            column_formatters = {User.name: lambda m, a: m.name[:10]}
+            from markupsafe import Markup
+            def boolean_icon_formatter(model, attribute):
+                # Renders booleans as icons
+                icon_class = 'fa-times text-danger'
+                if getattr(model, attribute.key):
+                    icon_class = 'fa-check text-success'
+                return Markup(f"<i class='fa {icon_class}'></i>")
+            class UserAdmin(ModelAdmin, model=User):
+                column_formatters = {
+                    User.name: lambda m, a: m.name[:10],
+                    User.active: lambda m, a: boolean_icon_formatter(m, a)
+                }
         ```
 
     The format function has the prototype:
