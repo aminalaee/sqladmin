@@ -1,5 +1,5 @@
 import inspect
-from enum import Enum
+from enum import Enum, EnumMeta
 from typing import (
     Any,
     Callable,
@@ -369,16 +369,20 @@ class ModelConverter(ModelConverterBase):
     def conv_choice(
         self, model: type, prop: ColumnProperty, kwargs: Dict[str, Any]
     ) -> UnboundField:
-        # TODO: This is hacky but the only way I could get it to work
-        column_name = str(prop).split(".")[1]
-        try:
-            choices = getattr(model, f"{column_name}_TYPES")
-        except AttributeError:
-            text1 = " '[column_name]CHOICES' as a class variable for choices."
-            raise ValueError(
-                f"Class variable '{column_name}' not found. Please use format{text1}"
-            )
-        kwargs["choices"] = choices
+        available_choices = []
+
+        if isinstance(model.choices, EnumMeta):
+            available_choices = [(x.name, x.value) for x in model.choices]
+            accepted_values = [choice.value for choice in available_choices]
+        else:
+            available_choices = model.choices
+            print(type(available_choices))
+            print(available_choices)
+            accepted_values = [choice[0] for choice in available_choices]
+
+        kwargs["choices"] = available_choices
+        kwargs["validators"].append(validators.AnyOf(accepted_values))
+        # kwargs["coerce"] = 
         return SelectField(**kwargs)
 
     @converts("sqlalchemy.dialects.postgresql.base.MACADDR")
