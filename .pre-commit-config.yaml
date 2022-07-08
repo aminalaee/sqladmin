@@ -1,39 +1,9 @@
 repos:
-  - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v4.2.0
+  - repo: local
     hooks:
-      - id: check-yaml
-      - id: end-of-file-fixer
-        exclude_types: [css, markdown, text, svg]
-      - id: trailing-whitespace
-        exclude_types: [html, markdown, text]
-      - id: check-merge-conflict
-      - id: detect-private-key
-  - repo: https://github.com/PyCQA/autoflake
-    rev: v1.4
-    hooks:
-    - id: autoflake
-  - repo: https://github.com/PyCQA/isort
-    rev: 5.10.1
-    hooks:
-    - id: isort
-  - repo: https://github.com/psf/black
-    rev: 22.3.0
-    hooks:
-      - id: black
-  - repo: https://github.com/pycqa/flake8
-    rev: 4.0.1
-    hooks:
-      - id: flake8
-        entry: flake8 --ignore=E203,W503 --max-line-length=122
-  - repo: https://github.com/codespell-project/codespell
-    rev: v2.1.0
-    hooks:
-      - id: codespell
-        entry: codespell
-        args: [ "--ignore-words-list=vie,hel","--quiet-level=2","--skip=./tests",]
-  - repo: https://github.com/asottile/pyupgrade
-    rev: v2.32.1
-    hooks:
-      - id: pyupgrade
-        args: [--py36-plus]
+      - id: scripts-check
+        name: scripts-check
+        entry: scripts/check
+        language: script
+        types: [python]
+        pass_filenames: false
