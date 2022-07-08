@@ -12,6 +12,7 @@ from sqlalchemy import (
     Numeric,
     String,
     Text,
+    Time,
     TypeDecorator,
 )
 from sqlalchemy.dialects.postgresql import INET, MACADDR, UUID
@@ -31,7 +32,7 @@ from sqlalchemy_utils import (
     URLType,
     UUIDType,
 )
-from wtforms import Field, Form, StringField
+from wtforms import Field, Form, StringField, TimeField
 
 from sqladmin import ModelAdmin
 from sqladmin.forms import get_model_form
@@ -63,6 +64,7 @@ class User(Base):
     status = Column(Enum(Status))
     balance = Column(Numeric)
     number = Column(Integer)
+    reminder = Column(Time)
 
     addresses = relationship("Address", back_populates="user")
     profile = relationship("Profile", back_populates="user", uselist=False)
@@ -101,10 +103,12 @@ async def test_model_form() -> None:
     Form = await get_model_form(model=User, engine=engine)
     form = Form()
 
-    assert len(form._fields) == 10
+    assert len(form._fields) == 11
     assert form._fields["active"].flags.required is None
     assert form._fields["name"].flags.required is None
     assert form._fields["email"].flags.required is True
+
+    assert isinstance(form._fields["reminder"], TimeField)
 
 
 async def test_model_form_converter_with_default() -> None:
@@ -124,7 +128,7 @@ async def test_model_form_only() -> None:
 
 async def test_model_form_exclude() -> None:
     Form = await get_model_form(model=User, engine=engine, exclude=["status"])
-    assert len(Form()._fields) == 9
+    assert len(Form()._fields) == 10
 
 
 async def test_model_form_form_args() -> None:
