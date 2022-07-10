@@ -38,7 +38,7 @@ Main features include:
 
 ---
 
-**Documentation**: [https://aminalaee.dev/sqladmin/sqladmin](https://aminalaee.dev/sqladmin/sqladmin)
+**Documentation**: [https://aminalaee.dev/sqladmin](https://aminalaee.dev/sqladmin)
 
 **Source Code**: [https://github.com/aminalaee/sqladmin](https://github.com/aminalaee/sqladmin)
 
