@@ -1,6 +1,6 @@
 site_name: SQLAlchemy Admin
 site_description: Flexible admin dashboard for SQLAlchemy.
-site_url: https://aminalaee.github.io/sqladmin
+site_url: https://aminalaee.dev/sqladmin
 
 theme:
   name: 'material'
