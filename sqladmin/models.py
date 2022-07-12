@@ -16,7 +16,6 @@ from typing import (
 )
 
 import anyio
-from markupsafe import Markup
 from sqlalchemy import Column, asc, desc, func, inspect, or_, select
 from sqlalchemy.engine.base import Engine
 from sqlalchemy.exc import NoInspectionAvailable
@@ -34,6 +33,7 @@ from starlette.responses import StreamingResponse
 from wtforms import Field, Form
 
 from sqladmin.exceptions import InvalidColumnError, InvalidModelError
+from sqladmin.formatters import BASE_FORMATTERS
 from sqladmin.forms import get_model_form
 from sqladmin.helpers import (
     Writer,
@@ -519,6 +519,24 @@ class ModelAdmin(BaseModelAdmin, metaclass=ModelAdminMeta):
         ```
     """
 
+    column_type_formatters: ClassVar[Dict[Type, Callable]] = BASE_FORMATTERS
+    """Dictionary of value type formatters to be used in the list view.
+
+    By default, two types are formatted:
+
+        - None will be displayed as an empty string
+        - bool will be displayed as a checkmark if it is True otherwise as an X.
+
+    If you don’t like the default behavior and don’t want any type formatters applied,
+    just override this property with an empty dictionary:
+
+    ???+ example
+        ```python
+        class UserAdmin(ModelAdmin, model=User):
+            column_type_formatters = dict()
+        ```
+    """
+
     def __init__(self) -> None:
         self._column_labels = self.get_column_labels()
         self._column_labels_value_by_key = {
@@ -656,9 +674,9 @@ class ModelAdmin(BaseModelAdmin, metaclass=ModelAdminMeta):
         return [(self.pk_column.name, False)]
 
     def _default_formatter(self, value: Any) -> Any:
-        if isinstance(value, bool):
-            icon_class = "fa-check text-success" if value else "fa-times text-danger"
-            return Markup(f"<i class='fa {icon_class}'></i>")
+        if type(value) in self.column_type_formatters:
+            formatter = self.column_type_formatters[type(value)]
+            return formatter(value)
 
         return value
 

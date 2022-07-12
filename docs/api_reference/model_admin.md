@@ -41,3 +41,4 @@
         - form_overrides
         - form_widget_args
         - form_include_pk
+        - column_type_formatters
