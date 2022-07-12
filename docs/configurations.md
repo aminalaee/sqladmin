@@ -118,10 +118,23 @@ or list of the tuple for multiple columns.
 
     ```python
     class UserAdmin(ModelAdmin, model=User):
+        from markupsafe import Markup
+
+        def boolean_icon_formatter(model, attribute):
+            if getattr(model, attribute.key):
+                icon_class = "fa-check text-success"
+            else:
+                icon_class = "fa-times text-danger"
+            return Markup(f"<i class='fa {icon_class}'></i>")
+
         column_searchable_list = [User.name]
         column_sortable_list = [User.id]
         column_formatters = {User.name: lambda m, a: m.name[:10]}
         column_default_sort = [(User.email, True), (User.name, False)]
+        column_formatters = {
+            User.name: lambda m, a: m.name[:10],
+            User.active: lambda m, a: boolean_icon_formatter(m, a),
+        }
     ```
 
 ## Details page
