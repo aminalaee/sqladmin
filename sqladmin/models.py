@@ -655,12 +655,12 @@ class ModelAdmin(BaseModelAdmin, metaclass=ModelAdminMeta):
 
         return [(self.pk_column.name, False)]
 
-    def _default_formatter(self, value: Any) -> str:
+    def _default_formatter(self, value: Any) -> Any:
         if isinstance(value, bool):
             icon_class = "fa-check text-success" if value else "fa-times text-danger"
             return Markup(f"<i class='fa {icon_class}'></i>")
 
-        return Markup(value)
+        return value
 
     async def count(self) -> int:
         stmt = select(func.count(self.pk_column))
