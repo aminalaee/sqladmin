@@ -15,3 +15,4 @@ fi
 
 "$PIP" install -r "$REQUIREMENTS"
 "$PIP" install -e .
+pre-commit install
