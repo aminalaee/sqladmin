@@ -30,7 +30,7 @@
               <td><a href="{{ model_admin._url_for_details_with_attr(model, attr) }}">{{ formatted_value }}</a></td>
               {% endif %}
               {% else %}
-              <td>{{ value }}</td>
+              <td>{{ formatted_value }}</td>
               {% endif %}
             </tr>
             {% endfor %}

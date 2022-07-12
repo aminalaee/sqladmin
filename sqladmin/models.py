@@ -16,6 +16,7 @@ from typing import (
 )
 
 import anyio
+from markupsafe import Markup
 from sqlalchemy import Column, asc, desc, func, inspect, or_, select
 from sqlalchemy.engine.base import Engine
 from sqlalchemy.exc import NoInspectionAvailable
@@ -654,6 +655,13 @@ class ModelAdmin(BaseModelAdmin, metaclass=ModelAdminMeta):
 
         return [(self.pk_column.name, False)]
 
+    def _default_formatter(self, value: Any) -> str:
+        if isinstance(value, bool):
+            icon_class = "fa-check text-success" if value else "fa-times text-danger"
+            return Markup(f"<i class='fa {icon_class}'></i>")
+
+        return Markup(value)
+
     async def count(self) -> int:
         stmt = select(func.count(self.pk_column))
         rows = await self._run_query(stmt)
@@ -742,7 +750,9 @@ class ModelAdmin(BaseModelAdmin, metaclass=ModelAdminMeta):
         self, obj: type, attr: Union[Column, ColumnProperty, RelationshipProperty]
     ) -> Tuple[Any, Any]:
         """Get tuple of (value, formatted_value) for the list view."""
-        value = formatted_value = self.get_attr_value(obj, attr)
+        value = self.get_attr_value(obj, attr)
+        formatted_value = self._default_formatter(value)
+
         formatter = self._list_formatters.get(attr)
         if formatter:
             formatted_value = formatter(obj, attr)
@@ -752,7 +762,9 @@ class ModelAdmin(BaseModelAdmin, metaclass=ModelAdminMeta):
         self, obj: type, attr: Union[Column, ColumnProperty, RelationshipProperty]
     ) -> Tuple[Any, Any]:
         """Get tuple of (value, formatted_value) for the detail view."""
-        value = formatted_value = self.get_attr_value(obj, attr)
+        value = self.get_attr_value(obj, attr)
+        formatted_value = self._default_formatter(value)
+
         formatter = self._detail_formatters.get(attr)
         if formatter:
             formatted_value = formatter(obj, attr)
