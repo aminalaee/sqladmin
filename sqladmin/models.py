@@ -978,7 +978,7 @@ class ModelAdmin(BaseModelAdmin, metaclass=ModelAdminMeta):
         self,
         data: List[Any],
     ) -> StreamingResponse:
-        def generate(writer: Writer) -> Generator[None, None, None]:
+        def generate(writer: Writer) -> Generator[Any, None, None]:
             # Append the column titles at the beginning
             titles = [c[0] for c in self._export_attrs]
             yield writer.writerow(titles)
