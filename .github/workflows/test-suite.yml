@@ -18,7 +18,7 @@ jobs:
 
     services:
       postgres:
-        image: postgres:14
+        image: postgres:14-alpine
         env:
           POSTGRES_USER: username
           POSTGRES_PASSWORD: password
@@ -28,8 +28,8 @@ jobs:
         options: --health-cmd pg_isready --health-interval 10s --health-timeout 5s --health-retries 5
 
     steps:
-      - uses: "actions/checkout@v2"
-      - uses: "actions/setup-python@v2"
+      - uses: "actions/checkout@v3"
+      - uses: "actions/setup-python@v4"
         with:
           python-version: "${{ matrix.python-version }}"
       - name: "Install dependencies"
@@ -51,6 +51,6 @@ jobs:
       - name: "Enforce coverage"
         run: "scripts/coverage"
       - name: "Upload Coverage"
-        uses: codecov/codecov-action@v2
+        uses: codecov/codecov-action@v3
         with:
           files: coverage.xml
