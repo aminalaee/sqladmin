@@ -4,6 +4,26 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## Version 0.1.12 - 2022-07-13
+
+### Added
+
+* Add time field converter by @ischaojie in https://github.com/aminalaee/sqladmin/pull/214
+* Add Edit button for "Details" page by @cuamckuu in https://github.com/aminalaee/sqladmin/pull/222
+* Add column_type_formatters by @aminalaee in https://github.com/aminalaee/sqladmin/pull/239
+
+### Fixed
+
+* Fix lazy subuqery in list query by @aminalaee in https://github.com/aminalaee/sqladmin/pull/212
+* Fix missing browser tab title by @cuamckuu in https://github.com/aminalaee/sqladmin/pull/229
+* Remove sourceMappingURL in JS files by @aminalaee in https://github.com/aminalaee/sqladmin/pull/231
+
+### New Contributors
+* @ischaojie made their first contribution in https://github.com/aminalaee/sqladmin/pull/214
+* @cuamckuu made their first contribution in https://github.com/aminalaee/sqladmin/pull/222
+
+**Full Changelog**: https://github.com/aminalaee/sqladmin/compare/0.1.11...0.1.12
+
 ## Version 0.1.11 - 2022-06-23
 
 ### Added
@@ -35,7 +55,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * Fix form fields order when specifying columns by @okapies in https://github.com/aminalaee/sqladmin/pull/184
 * Fix ModelConverter when `impl` is not callable by @aminalaee in https://github.com/aminalaee/sqladmin/pull/186
 
-## New Contributors
+### New Contributors
 * @pgrimaud made their first contribution in https://github.com/aminalaee/sqladmin/pull/161
 * @okapies made their first contribution in https://github.com/aminalaee/sqladmin/pull/183
 
@@ -55,7 +75,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * Function signature typing, and renames by @dwreeves in https://github.com/aminalaee/sqladmin/pull/116
 * Fix SQLModel UUID type by @aminalaee in https://github.com/aminalaee/sqladmin/pull/158
 
-## New Contributors
+### New Contributors
 * @skarrok made their first contribution in https://github.com/aminalaee/sqladmin/pull/140
 * @colin99d made their first contribution in https://github.com/aminalaee/sqladmin/pull/150
 
@@ -76,7 +96,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * Fix get_model_attr with column labels by @aminalaee in https://github.com/aminalaee/sqladmin/pull/128
 * Delay call to `self.get_converter` to use `form_overrides` by @lovetoburnswhen in https://github.com/aminalaee/sqladmin/pull/129
 
-## New Contributors
+### New Contributors
 * @tr11 made their first contribution in https://github.com/aminalaee/sqladmin/pull/114
 * @lovetoburnswhen made their first contribution in https://github.com/aminalaee/sqladmin/pull/129
 
@@ -97,7 +117,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * Fix PostgreSQL UUID PrimaryKey by @aminalaee in https://github.com/aminalaee/sqladmin/pull/92
 * Fix Source Code Link by @baurt in https://github.com/aminalaee/sqladmin/pull/95
 
-## New Contributors
+### New Contributors
 * @baurt made their first contribution in https://github.com/aminalaee/sqladmin/pull/95
 * @dwreeves made their first contribution in https://github.com/aminalaee/sqladmin/pull/97
 
