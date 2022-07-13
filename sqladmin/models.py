@@ -16,7 +16,7 @@ from typing import (
 )
 
 import anyio
-from sqlalchemy import Column, asc, desc, func, inspect, or_, select
+from sqlalchemy import Column, asc, desc, func, inspect, or_
 from sqlalchemy.engine.base import Engine
 from sqlalchemy.exc import NoInspectionAvailable
 from sqlalchemy.ext.asyncio import AsyncEngine
@@ -28,6 +28,7 @@ from sqlalchemy.orm import (
 )
 from sqlalchemy.orm.attributes import InstrumentedAttribute
 from sqlalchemy.sql.elements import ClauseElement
+from sqlalchemy.sql.expression import Select, select
 from starlette.requests import Request
 from starlette.responses import StreamingResponse
 from wtforms import Field, Form
@@ -83,6 +84,9 @@ class ModelAdminMeta(type):
         cls.name = attrs.get("name", prettify_class_name(cls.model.__name__))
         cls.name_plural = attrs.get("name_plural", f"{cls.name}s")
         cls.icon = attrs.get("icon")
+
+        cls.list_query = attrs.get("list_query", select(model))
+        cls.count_query = attrs.get("count_query", select(func.count(cls.pk_column)))
 
         mcls._check_conflicting_options(["column_list", "column_exclude_list"], attrs)
         mcls._check_conflicting_options(
@@ -356,17 +360,6 @@ class ModelAdmin(BaseModelAdmin, metaclass=ModelAdminMeta):
         ```
     """
 
-    column_labels: ClassVar[Dict[Union[str, InstrumentedAttribute], str]] = {}
-    """A mapping of column labels, used to map column names to new names.
-    Dictionary keys can be string names or SQLAlchemy columns with string values.
-
-    ???+ example
-        ```python
-        class UserAdmin(ModelAdmin, model=User):
-            column_labels = {User.mail: "Email"}
-        ```
-    """
-
     # Templates
     list_template: ClassVar[str] = "list.html"
     """List view template. Default is `list.html`."""
@@ -520,6 +513,18 @@ class ModelAdmin(BaseModelAdmin, metaclass=ModelAdminMeta):
         ```
     """
 
+    # General options
+    column_labels: ClassVar[Dict[Union[str, InstrumentedAttribute], str]] = {}
+    """A mapping of column labels, used to map column names to new names.
+    Dictionary keys can be string names or SQLAlchemy columns with string values.
+
+    ???+ example
+        ```python
+        class UserAdmin(ModelAdmin, model=User):
+            column_labels = {User.mail: "Email"}
+        ```
+    """
+
     column_type_formatters: ClassVar[Dict[Type, Callable]] = BASE_FORMATTERS
     """Dictionary of value type formatters to be used in the list view.
 
@@ -537,6 +542,9 @@ class ModelAdmin(BaseModelAdmin, metaclass=ModelAdminMeta):
             column_type_formatters = dict()
         ```
     """
+
+    list_query: ClassVar[Select]
+    count_query: ClassVar[Select]
 
     def __init__(self) -> None:
         self._column_labels = self.get_column_labels()
@@ -682,8 +690,7 @@ class ModelAdmin(BaseModelAdmin, metaclass=ModelAdminMeta):
         return value
 
     async def count(self) -> int:
-        stmt = select(func.count(self.pk_column))
-        rows = await self._run_query(stmt)
+        rows = await self._run_query(self.count_query)
         return rows[0]
 
     async def list(
@@ -697,7 +704,7 @@ class ModelAdmin(BaseModelAdmin, metaclass=ModelAdminMeta):
         page_size = min(page_size or self.page_size, max(self.page_size_options))
 
         count = await self.count()
-        stmt = select(self.model).limit(page_size).offset((page - 1) * page_size)
+        stmt = self.list_query.limit(page_size).offset((page - 1) * page_size)
 
         for relation in self._relations:
             stmt = stmt.options(joinedload(relation.key))
@@ -714,8 +721,7 @@ class ModelAdmin(BaseModelAdmin, metaclass=ModelAdminMeta):
                 stmt = stmt.order_by(asc(sort_field))
 
         if search:
-            expressions = [attr.ilike(f"%{search}%") for attr in self._search_fields]
-            stmt = stmt.filter(or_(*expressions))
+            stmt = self.search_query(stmt=stmt, term=search)
 
         rows = await self._run_query(stmt)
         pagination = Pagination(
@@ -958,6 +964,17 @@ class ModelAdmin(BaseModelAdmin, metaclass=ModelAdminMeta):
             self._column_labels.get(field, field.key) for field in search_fields
         ]
         return ", ".join(field_names)
+
+    def search_query(self, stmt: Select, term: str) -> Select:
+        """Specify the search query given the SQLAlchemy statement and term to search for.
+        It can be used for doing more complex queries like JSON objects. For example:
+
+        ```py
+        return stmt.filter(MyModel.name == term)
+        ```
+        """
+        expressions = [attr.ilike(f"%{term}%") for attr in self._search_fields]
+        return stmt.filter(or_(*expressions))
 
     def get_export_name(self, export_type: str) -> str:
         """The file name when exporting."""
