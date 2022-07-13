@@ -381,7 +381,7 @@ def test_export_columns_default() -> None:
         pass
 
     assert sorted(UserAdmin().get_export_columns()) == [
-        ("id", User.id),
+        ("id", User.id.prop),
     ]
 
 
@@ -389,7 +389,10 @@ def test_export_columns_default_to_list_columns() -> None:
     class UserAdmin(ModelAdmin, model=User):
         column_list = [User.id, User.name]
 
-    assert UserAdmin().get_export_columns() == [("id", User.id), ("name", User.name)]
+    assert UserAdmin().get_export_columns() == [
+        ("id", User.id.prop),
+        ("name", User.name.prop),
+    ]
 
     class UserAdmin2(ModelAdmin, model=User):
         column_list = [User.id]
