@@ -543,8 +543,33 @@ class ModelAdmin(BaseModelAdmin, metaclass=ModelAdminMeta):
         ```
     """
 
-    list_query: ClassVar[Select]
-    count_query: ClassVar[Select]
+    list_query: ClassVar[Select] = select()
+    """
+    The SQLAlchemy select expression used for the list page which can be customized.
+    By default it will select all objects without any filters.
+
+    ???+ example
+        ```python
+        from sqlalchemy import select
+
+        class UserAdmin(ModelAdmin, model=User):
+            list_query = select(User).filter(User.active == True)
+        ```
+    """
+
+    count_query: ClassVar[Select] = select()
+    """
+    The SQLAlchemy select expression used for the count query which can be customized.
+    By default it will select all objects without any filters.
+
+    ???+ example
+        ```python
+        from sqlalchemy import select
+
+        class UserAdmin(ModelAdmin, model=User):
+            count_query = select(func.count(User.id))
+        ```
+    """
 
     def __init__(self) -> None:
         self._column_labels = self.get_column_labels()
