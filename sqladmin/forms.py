@@ -1,5 +1,5 @@
 import inspect
-from enum import Enum, EnumMeta
+from enum import Enum
 from typing import (
     Any,
     Callable,
