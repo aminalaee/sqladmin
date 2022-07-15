@@ -198,7 +198,6 @@ async def test_model_form_sqlalchemy_utils() -> None:
         url = Column(URLType)
         currency = Column(CurrencyType)
         timezone = Column(TimezoneType)
-        choice = Column(ChoiceType(choice_TYPES))
         color = Column(ColorType)
         json = Column(JSONType)
         password = Column(PasswordType)
