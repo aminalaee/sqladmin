@@ -13,6 +13,7 @@ from sqladmin.fields import (
     JSONField,
     QuerySelectField,
     QuerySelectMultipleField,
+    RadioField,
     Select2TagsField,
     SelectField,
     TimeField,
@@ -215,3 +216,21 @@ def test_query_select_multiple_field() -> None:
     form.select._object_list = object_list
     assert form.select.data == []
     assert form.validate() is False
+
+
+def test_RadioField() -> None:
+    choices = [("1", "A"), ("2", "B")]
+
+    class F(Form):
+        radio = RadioField(choices=choices, coerce=int)
+
+    form = F()
+    assert form.radio().count("input") == len(choices) * 2
+
+    form = F(DummyData(radio=["1"]))
+    assert form.validate() is True
+    assert form.radio.data == 1
+
+    form = F(DummyData(radio=["A"]))
+    assert form.validate() is False
+    assert form.radio.data is None
