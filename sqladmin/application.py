@@ -40,21 +40,34 @@ class BaseAdmin:
         self.app = app
         self.engine = engine
         self.base_url = base_url
+        self.title = title
+        self.logo_url = logo_url
         self._model_admins: List["ModelAdmin"] = []
+        self.custom_routes = []
 
-        self.templates = Jinja2Templates("templates")
-        self.templates.env.loader = ChoiceLoader(
-            [
-                FileSystemLoader("templates"),
-                PackageLoader("sqladmin", "templates"),
-            ]
+        self.templates = self.init_templating_engine()
+
+    def init_templating_engine(self,extra_loader= None) -> Jinja2Templates:
+        templates = Jinja2Templates("templates")
+        loaders = [
+            FileSystemLoader("templates"),
+            PackageLoader("sqladmin", "templates"),
+        ]
+        if extra_loader:
+            loaders.append(extra_loader)
+
+        templates.env.loader = ChoiceLoader(
+            loaders
         )
-        self.templates.env.globals["min"] = min
-        self.templates.env.globals["zip"] = zip
-        self.templates.env.globals["admin_title"] = title
-        self.templates.env.globals["admin_logo_url"] = logo_url
-        self.templates.env.globals["model_admins"] = self.model_admins
-        self.templates.env.globals["is_list"] = lambda x: isinstance(x, list)
+        templates.env.globals["min"] = min
+        templates.env.globals["zip"] = zip
+        templates.env.globals["admin_title"] = self.title
+        templates.env.globals["admin_logo_url"] = self.logo_url
+        templates.env.globals["model_admins"] = self.model_admins
+        templates.env.globals["custom_routes"] = self.custom_routes
+        templates.env.globals["is_list"] = lambda x: isinstance(x, list)
+
+        return templates
 
     @property
     def model_admins(self) -> List["ModelAdmin"]:
@@ -102,6 +115,23 @@ class BaseAdmin:
             model.async_engine = True
 
         self._model_admins.append((model()))
+
+    def register_view(self, view):
+        class_view = view()
+        # add template directory
+        self.templates = self.init_templating_engine(
+            extra_loader=FileSystemLoader(class_view.template_path)
+        )
+
+        for item in class_view.custom_admin_router.routes:
+            # add in menu
+            self.custom_routes.append(item)
+
+            # add in routing
+            self.app.add_route(
+                route=item,
+                path=item.path, methods=item.methods, name=item.name,include_in_schema=item.include_in_schema,
+            )
 
 
 class BaseAdminView(BaseAdmin):
