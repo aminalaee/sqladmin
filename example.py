@@ -4,6 +4,7 @@ from sqlalchemy.ext.declarative import declarative_base
 from starlette.requests import Request
 
 from sqladmin import Admin, ModelAdmin
+from sqladmin.models import ModelView
 
 Base = declarative_base()
 engine = create_engine(
@@ -32,18 +33,17 @@ class UserAdmin(ModelAdmin, model=User):
 admin.register_model(UserAdmin)
 
 
-class CustomAdmin:
+class CustomAdmin(ModelView):
     template_path = 'tpl'
-    custom_admin_router = APIRouter(prefix='/custom_admin')
-
-    def __init__(self):
-        self.custom_admin_router.add_api_route("/hmlt", self.test_html, methods=["GET"], name="Test me")
-
-    def render(self, template, data):
-        return admin.templates.TemplateResponse(template, data)
 
     def test_html(self, request: Request):
         return self.render("sample.html", data={"request": request})
+
+    name = "Test me"
+    icon = "fa-user"
+    path = "/custom/hmlt"
+    methods = ["GET"]
+    endpoint = test_html
 
 
 admin.register_view(CustomAdmin)

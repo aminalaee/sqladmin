@@ -31,6 +31,7 @@ from sqlalchemy.sql.elements import ClauseElement
 from sqlalchemy.sql.expression import Select, select
 from starlette.requests import Request
 from starlette.responses import StreamingResponse
+from starlette.templating import Jinja2Templates
 from wtforms import Field, Form
 
 from sqladmin.exceptions import InvalidColumnError, InvalidModelError
@@ -125,7 +126,24 @@ class BaseModelAdmin:
         return True
 
 
-class ModelAdmin(BaseModelAdmin, metaclass=ModelAdminMeta):
+class ModelView(BaseModelAdmin):
+    is_model = False
+
+    template_path: ClassVar[str]
+    templates: Jinja2Templates
+
+    name: ClassVar[str]
+    icon: ClassVar[str]
+    path: ClassVar[str]
+    methods = ["GET"]
+    endpoint: ClassVar[Callable]
+    include_in_schema: ClassVar[bool] = True
+
+    def render(self, template, data):
+        return self.templates.TemplateResponse(template, data)
+
+
+class ModelAdmin(ModelView, metaclass=ModelAdminMeta):
     """Base class for defining admnistrative behaviour for the model.
 
     ???+ usage
@@ -139,6 +157,8 @@ class ModelAdmin(BaseModelAdmin, metaclass=ModelAdminMeta):
         ```
     """
 
+    is_model = True
+
     model: ClassVar[type]
 
     # Internals
@@ -149,27 +169,12 @@ class ModelAdmin(BaseModelAdmin, metaclass=ModelAdminMeta):
     async_engine: ClassVar[bool]
     url_path_for: ClassVar[Callable]
 
-    # Metadata
-    name: ClassVar[str] = ""
-    """Name of ModelAdmin to display.
-    Default value is set to Model class name.
-    """
 
     name_plural: ClassVar[str] = ""
     """Plural name of ModelAdmin.
     Default value is Model class name + `s`.
     """
 
-    icon: ClassVar[str] = ""
-    """Display icon for ModelAdmin in the sidebar.
-    Currently only supports FontAwesome icons.
-
-    ???+ example
-        ```python
-        class UserAdmin(ModelAdmin, model=User):
-            icon = "fa-solid fa-user"
-        ```
-    """
 
     # Permissions
     can_create: ClassVar[bool] = True

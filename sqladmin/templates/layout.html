@@ -14,23 +14,14 @@
       </h1>
       <div class="collapse navbar-collapse" id="navbar-menu">
         <ul class="navbar-nav pt-lg-3">
-          {% for custom_route in custom_routes %}
-          <li class="nav-item">
-            <a class="nav-link {% if custom_route.identity == request.path_params['identity'] %}active{% endif %}" href="{{  custom_route.url_path_for(custom_route.name) }}">
-            <span class="nav-link-icon d-md-none d-lg-inline-block">
-            {% if custom_route.icon %} <i class="{{ custom_route.icon }}"></i> {% endif %}
-            </span>
-
-            <span class="nav-link-title">{{ custom_route.name }}</span>
-            </a>
-
-          </li>
-          {% endfor %}
-
           {% for model_admin in model_admins %}
           {% if model_admin.is_visible(request) and model_admin.is_accessible(request) %}
           <li class="nav-item">
+            {% if model_admin.is_model %}
             <a class="nav-link {% if model_admin.identity == request.path_params['identity'] %}active{% endif %}" href="{{ url_for('admin:list', identity=model_admin.identity) }}">
+            {% else %}
+            <a class="nav-link {% if model_admin.identity == request.path_params['identity'] %}active{% endif %}" href="{{  model_admin.url_path_for(model_admin.name) }}">
+            {% endif %}
             <span class="nav-link-icon d-md-none d-lg-inline-block">
             {% if model_admin.icon %} <i class="{{ model_admin.icon }}"></i> {% endif %}
             </span>
