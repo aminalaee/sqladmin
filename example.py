@@ -23,7 +23,9 @@ class User(Base):
 Base.metadata.create_all(engine)
 
 app = FastAPI()
-admin = Admin(app, engine)
+admin = Admin(app, engine,
+              template_path='tpl'
+              )
 
 
 class UserAdmin(ModelAdmin, model=User):
@@ -34,10 +36,8 @@ admin.register_model(UserAdmin)
 
 
 class CustomAdmin(ModelView):
-    template_path = 'tpl'
-
     def test_html(self, request: Request):
-        return self.render("sample.html", data={"request": request})
+        return self.templates.TemplateResponse("sample.html", context={"request": request})
 
     name = "Test me"
     icon = "fa-user"

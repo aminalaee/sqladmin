@@ -13,10 +13,8 @@ from starlette.routing import Mount, Route
 from starlette.staticfiles import StaticFiles
 from starlette.templating import Jinja2Templates
 
-from sqladmin.models import ModelView
-
 if TYPE_CHECKING:
-    from sqladmin.models import ModelAdmin
+    from sqladmin.models import ModelAdmin, ModelView
 
 __all__ = [
     "Admin",
@@ -31,41 +29,39 @@ class BaseAdmin:
     """
 
     def __init__(
-            self,
-            app: Starlette,
-            engine: Union[Engine, AsyncEngine],
-            base_url: str = "/admin",
-            title: str = "Admin",
-            logo_url: str = None,
+        self,
+        app: Starlette,
+        engine: Union[Engine, AsyncEngine],
+        base_url: str = "/admin",
+        title: str = "Admin",
+        logo_url: str = None,
+        template_path: str = None,
     ) -> None:
         self.app = app
         self.engine = engine
         self.base_url = base_url
         self.title = title
         self.logo_url = logo_url
+        self.template_path = template_path
         self._model_admins: List["ModelView"] = []
-        self.custom_routes = []
 
         self.templates = self.init_templating_engine()
 
-    def init_templating_engine(self, extra_loader=None) -> Jinja2Templates:
+    def init_templating_engine(self) -> Jinja2Templates:
         templates = Jinja2Templates("templates")
         loaders = [
             FileSystemLoader("templates"),
             PackageLoader("sqladmin", "templates"),
         ]
-        if extra_loader:
-            loaders.append(extra_loader)
+        if self.template_path:
+            loaders.append(FileSystemLoader(self.template_path))
 
-        templates.env.loader = ChoiceLoader(
-            loaders
-        )
+        templates.env.loader = ChoiceLoader(loaders)
         templates.env.globals["min"] = min
         templates.env.globals["zip"] = zip
         templates.env.globals["admin_title"] = self.title
         templates.env.globals["admin_logo_url"] = self.logo_url
         templates.env.globals["model_admins"] = self.model_admins
-        templates.env.globals["custom_routes"] = self.custom_routes
         templates.env.globals["is_list"] = lambda x: isinstance(x, list)
 
         return templates
@@ -117,16 +113,11 @@ class BaseAdmin:
 
         self._model_admins.append((model()))
 
-    def register_view(self, view: Type["ModelView"]):
-
+    def register_view(self, view: Type["ModelView"]) -> None:
         class_view = view()
         class_view.name_plural = class_view.name
         class_view.url_path_for = self.app.url_path_for
-
-        # add template directory
-        class_view.templates = self.init_templating_engine(
-            extra_loader=FileSystemLoader(class_view.template_path)
-        )
+        class_view.templates = self.templates
 
         self._model_admins.append(class_view)
 
@@ -205,6 +196,7 @@ class Admin(BaseAdminView):
         logo_url: str = None,
         middlewares: Sequence[Middleware] = None,
         debug: bool = False,
+        template_path: str = None,
     ) -> None:
         """
         Args:
@@ -217,7 +209,12 @@ class Admin(BaseAdminView):
 
         assert isinstance(engine, (Engine, AsyncEngine))
         super().__init__(
-            app=app, engine=engine, base_url=base_url, title=title, logo_url=logo_url
+            app=app,
+            engine=engine,
+            base_url=base_url,
+            title=title,
+            logo_url=logo_url,
+            template_path=template_path,
         )
 
         statics = StaticFiles(packages=["sqladmin"])
