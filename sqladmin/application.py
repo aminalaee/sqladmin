@@ -14,8 +14,7 @@ from starlette.staticfiles import StaticFiles
 from starlette.templating import Jinja2Templates
 
 if TYPE_CHECKING:
-    from sqladmin.models import ModelAdmin
-
+    from sqladmin.models import ModelAdmin, ModelView
 
 __all__ = [
     "Admin",
@@ -36,28 +35,39 @@ class BaseAdmin:
         base_url: str = "/admin",
         title: str = "Admin",
         logo_url: str = None,
+        template_path: str = None,
     ) -> None:
         self.app = app
         self.engine = engine
         self.base_url = base_url
-        self._model_admins: List["ModelAdmin"] = []
+        self.title = title
+        self.logo_url = logo_url
+        self.template_path = template_path
+        self._model_admins: List["ModelView"] = []
 
-        self.templates = Jinja2Templates("templates")
-        self.templates.env.loader = ChoiceLoader(
-            [
-                FileSystemLoader("templates"),
-                PackageLoader("sqladmin", "templates"),
-            ]
-        )
-        self.templates.env.globals["min"] = min
-        self.templates.env.globals["zip"] = zip
-        self.templates.env.globals["admin_title"] = title
-        self.templates.env.globals["admin_logo_url"] = logo_url
-        self.templates.env.globals["model_admins"] = self.model_admins
-        self.templates.env.globals["is_list"] = lambda x: isinstance(x, list)
+        self.templates = self.init_templating_engine()
+
+    def init_templating_engine(self) -> Jinja2Templates:
+        templates = Jinja2Templates("templates")
+        loaders = [
+            FileSystemLoader("templates"),
+            PackageLoader("sqladmin", "templates"),
+        ]
+        if self.template_path:
+            loaders.append(FileSystemLoader(self.template_path))
+
+        templates.env.loader = ChoiceLoader(loaders)
+        templates.env.globals["min"] = min
+        templates.env.globals["zip"] = zip
+        templates.env.globals["admin_title"] = self.title
+        templates.env.globals["admin_logo_url"] = self.logo_url
+        templates.env.globals["model_admins"] = self.model_admins
+        templates.env.globals["is_list"] = lambda x: isinstance(x, list)
+
+        return templates
 
     @property
-    def model_admins(self) -> List["ModelAdmin"]:
+    def model_admins(self) -> List["ModelView"]:
         """Get list of ModelAdmins lazily.
 
         Returns:
@@ -66,7 +76,7 @@ class BaseAdmin:
 
         return self._model_admins
 
-    def _find_model_admin(self, identity: str) -> "ModelAdmin":
+    def _find_model_admin(self, identity: str) -> "ModelView":
         for model_admin in self.model_admins:
             if model_admin.identity == identity:
                 return model_admin
@@ -102,6 +112,22 @@ class BaseAdmin:
             model.async_engine = True
 
         self._model_admins.append((model()))
+
+    def register_view(self, view: Type["ModelView"]) -> None:
+        class_view = view()
+        class_view.name_plural = class_view.name
+        class_view.url_path_for = self.app.url_path_for
+        class_view.templates = self.templates
+
+        self._model_admins.append(class_view)
+
+        self.app.add_route(
+            route=class_view.endpoint,
+            path=class_view.path,
+            methods=class_view.methods,
+            name=class_view.name,
+            include_in_schema=class_view.include_in_schema,
+        )
 
 
 class BaseAdminView(BaseAdmin):
@@ -170,6 +196,7 @@ class Admin(BaseAdminView):
         logo_url: str = None,
         middlewares: Sequence[Middleware] = None,
         debug: bool = False,
+        template_path: str = None,
     ) -> None:
         """
         Args:
@@ -182,7 +209,12 @@ class Admin(BaseAdminView):
 
         assert isinstance(engine, (Engine, AsyncEngine))
         super().__init__(
-            app=app, engine=engine, base_url=base_url, title=title, logo_url=logo_url
+            app=app,
+            engine=engine,
+            base_url=base_url,
+            title=title,
+            logo_url=logo_url,
+            template_path=template_path,
         )
 
         statics = StaticFiles(packages=["sqladmin"])

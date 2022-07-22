@@ -125,7 +125,18 @@ class BaseModelAdmin:
         return True
 
 
-class ModelAdmin(BaseModelAdmin, metaclass=ModelAdminMeta):
+class ModelView(BaseModelAdmin):
+    is_model = False
+
+    name: ClassVar[str]
+    icon: ClassVar[str]
+    path: ClassVar[str]
+    methods = ["GET"]
+    endpoint: ClassVar[Callable]
+    include_in_schema: ClassVar[bool] = True
+
+
+class ModelAdmin(ModelView, metaclass=ModelAdminMeta):
     """Base class for defining admnistrative behaviour for the model.
 
     ???+ usage
@@ -139,6 +150,8 @@ class ModelAdmin(BaseModelAdmin, metaclass=ModelAdminMeta):
         ```
     """
 
+    is_model = True
+
     model: ClassVar[type]
 
     # Internals
@@ -149,26 +162,9 @@ class ModelAdmin(BaseModelAdmin, metaclass=ModelAdminMeta):
     async_engine: ClassVar[bool]
     url_path_for: ClassVar[Callable]
 
-    # Metadata
-    name: ClassVar[str] = ""
-    """Name of ModelAdmin to display.
-    Default value is set to Model class name.
-    """
-
     name_plural: ClassVar[str] = ""
     """Plural name of ModelAdmin.
     Default value is Model class name + `s`.
-    """
-
-    icon: ClassVar[str] = ""
-    """Display icon for ModelAdmin in the sidebar.
-    Currently only supports FontAwesome icons.
-
-    ???+ example
-        ```python
-        class UserAdmin(ModelAdmin, model=User):
-            icon = "fa-solid fa-user"
-        ```
     """
 
     # Permissions
