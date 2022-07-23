@@ -20,9 +20,13 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship, sessionmaker
 from sqlalchemy_utils import (
+    ColorType,
     CurrencyType,
     EmailType,
     IPAddressType,
+    JSONType,
+    PasswordType,
+    ScalarListType,
     TimezoneType,
     URLType,
     UUIDType,
@@ -187,6 +191,7 @@ async def test_model_form_postgresql() -> None:
 
 async def test_model_form_sqlalchemy_utils() -> None:
     class SQLAlchemyUtilsModel(Base):
+        choice_TYPES = [("admin", "Admin"), ("regular-user", "Regular user")]
         __tablename__ = "sqlalchemy_utils_model"
 
         id = Column(Integer, primary_key=True)
@@ -196,6 +201,10 @@ async def test_model_form_sqlalchemy_utils() -> None:
         url = Column(URLType)
         currency = Column(CurrencyType)
         timezone = Column(TimezoneType)
+        color = Column(ColorType)
+        json = Column(JSONType)
+        password = Column(PasswordType)
+        scalarlist = Column(ScalarListType)
 
     Form = await get_model_form(model=SQLAlchemyUtilsModel, engine=engine)
     form = Form(DummyData(currency="IR", timezone=["Iran/Tehran"]))

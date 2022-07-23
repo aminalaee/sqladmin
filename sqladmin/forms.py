@@ -35,6 +35,7 @@ from wtforms import (
     validators,
 )
 from wtforms.fields.core import UnboundField
+from wtforms.widgets import ColorInput
 
 from sqladmin._validators import CurrencyValidator, TimezoneValidator
 from sqladmin.exceptions import NoConverterFound
@@ -347,7 +348,7 @@ class ModelConverter(ModelConverterBase):
         kwargs.setdefault("places", None)
         return DecimalField(**kwargs)
 
-    @converts("JSON")
+    @converts("JSON", "sqlalchemy_utils.types.json.JSONType")
     def conv_json(
         self, model: type, prop: ColumnProperty, kwargs: Dict[str, Any]
     ) -> UnboundField:
@@ -400,6 +401,12 @@ class ModelConverter(ModelConverterBase):
         kwargs["validators"].append(validators.Email())
         return StringField(**kwargs)
 
+    @converts("sqlalchemy_utils.types.color.ColorType")
+    def conv_color(
+        self, model: type, prop: ColumnProperty, kwargs: Dict[str, Any]
+    ) -> UnboundField:
+        return StringField(widget=ColorInput(), **kwargs)
+
     @converts("sqlalchemy_utils.types.url.URLType")
     def conv_url(
         self, model: type, prop: ColumnProperty, kwargs: Dict[str, Any]
@@ -408,12 +415,35 @@ class ModelConverter(ModelConverterBase):
         kwargs["validators"].append(validators.URL())
         return StringField(**kwargs)
 
+    @converts("sqlalchemy_utils.primitives.country.Country")
+    def conv_country(self, model: type, prop: ColumnProperty, kwargs: Dict[str, Any]):
+        # TODO: get this working
+        kwargs.setdefault("validators", [])
+        return StringField(**kwargs)
+
     @converts("sqlalchemy_utils.types.currency.CurrencyType")
     def conv_currency(
         self, model: type, prop: ColumnProperty, kwargs: Dict[str, Any]
     ) -> UnboundField:
         kwargs.setdefault("validators", [])
         kwargs["validators"].append(CurrencyValidator())
+        return StringField(**kwargs)
+
+    @converts("sqlalchemy_utils.types.locale.LocaleType")
+    def conv_locale(self, model: type, prop: ColumnProperty, kwargs: Dict[str, Any]):
+        kwargs.setdefault("validators", [])
+        return StringField(**kwargs)
+
+    @converts("sqlalchemy_utils.types.password.PasswordType")
+    def conv_password(self, model: type, prop: ColumnProperty, kwargs: Dict[str, Any]):
+        kwargs.setdefault("validators", [])
+        return StringField(**kwargs)
+
+    @converts("sqlalchemy_utils.types.scalar_list.ScalarListType")
+    def conv_scaler_list(
+        self, model: type, prop: ColumnProperty, kwargs: Dict[str, Any]
+    ):
+        kwargs.setdefault("validators", [])
         return StringField(**kwargs)
 
     @converts("sqlalchemy_utils.types.timezone.TimezoneType")
