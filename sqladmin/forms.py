@@ -372,26 +372,6 @@ class ModelConverter(ModelConverterBase):
         kwargs["validators"].append(validators.IPAddress(ipv4=True, ipv6=True))
         return StringField(**kwargs)
 
-    # @converts("sqlalchemy_utils.types.choice.ChoiceType")
-    # def conv_choice(
-    #    self, model: type, prop: ColumnProperty, kwargs: Dict[str, Any]
-    # ) -> UnboundField:
-    #    available_choices = []
-
-    #    if isinstance(model.choices, EnumMeta):
-    #        available_choices = [(x.name, x.value) for x in model.choices]
-    #        accepted_values = [choice.value for choice in available_choices]
-    #    else:
-    #        available_choices = model.choices
-    #        print(type(available_choices))
-    #        print(available_choices)
-    #        accepted_values = [choice[0] for choice in available_choices]
-
-    #    kwargs["choices"] = available_choices
-    #    kwargs["validators"].append(validators.AnyOf(accepted_values))
-    #    # kwargs["coerce"] =
-    #    return SelectField(**kwargs)
-
     @converts("sqlalchemy.dialects.postgresql.base.MACADDR")
     def conv_mac_address(
         self, model: type, prop: ColumnProperty, kwargs: Dict[str, Any]
