@@ -16,7 +16,7 @@ from typing import (
 )
 
 import anyio
-from sqlalchemy import Column, asc, desc, func, inspect, or_, select
+from sqlalchemy import Column, asc, desc, func, inspect, or_
 from sqlalchemy.engine.base import Engine
 from sqlalchemy.exc import NoInspectionAvailable
 from sqlalchemy.ext.asyncio import AsyncEngine
@@ -28,21 +28,27 @@ from sqlalchemy.orm import (
 )
 from sqlalchemy.orm.attributes import InstrumentedAttribute
 from sqlalchemy.sql.elements import ClauseElement
+from sqlalchemy.sql.expression import Select, select
 from starlette.requests import Request
 from starlette.responses import StreamingResponse
 from wtforms import Field, Form
 
 from sqladmin.exceptions import InvalidColumnError, InvalidModelError
+from sqladmin.formatters import BASE_FORMATTERS
 from sqladmin.forms import get_model_form
 from sqladmin.helpers import (
     Writer,
     as_str,
+    get_attributes,
+    get_primary_key,
+    get_relationships,
     prettify_class_name,
     secure_filename,
     slugify_class_name,
     stream_to_csv,
 )
 from sqladmin.pagination import Pagination
+from sqladmin.types import _MODEL_ATTR_TYPE
 
 __all__ = [
     "ModelAdmin",
@@ -66,21 +72,22 @@ class ModelAdminMeta(type):
             return cls
 
         try:
-            mapper = inspect(model)
+            inspect(model)
         except NoInspectionAvailable:
             raise InvalidModelError(
                 f"Class {model.__name__} is not a SQLAlchemy model."
             )
 
-        assert len(mapper.primary_key) == 1, "Multiple PK columns not supported."
-
-        cls.pk_column = mapper.primary_key[0]
+        cls.pk_column = get_primary_key(model)
         cls.identity = slugify_class_name(model.__name__)
         cls.model = model
 
         cls.name = attrs.get("name", prettify_class_name(cls.model.__name__))
         cls.name_plural = attrs.get("name_plural", f"{cls.name}s")
         cls.icon = attrs.get("icon")
+
+        cls.list_query = attrs.get("list_query", select(model))
+        cls.count_query = attrs.get("count_query", select(func.count(cls.pk_column)))
 
         mcls._check_conflicting_options(["column_list", "column_exclude_list"], attrs)
         mcls._check_conflicting_options(
@@ -228,7 +235,7 @@ class ModelAdmin(BaseModelAdmin, metaclass=ModelAdminMeta):
         ```python
         def formatter(model, attribute):
             # `model` is model instance
-            # `attribute` is a Union[Column, ColumnProperty, RelationshipProperty]
+            # `attribute` is a Union[ColumnProperty, RelationshipProperty]
             pass
         ```
     """
@@ -277,7 +284,7 @@ class ModelAdmin(BaseModelAdmin, metaclass=ModelAdminMeta):
         ```
     """
 
-    column_default_sort: ClassVar[Union[str, tuple, list]] = []
+    column_default_sort: ClassVar[Union[str, Tuple[str, bool], list]] = []
     """Default sort column if no sorting is applied.
 
     ???+ example
@@ -349,19 +356,8 @@ class ModelAdmin(BaseModelAdmin, metaclass=ModelAdminMeta):
         ```python
         def formatter(model, attribute):
             # `model` is model instance
-            # `attribute` is a Union[Column, ColumnProperty, RelationshipProperty]
+            # `attribute` is a Union[ColumnProperty, RelationshipProperty]
             pass
-        ```
-    """
-
-    column_labels: ClassVar[Dict[Union[str, InstrumentedAttribute], str]] = {}
-    """A mapping of column labels, used to map column names to new names.
-    Dictionary keys can be string names or SQLAlchemy columns with string values.
-
-    ???+ example
-        ```python
-        class UserAdmin(ModelAdmin, model=User):
-            column_labels = {User.mail: "Email"}
         ```
     """
 
@@ -518,13 +514,72 @@ class ModelAdmin(BaseModelAdmin, metaclass=ModelAdminMeta):
         ```
     """
 
+    # General options
+    column_labels: ClassVar[Dict[Union[str, InstrumentedAttribute], str]] = {}
+    """A mapping of column labels, used to map column names to new names.
+    Dictionary keys can be string names or SQLAlchemy columns with string values.
+
+    ???+ example
+        ```python
+        class UserAdmin(ModelAdmin, model=User):
+            column_labels = {User.mail: "Email"}
+        ```
+    """
+
+    column_type_formatters: ClassVar[Dict[Type, Callable]] = BASE_FORMATTERS
+    """Dictionary of value type formatters to be used in the list view.
+
+    By default, two types are formatted:
+
+        - None will be displayed as an empty string
+        - bool will be displayed as a checkmark if it is True otherwise as an X.
+
+    If you don’t like the default behavior and don’t want any type formatters applied,
+    just override this property with an empty dictionary:
+
+    ???+ example
+        ```python
+        class UserAdmin(ModelAdmin, model=User):
+            column_type_formatters = dict()
+        ```
+    """
+
+    list_query: ClassVar[Select] = select()
+    """
+    The SQLAlchemy select expression used for the list page which can be customized.
+    By default it will select all objects without any filters.
+
+    ???+ example
+        ```python
+        from sqlalchemy import select
+
+        class UserAdmin(ModelAdmin, model=User):
+            list_query = select(User).filter(User.active == True)
+        ```
+    """
+
+    count_query: ClassVar[Select] = select()
+    """
+    The SQLAlchemy select expression used for the count query which can be customized.
+    By default it will select all objects without any filters.
+
+    ???+ example
+        ```python
+        from sqlalchemy import select
+
+        class UserAdmin(ModelAdmin, model=User):
+            count_query = select(func.count(User.id))
+        ```
+    """
+
     def __init__(self) -> None:
+        self._relations = get_relationships(self.model)
+        self._attrs = get_attributes(self.model)
+
         self._column_labels = self.get_column_labels()
         self._column_labels_value_by_key = {
             v: k for k, v in self._column_labels.items()
         }
-
-        self._relations = list(inspect(self.model).relationships)
 
         self._list_attrs = self.get_list_columns()
         self._list_columns = [
@@ -591,12 +646,11 @@ class ModelAdmin(BaseModelAdmin, metaclass=ModelAdminMeta):
         stmt = select(self.model).where(
             self.pk_column == self._get_column_python_type(self.pk_column)(pk)
         )
-        relationships = inspect(self.model).relationships
 
         with self.sessionmaker.begin() as session:
             result = session.execute(stmt).scalars().first()
             for name, value in data.items():
-                if name in relationships and isinstance(value, list):
+                if name in self._relations and isinstance(value, list):
                     # Load relationship objects into session
                     session.add_all(value)
                 setattr(result, name, value)
@@ -608,7 +662,7 @@ class ModelAdmin(BaseModelAdmin, metaclass=ModelAdminMeta):
             return str
 
     def _url_for_details(self, obj: Any) -> str:
-        pk = getattr(obj, inspect(obj).mapper.primary_key[0].name)
+        pk = getattr(obj, get_primary_key(obj).name)
         return self.url_path_for(
             "admin:details",
             identity=slugify_class_name(obj.__class__.__name__),
@@ -616,7 +670,7 @@ class ModelAdmin(BaseModelAdmin, metaclass=ModelAdminMeta):
         )
 
     def _url_for_edit(self, obj: Any) -> str:
-        pk = getattr(obj, inspect(obj).mapper.primary_key[0].name)
+        pk = getattr(obj, get_primary_key(obj).name)
         return self.url_path_for(
             "admin:edit",
             identity=slugify_class_name(obj.__class__.__name__),
@@ -624,7 +678,7 @@ class ModelAdmin(BaseModelAdmin, metaclass=ModelAdminMeta):
         )
 
     def _url_for_delete(self, obj: Any) -> str:
-        pk = getattr(obj, inspect(obj).mapper.primary_key[0].name)
+        pk = getattr(obj, get_primary_key(obj).name)
         return self.url_path_for(
             "admin:delete",
             identity=slugify_class_name(obj.__class__.__name__),
@@ -643,7 +697,7 @@ class ModelAdmin(BaseModelAdmin, metaclass=ModelAdminMeta):
             pk=pk,
         )
 
-    def _get_default_sort(self) -> List[tuple]:
+    def _get_default_sort(self) -> List[Tuple[str, bool]]:
         if self.column_default_sort:
             if isinstance(self.column_default_sort, list):
                 return self.column_default_sort
@@ -654,9 +708,15 @@ class ModelAdmin(BaseModelAdmin, metaclass=ModelAdminMeta):
 
         return [(self.pk_column.name, False)]
 
+    def _default_formatter(self, value: Any) -> Any:
+        if type(value) in self.column_type_formatters:
+            formatter = self.column_type_formatters[type(value)]
+            return formatter(value)
+
+        return value
+
     async def count(self) -> int:
-        stmt = select(func.count(self.pk_column))
-        rows = await self._run_query(stmt)
+        rows = await self._run_query(self.count_query)
         return rows[0]
 
     async def list(
@@ -670,7 +730,7 @@ class ModelAdmin(BaseModelAdmin, metaclass=ModelAdminMeta):
         page_size = min(page_size or self.page_size, max(self.page_size_options))
 
         count = await self.count()
-        stmt = select(self.model).limit(page_size).offset((page - 1) * page_size)
+        stmt = self.list_query.limit(page_size).offset((page - 1) * page_size)
 
         for relation in self._relations:
             stmt = stmt.options(joinedload(relation.key))
@@ -687,8 +747,7 @@ class ModelAdmin(BaseModelAdmin, metaclass=ModelAdminMeta):
                 stmt = stmt.order_by(asc(sort_field))
 
         if search:
-            expressions = [attr.ilike(f"%{search}%") for attr in self._search_fields]
-            stmt = stmt.filter(or_(*expressions))
+            stmt = self.search_query(stmt=stmt, term=search)
 
         rows = await self._run_query(stmt)
         pagination = Pagination(
@@ -700,7 +759,7 @@ class ModelAdmin(BaseModelAdmin, metaclass=ModelAdminMeta):
 
         return pagination
 
-    async def get_model_objects(self, limit: int = 0) -> List[Any]:
+    async def get_model_objects(self, limit: Union[int, None] = 0) -> List[Any]:
         # For unlimited rows this should pass None
         limit = None if limit == 0 else limit
         stmt = select(self.model).limit(limit=limit)
@@ -738,21 +797,21 @@ class ModelAdmin(BaseModelAdmin, metaclass=ModelAdminMeta):
 
         return result
 
-    def get_list_value(
-        self, obj: type, attr: Union[Column, ColumnProperty, RelationshipProperty]
-    ) -> Tuple[Any, Any]:
+    def get_list_value(self, obj: type, attr: _MODEL_ATTR_TYPE) -> Tuple[Any, Any]:
         """Get tuple of (value, formatted_value) for the list view."""
-        value = formatted_value = self.get_attr_value(obj, attr)
+        value = self.get_attr_value(obj, attr)
+        formatted_value = self._default_formatter(value)
+
         formatter = self._list_formatters.get(attr)
         if formatter:
             formatted_value = formatter(obj, attr)
         return value, formatted_value
 
-    def get_detail_value(
-        self, obj: type, attr: Union[Column, ColumnProperty, RelationshipProperty]
-    ) -> Tuple[Any, Any]:
+    def get_detail_value(self, obj: type, attr: _MODEL_ATTR_TYPE) -> Tuple[Any, Any]:
         """Get tuple of (value, formatted_value) for the detail view."""
-        value = formatted_value = self.get_attr_value(obj, attr)
+        value = self.get_attr_value(obj, attr)
+        formatted_value = self._default_formatter(value)
+
         formatter = self._detail_formatters.get(attr)
         if formatter:
             formatted_value = formatter(obj, attr)
@@ -760,7 +819,7 @@ class ModelAdmin(BaseModelAdmin, metaclass=ModelAdminMeta):
 
     def get_model_attr(
         self, attr: Union[str, InstrumentedAttribute]
-    ) -> Union[ColumnProperty, RelationshipProperty]:
+    ) -> _MODEL_ATTR_TYPE:
         assert isinstance(attr, (str, InstrumentedAttribute))
 
         if isinstance(attr, str):
@@ -775,21 +834,18 @@ class ModelAdmin(BaseModelAdmin, metaclass=ModelAdminMeta):
 
         # Get value by column label
         if key in self._column_labels_value_by_key:
-            return self._column_labels_value_by_key[key]
+            return self._column_labels_value_by_key[str(key)]
 
         raise InvalidColumnError(
             f"Model '{self.model.__name__}' has no attribute '{key}'."
         )
 
-    def get_model_attributes(self) -> List[Column]:
-        return list(inspect(self.model).attrs)
-
     def _build_column_list(
         self,
+        default: List[_MODEL_ATTR_TYPE],
         include: Optional[Sequence[Union[str, InstrumentedAttribute]]] = None,
         exclude: Optional[Sequence[Union[str, InstrumentedAttribute]]] = None,
-        default: Callable[[], List[Column]] = None,
-    ) -> List[Tuple[str, Column]]:
+    ) -> List[Tuple[str, _MODEL_ATTR_TYPE]]:
         """This function generalizes constructing a list of columns
         for any sequence of inclusions or exclusions.
         """
@@ -797,14 +853,13 @@ class ModelAdmin(BaseModelAdmin, metaclass=ModelAdminMeta):
             attrs = [self.get_model_attr(attr) for attr in include]
         elif exclude:
             exclude_columns = [self.get_model_attr(attr) for attr in exclude]
-            all_attrs = self.get_model_attributes()
-            attrs = list(set(all_attrs) - set(exclude_columns))
+            attrs = list(set(self._attrs) - set(exclude_columns))
         else:
-            attrs = default()
+            attrs = default
 
         return [(self._column_labels.get(attr, attr.key), attr) for attr in attrs]
 
-    def get_list_columns(self) -> List[Tuple[str, Column]]:
+    def get_list_columns(self) -> List[Tuple[str, _MODEL_ATTR_TYPE]]:
         """Get list of columns to display in List page."""
 
         column_list = getattr(self, "column_list", None)
@@ -813,10 +868,10 @@ class ModelAdmin(BaseModelAdmin, metaclass=ModelAdminMeta):
         return self._build_column_list(
             include=column_list,
             exclude=column_exclude_list,
-            default=lambda: [getattr(self.model, self.pk_column.name).prop],
+            default=[getattr(self.model, self.pk_column.name).prop],
         )
 
-    def get_details_columns(self) -> List[Tuple[str, Column]]:
+    def get_details_columns(self) -> List[Tuple[str, _MODEL_ATTR_TYPE]]:
         """Get list of columns to display in Detail page."""
 
         column_details_list = getattr(self, "column_details_list", None)
@@ -825,10 +880,10 @@ class ModelAdmin(BaseModelAdmin, metaclass=ModelAdminMeta):
         return self._build_column_list(
             include=column_details_list,
             exclude=column_details_exclude_list,
-            default=self.get_model_attributes,
+            default=self._attrs,
         )
 
-    def get_form_columns(self) -> List[Tuple[str, Column]]:
+    def get_form_columns(self) -> List[Tuple[str, _MODEL_ATTR_TYPE]]:
         """Get list of columns to display in the form."""
 
         form_columns = getattr(self, "form_columns", None)
@@ -837,24 +892,24 @@ class ModelAdmin(BaseModelAdmin, metaclass=ModelAdminMeta):
         return self._build_column_list(
             include=form_columns,
             exclude=form_excluded_columns,
-            default=self.get_model_attributes,
+            default=self._attrs,
         )
 
-    def get_export_columns(self) -> List[Tuple[str, Column]]:
+    def get_export_columns(self) -> List[Tuple[str, _MODEL_ATTR_TYPE]]:
         """Get list of columns to export."""
 
         columns = getattr(self, "column_export_list", None)
         excluded_columns = getattr(self, "column_export_exclude_list", None)
-        if not columns and not excluded_columns:
-            return self.get_list_columns()
 
         return self._build_column_list(
             include=columns,
             exclude=excluded_columns,
-            default=lambda: self._list_columns,
+            default=[item[1] for item in self._list_attrs],
         )
 
-    def get_column_labels(self) -> Dict[Column, str]:
+    def get_column_labels(
+        self,
+    ) -> Dict[_MODEL_ATTR_TYPE, str]:
         return {
             self.get_model_attr(column_label): value
             for column_label, value in self.column_labels.items()
@@ -902,7 +957,7 @@ class ModelAdmin(BaseModelAdmin, metaclass=ModelAdminMeta):
         return await get_model_form(
             model=self.model,
             engine=self.engine,
-            only=[i[1].key for i in self._form_attrs],
+            only=[i[1].key or i[1].name for i in self._form_attrs],
             column_labels={k.key: v for k, v in self._column_labels.items()},
             form_args=self.form_args,
             form_widget_args=self.form_widget_args,
@@ -932,6 +987,17 @@ class ModelAdmin(BaseModelAdmin, metaclass=ModelAdminMeta):
         ]
         return ", ".join(field_names)
 
+    def search_query(self, stmt: Select, term: str) -> Select:
+        """Specify the search query given the SQLAlchemy statement and term to search for.
+        It can be used for doing more complex queries like JSON objects. For example:
+
+        ```py
+        return stmt.filter(MyModel.name == term)
+        ```
+        """
+        expressions = [attr.ilike(f"%{term}%") for attr in self._search_fields]
+        return stmt.filter(or_(*expressions))
+
     def get_export_name(self, export_type: str) -> str:
         """The file name when exporting."""
         filename = f"{self.name}_{time.strftime('%Y-%m-%d_%H-%M-%S')}.{export_type}"
@@ -951,7 +1017,7 @@ class ModelAdmin(BaseModelAdmin, metaclass=ModelAdminMeta):
         self,
         data: List[Any],
     ) -> StreamingResponse:
-        def generate(writer: Writer) -> Generator[List[str], None, None]:
+        def generate(writer: Writer) -> Generator[Any, None, None]:
             # Append the column titles at the beginning
             titles = [c[0] for c in self._export_attrs]
             yield writer.writerow(titles)

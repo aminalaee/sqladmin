@@ -1,7 +1,8 @@
 from typing import Any, Generator
 
 import pytest
-from sqlalchemy import Column, ForeignKey, Integer, String
+from markupsafe import Markup
+from sqlalchemy import Boolean, Column, ForeignKey, Integer, String
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship, sessionmaker
@@ -42,6 +43,7 @@ class Profile(Base):
     __tablename__ = "profiles"
 
     id = Column(Integer, primary_key=True)
+    is_active = Column(Boolean)
     user_id = Column(Integer, ForeignKey("users.id"), unique=True)
 
     user = relationship("User", back_populates="profile")
@@ -195,6 +197,23 @@ def test_column_formatters_detail() -> None:
     assert UserAdmin().get_detail_value(user, User.id.prop)[1] == 2
     assert UserAdmin().get_detail_value(user, User.name.prop)[0] == "Long Name"
     assert UserAdmin().get_detail_value(user, User.name.prop)[1] == "L"
+
+
+def test_column_formatters_default() -> None:
+    class ProfileAdmin(ModelAdmin, model=Profile):
+        ...
+
+    user = User(id=1, name="Long Name")
+    profile = Profile(user=user, is_active=True)
+
+    assert ProfileAdmin().get_list_value(profile, Profile.is_active.prop) == (
+        True,
+        Markup("<i class='fa fa-check text-success'></i>"),
+    )
+    assert ProfileAdmin().get_detail_value(profile, Profile.is_active.prop) == (
+        True,
+        Markup("<i class='fa fa-check text-success'></i>"),
+    )
 
 
 def test_column_details_list_both_include_and_exclude() -> None:
@@ -362,7 +381,7 @@ def test_export_columns_default() -> None:
         pass
 
     assert sorted(UserAdmin().get_export_columns()) == [
-        ("id", User.id),
+        ("id", User.id.prop),
     ]
 
 
@@ -370,7 +389,10 @@ def test_export_columns_default_to_list_columns() -> None:
     class UserAdmin(ModelAdmin, model=User):
         column_list = [User.id, User.name]
 
-    assert UserAdmin().get_export_columns() == [("id", User.id), ("name", User.name)]
+    assert UserAdmin().get_export_columns() == [
+        ("id", User.id.prop),
+        ("name", User.name.prop),
+    ]
 
     class UserAdmin2(ModelAdmin, model=User):
         column_list = [User.id]

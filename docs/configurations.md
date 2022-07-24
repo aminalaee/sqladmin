@@ -76,7 +76,6 @@ The metadata for the model. The options are:
 * `name`: Display name for this model. Default value is the class name.
 * `name_plural`: Display plural name for this model. Default value is class name + `s`.
 * `icon`: Icon to be displayed for this model in the admin. Only FontAwesome names are supported.
-* `column_labels`: A mapping of column labels, used to map column names to new names in all places.
 
 !!! example
 
@@ -85,7 +84,6 @@ The metadata for the model. The options are:
         name = "User"
         name_plural = "Users"
         icon = "fa-solid fa-user"
-        column_labels = {User.mail: "Email"}
     ```
 
 ## List page
@@ -102,6 +100,9 @@ The options available are:
 * `column_sortable_list`: List of columns or column names to be sortable in the list page.
 * `column_default_sort`: Default sorting if no sorting is applied, tuple of (column, is_descending)
 or list of the tuple for multiple columns.
+* `list_query`: A SQLAlchemy `select` expression to use for model list page.
+* `count_query`: A SQLAlchemy `select` expression to use for model count.
+* `search_query`: A method with the signature of `(stmt, term) -> stmt` which can customize the search query.
 
 !!! example
 
@@ -165,6 +166,25 @@ The pagination options in the list page can be configured. The available options
     class UserAdmin(ModelAdmin, model=User):
         page_size = 50
         page_size_options = [25, 50, 100, 200]
+    ```
+
+## General options
+
+There are a few options which apply to both List and Detail pages. They include:
+
+* `column_labels`: A mapping of column labels, used to map column names to new names in all places.
+* `column_type_formatters`: A mapping of type keys and callable values to format in all places.
+For example you can add custom date formatter to be used in both list and detail pages.
+
+!!! example
+
+    ```python
+    class UserAdmin(ModelAdmin, model=User):
+        def date_format(value):
+            return value.strftime("%d.%m.%Y")
+
+        column_labels = {User.mail: "Email"}
+        column_type_formatters = dict(ModelAdmin.column_type_formatters, date=date_format)
     ```
 
 ## Form options
