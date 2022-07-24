@@ -7,7 +7,6 @@ from typing import Any, Callable, Generator, List, TypeVar, Union
 
 from sqlalchemy import Column, inspect
 
-from sqladmin.exceptions import MultiplePrimaryKeyError
 from sqladmin.types import _MODEL_ATTR_TYPE
 
 T = TypeVar("T")
@@ -125,9 +124,8 @@ def get_primary_key(model: type) -> Column:
     If the primary key consists of multiple columns, return the corresponding tuple
     """
     pks = inspect(model).mapper.primary_key
-    if len(pks) == 1:
-        return pks[0]
-    raise MultiplePrimaryKeyError("Multiple Primary Keys not supported.")
+    assert len(pks) == 1, "Multiple Primary Keys not supported."
+    return pks[0]
 
 
 def get_relationships(model: Any) -> List[_MODEL_ATTR_TYPE]:
