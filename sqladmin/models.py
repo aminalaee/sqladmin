@@ -39,6 +39,9 @@ from sqladmin.forms import get_model_form
 from sqladmin.helpers import (
     Writer,
     as_str,
+    get_attributes,
+    get_primary_key,
+    get_relationships,
     prettify_class_name,
     secure_filename,
     slugify_class_name,
@@ -69,15 +72,13 @@ class ModelAdminMeta(type):
             return cls
 
         try:
-            mapper = inspect(model)
+            inspect(model)
         except NoInspectionAvailable:
             raise InvalidModelError(
                 f"Class {model.__name__} is not a SQLAlchemy model."
             )
 
-        assert len(mapper.primary_key) == 1, "Multiple PK columns not supported."
-
-        cls.pk_column = mapper.primary_key[0]
+        cls.pk_column = get_primary_key(model)
         cls.identity = slugify_class_name(model.__name__)
         cls.model = model
 
@@ -572,12 +573,13 @@ class ModelAdmin(BaseModelAdmin, metaclass=ModelAdminMeta):
     """
 
     def __init__(self) -> None:
+        self._relations = get_relationships(self.model)
+        self._attrs = get_attributes(self.model)
+
         self._column_labels = self.get_column_labels()
         self._column_labels_value_by_key = {
             v: k for k, v in self._column_labels.items()
         }
-
-        self._relations = list(inspect(self.model).relationships)
 
         self._list_attrs = self.get_list_columns()
         self._list_columns = [
@@ -644,12 +646,11 @@ class ModelAdmin(BaseModelAdmin, metaclass=ModelAdminMeta):
         stmt = select(self.model).where(
             self.pk_column == self._get_column_python_type(self.pk_column)(pk)
         )
-        relationships = inspect(self.model).relationships
 
         with self.sessionmaker.begin() as session:
             result = session.execute(stmt).scalars().first()
             for name, value in data.items():
-                if name in relationships and isinstance(value, list):
+                if name in self._relations and isinstance(value, list):
                     # Load relationship objects into session
                     session.add_all(value)
                 setattr(result, name, value)
@@ -661,7 +662,7 @@ class ModelAdmin(BaseModelAdmin, metaclass=ModelAdminMeta):
             return str
 
     def _url_for_details(self, obj: Any) -> str:
-        pk = getattr(obj, inspect(obj).mapper.primary_key[0].name)
+        pk = getattr(obj, get_primary_key(obj).name)
         return self.url_path_for(
             "admin:details",
             identity=slugify_class_name(obj.__class__.__name__),
@@ -669,7 +670,7 @@ class ModelAdmin(BaseModelAdmin, metaclass=ModelAdminMeta):
         )
 
     def _url_for_edit(self, obj: Any) -> str:
-        pk = getattr(obj, inspect(obj).mapper.primary_key[0].name)
+        pk = getattr(obj, get_primary_key(obj).name)
         return self.url_path_for(
             "admin:edit",
             identity=slugify_class_name(obj.__class__.__name__),
@@ -677,7 +678,7 @@ class ModelAdmin(BaseModelAdmin, metaclass=ModelAdminMeta):
         )
 
     def _url_for_delete(self, obj: Any) -> str:
-        pk = getattr(obj, inspect(obj).mapper.primary_key[0].name)
+        pk = getattr(obj, get_primary_key(obj).name)
         return self.url_path_for(
             "admin:delete",
             identity=slugify_class_name(obj.__class__.__name__),
@@ -839,12 +840,9 @@ class ModelAdmin(BaseModelAdmin, metaclass=ModelAdminMeta):
             f"Model '{self.model.__name__}' has no attribute '{key}'."
         )
 
-    def get_model_attributes(self) -> List[_MODEL_ATTR_TYPE]:
-        return list(inspect(self.model).attrs)
-
     def _build_column_list(
         self,
-        default: Callable[[], List[_MODEL_ATTR_TYPE]],
+        default: List[_MODEL_ATTR_TYPE],
         include: Optional[Sequence[Union[str, InstrumentedAttribute]]] = None,
         exclude: Optional[Sequence[Union[str, InstrumentedAttribute]]] = None,
     ) -> List[Tuple[str, _MODEL_ATTR_TYPE]]:
@@ -855,10 +853,9 @@ class ModelAdmin(BaseModelAdmin, metaclass=ModelAdminMeta):
             attrs = [self.get_model_attr(attr) for attr in include]
         elif exclude:
             exclude_columns = [self.get_model_attr(attr) for attr in exclude]
-            all_attrs = self.get_model_attributes()
-            attrs = list(set(all_attrs) - set(exclude_columns))
+            attrs = list(set(self._attrs) - set(exclude_columns))
         else:
-            attrs = default()
+            attrs = default
 
         return [(self._column_labels.get(attr, attr.key), attr) for attr in attrs]
 
@@ -871,7 +868,7 @@ class ModelAdmin(BaseModelAdmin, metaclass=ModelAdminMeta):
         return self._build_column_list(
             include=column_list,
             exclude=column_exclude_list,
-            default=lambda: [getattr(self.model, self.pk_column.name).prop],
+            default=[getattr(self.model, self.pk_column.name).prop],
         )
 
     def get_details_columns(self) -> List[Tuple[str, _MODEL_ATTR_TYPE]]:
@@ -883,7 +880,7 @@ class ModelAdmin(BaseModelAdmin, metaclass=ModelAdminMeta):
         return self._build_column_list(
             include=column_details_list,
             exclude=column_details_exclude_list,
-            default=self.get_model_attributes,
+            default=self._attrs,
         )
 
     def get_form_columns(self) -> List[Tuple[str, _MODEL_ATTR_TYPE]]:
@@ -895,7 +892,7 @@ class ModelAdmin(BaseModelAdmin, metaclass=ModelAdminMeta):
         return self._build_column_list(
             include=form_columns,
             exclude=form_excluded_columns,
-            default=self.get_model_attributes,
+            default=self._attrs,
         )
 
     def get_export_columns(self) -> List[Tuple[str, _MODEL_ATTR_TYPE]]:
@@ -907,7 +904,7 @@ class ModelAdmin(BaseModelAdmin, metaclass=ModelAdminMeta):
         return self._build_column_list(
             include=columns,
             exclude=excluded_columns,
-            default=lambda: [item[1] for item in self.get_list_columns()],
+            default=[item[1] for item in self._list_attrs],
         )
 
     def get_column_labels(
