@@ -125,7 +125,7 @@ class BaseModelAdmin:
         return True
 
 
-class ModelView(BaseModelAdmin):
+class BaseView(BaseModelAdmin):
     is_model = False
 
     name: ClassVar[str]
@@ -136,7 +136,7 @@ class ModelView(BaseModelAdmin):
     include_in_schema: ClassVar[bool] = True
 
 
-class ModelAdmin(ModelView, metaclass=ModelAdminMeta):
+class ModelAdmin(BaseView, metaclass=ModelAdminMeta):
     """Base class for defining admnistrative behaviour for the model.
 
     ???+ usage

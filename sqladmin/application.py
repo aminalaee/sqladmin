@@ -14,7 +14,7 @@ from starlette.staticfiles import StaticFiles
 from starlette.templating import Jinja2Templates
 
 if TYPE_CHECKING:
-    from sqladmin.models import ModelAdmin, ModelView
+    from sqladmin.models import ModelAdmin, BaseView
 
 __all__ = [
     "Admin",
@@ -43,7 +43,7 @@ class BaseAdmin:
         self.title = title
         self.logo_url = logo_url
         self.template_path = template_path
-        self._model_admins: List["ModelView"] = []
+        self._model_admins: List["BaseView"] = []
 
         self.templates = self.init_templating_engine()
 
@@ -67,7 +67,7 @@ class BaseAdmin:
         return templates
 
     @property
-    def model_admins(self) -> List["ModelView"]:
+    def model_admins(self) -> List["BaseView"]:
         """Get list of ModelAdmins lazily.
 
         Returns:
@@ -113,7 +113,7 @@ class BaseAdmin:
 
         self._model_admins.append((model()))
 
-    def register_view(self, view: Type["ModelView"]) -> None:
+    def register_view(self, view: Type["BaseView"]) -> None:
         class_view = view()
         class_view.name_plural = class_view.name
         class_view.url_path_for = self.app.url_path_for
@@ -131,6 +131,9 @@ class BaseAdmin:
 
 
 class BaseAdminView(BaseAdmin):
+    """
+    Manage right to access to an action from a model
+    """
     async def _list(self, request: Request) -> None:
         model_admin = self._find_model_admin(request.path_params["identity"])
         if not model_admin.is_accessible(request):

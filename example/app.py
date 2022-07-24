@@ -4,7 +4,7 @@ from sqlalchemy.ext.declarative import declarative_base
 from starlette.requests import Request
 
 from sqladmin import Admin, ModelAdmin
-from sqladmin.models import ModelView
+from sqladmin.models import BaseView
 
 Base = declarative_base()
 engine = create_engine(
@@ -35,7 +35,7 @@ class UserAdmin(ModelAdmin, model=User):
 admin.register_model(UserAdmin)
 
 
-class CustomAdmin(ModelView):
+class CustomAdmin(BaseView):
     def test_html(self, request: Request):
         return self.templates.TemplateResponse("sample.html", context={"request": request})
 
