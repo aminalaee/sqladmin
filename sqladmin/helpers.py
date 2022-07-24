@@ -120,9 +120,6 @@ def stream_to_csv(
 
 
 def get_primary_key(model: type) -> Column:
-    """Return primary key name from a model.
-    If the primary key consists of multiple columns, return the corresponding tuple
-    """
     pks = inspect(model).mapper.primary_key
     assert len(pks) == 1, "Multiple Primary Keys not supported."
     return pks[0]
