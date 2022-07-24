@@ -24,7 +24,7 @@ Base.metadata.create_all(engine)
 
 app = FastAPI()
 admin = Admin(app, engine,
-              template_path='tpl'
+              templates_dir='tpl'
               )
 
 

@@ -35,32 +35,28 @@ class BaseAdmin:
         base_url: str = "/admin",
         title: str = "Admin",
         logo_url: str = None,
-        template_path: str = None,
+        templates_dir: str = None,
     ) -> None:
         self.app = app
         self.engine = engine
         self.base_url = base_url
-        self.title = title
-        self.logo_url = logo_url
-        self.template_path = template_path
+        self.templates_dir = templates_dir
         self._model_admins: List["BaseView"] = []
 
-        self.templates = self.init_templating_engine()
+        self.templates = self.init_templating_engine(title=title, logo_url=logo_url)
 
-    def init_templating_engine(self) -> Jinja2Templates:
+    def init_templating_engine(self,  title: str, logo_url: str ) -> Jinja2Templates:
         templates = Jinja2Templates("templates")
         loaders = [
-            FileSystemLoader("templates"),
+            FileSystemLoader(self.templates_dir),
             PackageLoader("sqladmin", "templates"),
         ]
-        if self.template_path:
-            loaders.append(FileSystemLoader(self.template_path))
 
         templates.env.loader = ChoiceLoader(loaders)
         templates.env.globals["min"] = min
         templates.env.globals["zip"] = zip
-        templates.env.globals["admin_title"] = self.title
-        templates.env.globals["admin_logo_url"] = self.logo_url
+        templates.env.globals["admin_title"] = title
+        templates.env.globals["admin_logo_url"] = logo_url
         templates.env.globals["model_admins"] = self.model_admins
         templates.env.globals["is_list"] = lambda x: isinstance(x, list)
 
@@ -199,7 +195,7 @@ class Admin(BaseAdminView):
         logo_url: str = None,
         middlewares: Sequence[Middleware] = None,
         debug: bool = False,
-        template_path: str = None,
+        templates_dir: str = "templates",
     ) -> None:
         """
         Args:
@@ -217,7 +213,7 @@ class Admin(BaseAdminView):
             base_url=base_url,
             title=title,
             logo_url=logo_url,
-            template_path=template_path,
+            templates_dir=templates_dir,
         )
 
         statics = StaticFiles(packages=["sqladmin"])
