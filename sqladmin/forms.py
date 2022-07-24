@@ -44,6 +44,7 @@ from sqladmin.fields import (
     QuerySelectMultipleField,
     SelectField,
 )
+from sqladmin.helpers import get_primary_key
 from sqladmin.types import _MODEL_ATTR_TYPE
 
 
@@ -171,7 +172,7 @@ class ModelConverterBase:
         engine: Union[Engine, AsyncEngine],
     ) -> List[Tuple[str, object]]:
         target_model = prop.mapper.class_
-        pk = sqlalchemy_inspect(target_model).primary_key[0].name
+        pk = get_primary_key(target_model).name
         stmt = select(target_model)
 
         if isinstance(engine, Engine):

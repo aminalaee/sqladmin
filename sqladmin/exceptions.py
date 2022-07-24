@@ -12,3 +12,7 @@ class InvalidColumnError(SQLAdminException):
 
 class NoConverterFound(SQLAdminException):
     pass
+
+
+class MultiplePrimaryKeyError(SQLAdminException):
+    pass
