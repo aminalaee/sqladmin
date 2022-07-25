@@ -14,7 +14,7 @@ from starlette.staticfiles import StaticFiles
 from starlette.templating import Jinja2Templates
 
 if TYPE_CHECKING:
-    from sqladmin.models import ModelAdmin, BaseView
+    from sqladmin.models import BaseView, ModelAdmin
 
 __all__ = [
     "Admin",
@@ -35,7 +35,7 @@ class BaseAdmin:
         base_url: str = "/admin",
         title: str = "Admin",
         logo_url: str = None,
-        templates_dir: str = None,
+        templates_dir: str = "templates",
     ) -> None:
         self.app = app
         self.engine = engine
@@ -45,7 +45,9 @@ class BaseAdmin:
 
         self.templates = self.init_templating_engine(title=title, logo_url=logo_url)
 
-    def init_templating_engine(self,  title: str, logo_url: str ) -> Jinja2Templates:
+    def init_templating_engine(
+        self, title: str, logo_url: str = None
+    ) -> Jinja2Templates:
         templates = Jinja2Templates("templates")
         loaders = [
             FileSystemLoader(self.templates_dir),
@@ -72,7 +74,7 @@ class BaseAdmin:
 
         return self._model_admins
 
-    def _find_model_admin(self, identity: str) -> "ModelView":
+    def _find_model_admin(self, identity: str) -> "ModelAdmin":
         for model_admin in self.model_admins:
             if model_admin.identity == identity:
                 return model_admin
@@ -110,18 +112,17 @@ class BaseAdmin:
         self._model_admins.append((model()))
 
     def register_view(self, view: Type["BaseView"]) -> None:
-        class_view = view()
-        class_view.name_plural = class_view.name
-        class_view.url_path_for = self.app.url_path_for
-        class_view.templates = self.templates
+        view.url_path_for = self.app.url_path_for
+        view.templates = self.templates
 
+        class_view = view()
         self._model_admins.append(class_view)
 
         self.app.add_route(
             route=class_view.endpoint,
             path=class_view.path,
             methods=class_view.methods,
-            name=class_view.name,
+            name=class_view.name_plural,
             include_in_schema=class_view.include_in_schema,
         )
 
@@ -130,6 +131,7 @@ class BaseAdminView(BaseAdmin):
     """
     Manage right to access to an action from a model
     """
+
     async def _list(self, request: Request) -> None:
         model_admin = self._find_model_admin(request.path_params["identity"])
         if not model_admin.is_accessible(request):

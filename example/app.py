@@ -37,7 +37,7 @@ admin.register_model(UserAdmin)
 
 class CustomAdmin(BaseView):
     def test_html(self, request: Request):
-        return self.templates.TemplateResponse("sample.html", context={"request": request})
+        return self.templates.TemplateResponse("custom.html", context={"request": request})
 
     name = "Test me"
     icon = "fa-user"

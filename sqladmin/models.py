@@ -129,12 +129,18 @@ class BaseModelAdmin:
 class BaseView(BaseModelAdmin):
     is_model = False
 
+    name_plural: ClassVar[str]
     name: ClassVar[str]
+
     icon: ClassVar[str]
     path: ClassVar[str]
-    methods = ["GET"]
+
+    methods: ClassVar[List[str]] = ["GET"]
     endpoint: ClassVar[Callable]
     include_in_schema: ClassVar[bool] = True
+
+    url_path_for: ClassVar[Callable]
+    templates: ClassVar
 
 
 class ModelAdmin(BaseView, metaclass=ModelAdminMeta):
@@ -161,7 +167,6 @@ class ModelAdmin(BaseView, metaclass=ModelAdminMeta):
     sessionmaker: ClassVar[sessionmaker]
     engine: ClassVar[Union[Engine, AsyncEngine]]
     async_engine: ClassVar[bool]
-    url_path_for: ClassVar[Callable]
 
     name_plural: ClassVar[str] = ""
     """Plural name of ModelAdmin.
