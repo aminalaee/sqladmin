@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING, List, Sequence, Type, Union
+from typing import List, Sequence, Type, Union
 
 from jinja2 import ChoiceLoader, FileSystemLoader, PackageLoader
 from sqlalchemy.engine import Engine
@@ -13,8 +13,7 @@ from starlette.routing import Mount, Route
 from starlette.staticfiles import StaticFiles
 from starlette.templating import Jinja2Templates
 
-if TYPE_CHECKING:
-    from sqladmin.models import BaseView, ModelAdmin
+from sqladmin.models import BaseView, ModelAdmin
 
 __all__ = [
     "Admin",
@@ -76,7 +75,7 @@ class BaseAdmin:
 
     def _find_model_admin(self, identity: str) -> "ModelAdmin":
         for model_admin in self.model_admins:
-            if model_admin.identity == identity:
+            if isinstance(model_admin, ModelAdmin) and model_admin.identity == identity:
                 return model_admin
 
         raise HTTPException(status_code=404)

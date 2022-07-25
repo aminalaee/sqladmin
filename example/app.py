@@ -36,14 +36,14 @@ admin.register_model(UserAdmin)
 
 
 class CustomAdmin(BaseView):
-    def test_html(self, request: Request):
+    def test_page(self, request: Request):
         return self.templates.TemplateResponse("custom.html", context={"request": request})
 
-    name = "Test me"
+    name_plural = "Test me"
     icon = "fa-user"
-    path = "/custom/hmlt"
+    path = "/custom/test_page"
     methods = ["GET"]
-    endpoint = test_html
+    endpoint = test_page
 
 
 admin.register_view(CustomAdmin)
