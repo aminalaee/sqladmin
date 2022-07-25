@@ -3,7 +3,11 @@ import os
 import re
 import unicodedata
 from abc import ABC, abstractmethod
-from typing import Callable, Generator, List, TypeVar, Union
+from typing import Any, Callable, Generator, List, TypeVar, Union
+
+from sqlalchemy import Column, inspect
+
+from sqladmin.types import _MODEL_ATTR_TYPE
 
 T = TypeVar("T")
 
@@ -113,3 +117,17 @@ def stream_to_csv(
     """
     writer = csv.writer(_PseudoBuffer())
     return callback(writer)  # type: ignore
+
+
+def get_primary_key(model: type) -> Column:
+    pks = inspect(model).mapper.primary_key
+    assert len(pks) == 1, "Multiple Primary Keys not supported."
+    return pks[0]
+
+
+def get_relationships(model: Any) -> List[_MODEL_ATTR_TYPE]:
+    return list(inspect(model).relationships)
+
+
+def get_attributes(model: Any) -> List[_MODEL_ATTR_TYPE]:
+    return list(inspect(model).attrs)
