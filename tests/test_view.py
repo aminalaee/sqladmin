@@ -1,9 +1,7 @@
-from typing import Any, Generator
+from typing import Any
 
-import pytest
-from sqlalchemy import Column, Integer, String
 from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import relationship, sessionmaker
+from sqlalchemy.orm import sessionmaker
 from starlette.applications import Starlette
 from starlette.requests import Request
 
@@ -19,16 +17,6 @@ app = Starlette()
 admin = Admin(app=app, engine=engine)
 
 
-class User(Base):
-    __tablename__ = "users"
-
-    id = Column(Integer, primary_key=True)
-    name = Column(String)
-
-    addresses = relationship("Address", back_populates="user")
-    profile = relationship("Profile", back_populates="user", uselist=False)
-
-
 class CustomAdmin(BaseView):
     def test_page(self, request: Request):
         return self.templates.TemplateResponse(
@@ -42,15 +30,8 @@ class CustomAdmin(BaseView):
     endpoint = test_page
 
 
-@pytest.fixture(autouse=True)
-def prepare_database() -> Generator[None, None, None]:
-    Base.metadata.create_all(engine)
-    yield
-    Base.metadata.drop_all(engine)
-
-
 def test_register_view() -> None:
-    admin = Admin(app=Starlette(), engine=engine)
+    admin = Admin(app=Starlette(), engine=engine, templates_dir="tpl")
     admin.register_view(CustomAdmin)
 
     url = CustomAdmin().url_path_for(CustomAdmin.name_plural)
