@@ -13,8 +13,8 @@ from sqladmin.fields import (
     JSONField,
     QuerySelectField,
     QuerySelectMultipleField,
-    Select2Field,
     Select2TagsField,
+    SelectField,
     TimeField,
 )
 from tests.common import DummyData, sync_engine as engine
@@ -120,15 +120,14 @@ def test_json_field() -> None:
     assert form.json.data is None
 
 
-def test_select2_field() -> None:
+def test_select_field() -> None:
     class F(Form):
-        select = Select2Field(
+        select = SelectField(
             choices=[(1, "A"), (2, "B")],
             coerce=int,
         )
 
     form = F()
-    assert 'data-role="select2"' in form.select()
     assert '<option value="1">A</option><option value="2">B</option>' in form.select()
 
     form = F(DummyData(select=["1"]))
@@ -140,11 +139,10 @@ def test_select2_field() -> None:
     assert form.select.data is None
 
     class F(Form):  # type: ignore
-        select = Select2Field(coerce=int, allow_blank=True)
+        select = SelectField(coerce=int, allow_blank=True)
 
     form = F()
     assert '<option selected value="__None">' in form.select()
-    assert 'data-allow-blank="1"' in form.select()
     assert form.validate() is True
 
     form = F(DummyData(select=["__None"]))

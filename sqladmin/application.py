@@ -1,7 +1,6 @@
 from typing import TYPE_CHECKING, List, Sequence, Type, Union
 
 from jinja2 import ChoiceLoader, FileSystemLoader, PackageLoader
-from pyparsing import identbodychars
 from sqlalchemy.engine import Engine
 from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession
 from sqlalchemy.orm import Session, sessionmaker
@@ -53,9 +52,11 @@ class BaseAdmin:
             ]
         )
         self.templates.env.globals["min"] = min
+        self.templates.env.globals["zip"] = zip
         self.templates.env.globals["admin_title"] = title
         self.templates.env.globals["admin_logo_url"] = logo_url
         self.templates.env.globals["model_admins"] = self.model_admins
+        self.templates.env.globals["is_list"] = lambda x: isinstance(x, list)
 
     @property
     def model_admins(self) -> List["ModelAdmin"]:
@@ -94,6 +95,8 @@ class BaseAdmin:
         # Set database engine from Admin instance
         model.engine = self.engine
         model.ajax_lookup_url = f"{self.base_url}/{model.identity}/ajax/lookup"
+        model.url_path_for = self.app.url_path_for
+
         if isinstance(model.engine, Engine):
             model.sessionmaker = sessionmaker(bind=model.engine, class_=Session)
             model.async_engine = False
@@ -244,7 +247,7 @@ class Admin(BaseAdminView):
         self.app.mount(base_url, app=admin, name="admin")
 
     async def index(self, request: Request) -> Response:
-        """Index route which can be overriden to create dashboards."""
+        """Index route which can be overridden to create dashboards."""
 
         return self.templates.TemplateResponse("index.html", {"request": request})
 
@@ -259,7 +262,7 @@ class Admin(BaseAdminView):
         page_size = int(request.query_params.get("pageSize", 0))
         search = request.query_params.get("search", None)
         sort_by = request.query_params.get("sortBy", None)
-        sort = request.query_params.get("sort", None)
+        sort = request.query_params.get("sort", "asc")
 
         pagination = await model_admin.list(page, page_size, search, sort_by, sort)
         pagination.add_pagination_urls(request.url)
@@ -335,7 +338,7 @@ class Admin(BaseAdminView):
                 status_code=400,
             )
 
-        await model_admin.insert_model(**form.data)
+        await model_admin.insert_model(form.data)
 
         return RedirectResponse(
             request.url_for("admin:list", identity=identity),
@@ -401,11 +404,13 @@ class Admin(BaseAdminView):
         name = request.query_params.get("name")
         limit = int(request.query_params.get("limit", 0))
         offset = int(request.query_params.get("offset", 0))
+        term = request.query_params.get("term", None)
 
         try:
             loader: QueryAjaxModelLoader = model_admin._form_ajax_refs[name]
         except KeyError:
             raise HTTPException(status_code=404)
 
-        data = [loader.format(m) for m in await loader.get_list("", offset, limit)]
+        data = [loader.format(m) for m in await loader.get_list(term, offset, limit)]
+        print(data)
         return JSONResponse({"results": data})

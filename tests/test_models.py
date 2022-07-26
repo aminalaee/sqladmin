@@ -1,7 +1,8 @@
-from typing import Any
+from typing import Any, Generator
 
 import pytest
-from sqlalchemy import Column, ForeignKey, Integer, String
+from markupsafe import Markup
+from sqlalchemy import Boolean, Column, ForeignKey, Integer, String
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship, sessionmaker
@@ -13,7 +14,7 @@ from tests.common import sync_engine as engine
 
 Base = declarative_base()  # type: Any
 
-LocalSession = sessionmaker(bind=engine)
+Session = sessionmaker(bind=engine)
 
 app = Starlette()
 admin = Admin(app=app, engine=engine)
@@ -26,6 +27,7 @@ class User(Base):
     name = Column(String)
 
     addresses = relationship("Address", back_populates="user")
+    profile = relationship("Profile", back_populates="user", uselist=False)
 
 
 class Address(Base):
@@ -35,6 +37,23 @@ class Address(Base):
     user_id = Column(Integer, ForeignKey("users.id"))
 
     user = relationship("User", back_populates="addresses")
+
+
+class Profile(Base):
+    __tablename__ = "profiles"
+
+    id = Column(Integer, primary_key=True)
+    is_active = Column(Boolean)
+    user_id = Column(Integer, ForeignKey("users.id"), unique=True)
+
+    user = relationship("User", back_populates="profile")
+
+
+@pytest.fixture(autouse=True)
+def prepare_database() -> Generator[None, None, None]:
+    Base.metadata.create_all(engine)
+    yield
+    Base.metadata.drop_all(engine)
 
 
 def test_model_setup() -> None:
@@ -48,6 +67,11 @@ def test_model_setup() -> None:
         pass
 
     assert AddressAdmin.model == Address
+
+    class ProfileAdmin(ModelAdmin, model=Profile):
+        pass
+
+    assert ProfileAdmin.model == Profile
 
 
 def test_metadata_setup() -> None:
@@ -97,7 +121,7 @@ def test_column_list_by_str_name() -> None:
     class AddressAdmin(ModelAdmin, model=Address):
         column_list = ["id", "user_id"]
 
-    assert AddressAdmin().get_list_columns() == [
+    assert sorted(AddressAdmin().get_list_columns()) == [
         ("id", Address.id),
         ("user_id", Address.user_id),
     ]
@@ -130,6 +154,7 @@ def test_column_exclude_list_by_str_name() -> None:
     assert sorted(UserAdmin().get_list_columns()) == [
         ("addresses", User.addresses.prop),
         ("name", User.name),
+        ("profile", User.profile.prop),
     ]
 
 
@@ -140,6 +165,7 @@ def test_column_exclude_list_by_model_column() -> None:
     assert sorted(UserAdmin().get_list_columns()) == [
         ("addresses", User.addresses.prop),
         ("name", User.name),
+        ("profile", User.profile.prop),
     ]
 
 
@@ -152,8 +178,10 @@ def test_column_list_formatters() -> None:
 
     user = User(id=1, name="Long Name")
 
-    assert UserAdmin().get_list_value(user, User.id.prop) == 2
-    assert UserAdmin().get_list_value(user, User.name.prop) == "L"
+    assert UserAdmin().get_list_value(user, User.id.prop)[0] == 1
+    assert UserAdmin().get_list_value(user, User.id.prop)[1] == 2
+    assert UserAdmin().get_list_value(user, User.name.prop)[0] == "Long Name"
+    assert UserAdmin().get_list_value(user, User.name.prop)[1] == "L"
 
 
 def test_column_formatters_detail() -> None:
@@ -165,8 +193,27 @@ def test_column_formatters_detail() -> None:
 
     user = User(id=1, name="Long Name")
 
-    assert UserAdmin().get_detail_value(user, User.id.prop) == 2
-    assert UserAdmin().get_detail_value(user, User.name.prop) == "L"
+    assert UserAdmin().get_detail_value(user, User.id.prop)[0] == 1
+    assert UserAdmin().get_detail_value(user, User.id.prop)[1] == 2
+    assert UserAdmin().get_detail_value(user, User.name.prop)[0] == "Long Name"
+    assert UserAdmin().get_detail_value(user, User.name.prop)[1] == "L"
+
+
+def test_column_formatters_default() -> None:
+    class ProfileAdmin(ModelAdmin, model=Profile):
+        ...
+
+    user = User(id=1, name="Long Name")
+    profile = Profile(user=user, is_active=True)
+
+    assert ProfileAdmin().get_list_value(profile, Profile.is_active.prop) == (
+        True,
+        Markup("<i class='fa fa-check text-success'></i>"),
+    )
+    assert ProfileAdmin().get_detail_value(profile, Profile.is_active.prop) == (
+        True,
+        Markup("<i class='fa fa-check text-success'></i>"),
+    )
 
 
 def test_column_details_list_both_include_and_exclude() -> None:
@@ -185,10 +232,11 @@ def test_column_details_list_default() -> None:
     class UserAdmin(ModelAdmin, model=User):
         pass
 
-    assert UserAdmin().get_details_columns() == [
+    assert sorted(UserAdmin().get_details_columns()) == [
         ("addresses", User.addresses.prop),
         ("id", User.id),
         ("name", User.name),
+        ("profile", User.profile.prop),
     ]
 
 
@@ -206,6 +254,7 @@ def test_column_details_exclude_list_by_model_column() -> None:
     assert sorted(UserAdmin().get_details_columns()) == [
         ("addresses", User.addresses.prop),
         ("name", User.name),
+        ("profile", User.profile.prop),
     ]
 
 
@@ -260,10 +309,11 @@ def test_form_columns_default() -> None:
     class UserAdmin(ModelAdmin, model=User):
         pass
 
-    assert UserAdmin().get_form_columns() == [
+    assert sorted(UserAdmin().get_form_columns()) == [
         ("addresses", User.addresses.prop),
         ("id", User.id),
         ("name", User.name),
+        ("profile", User.profile.prop),
     ]
 
 
@@ -278,7 +328,7 @@ def test_form_columns_by_str_name() -> None:
     class AddressAdmin(ModelAdmin, model=Address):
         form_columns = ["id", "user_id"]
 
-    assert AddressAdmin().get_form_columns() == [
+    assert sorted(AddressAdmin().get_form_columns()) == [
         ("id", Address.id),
         ("user_id", Address.user_id),
     ]
@@ -311,6 +361,7 @@ def test_form_excluded_columns_by_str_name() -> None:
     assert sorted(UserAdmin().get_form_columns()) == [
         ("addresses", User.addresses.prop),
         ("name", User.name),
+        ("profile", User.profile.prop),
     ]
 
 
@@ -321,6 +372,7 @@ def test_form_excluded_columns_by_model_column() -> None:
     assert sorted(UserAdmin().get_form_columns()) == [
         ("addresses", User.addresses.prop),
         ("name", User.name),
+        ("profile", User.profile.prop),
     ]
 
 
@@ -328,8 +380,8 @@ def test_export_columns_default() -> None:
     class UserAdmin(ModelAdmin, model=User):
         pass
 
-    assert UserAdmin().get_export_columns() == [
-        ("id", User.id),
+    assert sorted(UserAdmin().get_export_columns()) == [
+        ("id", User.id.prop),
     ]
 
 
@@ -337,7 +389,10 @@ def test_export_columns_default_to_list_columns() -> None:
     class UserAdmin(ModelAdmin, model=User):
         column_list = [User.id, User.name]
 
-    assert UserAdmin().get_export_columns() == [("id", User.id), ("name", User.name)]
+    assert UserAdmin().get_export_columns() == [
+        ("id", User.id.prop),
+        ("name", User.name.prop),
+    ]
 
     class UserAdmin2(ModelAdmin, model=User):
         column_list = [User.id]
@@ -391,6 +446,7 @@ def test_export_excluded_columns_by_str_name() -> None:
     assert sorted(UserAdmin().get_export_columns()) == [
         ("addresses", User.addresses.prop),
         ("name", User.name),
+        ("profile", User.profile.prop),
     ]
 
 
@@ -401,6 +457,7 @@ def test_export_excluded_columns_by_model_column() -> None:
     assert sorted(UserAdmin().get_export_columns()) == [
         ("addresses", User.addresses.prop),
         ("name", User.name),
+        ("profile", User.profile.prop),
     ]
 
 
@@ -415,3 +472,73 @@ def test_get_python_type_postgresql() -> None:
         ...
 
     PostgresModelAdmin()._get_column_python_type(PostgresModel.uuid) is str
+
+
+def test_get_url_for_details_from_object() -> None:
+    class UserAdmin(ModelAdmin, model=User):
+        ...
+
+    admin = Admin(app=Starlette(), engine=engine)
+    admin.register_model(UserAdmin)
+
+    with Session() as session:
+        user = User()
+        session.add(user)
+        session.commit()
+
+        url = UserAdmin()._url_for_details(user)
+
+    assert url == "/admin/user/details/1"
+
+
+def test_get_url_for_details_from_object_with_attr() -> None:
+    class UserAdmin(ModelAdmin, model=User):
+        ...
+
+    class AddressAdmin(ModelAdmin, model=Address):
+        ...
+
+    admin = Admin(app=Starlette(), engine=engine)
+    admin.register_model(UserAdmin)
+    admin.register_model(AddressAdmin)
+
+    with Session() as session:
+        user = User()
+        session.add(user)
+        session.flush()
+
+        address = Address(user_id=user.id)
+        session.add(address)
+        session.commit()
+
+        address2 = Address()
+        session.add(address2)
+        session.commit()
+
+        url = UserAdmin()._url_for_details_with_attr(address, Address.user)
+        url_empty = UserAdmin()._url_for_details_with_attr(address2, Address.user)
+
+    assert url == "/admin/user/details/1"
+    assert url_empty == ""
+
+
+def test_model_default_sort() -> None:
+    class UserAdmin(ModelAdmin, model=User):
+        ...
+
+    assert UserAdmin()._get_default_sort() == [("id", False)]
+
+    class UserAdmin(ModelAdmin, model=User):
+        column_default_sort = "name"
+
+    assert UserAdmin()._get_default_sort() == [("name", False)]
+
+    class UserAdmin(ModelAdmin, model=User):
+        column_default_sort = ("name", True)
+
+    assert UserAdmin()._get_default_sort() == [("name", True)]
+
+    class UserAdmin(ModelAdmin, model=User):
+        column_default_sort = [("name", True), ("id", False)]
+
+    assert UserAdmin()._get_default_sort() == [("name", True), ("id", False)]

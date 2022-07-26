@@ -1,12 +1,9 @@
 from typing import TYPE_CHECKING
 
 from sqlalchemy import String, and_, cast, or_, select, text
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import Session, sessionmaker
 
 from sqladmin.helpers import (
     get_primary_key,
-    has_multiple_pks,
     is_association_proxy,
     is_relationship,
 )
@@ -52,16 +49,11 @@ class QueryAjaxModelLoader(AjaxModelLoader):
 
         if not self.fields:
             raise ValueError(
-                f"AJAX loading requires `fields` to be specified for {self.model}.{self.name}"
+                "AJAX loading requires `fields` to be specified for "
+                f"{self.model}.{self.name}"
             )
 
         self._cached_fields = self._process_fields()
-
-        if has_multiple_pks(self.model):
-            raise NotImplementedError(
-                "SQLAdmin does not support multi-pk AJAX model loading."
-            )
-
         self.pk = get_primary_key(self.model)
 
     def _process_fields(self):
@@ -111,6 +103,7 @@ class QueryAjaxModelLoader(AjaxModelLoader):
             stmt = stmt.order_by(self.order_by)
 
         stmt = stmt.offset(offset).limit(limit)
+        print(stmt, "!!!")
         result = await self.model_admin._run_query(stmt)
         return result
 

@@ -51,6 +51,12 @@ class User(Base):
     meta_data = Column(JSON)
 
     addresses = relationship("Address", back_populates="user")
+    profile = relationship("Profile", back_populates="user", uselist=False)
+
+    addresses_formattable = relationship("AddressFormattable", back_populates="user")
+    profile_formattable = relationship(
+        "ProfileFormattable", back_populates="user", uselist=False
+    )
 
     def __str__(self) -> str:
         return f"User {self.id}"
@@ -66,6 +72,42 @@ class Address(Base):
 
     def __str__(self) -> str:
         return f"Address {self.id}"
+
+
+class Profile(Base):
+    __tablename__ = "profiles"
+
+    id = Column(Integer, primary_key=True)
+    user_id = Column(Integer, ForeignKey("users.id"), unique=True)
+
+    user = relationship("User", back_populates="profile")
+
+    def __str__(self) -> str:
+        return f"Profile {self.id}"
+
+
+class AddressFormattable(Base):
+    __tablename__ = "addresses_formattable"
+
+    id = Column(Integer, primary_key=True)
+    user_id = Column(Integer, ForeignKey("users.id"))
+
+    user = relationship("User", back_populates="addresses_formattable")
+
+    def __str__(self) -> str:
+        return f"Address {self.id}"
+
+
+class ProfileFormattable(Base):
+    __tablename__ = "profiles_formattable"
+
+    id = Column(Integer, primary_key=True)
+    user_id = Column(Integer, ForeignKey("users.id"), unique=True)
+
+    user = relationship("User", back_populates="profile_formattable")
+
+    def __str__(self) -> str:
+        return f"Profile {self.id}"
 
 
 class Movie(Base):
@@ -92,17 +134,42 @@ async def client(prepare_database: Any) -> AsyncGenerator[AsyncClient, None]:
 
 
 class UserAdmin(ModelAdmin, model=User):
-    column_list = [User.id, User.name, User.email, User.addresses, User.status]
+    column_list = [
+        User.id,
+        User.name,
+        User.email,
+        User.addresses,
+        User.profile,
+        User.addresses_formattable,
+        User.profile_formattable,
+        User.status,
+    ]
     column_labels = {User.email: "Email"}
     column_searchable_list = [User.name]
     column_sortable_list = [User.id]
     column_export_list = [User.name, User.status]
+    column_formatters = {
+        User.addresses_formattable: lambda m, a: [
+            f"Formatted {a}" for a in m.addresses_formattable
+        ],
+        User.profile_formattable: lambda m, a: f"Formatted {m.profile_formattable}",
+    }
+    column_formatters_detail = {
+        User.addresses_formattable: lambda m, a: [
+            f"Formatted {a}" for a in m.addresses_formattable
+        ],
+        User.profile_formattable: lambda m, a: f"Formatted {m.profile_formattable}",
+    }
 
 
 class AddressAdmin(ModelAdmin, model=Address):
     column_list = ["id", "user_id", "user"]
     name_plural = "Addresses"
     export_max_rows = 3
+
+
+class ProfileAdmin(ModelAdmin, model=Profile):
+    column_list = ["id", "user_id", "user"]
 
 
 class MovieAdmin(ModelAdmin, model=Movie):
@@ -119,6 +186,7 @@ class MovieAdmin(ModelAdmin, model=Movie):
 
 admin.register_model(UserAdmin)
 admin.register_model(AddressAdmin)
+admin.register_model(ProfileAdmin)
 admin.register_model(MovieAdmin)
 
 
@@ -158,6 +226,52 @@ async def test_list_view_single_page(client: AsyncClient) -> None:
 
     # Next/Previous disabled
     assert response.text.count('<li class="page-item disabled">') == 2
+
+
+async def test_list_view_with_relations(client: AsyncClient) -> None:
+    for _ in range(5):
+        user = User(name="John Doe")
+        user.addresses.append(Address())
+        user.profile = Profile()
+        session.add(user)
+    await session.commit()
+
+    response = await client.get("/admin/user/list")
+
+    assert response.status_code == 200
+
+    # Show values of relationships
+    assert (
+        response.text.count('<a href="/admin/address/details/1">(Address 1)</a>') == 1
+    )
+    assert response.text.count('<a href="/admin/profile/details/1">Profile 1</a>') == 1
+
+
+async def test_list_view_with_formatted_relations(client: AsyncClient) -> None:
+    for _ in range(5):
+        user = User(name="John Doe")
+        user.addresses_formattable.append(AddressFormattable())
+        user.profile_formattable = ProfileFormattable()
+        session.add(user)
+    await session.commit()
+
+    response = await client.get("/admin/user/list")
+
+    assert response.status_code == 200
+
+    # Show values of relationships
+    assert (
+        response.text.count(
+            '<a href="/admin/address-formattable/details/1">(Formatted Address 1)</a>'
+        )
+        == 1
+    )
+    assert (
+        response.text.count(
+            '<a href="/admin/profile-formattable/details/1">Formatted Profile 1</a>'
+        )
+        == 1
+    )
 
 
 async def test_list_view_multi_page(client: AsyncClient) -> None:
@@ -245,6 +359,12 @@ async def test_detail_page(client: AsyncClient) -> None:
     for _ in range(2):
         address = Address(user_id=user.id)
         session.add(address)
+        address_formattable = AddressFormattable(user_id=user.id)
+        session.add(address_formattable)
+    profile = Profile(user_id=user.id)
+    session.add(profile)
+    profile_formattable = ProfileFormattable(user=user)
+    session.add(profile_formattable)
     await session.commit()
 
     response = await client.get("/admin/user/details/1")
@@ -257,7 +377,25 @@ async def test_detail_page(client: AsyncClient) -> None:
     assert response.text.count("<td>name</td>") == 1
     assert response.text.count("<td>Amin Alaee</td>") == 1
     assert response.text.count("<td>addresses</td>") == 1
-    assert response.text.count("<td>Address 1, Address 2</td>") == 1
+    assert (
+        response.text.count('<a href="/admin/address/details/1">(Address 1)</a>') == 1
+    )
+    assert response.text.count("<td>profile</td>") == 1
+    assert response.text.count('<a href="/admin/profile/details/1">Profile 1</a>') == 1
+    assert response.text.count("<td>addresses_formattable</td>") == 1
+    assert (
+        response.text.count(
+            '<a href="/admin/address-formattable/details/1">(Formatted Address 1)</a>'
+        )
+        == 1
+    )
+    assert response.text.count("<td>profile_formattable</td>") == 1
+    assert (
+        response.text.count(
+            '<a href="/admin/profile-formattable/details/1">Formatted Profile 1</a>'
+        )
+        == 1
+    )
 
     # Action Buttons
     assert response.text.count("http://testserver/admin/user/list") == 2
@@ -336,6 +474,7 @@ async def test_create_endpoint_get_form(client: AsyncClient) -> None:
         '<select class="form-control" id="addresses" multiple name="addresses">'
         in response.text
     )
+    assert '<select class="form-control" id="profile" name="profile">' in response.text
     assert (
         '<input class="form-control" id="name" maxlength="16" name="name"'
         in response.text
@@ -364,13 +503,19 @@ async def test_create_endpoint_post_form(client: AsyncClient) -> None:
     assert result.scalar_one() == 1
     assert response.status_code == 302
 
-    stmt = select(User).limit(1).options(selectinload(User.addresses))
+    stmt = (
+        select(User)
+        .limit(1)
+        .options(selectinload(User.addresses))
+        .options(selectinload(User.profile))
+    )
     async with LocalSession() as s:
         result = await s.execute(stmt)
     user = result.scalar_one()
     assert user.name == "SQLAlchemy"
     assert user.email is None
     assert user.addresses == []
+    assert user.profile is None
 
     data = {"user": user.id}
     response = await client.post("/admin/address/create", data=data)
@@ -388,7 +533,26 @@ async def test_create_endpoint_post_form(client: AsyncClient) -> None:
     assert address.user.id == user.id
     assert address.user_id == user.id
 
-    data = {"name": "SQLAdmin", "addresses": [address.id]}
+    data = {"user": user.id}
+    response = await client.post("/admin/profile/create", data=data)
+
+    stmt = select(func.count(Profile.id))
+    async with LocalSession() as s:
+        result = await s.execute(stmt)
+    assert result.scalar_one() == 1
+    assert response.status_code == 302
+
+    stmt = select(Profile).limit(1).options(selectinload(Profile.user))
+    async with LocalSession() as s:
+        result = await s.execute(stmt)
+    profile = result.scalar_one()
+    assert profile.user.id == user.id
+
+    data = {
+        "name": "SQLAdmin",
+        "addresses": [address.id],
+        "profile": profile.id,
+    }
     response = await client.post("/admin/user/create", data=data)
 
     stmt = select(func.count(User.id))
@@ -397,12 +561,19 @@ async def test_create_endpoint_post_form(client: AsyncClient) -> None:
     assert result.scalar_one() == 2
     assert response.status_code == 302
 
-    stmt = select(User).offset(1).limit(1).options(selectinload(User.addresses))
+    stmt = (
+        select(User)
+        .offset(1)
+        .limit(1)
+        .options(selectinload(User.addresses))
+        .options(selectinload(User.profile))
+    )
     async with LocalSession() as s:
         result = await s.execute(stmt)
     user = result.scalar_one()
     assert user.name == "SQLAdmin"
     assert user.addresses[0].id == address.id
+    assert user.profile.id == profile.id
 
 
 async def test_list_view_page_size_options(client: AsyncClient) -> None:
@@ -449,6 +620,8 @@ async def test_update_get_page(client: AsyncClient) -> None:
 
     address = Address(user=user)
     session.add(address)
+    profile = Profile(user=user)
+    session.add(profile)
     await session.commit()
 
     response = await client.get("/admin/user/edit/1")
@@ -462,6 +635,11 @@ async def test_update_get_page(client: AsyncClient) -> None:
     )
     assert response.text.count('<option selected value="1">Address 1</option>') == 1
     assert (
+        response.text.count('<select class="form-control" id="profile" name="profile">')
+        == 1
+    )
+    assert response.text.count('<option selected value="1">Profile 1</option>') == 1
+    assert (
         response.text.count(
             'id="name" maxlength="16" name="name" type="text" value="Joe">'
         )
@@ -469,6 +647,12 @@ async def test_update_get_page(client: AsyncClient) -> None:
     )
 
     response = await client.get("/admin/address/edit/1")
+
+    assert response.text.count('<select class="form-control" id="user" name="user">')
+    assert response.text.count('<option value="__None"></option>')
+    assert response.text.count('<option selected value="1">User 1</option>')
+
+    response = await client.get("/admin/profile/edit/1")
 
     assert response.text.count('<select class="form-control" id="user" name="user">')
     assert response.text.count('<option value="__None"></option>')
@@ -482,6 +666,8 @@ async def test_update_submit_form(client: AsyncClient) -> None:
 
     address = Address(user=user)
     session.add(address)
+    profile = Profile(user=user)
+    session.add(profile)
     await session.commit()
 
     data = {"name": "Jack"}
@@ -489,14 +675,20 @@ async def test_update_submit_form(client: AsyncClient) -> None:
 
     assert response.status_code == 302
 
-    stmt = select(User).limit(1).options(selectinload(User.addresses))
+    stmt = (
+        select(User)
+        .limit(1)
+        .options(selectinload(User.addresses))
+        .options(selectinload(User.profile))
+    )
     async with LocalSession() as s:
         result = await s.execute(stmt)
     user = result.scalar_one()
     assert user.name == "Jack"
     assert user.addresses == []
+    assert user.profile is None
 
-    data = {"name": "Jack", "addresses": "1"}
+    data = {"name": "Jack", "addresses": "1", "profile": "1"}
     response = await client.post("/admin/user/edit/1", data=data)
 
     stmt = select(Address).limit(1)
@@ -504,6 +696,12 @@ async def test_update_submit_form(client: AsyncClient) -> None:
         result = await s.execute(stmt)
     address = result.scalar_one()
     assert address.user_id == 1
+
+    stmt = select(Profile).limit(1)
+    async with LocalSession() as s:
+        result = await s.execute(stmt)
+    profile = result.scalar_one()
+    assert profile.user_id == 1
 
     data = {"name": "Jack" * 10}
     response = await client.post("/admin/user/edit/1", data=data)
@@ -526,15 +724,15 @@ async def test_searchable_list(client: AsyncClient) -> None:
     )
 
     assert response.text.count("Search: name") == 1
-    assert "http://testserver/admin/user/details/1" in response.text
+    assert "/admin/user/details/1" in response.text
 
     response = await client.get("/admin/user/list?search=ro")
 
-    assert "http://testserver/admin/user/details/1" in response.text
+    assert "/admin/user/details/1" in response.text
 
     response = await client.get("/admin/user/list?search=rose")
 
-    assert "http://testserver/admin/user/details/1" not in response.text
+    assert "/admin/user/details/1" not in response.text
 
 
 async def test_sortable_list(client: AsyncClient) -> None:

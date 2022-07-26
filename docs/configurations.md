@@ -95,7 +95,14 @@ The options available are:
 
 * `column_list`: List of columns or column names to be displayed in the list page.
 * `column_exclude_list`: List of columns or column names to be excluded in the list page.
-* `column_searchable_list` List of columns or column names to be searchable in the list page.
+* `column_formatters`: Dictionary of column formatters in the list page.
+* `column_searchable_list`: List of columns or column names to be searchable in the list page.
+* `column_sortable_list`: List of columns or column names to be sortable in the list page.
+* `column_default_sort`: Default sorting if no sorting is applied, tuple of (column, is_descending)
+or list of the tuple for multiple columns.
+* `list_query`: A SQLAlchemy `select` expression to use for model list page.
+* `count_query`: A SQLAlchemy `select` expression to use for model count.
+* `search_query`: A method with the signature of `(stmt, term) -> stmt` which can customize the search query.
 
 !!! example
 
@@ -113,6 +120,9 @@ The options available are:
     ```python
     class UserAdmin(ModelAdmin, model=User):
         column_searchable_list = [User.name]
+        column_sortable_list = [User.id]
+        column_formatters = {User.name: lambda m, a: m.name[:10]}
+        column_default_sort = [(User.email, True), (User.name, False)]
     ```
 
 ## Details page
@@ -124,6 +134,7 @@ The options available are:
 
 * `column_details_list`: List of columns or column names to be displayed in the details page.
 * `column_details_exclude_list`: List of columns or column names to be excluded in the details page.
+* `column_formatters_detail`: Dictionary of column formatters in the details page.
 
 !!! example
 
@@ -135,6 +146,11 @@ The options available are:
     ```python
     class UserAdmin(ModelAdmin, model=User):
         column_details_exclude_list = [User.id]
+    ```
+
+    ```python
+    class UserAdmin(ModelAdmin, model=User):
+        column_formatters_detail = {User.name: lambda m, a: m.name[:10]}
     ```
 
 ## Pagination options
@@ -152,6 +168,25 @@ The pagination options in the list page can be configured. The available options
         page_size_options = [25, 50, 100, 200]
     ```
 
+## General options
+
+There are a few options which apply to both List and Detail pages. They include:
+
+* `column_labels`: A mapping of column labels, used to map column names to new names in all places.
+* `column_type_formatters`: A mapping of type keys and callable values to format in all places.
+For example you can add custom date formatter to be used in both list and detail pages.
+
+!!! example
+
+    ```python
+    class UserAdmin(ModelAdmin, model=User):
+        def date_format(value):
+            return value.strftime("%d.%m.%Y")
+
+        column_labels = {User.mail: "Email"}
+        column_type_formatters = dict(ModelAdmin.column_type_formatters, date=date_format)
+    ```
+
 ## Form options
 
 SQLAdmin allows customizing how forms work with your models.
@@ -160,9 +195,11 @@ The forms are based on `WTForms` package and include the following options:
 * `form`: Default form to be used for creating or editing the model. Default value is `None` and form is created dynamically.
 * `form_base_class`: Default base class for creating forms. Default value is `wtforms.Form`.
 * `form_args`: Dictionary of form field arguments supported by WTForms.
+* `form_widget_args`: Dictionary of form widget rendering arguments supported by WTForms.
 * `form_columns`: List of model columns to be included in the form. Default is all model columns.
 * `form_excluded_columns`: List of model columns to be excluded from the form.
 * `form_overrides`: Dictionary of form fields to override when creating the form.
+* `form_include_pk`: Control if primary key column should be included in create/edit forms. Default is `False`.
 
 !!! example
 
@@ -170,7 +207,9 @@ The forms are based on `WTForms` package and include the following options:
     class UserAdmin(ModelAdmin, model=User):
         form_columns = [User.name]
         form_args = dict(name=dict(label="Full name"))
+        form_widget_args = dict(email=dict(readonly=True))
         form_overrides = dict(email=wtforms.EmailField)
+        form_include_pk = True
     ```
 
 ## Export options
@@ -186,7 +225,7 @@ The export options can be set per model and includes the following options:
 
 ## Templates
 
-The template files are built using Jinja2 and can be completely overriden in the configurations.
+The template files are built using Jinja2 and can be completely overridden in the configurations.
 The pages available are:
 
 * `list_template`: Template to use for models list page. Default is `list.html`.

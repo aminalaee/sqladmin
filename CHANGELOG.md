@@ -4,12 +4,82 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## Unrealeased
+## Version 0.1.12 - 2022-07-13
 
 ### Added
 
-* Add `column_formatters` by @skarrok in https://github.com/aminalaee/sqladmin/pull/140
-* Add `column_formatters_detail` by @aminalaee in https://github.com/aminalaee/sqladmin/pull/141
+* Add time field converter by @ischaojie in https://github.com/aminalaee/sqladmin/pull/214
+* Add Edit button for "Details" page by @cuamckuu in https://github.com/aminalaee/sqladmin/pull/222
+* Add column_type_formatters by @aminalaee in https://github.com/aminalaee/sqladmin/pull/239
+
+### Fixed
+
+* Fix lazy subuqery in list query by @aminalaee in https://github.com/aminalaee/sqladmin/pull/212
+* Fix missing browser tab title by @cuamckuu in https://github.com/aminalaee/sqladmin/pull/229
+* Remove sourceMappingURL in JS files by @aminalaee in https://github.com/aminalaee/sqladmin/pull/231
+
+### New Contributors
+* @ischaojie made their first contribution in https://github.com/aminalaee/sqladmin/pull/214
+* @cuamckuu made their first contribution in https://github.com/aminalaee/sqladmin/pull/222
+
+**Full Changelog**: https://github.com/aminalaee/sqladmin/compare/0.1.11...0.1.12
+
+## Version 0.1.11 - 2022-06-23
+
+### Added
+
+* Add `form_include_pk` option by @aminalaee in https://github.com/aminalaee/sqladmin/pull/207
+
+### Fixed
+
+* Fix handling of iterable fields by @okapies in https://github.com/aminalaee/sqladmin/pull/204
+* Fix nullable Enum form by @aminalaee in https://github.com/aminalaee/sqladmin/pull/205
+
+**Full Changelog**: https://github.com/aminalaee/sqladmin/compare/0.1.10...0.1.11
+
+## Version 0.1.10 - 2022-06-21
+
+### Added
+
+* Add support for one-to-one relationship by @okapies in https://github.com/aminalaee/sqladmin/pull/182
+* Add support for UUIDType from sqlalchemy_utils by @okapies in https://github.com/aminalaee/sqladmin/pull/183
+* Add sqlalchemy_utils URL, Currency and  Timezone by @aminalaee in https://github.com/aminalaee/sqladmin/pull/185
+* Add form_widget_args by @aminalaee in https://github.com/aminalaee/sqladmin/pull/188
+* Add column_default_sort by @aminalaee in https://github.com/aminalaee/sqladmin/pull/191
+
+### Fixed
+
+* Fix link relationship to details page when null by @aminalaee in https://github.com/aminalaee/sqladmin/pull/174
+* docs: fix typos by @pgrimaud in https://github.com/aminalaee/sqladmin/pull/161
+* Allow QuerySelectField override object_list with form_args by @aminalaee in https://github.com/aminalaee/sqladmin/pull/171
+* Fix form fields order when specifying columns by @okapies in https://github.com/aminalaee/sqladmin/pull/184
+* Fix ModelConverter when `impl` is not callable by @aminalaee in https://github.com/aminalaee/sqladmin/pull/186
+
+### New Contributors
+* @pgrimaud made their first contribution in https://github.com/aminalaee/sqladmin/pull/161
+* @okapies made their first contribution in https://github.com/aminalaee/sqladmin/pull/183
+
+**Full Changelog**: https://github.com/aminalaee/sqladmin/compare/0.1.9...0.1.10
+
+## Version 0.1.9 - 2022-05-27
+
+### Added
+
+* Add column_formatters by @skarrok in https://github.com/aminalaee/sqladmin/pull/140
+* Add column_formatters_detail by @aminalaee in https://github.com/aminalaee/sqladmin/pull/141
+* Handling for sqlalchemy_utils EmailType and IPAddressType by @colin99d in https://github.com/aminalaee/sqladmin/pull/150
+* Link relationships to detail page by @aminalaee in https://github.com/aminalaee/sqladmin/pull/153
+
+### Fixed
+
+* Function signature typing, and renames by @dwreeves in https://github.com/aminalaee/sqladmin/pull/116
+* Fix SQLModel UUID type by @aminalaee in https://github.com/aminalaee/sqladmin/pull/158
+
+### New Contributors
+* @skarrok made their first contribution in https://github.com/aminalaee/sqladmin/pull/140
+* @colin99d made their first contribution in https://github.com/aminalaee/sqladmin/pull/150
+
+**Full Changelog**: https://github.com/aminalaee/sqladmin/compare/0.1.8...0.1.9
 
 ## Version 0.1.8 - 2022-04-19
 
@@ -26,7 +96,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * Fix get_model_attr with column labels by @aminalaee in https://github.com/aminalaee/sqladmin/pull/128
 * Delay call to `self.get_converter` to use `form_overrides` by @lovetoburnswhen in https://github.com/aminalaee/sqladmin/pull/129
 
-## New Contributors
+### New Contributors
 * @tr11 made their first contribution in https://github.com/aminalaee/sqladmin/pull/114
 * @lovetoburnswhen made their first contribution in https://github.com/aminalaee/sqladmin/pull/129
 
@@ -47,7 +117,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * Fix PostgreSQL UUID PrimaryKey by @aminalaee in https://github.com/aminalaee/sqladmin/pull/92
 * Fix Source Code Link by @baurt in https://github.com/aminalaee/sqladmin/pull/95
 
-## New Contributors
+### New Contributors
 * @baurt made their first contribution in https://github.com/aminalaee/sqladmin/pull/95
 * @dwreeves made their first contribution in https://github.com/aminalaee/sqladmin/pull/97
 

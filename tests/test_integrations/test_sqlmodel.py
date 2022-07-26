@@ -1,4 +1,5 @@
 from typing import Any, AsyncGenerator, Optional
+from uuid import UUID, uuid4
 
 import pytest
 from httpx import AsyncClient
@@ -17,6 +18,7 @@ session: Session = LocalSession()
 
 class Hero(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
+    uuid: UUID = Field(default_factory=uuid4)
     name: str = Field(index=True, max_length=5)
     secret_name: str
     age: Optional[int] = None

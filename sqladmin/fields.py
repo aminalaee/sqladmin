@@ -18,7 +18,7 @@ __all__ = [
     "JSONField",
     "QuerySelectField",
     "QuerySelectMultipleField",
-    "Select2Field",
+    "SelectField",
     "Select2TagsField",
     "TimeField",
 ]
@@ -134,13 +134,7 @@ class TimeField(fields.Field):
                 self.data = None
 
 
-class Select2Field(fields.SelectField):
-    """
-    `Select2 <https://github.com/select2/select2>`_ styled select widget.
-    """
-
-    widget = sqladmin_widgets.Select2Widget()
-
+class SelectField(fields.SelectField):
     def __init__(
         self,
         label: str = None,
@@ -487,32 +481,31 @@ class AjaxSelectMultipleField(AjaxSelectField):
     widget = sqladmin_widgets.AjaxSelect2Widget(multiple=True)
 
     def __init__(self, loader, label=None, validators=None, default=None, **kwargs):
-        if default is None:
-            default = []
+        default = default or []
 
         super().__init__(loader, label, validators, default=default, **kwargs)
         self._invalid_formdata = False
 
-    def _get_data(self):
+    @property
+    def data(self):
         formdata = self._formdata
         if formdata:
-            self._set_data(formdata)
+            self.data(formdata)
 
         return self._data
 
-    def _set_data(self, data):
+    @data.setter
+    def data(self, data) -> None:
         self._data = data
         self._formdata = None
 
-    data = property(_get_data, _set_data)
-
-    def process_formdata(self, valuelist):
+    def process_formdata(self, valuelist) -> None:
         self._formdata = set()
 
         for field in valuelist:
             for n in field.split(self.separator):
                 self._formdata.add(n)
 
-    def pre_validate(self, form):
+    def pre_validate(self, form: Form) -> None:
         if self._invalid_formdata:
             raise ValidationError("Not a valid choice")

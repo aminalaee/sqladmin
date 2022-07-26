@@ -5,6 +5,7 @@
         - name
         - name_plural
         - icon
+        - column_labels
         - can_create
         - can_edit
         - can_delete
@@ -27,6 +28,7 @@
         - column_searchable_list
         - search_placeholder
         - column_sortable_list
+        - column_default_sort
         - can_export
         - column_export_list
         - column_export_exclude_list
@@ -37,3 +39,9 @@
         - form_columns
         - form_excluded_columns
         - form_overrides
+        - form_widget_args
+        - form_include_pk
+        - column_type_formatters
+        - list_query
+        - count_query
+        - search_query

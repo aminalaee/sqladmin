@@ -2,7 +2,6 @@ import enum
 from typing import Any, AsyncGenerator
 
 import pytest
-from httpx import AsyncClient
 from sqlalchemy import (
     Boolean,
     Column,
@@ -13,16 +12,26 @@ from sqlalchemy import (
     Numeric,
     String,
     Text,
+    Time,
+    TypeDecorator,
 )
 from sqlalchemy.dialects.postgresql import INET, MACADDR, UUID
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship, sessionmaker
-from wtforms import Field, Form, StringField
+from sqlalchemy_utils import (
+    CurrencyType,
+    EmailType,
+    IPAddressType,
+    TimezoneType,
+    URLType,
+    UUIDType,
+)
+from wtforms import Field, Form, StringField, TimeField
 
 from sqladmin import ModelAdmin
 from sqladmin.forms import get_model_form
-from tests.common import async_engine as engine
+from tests.common import DummyData, async_engine as engine
 
 pytestmark = pytest.mark.anyio
 
@@ -50,8 +59,10 @@ class User(Base):
     status = Column(Enum(Status))
     balance = Column(Numeric)
     number = Column(Integer)
+    reminder = Column(Time)
 
     addresses = relationship("Address", back_populates="user")
+    profile = relationship("Profile", back_populates="user", uselist=False)
 
 
 class Address(Base):
@@ -63,7 +74,16 @@ class Address(Base):
     user = relationship("User", back_populates="addresses")
 
 
-@pytest.fixture
+class Profile(Base):
+    __tablename__ = "profiles"
+
+    id = Column(Integer, primary_key=True)
+    user_id = Column(Integer, ForeignKey("users.id"), unique=True)
+
+    user = relationship("User", back_populates="profile")
+
+
+@pytest.fixture(autouse=True)
 async def prepare_database() -> AsyncGenerator[None, None]:
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
@@ -74,13 +94,19 @@ async def prepare_database() -> AsyncGenerator[None, None]:
     await engine.dispose()
 
 
-@pytest.fixture
-async def client(prepare_database: Any) -> AsyncGenerator[AsyncClient, None]:
-    async with AsyncClient(base_url="http://testserver") as c:
-        yield c
+async def test_model_form() -> None:
+    Form = await get_model_form(model=User, engine=engine)
+    form = Form()
+
+    assert len(form._fields) == 11
+    assert form._fields["active"].flags.required is None
+    assert form._fields["name"].flags.required is None
+    assert form._fields["email"].flags.required is True
+
+    assert isinstance(form._fields["reminder"], TimeField)
 
 
-async def test_model_form_converter_with_default(client: AsyncClient) -> None:
+async def test_model_form_converter_with_default() -> None:
     class Point(Base):
         __tablename__ = "points"
 
@@ -90,30 +116,30 @@ async def test_model_form_converter_with_default(client: AsyncClient) -> None:
     await get_model_form(model=Point, engine=engine)
 
 
-async def test_model_form_only(client: AsyncClient) -> None:
+async def test_model_form_only() -> None:
     Form = await get_model_form(model=User, engine=engine, only=["status"])
     assert len(Form()._fields) == 1
 
 
-async def test_model_form_exclude(client: AsyncClient) -> None:
+async def test_model_form_exclude() -> None:
     Form = await get_model_form(model=User, engine=engine, exclude=["status"])
-    assert len(Form()._fields) == 8
+    assert len(Form()._fields) == 10
 
 
-async def test_model_form_form_args(client: AsyncClient) -> None:
+async def test_model_form_form_args() -> None:
     form_args = {"name": {"label": "User Name"}}
     Form = await get_model_form(model=User, engine=engine, form_args=form_args)
     assert Form()._fields["name"].label.text == "User Name"
 
 
-async def test_model_form_column_label(client: AsyncClient) -> None:
+async def test_model_form_column_label() -> None:
     labels = {"name": "User Name"}
     Form = await get_model_form(model=User, engine=engine, column_labels=labels)
     assert Form()._fields["name"].label.text == "User Name"
 
 
 @pytest.mark.filterwarnings("ignore:^Dialect sqlite\\+aiosqlite.*$")
-async def test_model_form_column_label_precedence(client: AsyncClient) -> None:
+async def test_model_form_column_label_precedence() -> None:
     # Validator takes precedence over label.
     form_args_user = {"name": {"label": "User Name (Use Me)"}}
     labels_user = {"name": "User Name (Do Not Use Me)"}
@@ -134,7 +160,7 @@ async def test_model_form_column_label_precedence(client: AsyncClient) -> None:
     assert Form()._fields["user"].label.text == "User (Use Me)"
 
 
-async def test_model_form_override(client: AsyncClient) -> None:
+async def test_model_form_override() -> None:
     class ExampleField(Field):
         pass
 
@@ -146,7 +172,7 @@ async def test_model_form_override(client: AsyncClient) -> None:
 
 
 @pytest.mark.skipif(engine.name != "postgresql", reason="PostgreSQL only")
-async def test_model_form_postgresql(client: AsyncClient) -> None:
+async def test_model_form_postgresql() -> None:
     class PostgresModel(Base):
         __tablename__ = "postgres_model"
 
@@ -159,7 +185,24 @@ async def test_model_form_postgresql(client: AsyncClient) -> None:
     assert len(Form()._fields) == 3
 
 
-async def test_form_override_scaffold(client: AsyncClient) -> None:
+async def test_model_form_sqlalchemy_utils() -> None:
+    class SQLAlchemyUtilsModel(Base):
+        __tablename__ = "sqlalchemy_utils_model"
+
+        id = Column(Integer, primary_key=True)
+        email = Column(EmailType)
+        ip = Column(IPAddressType)
+        uuid = Column(UUIDType)
+        url = Column(URLType)
+        currency = Column(CurrencyType)
+        timezone = Column(TimezoneType)
+
+    Form = await get_model_form(model=SQLAlchemyUtilsModel, engine=engine)
+    form = Form(DummyData(currency="IR", timezone=["Iran/Tehran"]))
+    assert form.validate() is False
+
+
+async def test_form_override_scaffold() -> None:
     class MyForm(Form):
         foo = StringField("Foo")
 
@@ -171,3 +214,36 @@ async def test_form_override_scaffold(client: AsyncClient) -> None:
     assert isinstance(form, MyForm)
     assert len(form._fields) == 1
     assert "foo" in form._fields
+
+
+async def test_form_converter_when_impl_is_callable() -> None:
+    class MyType(TypeDecorator):
+        impl = String
+
+    class CustomModel(Base):
+        __tablename__ = "impl_callable"
+
+        id = Column(Integer, primary_key=True)
+        custom = Column(MyType)
+
+    Form = await get_model_form(model=CustomModel, engine=engine)
+    assert "custom" in Form()._fields
+
+
+async def test_form_converter_when_impl_not_callable() -> None:
+    class MyType(TypeDecorator):
+        impl = String(length=100)
+
+    class CustomModel(Base):
+        __tablename__ = "impl_non_callable"
+
+        id = Column(Integer, primary_key=True)
+        custom = Column(MyType)
+
+    Form = await get_model_form(model=CustomModel, engine=engine)
+    assert "custom" in Form()._fields
+
+
+async def test_model_form_include_pk() -> None:
+    Form = await get_model_form(model=User, engine=engine, form_include_pk=True)
+    assert "id" in Form()._fields

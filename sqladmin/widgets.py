@@ -78,7 +78,7 @@ class AjaxSelect2Widget(object):
         self.multiple = multiple
         self.lookup_url = ""
 
-    def __call__(self, field, **kwargs: dict):
+    def __call__(self, field: Field, **kwargs: dict) -> Markup:
         kwargs.setdefault("data-role", "select2-ajax")
         kwargs.setdefault("data-url", field.loader.model_admin.ajax_lookup_url)
 

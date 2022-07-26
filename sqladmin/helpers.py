@@ -3,10 +3,12 @@ import os
 import re
 import unicodedata
 from abc import ABC, abstractmethod
-from typing import Callable, Generator, List, TypeVar, Union
+from typing import Any, Callable, Generator, List, TypeVar, Union
 
+from sqlalchemy import Column, inspect
 from sqlalchemy.ext.associationproxy import ASSOCIATION_PROXY
-from sqlalchemy.inspection import inspect
+
+from sqladmin.types import _MODEL_ATTR_TYPE
 
 T = TypeVar("T")
 
@@ -93,7 +95,7 @@ class Writer(ABC):
         pass  # pragma: no cover
 
 
-class _PseudoBuffer(object):
+class _PseudoBuffer:
     """An object that implements just the write method of the file-like
     interface.
     """
@@ -115,25 +117,21 @@ def stream_to_csv(
     https://docs.djangoproject.com/en/1.8/howto/outputting-csv/
     """
     writer = csv.writer(_PseudoBuffer())
-    return callback(writer)
+    return callback(writer)  # type: ignore
 
 
-def has_multiple_pks(model: type) -> bool:
-    mapper = inspect(model)
-    return len(mapper.primary_key) > 1
+def get_primary_key(model: type) -> Column:
+    pks = inspect(model).mapper.primary_key
+    assert len(pks) == 1, "Multiple Primary Keys not supported."
+    return pks[0]
 
 
-def get_primary_key(model: type):
-    """Return primary key name from a model.
-    If the primary key consists of multiple columns, return the corresponding tuple
-    """
-    pks = inspect(model).primary_key
-    if len(pks) == 1:
-        return pks[0]
-    elif len(pks) > 1:
-        return tuple(pks)
-    else:
-        return None
+def get_relationships(model: Any) -> List[_MODEL_ATTR_TYPE]:
+    return list(inspect(model).relationships)
+
+
+def get_attributes(model: Any) -> List[_MODEL_ATTR_TYPE]:
+    return list(inspect(model).attrs)
 
 
 def is_association_proxy(attr) -> bool:
