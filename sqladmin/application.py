@@ -113,25 +113,27 @@ class BaseAdmin:
     def register_view(self, view: Type["BaseView"]) -> None:
         """Register BaseView to the Admin.
 
-         Args:
-             view: BaseView class to register in Admin.
+        Args:
+            view: BaseView class to register in Admin.
 
-         ???+ usage
-             ```python
-             from sqladmin import BaseView
+        ???+ usage
+            ```python
+            from sqladmin import BaseView
 
-             class CustomAdmin(BaseView):
-                    def test_page(self, request: Request):
-                        return self.templates.TemplateResponse("custom.html", context={"request": request})
+            class CustomAdmin(BaseView):
+                   def test_page(self, request: Request):
+                       return self.templates.TemplateResponse("custom.html",
+                                context={"request": request}
+                                )
 
-                    name_plural = "Custom Page"
-                    icon = "fa-solid fa-chart-line"
-                    path = "/custom/test_page"
-                    methods = ["GET"]
-                    endpoint = test_page
+                   name_plural = "Custom Page"
+                   icon = "fa-solid fa-chart-line"
+                   path = "/custom/test_page"
+                   methods = ["GET"]
+                   endpoint = test_page
 
-             admin.register_view(CustomAdmin)
-             ```
+            admin.register_view(CustomAdmin)
+            ```
         """
         view.url_path_for = self.app.url_path_for
         view.templates = self.templates
