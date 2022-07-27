@@ -32,12 +32,12 @@ from starlette.responses import StreamingResponse
 from wtforms import Field, Form
 
 from sqladmin._queries import (
+    delete_async,
+    delete_sync,
     insert_async,
     insert_sync,
     update_async,
     update_sync,
-    delete_sync,
-    delete_async,
 )
 from sqladmin.exceptions import InvalidColumnError, InvalidModelError
 from sqladmin.formatters import BASE_FORMATTERS
