@@ -278,7 +278,7 @@ class QuerySelectField(fields.SelectFieldBase):
 
     def __init__(
         self,
-        object_list: list = None,
+        data: list = None,
         label: str = None,
         validators: list = None,
         get_label: Union[Callable, str] = None,
@@ -288,7 +288,7 @@ class QuerySelectField(fields.SelectFieldBase):
     ) -> None:
         super().__init__(label=label, validators=validators, **kwargs)
 
-        self._object_list = object_list or []
+        self._select_data = data or []
 
         if get_label is None:
             self.get_label = lambda x: x
@@ -305,9 +305,9 @@ class QuerySelectField(fields.SelectFieldBase):
     @property
     def data(self) -> Optional[tuple]:
         if self._formdata is not None:
-            for pk, obj in self._object_list:
+            for pk, _ in self._select_data:
                 if pk == self._formdata:
-                    self.data = obj
+                    self.data = pk
                     break
         return self._data
 
@@ -320,10 +320,8 @@ class QuerySelectField(fields.SelectFieldBase):
         if self.allow_blank:
             yield ("__None", self.blank_text, self.data is None)
 
-        identity = inspect(self.data).identity[0] if self.data else "__None"
-
-        for pk, obj in self._object_list:
-            yield (pk, self.get_label(obj), pk == str(identity))
+        for pk, label in self._select_data:
+            yield (pk, self.get_label(label), label == str(self.data))
 
     def process_formdata(self, valuelist: List[str]) -> None:
         if valuelist:
@@ -336,8 +334,8 @@ class QuerySelectField(fields.SelectFieldBase):
     def pre_validate(self, form: Form) -> None:
         data = self.data
         if data is not None:
-            for _, obj in self._object_list:
-                if data == obj:
+            for pk, _ in self._select_data:
+                if data == pk:
                     break
             else:  # pragma: no cover
                 raise ValidationError(self.gettext("Not a valid choice"))
@@ -359,7 +357,7 @@ class QuerySelectMultipleField(QuerySelectField):
 
     def __init__(
         self,
-        object_list: list = None,
+        data: list = None,
         label: str = None,
         validators: list = None,
         default: Any = None,
@@ -368,7 +366,7 @@ class QuerySelectMultipleField(QuerySelectField):
         default = default or []
         super().__init__(label=label, validators=validators, default=default, **kwargs)
 
-        self._object_list = object_list or []
+        self._select_data = data or []
 
         if kwargs.get("allow_blank", False):
             import warnings
@@ -385,12 +383,12 @@ class QuerySelectMultipleField(QuerySelectField):
         formdata = self._formdata
         if formdata is not None:
             data = []
-            for pk, obj in self._object_list:
+            for pk, _ in self._select_data:
                 if not formdata:
                     break
                 elif pk in formdata:
                     formdata.remove(pk)
-                    data.append(obj)
+                    data.append(pk)
             if formdata:
                 self._invalid_formdata = True
             self.data = data or self._data  # type: ignore
@@ -404,8 +402,8 @@ class QuerySelectMultipleField(QuerySelectField):
     def iter_choices(self) -> Generator[Tuple[str, Any, bool], None, None]:
         if self.data is not None:
             primary_keys = [str(inspect(m).identity[0]) for m in self.data]
-            for pk, obj in self._object_list:
-                yield (pk, self.get_label(obj), pk in primary_keys)
+            for pk, label in self._select_data:
+                yield (pk, self.get_label(label), pk in primary_keys)
 
     def process_formdata(self, valuelist: List[str]) -> None:
         self._formdata = list(set(valuelist))
@@ -414,8 +412,7 @@ class QuerySelectMultipleField(QuerySelectField):
         if self._invalid_formdata:
             raise ValidationError(self.gettext("Not a valid choice"))
         elif self.data:
-            pk_list = [x[0] for x in self._object_list]
+            pk_list = [x[0] for x in self._select_data]
             for v in self.data:
-                identity = inspect(v).identity
-                if identity and str(identity[0]) not in pk_list:  # pragma: no cover
+                if v not in pk_list:  # pragma: no cover
                     raise ValidationError(self.gettext("Not a valid choice"))

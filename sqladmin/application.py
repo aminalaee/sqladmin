@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING, List, Sequence, Type, Union
+from typing import TYPE_CHECKING, List, Sequence, Type
 
 from jinja2 import ChoiceLoader, FileSystemLoader, PackageLoader
 from sqlalchemy.engine import Engine
@@ -12,6 +12,8 @@ from starlette.responses import RedirectResponse, Response
 from starlette.routing import Mount, Route
 from starlette.staticfiles import StaticFiles
 from starlette.templating import Jinja2Templates
+
+from sqladmin.types import _ENGINE_TYPE
 
 if TYPE_CHECKING:
     from sqladmin.models import ModelAdmin
@@ -32,7 +34,7 @@ class BaseAdmin:
     def __init__(
         self,
         app: Starlette,
-        engine: Union[Engine, AsyncEngine],
+        engine: _ENGINE_TYPE,
         base_url: str = "/admin",
         title: str = "Admin",
         logo_url: str = None,
@@ -95,10 +97,20 @@ class BaseAdmin:
         model.url_path_for = self.app.url_path_for
 
         if isinstance(model.engine, Engine):
-            model.sessionmaker = sessionmaker(bind=model.engine, class_=Session)
+            model.sessionmaker = sessionmaker(
+                bind=model.engine,
+                class_=Session,
+                autoflush=False,
+                autocommit=False,
+            )
             model.async_engine = False
         else:
-            model.sessionmaker = sessionmaker(bind=model.engine, class_=AsyncSession)
+            model.sessionmaker = sessionmaker(
+                bind=model.engine,
+                class_=AsyncSession,
+                autoflush=False,
+                autocommit=False,
+            )
             model.async_engine = True
 
         self._model_admins.append((model()))
@@ -164,7 +176,7 @@ class Admin(BaseAdminView):
     def __init__(
         self,
         app: Starlette,
-        engine: Union[Engine, AsyncEngine],
+        engine: _ENGINE_TYPE,
         base_url: str = "/admin",
         title: str = "Admin",
         logo_url: str = None,
@@ -329,8 +341,7 @@ class Admin(BaseAdminView):
                 status_code=400,
             )
 
-        model = model_admin.model(**form.data)
-        await model_admin.insert_model(model)
+        await model_admin.insert_model(form.data)
 
         return RedirectResponse(
             request.url_for("admin:list", identity=identity),
