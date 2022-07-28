@@ -869,8 +869,6 @@ class ModelAdmin(BaseModelAdmin, metaclass=ModelAdminMeta):
         form_columns = getattr(self, "form_columns", None)
         form_excluded_columns = getattr(self, "form_excluded_columns", None)
 
-        # for attr in self._attrs:
-        #     if attr in self._mapper.fo
         columns = list(self._mapper.columns)
         default = []
         for attr in self._attrs:
