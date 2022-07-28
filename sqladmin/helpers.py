@@ -140,3 +140,10 @@ def get_direction(attr: _MODEL_ATTR_TYPE) -> str:
     if name == "ONETOMANY" and not attr.uselist:
         return "ONETOONE"
     return name
+
+
+def get_column_python_type(column: Column) -> type:
+    try:
+        return column.type.python_type
+    except NotImplementedError:
+        return str

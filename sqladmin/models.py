@@ -46,6 +46,7 @@ from sqladmin.helpers import (
     Writer,
     as_str,
     get_attributes,
+    get_column_python_type,
     get_primary_key,
     get_relationships,
     prettify_class_name,
@@ -641,12 +642,6 @@ class ModelAdmin(BaseModelAdmin, metaclass=ModelAdminMeta):
         else:
             return await anyio.to_thread.run_sync(self._run_query_sync, stmt)
 
-    def _get_column_python_type(self, column: Column) -> type:
-        try:
-            return column.type.python_type
-        except NotImplementedError:
-            return str
-
     def _url_for_details(self, obj: Any) -> str:
         pk = getattr(obj, get_primary_key(obj).name)
         return self.url_path_for(
@@ -757,9 +752,8 @@ class ModelAdmin(BaseModelAdmin, metaclass=ModelAdminMeta):
         return rows
 
     async def get_model_by_pk(self, value: Any) -> Any:
-        stmt = select(self.model).where(
-            self.pk_column == self._get_column_python_type(self.pk_column)(value)
-        )
+        pk_value = get_column_python_type(self.pk_column)(value)
+        stmt = select(self.model).where(self.pk_column == pk_value)
 
         for relation in self._relations:
             stmt = stmt.options(joinedload(relation.key))

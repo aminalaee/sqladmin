@@ -320,8 +320,13 @@ class QuerySelectField(fields.SelectFieldBase):
         if self.allow_blank:
             yield ("__None", self.blank_text, self.data is None)
 
+        if self.data:
+            primary_key = str(inspect(self.data).identity[0])
+        else:
+            primary_key = None
+
         for pk, label in self._select_data:
-            yield (pk, self.get_label(label), label == str(self.data))
+            yield (pk, self.get_label(label), str(pk) == primary_key)
 
     def process_formdata(self, valuelist: List[str]) -> None:
         if valuelist:

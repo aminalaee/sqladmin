@@ -5,10 +5,12 @@ from sqlalchemy import create_engine
 from sqlalchemy.ext.asyncio import create_async_engine
 
 test_database_uri_sync = os.environ.get(
-    "TEST_DATABASE_URI_SYNC", "sqlite:///test.db?check_same_thread=False"
+    "TEST_DATABASE_URI_SYNC",
+    "postgresql+psycopg2://postgres:postgres@localhost:5432/postgres",
 )
 test_database_uri_async = os.environ.get(
-    "TEST_DATABASE_URI_ASYNC", "sqlite+aiosqlite:///test.db?check_same_thread=False"
+    "TEST_DATABASE_URI_ASYNC",
+    "postgresql+asyncpg://postgres:postgres@localhost:5432/postgres",
 )
 
 sync_engine = create_engine(test_database_uri_sync)
