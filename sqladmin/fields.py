@@ -249,31 +249,6 @@ class JSONField(fields.TextAreaField):
 
 
 class QuerySelectField(fields.SelectFieldBase):
-    """
-    Will display a select drop-down field to choose between ORM results in a
-    sqlalchemy `Query`.  The `data` property actually will store/keep an ORM
-    model instance, not the ID. Submitting a choice which is not in the query
-    will result in a validation error.
-
-    This field only works for queries on models whose primary key column(s)
-    have a consistent string representation. This means it mostly only works
-    for those composed of string, unicode, and integer types. For the most
-    part, the primary keys will be auto-detected from the model, alternately
-    pass a one-argument callable to `get_pk` which can return a unique
-    comparable key.
-
-    Specify `get_label` to customize the label associated with each option. If
-    a string, this is the name of an attribute on the model object to use as
-    the label text. If a one-argument callable, this callable will be passed
-    model instance and expected to return the label text. Otherwise, the model
-    object's `__str__` will be used.
-
-    If `allow_blank` is set to `True`, then a blank choice will be added to the
-    top of the list. Selecting this choice will result in the `data` property
-    being `None`. The label for this blank choice can be set by specifying the
-    `blank_text` parameter.
-    """
-
     widget = widgets.Select()
 
     def __init__(

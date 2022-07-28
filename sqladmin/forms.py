@@ -205,7 +205,7 @@ class ModelConverterBase:
                     for obj in objects.scalars().all()
                 ]
 
-        return []
+        return []  # pragma: nocover
 
     def get_converter(self, prop: _MODEL_ATTR_TYPE) -> ConverterCallable:
         if isinstance(prop, RelationshipProperty):
