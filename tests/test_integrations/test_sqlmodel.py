@@ -1,10 +1,9 @@
-from typing import Any, AsyncGenerator, Optional, List
+from typing import AsyncGenerator, List, Optional
 from uuid import UUID, uuid4
 
 import pytest
-from httpx import AsyncClient
 from sqlalchemy.orm import sessionmaker
-from sqlmodel import Field, Session, SQLModel, Relationship
+from sqlmodel import Field, Relationship, Session, SQLModel
 
 from sqladmin.forms import get_model_form
 from tests.common import sync_engine as engine
@@ -21,7 +20,7 @@ class Team(SQLModel, table=True):
     name: str = Field(index=True)
     headquarters: str
 
-    heroes: List["Hero"] = Relationship()
+    heroes: List["Hero"] = Relationship(back_populates="team")
 
 
 class Hero(SQLModel, table=True):
@@ -32,23 +31,17 @@ class Hero(SQLModel, table=True):
     age: Optional[int] = None
 
     team_id: Optional[int] = Field(default=None, foreign_key="team.id")
-    team: Optional[Team] = Relationship()
+    team: Optional[Team] = Relationship(back_populates="heroes")
 
 
-@pytest.fixture
+@pytest.fixture(autouse=True)
 def prepare_database() -> AsyncGenerator[None, None]:
     SQLModel.metadata.create_all(engine)
     yield
     SQLModel.metadata.drop_all(engine)
 
 
-@pytest.fixture
-async def client(prepare_database: Any) -> AsyncGenerator[AsyncClient, None]:
-    async with AsyncClient(base_url="http://testserver") as c:
-        yield c
-
-
-async def test_model_form_converter(client: AsyncClient) -> None:
+async def test_model_form_converter() -> None:
     hero_form = await get_model_form(model=Hero, engine=engine)
 
     assert "age" in hero_form()._fields
