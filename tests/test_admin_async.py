@@ -708,6 +708,15 @@ async def test_update_submit_form(client: AsyncClient) -> None:
 
     assert response.status_code == 400
 
+    data = {"user": user.id}
+    response = await client.post("/admin/address/edit/1", data=data)
+
+    stmt = select(Address).limit(1)
+    async with LocalSession() as s:
+        result = await s.execute(stmt)
+    address = result.scalar_one()
+    assert address.user_id == 1
+
 
 async def test_searchable_list(client: AsyncClient) -> None:
     user = User(name="Ross")

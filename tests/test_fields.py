@@ -173,18 +173,18 @@ def test_select2_tags_field() -> None:
 
 
 def test_query_select_field() -> None:
-    object_list = [(str(i), User(id=i)) for i in range(5)]
+    select_data = [(str(i), str(User(id=i))) for i in range(5)]
 
     class F(Form):
-        select = QuerySelectField(object_list=object_list, get_label="__doc__")
+        select = QuerySelectField(data=select_data, get_label="__doc__")
 
     form = F(DummyData(select=["1"]))
-    form.select._object_list = []
+    form.select._select_data = []
     assert form.validate() is False
 
     class F(Form):  # type: ignore
         select = QuerySelectField(
-            object_list=object_list,
+            data=select_data,
             allow_blank=True,
         )
 
@@ -199,19 +199,19 @@ def test_query_select_field() -> None:
 
 
 def test_query_select_multiple_field() -> None:
-    object_list = [(str(i), User(id=i)) for i in range(5)]
+    data = [(str(i), str(User(id=i))) for i in range(5)]
 
     class F(Form):
-        select = QuerySelectMultipleField(allow_blank=True, object_list=object_list)
+        select = QuerySelectMultipleField(allow_blank=True, data=data)
 
     form = F()
     assert form.validate() is True
 
     form = F(DummyData(select=["1"]))
-    form.select._object_list = object_list
+    form.select._select_data = data
     assert form.validate() is True
 
     form = F(DummyData(select=["100"]))
-    form.select._object_list = object_list
+    form.select._select_data = data
     assert form.select.data == []
     assert form.validate() is False
