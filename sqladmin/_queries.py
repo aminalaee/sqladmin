@@ -33,6 +33,10 @@ def insert_sync(model_admin: "ModelAdmin", data: Dict[str, Any]) -> None:
 
     with model_admin.sessionmaker() as session:
         for key, value in data.items():
+            if not value:
+                setattr(obj, key, value)
+                continue
+
             relation = model_admin._mapper.relationships.get(key)
             if relation:
                 direction = get_direction(relation)
@@ -41,9 +45,6 @@ def insert_sync(model_admin: "ModelAdmin", data: Dict[str, Any]) -> None:
                     related_objs = session.execute(related_stmt).scalars().all()
                     setattr(obj, key, related_objs)
                 elif direction == "ONETOONE":
-                    if not value:
-                        setattr(obj, key, value)
-                        continue
                     related_stmt = _get_to_one_stmt(relation, value)
                     related_obj = session.execute(related_stmt).scalars().first()
                     setattr(obj, key, related_obj)
@@ -63,6 +64,10 @@ async def insert_async(model_admin: "ModelAdmin", data: Dict[str, Any]) -> None:
 
     async with model_admin.sessionmaker() as session:
         for key, value in data.items():
+            if not value:
+                setattr(obj, key, value)
+                continue
+
             relation = model_admin._mapper.relationships.get(key)
             if relation:
                 direction = get_direction(relation)
@@ -72,9 +77,6 @@ async def insert_async(model_admin: "ModelAdmin", data: Dict[str, Any]) -> None:
                     related_objs = result.scalars().all()
                     setattr(obj, key, related_objs)
                 elif direction == "ONETOONE":
-                    if not value:
-                        setattr(obj, key, value)
-                        continue
                     related_stmt = _get_to_one_stmt(relation, value)
                     result = await session.execute(related_stmt)
                     related_obj = result.scalars().first()
@@ -97,6 +99,10 @@ def update_sync(model_admin: "ModelAdmin", pk: Any, data: Dict[str, Any]) -> Non
     with model_admin.sessionmaker() as session:
         obj = session.execute(stmt).scalars().first()
         for key, value in data.items():
+            if not value:
+                setattr(obj, key, value)
+                continue
+
             relation = model_admin._mapper.relationships.get(key)
             if relation:
                 direction = get_direction(relation)
@@ -105,9 +111,6 @@ def update_sync(model_admin: "ModelAdmin", pk: Any, data: Dict[str, Any]) -> Non
                     related_objs = session.execute(related_stmt).scalars().all()
                     setattr(obj, key, related_objs)
                 elif direction == "ONETOONE":
-                    if not value:
-                        setattr(obj, key, value)
-                        continue
                     related_stmt = _get_to_one_stmt(relation, value)
                     related_obj = session.execute(related_stmt).scalars().first()
                     setattr(obj, key, related_obj)
@@ -134,6 +137,10 @@ async def update_async(
         result = await session.execute(stmt)
         obj = result.scalars().first()
         for key, value in data.items():
+            if not value:
+                setattr(obj, key, value)
+                continue
+
             relation = model_admin._mapper.relationships.get(key)
             if relation:
                 direction = get_direction(relation)
@@ -143,9 +150,6 @@ async def update_async(
                     related_objs = result.scalars().all()
                     setattr(obj, key, related_objs)
                 elif direction == "ONETOONE":
-                    if not value:
-                        setattr(obj, key, value)
-                        continue
                     related_stmt = _get_to_one_stmt(relation, value)
                     result = await session.execute(related_stmt)
                     related_obj = result.scalars().first()
