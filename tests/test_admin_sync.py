@@ -681,6 +681,14 @@ def test_update_submit_form(client: TestClient) -> None:
 
     assert response.status_code == 400
 
+    data = {"user": user.id}
+    response = client.post("/admin/address/edit/1", data=data)
+
+    stmt = select(Address).limit(1)
+    with LocalSession() as s:
+        address = s.execute(stmt).scalar_one()
+    assert address.user_id == 1
+
 
 def test_searchable_list(client: TestClient) -> None:
     user = User(name="Ross")

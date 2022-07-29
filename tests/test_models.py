@@ -10,6 +10,7 @@ from starlette.applications import Starlette
 
 from sqladmin import Admin, ModelAdmin
 from sqladmin.exceptions import InvalidColumnError, InvalidModelError
+from sqladmin.helpers import get_column_python_type
 from tests.common import sync_engine as engine
 
 Base = declarative_base()  # type: Any
@@ -468,10 +469,7 @@ def test_get_python_type_postgresql() -> None:
 
         uuid = Column(UUID, primary_key=True)
 
-    class PostgresModelAdmin(ModelAdmin, model=PostgresModel):
-        ...
-
-    PostgresModelAdmin()._get_column_python_type(PostgresModel.uuid) is str
+    get_column_python_type(PostgresModel.uuid) is str
 
 
 def test_get_url_for_details_from_object() -> None:

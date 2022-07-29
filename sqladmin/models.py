@@ -17,9 +17,7 @@ from typing import (
 
 import anyio
 from sqlalchemy import Column, asc, desc, func, inspect, or_
-from sqlalchemy.engine.base import Engine
 from sqlalchemy.exc import NoInspectionAvailable
-from sqlalchemy.ext.asyncio import AsyncEngine
 from sqlalchemy.orm import (
     ColumnProperty,
     RelationshipProperty,
@@ -33,6 +31,14 @@ from starlette.requests import Request
 from starlette.responses import StreamingResponse
 from wtforms import Field, Form
 
+from sqladmin._queries import (
+    delete_async,
+    delete_sync,
+    insert_async,
+    insert_sync,
+    update_async,
+    update_sync,
+)
 from sqladmin.exceptions import InvalidColumnError, InvalidModelError
 from sqladmin.formatters import BASE_FORMATTERS
 from sqladmin.forms import get_model_form
@@ -40,6 +46,7 @@ from sqladmin.helpers import (
     Writer,
     as_str,
     get_attributes,
+    get_column_python_type,
     get_primary_key,
     get_relationships,
     prettify_class_name,
@@ -48,7 +55,7 @@ from sqladmin.helpers import (
     stream_to_csv,
 )
 from sqladmin.pagination import Pagination
-from sqladmin.types import _MODEL_ATTR_TYPE
+from sqladmin.types import _ENGINE_TYPE, _MODEL_ATTR_TYPE
 
 __all__ = [
     "ModelAdmin",
@@ -165,7 +172,7 @@ class ModelAdmin(BaseView, metaclass=ModelAdminMeta):
     pk_column: ClassVar[Column]
     identity: ClassVar[str]
     sessionmaker: ClassVar[sessionmaker]
-    engine: ClassVar[Union[Engine, AsyncEngine]]
+    engine: ClassVar[_ENGINE_TYPE]
     async_engine: ClassVar[bool]
 
     name_plural: ClassVar[str] = ""
@@ -574,6 +581,7 @@ class ModelAdmin(BaseView, metaclass=ModelAdminMeta):
     """
 
     def __init__(self) -> None:
+        self._mapper = inspect(self.model)
         self._relations = get_relationships(self.model)
         self._attrs = get_attributes(self.model)
 
@@ -634,33 +642,6 @@ class ModelAdmin(BaseView, metaclass=ModelAdminMeta):
                 return result.scalars().unique().all()
         else:
             return await anyio.to_thread.run_sync(self._run_query_sync, stmt)
-
-    def _add_object_sync(self, obj: Any) -> None:
-        with self.sessionmaker.begin() as session:
-            session.add(obj)
-
-    def _delete_object_sync(self, obj: Any) -> None:
-        with self.sessionmaker.begin() as session:
-            session.delete(obj)
-
-    def _update_modeL_sync(self, pk: Any, data: Dict[str, Any]) -> None:
-        stmt = select(self.model).where(
-            self.pk_column == self._get_column_python_type(self.pk_column)(pk)
-        )
-
-        with self.sessionmaker.begin() as session:
-            result = session.execute(stmt).scalars().first()
-            for name, value in data.items():
-                if name in self._relations and isinstance(value, list):
-                    # Load relationship objects into session
-                    session.add_all(value)
-                setattr(result, name, value)
-
-    def _get_column_python_type(self, column: Column) -> type:
-        try:
-            return column.type.python_type
-        except NotImplementedError:
-            return str
 
     def _url_for_details(self, obj: Any) -> str:
         pk = getattr(obj, get_primary_key(obj).name)
@@ -772,9 +753,8 @@ class ModelAdmin(BaseView, metaclass=ModelAdminMeta):
         return rows
 
     async def get_model_by_pk(self, value: Any) -> Any:
-        stmt = select(self.model).where(
-            self.pk_column == self._get_column_python_type(self.pk_column)(value)
-        )
+        pk_value = get_column_python_type(self.pk_column)(value)
+        stmt = select(self.model).where(self.pk_column == pk_value)
 
         for relation in self._relations:
             stmt = stmt.options(joinedload(relation.key))
@@ -890,6 +870,14 @@ class ModelAdmin(BaseView, metaclass=ModelAdminMeta):
         form_columns = getattr(self, "form_columns", None)
         form_excluded_columns = getattr(self, "form_excluded_columns", None)
 
+        columns = list(self._mapper.columns)
+        default = []
+        for attr in self._attrs:
+            if attr in self._relations:
+                default.append(attr)
+            if attr in columns:
+                default.append(attr)
+
         return self._build_column_list(
             include=form_columns,
             exclude=form_excluded_columns,
@@ -918,39 +906,21 @@ class ModelAdmin(BaseView, metaclass=ModelAdminMeta):
 
     async def delete_model(self, obj: Any) -> None:
         if self.async_engine:
-            async with self.sessionmaker.begin() as session:
-                await session.delete(obj)
+            await delete_async(self, obj)
         else:
-            await anyio.to_thread.run_sync(self._delete_object_sync, obj)
+            await anyio.to_thread.run_sync(delete_sync, self, obj)
 
-    async def insert_model(self, obj: type) -> Any:
+    async def insert_model(self, data: dict) -> None:
         if self.async_engine:
-            async with self.sessionmaker.begin() as session:
-                session.add(obj)
+            await insert_async(self, data)
         else:
-            await anyio.to_thread.run_sync(self._add_object_sync, obj)
+            await anyio.to_thread.run_sync(insert_sync, self, data)
 
     async def update_model(self, pk: Any, data: Dict[str, Any]) -> None:
         if self.async_engine:
-            stmt = select(self.model).where(
-                self.pk_column == self._get_column_python_type(self.pk_column)(pk)
-            )
-
-            for relation in self._relations:
-                stmt = stmt.options(joinedload(relation.key))
-
-            async with self.sessionmaker.begin() as session:
-                result = await session.execute(stmt)
-                result = result.scalars().first()
-                for name, value in data.items():
-                    if isinstance(value, list) and name in [
-                        relation.key for relation in self._relations
-                    ]:
-                        # Load relationship objects into session
-                        session.add_all(value)
-                    setattr(result, name, value)
+            await update_async(self, pk, data)
         else:
-            await anyio.to_thread.run_sync(self._update_modeL_sync, pk, data)
+            await anyio.to_thread.run_sync(update_sync, self, pk, data)
 
     async def scaffold_form(self) -> Type[Form]:
         if self.form is not None:

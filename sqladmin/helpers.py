@@ -6,6 +6,7 @@ from abc import ABC, abstractmethod
 from typing import Any, Callable, Generator, List, TypeVar, Union
 
 from sqlalchemy import Column, inspect
+from sqlalchemy.orm import RelationshipProperty
 
 from sqladmin.types import _MODEL_ATTR_TYPE
 
@@ -131,3 +132,18 @@ def get_relationships(model: Any) -> List[_MODEL_ATTR_TYPE]:
 
 def get_attributes(model: Any) -> List[_MODEL_ATTR_TYPE]:
     return list(inspect(model).attrs)
+
+
+def get_direction(attr: _MODEL_ATTR_TYPE) -> str:
+    assert isinstance(attr, RelationshipProperty)
+    name = attr.direction.name
+    if name == "ONETOMANY" and not attr.uselist:
+        return "ONETOONE"
+    return name
+
+
+def get_column_python_type(column: Column) -> type:
+    try:
+        return column.type.python_type
+    except NotImplementedError:
+        return str
