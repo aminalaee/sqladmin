@@ -38,7 +38,7 @@ def client() -> Generator[TestClient, None, None]:
         yield c
 
 
-def test_add_base_view(client: TestClient) -> None:
+def test_base_view(client: TestClient) -> None:
     admin.add_view(CustomAdmin)
 
     url = CustomAdmin().url_path_for(CustomAdmin.name_plural)
