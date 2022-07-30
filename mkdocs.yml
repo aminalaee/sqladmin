@@ -19,7 +19,7 @@ nav:
   - Frequently Asked Questions: 'faq.md'
   - API Reference:
     - Application: 'api_reference/application.md'
-    - ModelAdmin: 'api_reference/model_admin.md'
+    - ModelView: 'api_reference/model_view.md'
   - Changelog: 'changelog.md'
 
 markdown_extensions:

@@ -13,7 +13,7 @@ from starlette.routing import Mount, Route
 from starlette.staticfiles import StaticFiles
 from starlette.templating import Jinja2Templates
 
-from sqladmin.models import BaseView, ModelAdmin
+from sqladmin.models import BaseView, ModelView
 from sqladmin.types import _ENGINE_TYPE
 
 __all__ = [
@@ -66,32 +66,32 @@ class BaseAdmin:
 
     @property
     def model_admins(self) -> List["BaseView"]:
-        """Get list of ModelAdmins lazily.
+        """Get list of ModelViews lazily.
 
         Returns:
-            List of ModelAdmin classes registered in Admin.
+            List of ModelView classes registered in Admin.
         """
 
         return self._model_admins
 
-    def _find_model_admin(self, identity: str) -> "ModelAdmin":
+    def _find_model_admin(self, identity: str) -> "ModelView":
         for model_admin in self.model_admins:
-            if isinstance(model_admin, ModelAdmin) and model_admin.identity == identity:
+            if isinstance(model_admin, ModelView) and model_admin.identity == identity:
                 return model_admin
 
         raise HTTPException(status_code=404)
 
-    def register_model(self, model: Type["ModelAdmin"]) -> None:
-        """Register ModelAdmin to the Admin.
+    def register_model(self, model: Type["ModelView"]) -> None:
+        """Register ModelView to the Admin.
 
         Args:
-            model: ModelAdmin class to register in Admin.
+            model: ModelView class to register in Admin.
 
         ???+ usage
             ```python
-            from sqladmin import Admin, ModelAdmin
+            from sqladmin import Admin, ModelView
 
-            class UserAdmin(ModelAdmin, model=User):
+            class UserAdmin(ModelView, model=User):
                 pass
 
             admin.register_model(UserAdmin)
@@ -205,7 +205,7 @@ class Admin(BaseAdminView):
     ???+ usage
         ```python
         from fastapi import FastAPI
-        from sqladmin import Admin, ModelAdmin
+        from sqladmin import Admin, ModelView
 
         from mymodels import User # SQLAlchemy model
 
@@ -214,7 +214,7 @@ class Admin(BaseAdminView):
         admin = Admin(app, engine)
 
 
-        class UserAdmin(ModelAdmin, model=User):
+        class UserAdmin(ModelView, model=User):
             column_list = [User.id, User.name]
 
 

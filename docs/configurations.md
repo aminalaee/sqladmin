@@ -32,21 +32,21 @@ If you want to integrate SQLAdmin into FastAPI application:
 
 ```python
 from fastapi import FastAPI
-from sqladmin import Admin, ModelAdmin
+from sqladmin import Admin, ModelView
 
 
 app = FastAPI()
 admin = Admin(app, engine)
 
 
-class UserAdmin(ModelAdmin, model=User):
+class UserAdmin(ModelView, model=User):
     column_list = [User.id, User.name]
 
 
 admin.register_model(UserAdmin)
 ```
 
-As you can see the `UserAdmin` class inherits from `ModelAdmin` and accepts some configurations.
+As you can see the `UserAdmin` class inherits from `ModelView` and accepts some configurations.
 
 ## Permissions
 
@@ -62,7 +62,7 @@ The following options are available:
 !!! example
 
     ```python
-    class UserAdmin(ModelAdmin, model=User):
+    class UserAdmin(ModelView, model=User):
         can_create = True
         can_edit = True
         can_delete = False
@@ -80,7 +80,7 @@ The metadata for the model. The options are:
 !!! example
 
     ```python
-    class UserAdmin(ModelAdmin, model=User):
+    class UserAdmin(ModelView, model=User):
         name = "User"
         name_plural = "Users"
         icon = "fa-solid fa-user"
@@ -107,18 +107,18 @@ or list of the tuple for multiple columns.
 !!! example
 
     ```python
-    class UserAdmin(ModelAdmin, model=User):
+    class UserAdmin(ModelView, model=User):
         column_list = [User.id, User.name]
         # column_list = ["id", "name"]
     ```
 
     ```python
-    class UserAdmin(ModelAdmin, model=User):
+    class UserAdmin(ModelView, model=User):
         column_exclude_list = [User.id]
     ```
 
     ```python
-    class UserAdmin(ModelAdmin, model=User):
+    class UserAdmin(ModelView, model=User):
         column_searchable_list = [User.name]
         column_sortable_list = [User.id]
         column_formatters = {User.name: lambda m, a: m.name[:10]}
@@ -139,17 +139,17 @@ The options available are:
 !!! example
 
     ```python
-    class UserAdmin(ModelAdmin, model=User):
+    class UserAdmin(ModelView, model=User):
         column_details_list = [User.id, User.name]
     ```
 
     ```python
-    class UserAdmin(ModelAdmin, model=User):
+    class UserAdmin(ModelView, model=User):
         column_details_exclude_list = [User.id]
     ```
 
     ```python
-    class UserAdmin(ModelAdmin, model=User):
+    class UserAdmin(ModelView, model=User):
         column_formatters_detail = {User.name: lambda m, a: m.name[:10]}
     ```
 
@@ -163,7 +163,7 @@ The pagination options in the list page can be configured. The available options
 !!! example
 
     ```python
-    class UserAdmin(ModelAdmin, model=User):
+    class UserAdmin(ModelView, model=User):
         page_size = 50
         page_size_options = [25, 50, 100, 200]
     ```
@@ -179,12 +179,12 @@ For example you can add custom date formatter to be used in both list and detail
 !!! example
 
     ```python
-    class UserAdmin(ModelAdmin, model=User):
+    class UserAdmin(ModelView, model=User):
         def date_format(value):
             return value.strftime("%d.%m.%Y")
 
         column_labels = {User.mail: "Email"}
-        column_type_formatters = dict(ModelAdmin.column_type_formatters, date=date_format)
+        column_type_formatters = dict(ModelView.column_type_formatters, date=date_format)
     ```
 
 ## Form options
@@ -204,7 +204,7 @@ The forms are based on `WTForms` package and include the following options:
 !!! example
 
     ```python
-    class UserAdmin(ModelAdmin, model=User):
+    class UserAdmin(ModelView, model=User):
         form_columns = [User.name]
         form_args = dict(name=dict(label="Full name"))
         form_widget_args = dict(email=dict(readonly=True))
@@ -236,7 +236,7 @@ The pages available are:
 !!! example
 
     ```python
-    class UserAdmin(ModelAdmin, model=User):
+    class UserAdmin(ModelView, model=User):
         list_template = "custom_list.html"
     ```
 

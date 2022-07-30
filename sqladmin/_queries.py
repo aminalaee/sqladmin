@@ -8,7 +8,7 @@ from sqladmin.helpers import get_column_python_type, get_direction, get_primary_
 from sqladmin.types import _MODEL_ATTR_TYPE
 
 if TYPE_CHECKING:
-    from sqladmin.models import ModelAdmin
+    from sqladmin.models import ModelView
 
 
 def _get_to_many_stmt(relation: _MODEL_ATTR_TYPE, values: List[Any]) -> Select:
@@ -28,7 +28,7 @@ def _get_to_one_stmt(relation: _MODEL_ATTR_TYPE, value: Any) -> Select:
     return related_stmt
 
 
-def insert_sync(model_admin: "ModelAdmin", data: Dict[str, Any]) -> None:
+def insert_sync(model_admin: "ModelView", data: Dict[str, Any]) -> None:
     obj = model_admin.model()
 
     with model_admin.sessionmaker() as session:
@@ -59,7 +59,7 @@ def insert_sync(model_admin: "ModelAdmin", data: Dict[str, Any]) -> None:
         session.commit()
 
 
-async def insert_async(model_admin: "ModelAdmin", data: Dict[str, Any]) -> None:
+async def insert_async(model_admin: "ModelView", data: Dict[str, Any]) -> None:
     obj = model_admin.model()
 
     async with model_admin.sessionmaker() as session:
@@ -92,7 +92,7 @@ async def insert_async(model_admin: "ModelAdmin", data: Dict[str, Any]) -> None:
         await session.commit()
 
 
-def update_sync(model_admin: "ModelAdmin", pk: Any, data: Dict[str, Any]) -> None:
+def update_sync(model_admin: "ModelView", pk: Any, data: Dict[str, Any]) -> None:
     pk = get_column_python_type(model_admin.pk_column)(pk)
     stmt = select(model_admin.model).where(model_admin.pk_column == pk)
 
@@ -124,9 +124,7 @@ def update_sync(model_admin: "ModelAdmin", pk: Any, data: Dict[str, Any]) -> Non
         session.commit()
 
 
-async def update_async(
-    model_admin: "ModelAdmin", pk: Any, data: Dict[str, Any]
-) -> None:
+async def update_async(model_admin: "ModelView", pk: Any, data: Dict[str, Any]) -> None:
     pk = get_column_python_type(model_admin.pk_column)(pk)
     stmt = select(model_admin.model).where(model_admin.pk_column == pk)
 
@@ -164,13 +162,13 @@ async def update_async(
         await session.commit()
 
 
-def delete_sync(model_admin: "ModelAdmin", obj: Any) -> None:
+def delete_sync(model_admin: "ModelView", obj: Any) -> None:
     with model_admin.sessionmaker() as session:
         session.delete(obj)
         session.commit()
 
 
-async def delete_async(model_admin: "ModelAdmin", obj: Any) -> None:
+async def delete_async(model_admin: "ModelView", obj: Any) -> None:
     async with model_admin.sessionmaker() as session:
         await session.delete(obj)
         await session.commit()
