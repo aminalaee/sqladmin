@@ -29,6 +29,7 @@ from sqlalchemy.sql.elements import ClauseElement
 from sqlalchemy.sql.expression import Select, select
 from starlette.requests import Request
 from starlette.responses import StreamingResponse
+from starlette.templating import Jinja2Templates
 from wtforms import Field, Form
 
 from sqladmin._queries import (
@@ -39,6 +40,7 @@ from sqladmin._queries import (
     update_async,
     update_sync,
 )
+from sqladmin._types import ENGINE_TYPE, MODEL_ATTR_TYPE
 from sqladmin.exceptions import InvalidColumnError, InvalidModelError
 from sqladmin.formatters import BASE_FORMATTERS
 from sqladmin.forms import get_model_form
@@ -55,7 +57,6 @@ from sqladmin.helpers import (
     stream_to_csv,
 )
 from sqladmin.pagination import Pagination
-from sqladmin.types import _ENGINE_TYPE, _MODEL_ATTR_TYPE
 
 __all__ = [
     "BaseView",
@@ -136,20 +137,19 @@ class BaseModelView:
 
 
 class BaseView(BaseModelView):
-    is_model = False
+    is_model: ClassVar[bool] = False
+    methods: ClassVar[List[str]] = ["GET"]
+    include_in_schema: ClassVar[bool] = True
 
-    name_plural: ClassVar[str]
     name: ClassVar[str]
+    name_plural: ClassVar[str]
 
     icon: ClassVar[str]
     path: ClassVar[str]
 
-    methods: ClassVar[List[str]] = ["GET"]
     endpoint: ClassVar[Callable]
-    include_in_schema: ClassVar[bool] = True
-
     url_path_for: ClassVar[Callable]
-    templates: ClassVar
+    templates: ClassVar[Jinja2Templates]
 
 
 class ModelView(BaseView, metaclass=ModelViewMeta):
@@ -166,16 +166,15 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
         ```
     """
 
-    is_model = True
-
     model: ClassVar[type]
 
     # Internals
     pk_column: ClassVar[Column]
     identity: ClassVar[str]
     sessionmaker: ClassVar[sessionmaker]
-    engine: ClassVar[_ENGINE_TYPE]
+    engine: ClassVar[ENGINE_TYPE]
     async_engine: ClassVar[bool]
+    is_model: ClassVar[bool] = True
 
     name_plural: ClassVar[str] = ""
     """Plural name of ModelView.
@@ -780,7 +779,7 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
 
         return result
 
-    def get_list_value(self, obj: type, attr: _MODEL_ATTR_TYPE) -> Tuple[Any, Any]:
+    def get_list_value(self, obj: type, attr: MODEL_ATTR_TYPE) -> Tuple[Any, Any]:
         """Get tuple of (value, formatted_value) for the list view."""
         value = self.get_attr_value(obj, attr)
         formatted_value = self._default_formatter(value)
@@ -790,7 +789,7 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
             formatted_value = formatter(obj, attr)
         return value, formatted_value
 
-    def get_detail_value(self, obj: type, attr: _MODEL_ATTR_TYPE) -> Tuple[Any, Any]:
+    def get_detail_value(self, obj: type, attr: MODEL_ATTR_TYPE) -> Tuple[Any, Any]:
         """Get tuple of (value, formatted_value) for the detail view."""
         value = self.get_attr_value(obj, attr)
         formatted_value = self._default_formatter(value)
@@ -802,7 +801,7 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
 
     def get_model_attr(
         self, attr: Union[str, InstrumentedAttribute]
-    ) -> _MODEL_ATTR_TYPE:
+    ) -> MODEL_ATTR_TYPE:
         assert isinstance(attr, (str, InstrumentedAttribute))
 
         if isinstance(attr, str):
@@ -825,10 +824,10 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
 
     def _build_column_list(
         self,
-        default: List[_MODEL_ATTR_TYPE],
+        default: List[MODEL_ATTR_TYPE],
         include: Optional[Sequence[Union[str, InstrumentedAttribute]]] = None,
         exclude: Optional[Sequence[Union[str, InstrumentedAttribute]]] = None,
-    ) -> List[Tuple[str, _MODEL_ATTR_TYPE]]:
+    ) -> List[Tuple[str, MODEL_ATTR_TYPE]]:
         """This function generalizes constructing a list of columns
         for any sequence of inclusions or exclusions.
         """
@@ -842,7 +841,7 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
 
         return [(self._column_labels.get(attr, attr.key), attr) for attr in attrs]
 
-    def get_list_columns(self) -> List[Tuple[str, _MODEL_ATTR_TYPE]]:
+    def get_list_columns(self) -> List[Tuple[str, MODEL_ATTR_TYPE]]:
         """Get list of columns to display in List page."""
 
         column_list = getattr(self, "column_list", None)
@@ -854,7 +853,7 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
             default=[getattr(self.model, self.pk_column.name).prop],
         )
 
-    def get_details_columns(self) -> List[Tuple[str, _MODEL_ATTR_TYPE]]:
+    def get_details_columns(self) -> List[Tuple[str, MODEL_ATTR_TYPE]]:
         """Get list of columns to display in Detail page."""
 
         column_details_list = getattr(self, "column_details_list", None)
@@ -866,7 +865,7 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
             default=self._attrs,
         )
 
-    def get_form_columns(self) -> List[Tuple[str, _MODEL_ATTR_TYPE]]:
+    def get_form_columns(self) -> List[Tuple[str, MODEL_ATTR_TYPE]]:
         """Get list of columns to display in the form."""
 
         form_columns = getattr(self, "form_columns", None)
@@ -886,7 +885,7 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
             default=self._attrs,
         )
 
-    def get_export_columns(self) -> List[Tuple[str, _MODEL_ATTR_TYPE]]:
+    def get_export_columns(self) -> List[Tuple[str, MODEL_ATTR_TYPE]]:
         """Get list of columns to export."""
 
         columns = getattr(self, "column_export_list", None)
@@ -900,7 +899,7 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
 
     def get_column_labels(
         self,
-    ) -> Dict[_MODEL_ATTR_TYPE, str]:
+    ) -> Dict[MODEL_ATTR_TYPE, str]:
         return {
             self.get_model_attr(column_label): value
             for column_label, value in self.column_labels.items()

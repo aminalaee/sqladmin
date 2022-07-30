@@ -36,6 +36,7 @@ from wtforms import (
 )
 from wtforms.fields.core import UnboundField
 
+from sqladmin._types import ENGINE_TYPE, MODEL_ATTR_TYPE
 from sqladmin._validators import CurrencyValidator, TimezoneValidator
 from sqladmin.exceptions import NoConverterFound
 from sqladmin.fields import (
@@ -45,7 +46,6 @@ from sqladmin.fields import (
     SelectField,
 )
 from sqladmin.helpers import get_direction, get_primary_key
-from sqladmin.types import _ENGINE_TYPE, _MODEL_ATTR_TYPE
 
 
 class Validator(Protocol):
@@ -60,7 +60,7 @@ class ConverterCallable(Protocol):
     def __call__(
         self,
         model: type,
-        prop: _MODEL_ATTR_TYPE,
+        prop: MODEL_ATTR_TYPE,
         kwargs: Dict[str, Any],
     ) -> UnboundField:
         ...  # pragma: no cover
@@ -98,8 +98,8 @@ class ModelConverterBase:
 
     async def _prepare_kwargs(
         self,
-        prop: _MODEL_ATTR_TYPE,
-        engine: _ENGINE_TYPE,
+        prop: MODEL_ATTR_TYPE,
+        engine: ENGINE_TYPE,
         field_args: Dict[str, Any],
         field_widget_args: Dict[str, Any],
         form_include_pk: bool,
@@ -169,7 +169,7 @@ class ModelConverterBase:
         return kwargs
 
     async def _prepare_relationship(
-        self, prop: RelationshipProperty, kwargs: dict, engine: _ENGINE_TYPE
+        self, prop: RelationshipProperty, kwargs: dict, engine: ENGINE_TYPE
     ) -> dict:
         nullable = True
         for pair in prop.local_remote_pairs:
@@ -184,7 +184,7 @@ class ModelConverterBase:
     async def _prepare_select_options(
         self,
         prop: RelationshipProperty,
-        engine: _ENGINE_TYPE,
+        engine: ENGINE_TYPE,
     ) -> List[Tuple[str, Any]]:
         target_model = prop.mapper.class_
         pk = get_primary_key(target_model)
@@ -207,7 +207,7 @@ class ModelConverterBase:
 
         return []  # pragma: nocover
 
-    def get_converter(self, prop: _MODEL_ATTR_TYPE) -> ConverterCallable:
+    def get_converter(self, prop: MODEL_ATTR_TYPE) -> ConverterCallable:
         if isinstance(prop, RelationshipProperty):
             direction = get_direction(prop)
             return self._converters[direction]
@@ -244,8 +244,8 @@ class ModelConverterBase:
     async def convert(
         self,
         model: type,
-        prop: _MODEL_ATTR_TYPE,
-        engine: _ENGINE_TYPE,
+        prop: MODEL_ATTR_TYPE,
+        engine: ENGINE_TYPE,
         field_args: Dict[str, Any],
         field_widget_args: Dict[str, Any],
         form_include_pk: bool,
@@ -464,7 +464,7 @@ class ModelConverter(ModelConverterBase):
 
 async def get_model_form(
     model: type,
-    engine: _ENGINE_TYPE,
+    engine: ENGINE_TYPE,
     only: Sequence[str] = None,
     exclude: Sequence[str] = None,
     column_labels: Dict[str, str] = None,

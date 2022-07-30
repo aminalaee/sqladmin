@@ -13,8 +13,8 @@ from starlette.routing import Mount, Route
 from starlette.staticfiles import StaticFiles
 from starlette.templating import Jinja2Templates
 
+from sqladmin._types import ENGINE_TYPE
 from sqladmin.models import BaseView, ModelView
-from sqladmin.types import _ENGINE_TYPE
 
 __all__ = [
     "Admin",
@@ -31,7 +31,7 @@ class BaseAdmin:
     def __init__(
         self,
         app: Starlette,
-        engine: _ENGINE_TYPE,
+        engine: ENGINE_TYPE,
         base_url: str = "/admin",
         title: str = "Admin",
         logo_url: str = None,
@@ -83,7 +83,7 @@ class BaseAdmin:
 
     def add_view(self, view: Union[Type[ModelView], Type[BaseView]]) -> None:
         """Add ModelView or BaseView classes to Admin."""
-        if ModelView in view.__bases__:
+        if view.is_model:
             self.add_model_view(view)  # type: ignore
         else:
             self.add_base_view(view)
@@ -236,7 +236,7 @@ class Admin(BaseAdminView):
     def __init__(
         self,
         app: Starlette,
-        engine: _ENGINE_TYPE,
+        engine: ENGINE_TYPE,
         base_url: str = "/admin",
         title: str = "Admin",
         logo_url: str = None,
