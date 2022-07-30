@@ -149,15 +149,15 @@ class BaseAdmin:
         view.url_path_for = self.app.url_path_for
         view.templates = self.templates
 
-        class_view = view()
-        self._model_admins.append(class_view)
+        view_instance = view()
+        self._model_admins.append(view_instance)
 
         self.app.add_route(
-            route=class_view.endpoint,
-            path=class_view.path,
-            methods=class_view.methods,
-            name=class_view.name_plural,
-            include_in_schema=class_view.include_in_schema,
+            route=view_instance.endpoint,
+            path=view_instance.path,
+            methods=view_instance.methods,
+            name=view_instance.name_plural,
+            include_in_schema=view_instance.include_in_schema,
         )
 
 

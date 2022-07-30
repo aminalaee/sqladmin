@@ -16,7 +16,7 @@ Base = declarative_base()  # type: Any
 Session = sessionmaker(bind=engine)
 
 app = Starlette()
-admin = Admin(app=app, engine=engine, templates_dir="tests/tpl")
+admin = Admin(app=app, engine=engine, templates_dir="tests/templates")
 
 
 class CustomAdmin(BaseView):
