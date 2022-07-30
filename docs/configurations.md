@@ -1,7 +1,7 @@
 SQLAdmin configuration options are heavily inspired by the Flask-Admin project.
 
 This page will give you a basic introduction and for all the details
-you can visit [API Reference](./api_reference/model_admin.md).
+you can visit [API Reference](./api_reference/model_view.md).
 
 Let's say you've defined your SQLAlchemy models like this:
 
