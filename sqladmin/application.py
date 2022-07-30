@@ -41,7 +41,7 @@ class BaseAdmin:
         self.engine = engine
         self.base_url = base_url
         self.templates_dir = templates_dir
-        self._views: List[BaseView] = []
+        self._views: List[Union[BaseView, ModelView]] = []
 
         self.templates = self.init_templating_engine(title=title, logo_url=logo_url)
 
@@ -65,7 +65,7 @@ class BaseAdmin:
         return templates
 
     @property
-    def views(self) -> List[BaseView]:
+    def views(self) -> List[Union[BaseView, ModelView]]:
         """Get list of ModelView and BaseView instances lazily.
 
         Returns:
@@ -83,7 +83,7 @@ class BaseAdmin:
 
     def add_view(self, view: Union[Type[ModelView], Type[BaseView]]) -> None:
         """Add ModelView or BaseView classes to Admin."""
-        if view.__bases__[0] is ModelView:
+        if ModelView in view.__bases__:
             self.add_model_view(view)  # type: ignore
         else:
             self.add_base_view(view)
@@ -162,7 +162,7 @@ class BaseAdmin:
             include_in_schema=view_instance.include_in_schema,
         )
 
-    def register_model(self, model: Type[ModelView]) -> None:
+    def register_model(self, model: Type[ModelView]) -> None:  # pragma: no cover
         import warnings
 
         warnings.warn(

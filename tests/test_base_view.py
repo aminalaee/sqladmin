@@ -39,7 +39,7 @@ def client() -> Generator[TestClient, None, None]:
 
 
 def test_add_base_view(client: TestClient) -> None:
-    admin.add_base_view(CustomAdmin)
+    admin.add_view(CustomAdmin)
 
     url = CustomAdmin().url_path_for(CustomAdmin.name_plural)
     assert url == "/custom/test_page"
