@@ -38,8 +38,8 @@ def client() -> Generator[TestClient, None, None]:
         yield c
 
 
-def test_register_view(client: TestClient) -> None:
-    admin.register_view(CustomAdmin)
+def test_add_base_view(client: TestClient) -> None:
+    admin.add_base_view(CustomAdmin)
 
     url = CustomAdmin().url_path_for(CustomAdmin.name_plural)
     assert url == "/custom/test_page"

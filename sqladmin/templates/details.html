@@ -3,7 +3,7 @@
 <div class="col-12">
   <div class="card">
     <div class="card-header">
-      <h3 class="card-title">{{ model_admin.pk_column.name }}: {{ model_admin.get_attr_value(model, model_admin.pk_column) }}</h3>
+      <h3 class="card-title">{{ model_view.pk_column.name }}: {{ model_view.get_attr_value(model, model_view.pk_column) }}</h3>
     </div>
     <div class="card-body border-bottom py-3">
       <div class="table-responsive">
@@ -15,19 +15,19 @@
             </tr>
           </thead>
           <tbody>
-            {% for name, attr in model_admin._details_attrs %}
+            {% for name, attr in model_view._details_attrs %}
             <tr>
               <td>{{ name }}</td>
-              {% set value, formatted_value = model_admin.get_detail_value(model, attr) %}
-              {% if attr in model_admin._relations %}
+              {% set value, formatted_value = model_view.get_detail_value(model, attr) %}
+              {% if attr in model_view._relations %}
               {% if is_list( value ) %}
               <td>
               {% for elem, formatted_elem in zip(value, formatted_value) %}
-              <a href="{{ model_admin._url_for_details(elem) }}">({{ formatted_elem }})</a>
+              <a href="{{ model_view._url_for_details(elem) }}">({{ formatted_elem }})</a>
               {% endfor %}
               </td>
               {% else %}
-              <td><a href="{{ model_admin._url_for_details_with_attr(model, attr) }}">{{ formatted_value }}</a></td>
+              <td><a href="{{ model_view._url_for_details_with_attr(model, attr) }}">{{ formatted_value }}</a></td>
               {% endif %}
               {% else %}
               <td>{{ formatted_value }}</td>
@@ -40,20 +40,20 @@
       <div class="card-footer d-flex align-items-right">
         <div class="row">
           <div class="col">
-            <a href="{{ url_for('admin:list', identity=model_admin.identity) }}" class="btn">
+            <a href="{{ url_for('admin:list', identity=model_view.identity) }}" class="btn">
               Go Back
             </a>
           </div>
-          {% if model_admin.can_delete %}
+          {% if model_view.can_delete %}
           <div class="col">
-            <a href="#" data-name="{{ model_admin.name }}" data-pk="{{ model_admin.get_attr_value(model, model_admin.pk_column) }}" data-url="{{ model_admin._url_for_delete(model) }}" data-bs-toggle="modal" data-bs-target="#modal-delete" class="btn btn-danger">
+            <a href="#" data-name="{{ model_view.name }}" data-pk="{{ model_view.get_attr_value(model, model_view.pk_column) }}" data-url="{{ model_view._url_for_delete(model) }}" data-bs-toggle="modal" data-bs-target="#modal-delete" class="btn btn-danger">
               Delete
             </a>
           </div>
           {% endif %}
-          {% if model_admin.can_edit %}
+          {% if model_view.can_edit %}
           <div class="col">
-            <a href="{{ model_admin._url_for_edit(model) }}" class="btn btn-primary">
+            <a href="{{ model_view._url_for_edit(model) }}" class="btn btn-primary">
               Edit
             </a>
           </div>
@@ -63,7 +63,7 @@
     </div>
   </div>
 </div>
-{% if model_admin.can_delete %}
+{% if model_view.can_delete %}
 {% include 'modals/delete.html' %}
 {% endif %}
 {% endblock %}

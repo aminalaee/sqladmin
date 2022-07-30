@@ -28,16 +28,16 @@ def _get_to_one_stmt(relation: _MODEL_ATTR_TYPE, value: Any) -> Select:
     return related_stmt
 
 
-def insert_sync(model_admin: "ModelView", data: Dict[str, Any]) -> None:
-    obj = model_admin.model()
+def insert_sync(model_view: "ModelView", data: Dict[str, Any]) -> None:
+    obj = model_view.model()
 
-    with model_admin.sessionmaker() as session:
+    with model_view.sessionmaker() as session:
         for key, value in data.items():
             if not value:
                 setattr(obj, key, value)
                 continue
 
-            relation = model_admin._mapper.relationships.get(key)
+            relation = model_view._mapper.relationships.get(key)
             if relation:
                 direction = get_direction(relation)
                 if direction in ["ONETOMANY", "MANYTOMANY"]:
@@ -59,16 +59,16 @@ def insert_sync(model_admin: "ModelView", data: Dict[str, Any]) -> None:
         session.commit()
 
 
-async def insert_async(model_admin: "ModelView", data: Dict[str, Any]) -> None:
-    obj = model_admin.model()
+async def insert_async(model_view: "ModelView", data: Dict[str, Any]) -> None:
+    obj = model_view.model()
 
-    async with model_admin.sessionmaker() as session:
+    async with model_view.sessionmaker() as session:
         for key, value in data.items():
             if not value:
                 setattr(obj, key, value)
                 continue
 
-            relation = model_admin._mapper.relationships.get(key)
+            relation = model_view._mapper.relationships.get(key)
             if relation:
                 direction = get_direction(relation)
                 if direction in ["ONETOMANY", "MANYTOMANY"]:
@@ -92,18 +92,18 @@ async def insert_async(model_admin: "ModelView", data: Dict[str, Any]) -> None:
         await session.commit()
 
 
-def update_sync(model_admin: "ModelView", pk: Any, data: Dict[str, Any]) -> None:
-    pk = get_column_python_type(model_admin.pk_column)(pk)
-    stmt = select(model_admin.model).where(model_admin.pk_column == pk)
+def update_sync(model_view: "ModelView", pk: Any, data: Dict[str, Any]) -> None:
+    pk = get_column_python_type(model_view.pk_column)(pk)
+    stmt = select(model_view.model).where(model_view.pk_column == pk)
 
-    with model_admin.sessionmaker() as session:
+    with model_view.sessionmaker() as session:
         obj = session.execute(stmt).scalars().first()
         for key, value in data.items():
             if not value:
                 setattr(obj, key, value)
                 continue
 
-            relation = model_admin._mapper.relationships.get(key)
+            relation = model_view._mapper.relationships.get(key)
             if relation:
                 direction = get_direction(relation)
                 if direction in ["ONETOMANY", "MANYTOMANY"]:
@@ -124,14 +124,14 @@ def update_sync(model_admin: "ModelView", pk: Any, data: Dict[str, Any]) -> None
         session.commit()
 
 
-async def update_async(model_admin: "ModelView", pk: Any, data: Dict[str, Any]) -> None:
-    pk = get_column_python_type(model_admin.pk_column)(pk)
-    stmt = select(model_admin.model).where(model_admin.pk_column == pk)
+async def update_async(model_view: "ModelView", pk: Any, data: Dict[str, Any]) -> None:
+    pk = get_column_python_type(model_view.pk_column)(pk)
+    stmt = select(model_view.model).where(model_view.pk_column == pk)
 
-    for relation in model_admin._relations:
+    for relation in model_view._relations:
         stmt = stmt.options(joinedload(relation.key))
 
-    async with model_admin.sessionmaker() as session:
+    async with model_view.sessionmaker() as session:
         result = await session.execute(stmt)
         obj = result.scalars().first()
         for key, value in data.items():
@@ -139,7 +139,7 @@ async def update_async(model_admin: "ModelView", pk: Any, data: Dict[str, Any]) 
                 setattr(obj, key, value)
                 continue
 
-            relation = model_admin._mapper.relationships.get(key)
+            relation = model_view._mapper.relationships.get(key)
             if relation:
                 direction = get_direction(relation)
                 if direction in ["ONETOMANY", "MANYTOMANY"]:
@@ -162,13 +162,13 @@ async def update_async(model_admin: "ModelView", pk: Any, data: Dict[str, Any]) 
         await session.commit()
 
 
-def delete_sync(model_admin: "ModelView", obj: Any) -> None:
-    with model_admin.sessionmaker() as session:
+def delete_sync(model_view: "ModelView", obj: Any) -> None:
+    with model_view.sessionmaker() as session:
         session.delete(obj)
         session.commit()
 
 
-async def delete_async(model_admin: "ModelView", obj: Any) -> None:
-    async with model_admin.sessionmaker() as session:
+async def delete_async(model_view: "ModelView", obj: Any) -> None:
+    async with model_view.sessionmaker() as session:
         await session.delete(obj)
         await session.commit()

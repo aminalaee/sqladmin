@@ -43,7 +43,7 @@ class UserAdmin(ModelView, model=User):
     column_list = [User.id, User.name]
 
 
-admin.register_model(UserAdmin)
+admin.add_view(UserAdmin)
 ```
 
 As you can see the `UserAdmin` class inherits from `ModelView` and accepts some configurations.

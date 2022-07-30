@@ -3,7 +3,7 @@
 <div class="col-12">
   <div class="card">
     <div class="card-header">
-      <h3 class="card-title">New {{ model_admin.name }}</h3>
+      <h3 class="card-title">New {{ model_view.name }}</h3>
     </div>
     <div class="card-body border-bottom py-3">
       <form action="{{ request.url }}" method="POST">
@@ -27,7 +27,7 @@
         <div class="d-flex align-items-right">
           <div class="row">
             <div class="col">
-              <a href="{{ url_for('admin:list', identity=model_admin.identity) }}" class="btn">
+              <a href="{{ url_for('admin:list', identity=model_view.identity) }}" class="btn">
                 Cancel
               </a>
             </div>

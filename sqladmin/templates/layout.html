@@ -14,18 +14,18 @@
       </h1>
       <div class="collapse navbar-collapse" id="navbar-menu">
         <ul class="navbar-nav pt-lg-3">
-          {% for model_admin in model_admins %}
-          {% if model_admin.is_visible(request) and model_admin.is_accessible(request) %}
+          {% for view in views %}
+          {% if view.is_visible(request) and view.is_accessible(request) %}
           <li class="nav-item">
-            {% if model_admin.is_model %}
-            <a class="nav-link {% if model_admin.identity == request.path_params['identity'] %}active{% endif %}" href="{{ url_for('admin:list', identity=model_admin.identity) }}">
+            {% if view.is_model %}
+            <a class="nav-link {% if view.identity == request.path_params['identity'] %}active{% endif %}" href="{{ url_for('admin:list', identity=view.identity) }}">
             {% else %}
-            <a class="nav-link {% if model_admin.identity == request.path_params['identity'] %}active{% endif %}" href="{{  model_admin.url_path_for(model_admin.name_plural) }}">
+            <a class="nav-link {% if view.identity == request.path_params['identity'] %}active{% endif %}" href="{{  view.url_path_for(view.name_plural) }}">
             {% endif %}
             <span class="nav-link-icon d-md-none d-lg-inline-block">
-            {% if model_admin.icon %} <i class="{{ model_admin.icon }}"></i> {% endif %}
+            {% if view.icon %} <i class="{{ view.icon }}"></i> {% endif %}
             </span>
-            <span class="nav-link-title">{{ model_admin.name_plural }}</span>
+            <span class="nav-link-title">{{ view.name_plural }}</span>
             </a>
           </li>
           {% endif %}

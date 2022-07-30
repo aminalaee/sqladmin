@@ -1,4 +1,4 @@
-from typing import List, Sequence, Type
+from typing import List, Sequence, Type, Union
 
 from jinja2 import ChoiceLoader, FileSystemLoader, PackageLoader
 from sqlalchemy.engine import Engine
@@ -41,7 +41,7 @@ class BaseAdmin:
         self.engine = engine
         self.base_url = base_url
         self.templates_dir = templates_dir
-        self._model_admins: List["BaseView"] = []
+        self._views: List[BaseView] = []
 
         self.templates = self.init_templating_engine(title=title, logo_url=logo_url)
 
@@ -59,33 +59,37 @@ class BaseAdmin:
         templates.env.globals["zip"] = zip
         templates.env.globals["admin_title"] = title
         templates.env.globals["admin_logo_url"] = logo_url
-        templates.env.globals["model_admins"] = self.model_admins
+        templates.env.globals["views"] = self.views
         templates.env.globals["is_list"] = lambda x: isinstance(x, list)
 
         return templates
 
     @property
-    def model_admins(self) -> List["BaseView"]:
-        """Get list of ModelViews lazily.
+    def views(self) -> List[BaseView]:
+        """Get list of ModelView and BaseView instances lazily.
 
         Returns:
-            List of ModelView classes registered in Admin.
+            List of ModelView and BaseView instances added to Admin.
         """
 
-        return self._model_admins
+        return self._views
 
-    def _find_model_admin(self, identity: str) -> "ModelView":
-        for model_admin in self.model_admins:
-            if isinstance(model_admin, ModelView) and model_admin.identity == identity:
-                return model_admin
+    def _find_model_view(self, identity: str) -> ModelView:
+        for view in self.views:
+            if isinstance(view, ModelView) and view.identity == identity:
+                return view
 
         raise HTTPException(status_code=404)
 
-    def register_model(self, model: Type["ModelView"]) -> None:
-        """Register ModelView to the Admin.
+    def add_view(self, view: Union[Type[ModelView], Type[BaseView]]) -> None:
+        """Add ModelView or BaseView classes to Admin."""
+        if view.__bases__[0] is ModelView:
+            self.add_model_view(view)  # type: ignore
+        else:
+            self.add_base_view(view)
 
-        Args:
-            model: ModelView class to register in Admin.
+    def add_model_view(self, view: Type[ModelView]) -> None:
+        """Add ModelView to the Admin.
 
         ???+ usage
             ```python
@@ -94,63 +98,61 @@ class BaseAdmin:
             class UserAdmin(ModelView, model=User):
                 pass
 
-            admin.register_model(UserAdmin)
+            admin.add_model_view(UserAdmin)
             ```
         """
 
         # Set database engine from Admin instance
-        model.engine = self.engine
-        model.url_path_for = self.app.url_path_for
+        view.engine = self.engine
+        view.url_path_for = self.app.url_path_for
 
-        if isinstance(model.engine, Engine):
-            model.sessionmaker = sessionmaker(
-                bind=model.engine,
+        if isinstance(view.engine, Engine):
+            view.sessionmaker = sessionmaker(
+                bind=view.engine,
                 class_=Session,
                 autoflush=False,
                 autocommit=False,
             )
-            model.async_engine = False
+            view.async_engine = False
         else:
-            model.sessionmaker = sessionmaker(
-                bind=model.engine,
+            view.sessionmaker = sessionmaker(
+                bind=view.engine,
                 class_=AsyncSession,
                 autoflush=False,
                 autocommit=False,
             )
-            model.async_engine = True
+            view.async_engine = True
 
-        self._model_admins.append((model()))
+        self._views.append((view()))
 
-    def register_view(self, view: Type["BaseView"]) -> None:
-        """Register BaseView to the Admin.
-
-        Args:
-            view: BaseView class to register in Admin.
+    def add_base_view(self, view: Type[BaseView]) -> None:
+        """Add BaseView to the Admin.
 
         ???+ usage
             ```python
             from sqladmin import BaseView
 
             class CustomAdmin(BaseView):
-                   def test_page(self, request: Request):
-                       return self.templates.TemplateResponse("custom.html",
-                                context={"request": request}
-                                )
+                def test_page(self, request: Request):
+                    return self.templates.TemplateResponse(
+                        "custom.html",
+                        context={"request": request},
+                    )
 
-                   name_plural = "Custom Page"
-                   icon = "fa-solid fa-chart-line"
-                   path = "/custom/test_page"
-                   methods = ["GET"]
-                   endpoint = test_page
+                name_plural = "Custom Page"
+                icon = "fa-solid fa-chart-line"
+                path = "/custom/test_page"
+                methods = ["GET"]
+                endpoint = test_page
 
-            admin.register_view(CustomAdmin)
+            admin.add_base_view(CustomAdmin)
             ```
         """
         view.url_path_for = self.app.url_path_for
         view.templates = self.templates
 
         view_instance = view()
-        self._model_admins.append(view_instance)
+        self._views.append(view_instance)
 
         self.app.add_route(
             route=view_instance.endpoint,
@@ -160,6 +162,15 @@ class BaseAdmin:
             include_in_schema=view_instance.include_in_schema,
         )
 
+    def register_model(self, model: Type[ModelView]) -> None:
+        import warnings
+
+        warnings.warn(
+            "Method `register_model` is deprecated please use `add_view` instead.",
+            DeprecationWarning,
+        )
+        self.add_model_view(model)
+
 
 class BaseAdminView(BaseAdmin):
     """
@@ -167,35 +178,35 @@ class BaseAdminView(BaseAdmin):
     """
 
     async def _list(self, request: Request) -> None:
-        model_admin = self._find_model_admin(request.path_params["identity"])
-        if not model_admin.is_accessible(request):
+        model_view = self._find_model_view(request.path_params["identity"])
+        if not model_view.is_accessible(request):
             raise HTTPException(status_code=403)
 
     async def _create(self, request: Request) -> None:
-        model_admin = self._find_model_admin(request.path_params["identity"])
-        if not model_admin.can_create or not model_admin.is_accessible(request):
+        model_view = self._find_model_view(request.path_params["identity"])
+        if not model_view.can_create or not model_view.is_accessible(request):
             raise HTTPException(status_code=403)
 
     async def _details(self, request: Request) -> None:
-        model_admin = self._find_model_admin(request.path_params["identity"])
-        if not model_admin.can_view_details or not model_admin.is_accessible(request):
+        model_view = self._find_model_view(request.path_params["identity"])
+        if not model_view.can_view_details or not model_view.is_accessible(request):
             raise HTTPException(status_code=403)
 
     async def _delete(self, request: Request) -> None:
-        model_admin = self._find_model_admin(request.path_params["identity"])
-        if not model_admin.can_delete or not model_admin.is_accessible(request):
+        model_view = self._find_model_view(request.path_params["identity"])
+        if not model_view.can_delete or not model_view.is_accessible(request):
             raise HTTPException(status_code=403)
 
     async def _edit(self, request: Request) -> None:
-        model_admin = self._find_model_admin(request.path_params["identity"])
-        if not model_admin.can_edit or not model_admin.is_accessible(request):
+        model_view = self._find_model_view(request.path_params["identity"])
+        if not model_view.can_edit or not model_view.is_accessible(request):
             raise HTTPException(status_code=403)
 
     async def _export(self, request: Request) -> None:
-        model_admin = self._find_model_admin(request.path_params["identity"])
-        if not model_admin.can_export or not model_admin.is_accessible(request):
+        model_view = self._find_model_view(request.path_params["identity"])
+        if not model_view.can_export or not model_view.is_accessible(request):
             raise HTTPException(status_code=403)
-        if request.path_params["export_type"] not in model_admin.export_types:
+        if request.path_params["export_type"] not in model_view.export_types:
             raise HTTPException(status_code=404)
 
 
@@ -218,7 +229,7 @@ class Admin(BaseAdminView):
             column_list = [User.id, User.name]
 
 
-        admin.register_model(UserAdmin)
+        admin.add_view(UserAdmin)
         ```
     """
 
@@ -314,7 +325,7 @@ class Admin(BaseAdminView):
 
         await self._list(request)
 
-        model_admin = self._find_model_admin(request.path_params["identity"])
+        model_view = self._find_model_view(request.path_params["identity"])
 
         page = int(request.query_params.get("page", 1))
         page_size = int(request.query_params.get("pageSize", 0))
@@ -322,36 +333,36 @@ class Admin(BaseAdminView):
         sort_by = request.query_params.get("sortBy", None)
         sort = request.query_params.get("sort", "asc")
 
-        pagination = await model_admin.list(page, page_size, search, sort_by, sort)
+        pagination = await model_view.list(page, page_size, search, sort_by, sort)
         pagination.add_pagination_urls(request.url)
 
         context = {
             "request": request,
-            "model_admin": model_admin,
+            "model_view": model_view,
             "pagination": pagination,
         }
 
-        return self.templates.TemplateResponse(model_admin.list_template, context)
+        return self.templates.TemplateResponse(model_view.list_template, context)
 
     async def details(self, request: Request) -> Response:
         """Details route."""
 
         await self._details(request)
 
-        model_admin = self._find_model_admin(request.path_params["identity"])
+        model_view = self._find_model_view(request.path_params["identity"])
 
-        model = await model_admin.get_model_by_pk(request.path_params["pk"])
+        model = await model_view.get_model_by_pk(request.path_params["pk"])
         if not model:
             raise HTTPException(status_code=404)
 
         context = {
             "request": request,
-            "model_admin": model_admin,
+            "model_view": model_view,
             "model": model,
-            "title": model_admin.name,
+            "title": model_view.name,
         }
 
-        return self.templates.TemplateResponse(model_admin.details_template, context)
+        return self.templates.TemplateResponse(model_view.details_template, context)
 
     async def delete(self, request: Request) -> Response:
         """Delete route."""
@@ -359,13 +370,13 @@ class Admin(BaseAdminView):
         await self._delete(request)
 
         identity = request.path_params["identity"]
-        model_admin = self._find_model_admin(identity)
+        model_view = self._find_model_view(identity)
 
-        model = await model_admin.get_model_by_pk(request.path_params["pk"])
+        model = await model_view.get_model_by_pk(request.path_params["pk"])
         if not model:
             raise HTTPException(status_code=404)
 
-        await model_admin.delete_model(model)
+        await model_view.delete_model(model)
 
         return Response(content=request.url_for("admin:list", identity=identity))
 
@@ -375,28 +386,28 @@ class Admin(BaseAdminView):
         await self._create(request)
 
         identity = request.path_params["identity"]
-        model_admin = self._find_model_admin(identity)
+        model_view = self._find_model_view(identity)
 
-        Form = await model_admin.scaffold_form()
+        Form = await model_view.scaffold_form()
         form = Form(await request.form())
 
         context = {
             "request": request,
-            "model_admin": model_admin,
+            "model_view": model_view,
             "form": form,
         }
 
         if request.method == "GET":
-            return self.templates.TemplateResponse(model_admin.create_template, context)
+            return self.templates.TemplateResponse(model_view.create_template, context)
 
         if not form.validate():
             return self.templates.TemplateResponse(
-                model_admin.create_template,
+                model_view.create_template,
                 context,
                 status_code=400,
             )
 
-        await model_admin.insert_model(form.data)
+        await model_view.insert_model(form.data)
 
         return RedirectResponse(
             request.url_for("admin:list", identity=identity),
@@ -409,32 +420,32 @@ class Admin(BaseAdminView):
         await self._edit(request)
 
         identity = request.path_params["identity"]
-        model_admin = self._find_model_admin(identity)
+        model_view = self._find_model_view(identity)
 
-        model = await model_admin.get_model_by_pk(request.path_params["pk"])
+        model = await model_view.get_model_by_pk(request.path_params["pk"])
         if not model:
             raise HTTPException(status_code=404)
 
-        Form = await model_admin.scaffold_form()
+        Form = await model_view.scaffold_form()
         context = {
             "request": request,
-            "model_admin": model_admin,
+            "model_view": model_view,
         }
 
         if request.method == "GET":
             context["form"] = Form(obj=model)
-            return self.templates.TemplateResponse(model_admin.edit_template, context)
+            return self.templates.TemplateResponse(model_view.edit_template, context)
 
         form = Form(await request.form())
         if not form.validate():
             context["form"] = form
             return self.templates.TemplateResponse(
-                model_admin.edit_template,
+                model_view.edit_template,
                 context,
                 status_code=400,
             )
 
-        await model_admin.update_model(pk=request.path_params["pk"], data=form.data)
+        await model_view.update_model(pk=request.path_params["pk"], data=form.data)
 
         return RedirectResponse(
             request.url_for("admin:list", identity=identity),
@@ -449,6 +460,6 @@ class Admin(BaseAdminView):
         identity = request.path_params["identity"]
         export_type = request.path_params["export_type"]
 
-        model_admin = self._find_model_admin(identity)
-        rows = await model_admin.get_model_objects(limit=model_admin.export_max_rows)
-        return model_admin.export_data(rows, export_type=export_type)
+        model_view = self._find_model_view(identity)
+        rows = await model_view.get_model_objects(limit=model_view.export_max_rows)
+        return model_view.export_data(rows, export_type=export_type)

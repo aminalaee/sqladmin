@@ -95,7 +95,7 @@ class UserAdmin(ModelView, model=User):
     column_list = [User.id, User.name]
 
 
-admin.register_model(UserAdmin)
+admin.add_view(UserAdmin)
 ```
 
 Or if you want to use `SQLAdmin` with `Starlette`:
@@ -113,7 +113,7 @@ class UserAdmin(ModelView, model=User):
     column_list = [User.id, User.name]
 
 
-admin.register_model(UserAdmin)
+admin.add_view(UserAdmin)
 ```
 
 Now visiting `/admin` on your browser you can see the `SQLAdmin` interface.
