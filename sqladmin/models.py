@@ -58,12 +58,14 @@ from sqladmin.pagination import Pagination
 from sqladmin.types import _ENGINE_TYPE, _MODEL_ATTR_TYPE
 
 __all__ = [
-    "ModelAdmin",
+    "BaseView",
+    "ModelView",
+    "ModelView",
 ]
 
 
-class ModelAdminMeta(type):
-    """Metaclass used to specify class variables in ModelAdmin.
+class ModelViewMeta(type):
+    """Metaclass used to specify class variables in ModelView.
 
     Danger:
         This class should almost never be used directly.
@@ -71,7 +73,7 @@ class ModelAdminMeta(type):
 
     @no_type_check
     def __new__(mcls, name, bases, attrs: dict, **kwargs: Any):
-        cls: Type["ModelAdmin"] = super().__new__(mcls, name, bases, attrs)
+        cls: Type["ModelView"] = super().__new__(mcls, name, bases, attrs)
 
         model = kwargs.get("model")
 
@@ -115,7 +117,7 @@ class ModelAdminMeta(type):
             raise AssertionError(f"Cannot use {' and '.join(keys)} together.")
 
 
-class BaseModelAdmin:
+class BaseModelView:
     def is_visible(self, request: Request) -> bool:
         """Override this method if you want dynamically
         hide or show administrative views from SQLAdmin menu structure
@@ -133,7 +135,7 @@ class BaseModelAdmin:
         return True
 
 
-class BaseView(BaseModelAdmin):
+class BaseView(BaseModelView):
     is_model = False
 
     name_plural: ClassVar[str]
@@ -150,16 +152,16 @@ class BaseView(BaseModelAdmin):
     templates: ClassVar
 
 
-class ModelAdmin(BaseView, metaclass=ModelAdminMeta):
+class ModelView(BaseView, metaclass=ModelViewMeta):
     """Base class for defining admnistrative behaviour for the model.
 
     ???+ usage
         ```python
-        from sqladmin import ModelAdmin
+        from sqladmin import ModelView
 
         from mymodels import User # SQLAlchemy model
 
-        class UserAdmin(ModelAdmin, model=User):
+        class UserAdmin(ModelView, model=User):
             can_create = True
         ```
     """
@@ -176,7 +178,7 @@ class ModelAdmin(BaseView, metaclass=ModelAdminMeta):
     async_engine: ClassVar[bool]
 
     name_plural: ClassVar[str] = ""
-    """Plural name of ModelAdmin.
+    """Plural name of ModelView.
     Default value is Model class name + `s`.
     """
 
@@ -210,7 +212,7 @@ class ModelAdmin(BaseView, metaclass=ModelAdminMeta):
 
     ???+ example
         ```python
-        class UserAdmin(ModelAdmin, model=User):
+        class UserAdmin(ModelView, model=User):
             column_list = [User.id, User.name]
         ```
     """
@@ -221,7 +223,7 @@ class ModelAdmin(BaseView, metaclass=ModelAdminMeta):
 
     ???+ example
         ```python
-        class UserAdmin(ModelAdmin, model=User):
+        class UserAdmin(ModelView, model=User):
             column_exclude_list = [User.id, User.name]
         ```
     """
@@ -234,7 +236,7 @@ class ModelAdmin(BaseView, metaclass=ModelAdminMeta):
 
     ???+ example
         ```python
-        class UserAdmin(ModelAdmin, model=User):
+        class UserAdmin(ModelView, model=User):
             column_formatters = {User.name: lambda m, a: m.name[:10]}
         ```
 
@@ -254,7 +256,7 @@ class ModelAdmin(BaseView, metaclass=ModelAdminMeta):
 
     ???+ example
         ```python
-        class UserAdmin(ModelAdmin, model=User):
+        class UserAdmin(ModelView, model=User):
             page_size = 25
         ```
     """
@@ -265,7 +267,7 @@ class ModelAdmin(BaseView, metaclass=ModelAdminMeta):
 
     ???+ example
         ```python
-        class UserAdmin(ModelAdmin, model=User):
+        class UserAdmin(ModelView, model=User):
             page_size_options = [50, 100]
         ```
     """
@@ -277,7 +279,7 @@ class ModelAdmin(BaseView, metaclass=ModelAdminMeta):
 
     ???+ example
         ```python
-        class UserAdmin(ModelAdmin, model=User):
+        class UserAdmin(ModelView, model=User):
             column_searchable_list = [User.name]
         ```
     """
@@ -287,7 +289,7 @@ class ModelAdmin(BaseView, metaclass=ModelAdminMeta):
 
     ???+ example
         ```python
-        class UserAdmin(ModelAdmin, model=User):
+        class UserAdmin(ModelView, model=User):
             column_sortable_list = [User.name]
         ```
     """
@@ -297,7 +299,7 @@ class ModelAdmin(BaseView, metaclass=ModelAdminMeta):
 
     ???+ example
         ```python
-        class UserAdmin(ModelAdmin, model=User):
+        class UserAdmin(ModelView, model=User):
             column_default_sort = "email"
         ```
 
@@ -306,7 +308,7 @@ class ModelAdmin(BaseView, metaclass=ModelAdminMeta):
 
     ???+ example
         ```python
-        class UserAdmin(ModelAdmin, model=User):
+        class UserAdmin(ModelView, model=User):
             column_default_sort = ("email", True)
         ```
 
@@ -314,7 +316,7 @@ class ModelAdmin(BaseView, metaclass=ModelAdminMeta):
 
     ???+ example
         ```python
-        class UserAdmin(ModelAdmin, model=User):
+        class UserAdmin(ModelView, model=User):
             column_default_sort = [("email", True), ("name", False)]
         ```
     """
@@ -329,7 +331,7 @@ class ModelAdmin(BaseView, metaclass=ModelAdminMeta):
 
     ???+ example
         ```python
-        class UserAdmin(ModelAdmin, model=User):
+        class UserAdmin(ModelView, model=User):
             column_details_list = [User.id, User.name, User.mail]
         ```
     """
@@ -342,7 +344,7 @@ class ModelAdmin(BaseView, metaclass=ModelAdminMeta):
 
     ???+ example
         ```python
-        class UserAdmin(ModelAdmin, model=User):
+        class UserAdmin(ModelView, model=User):
             column_details_exclude_list = [User.mail]
         ```
     """
@@ -355,7 +357,7 @@ class ModelAdmin(BaseView, metaclass=ModelAdminMeta):
 
     ???+ example
         ```python
-        class UserAdmin(ModelAdmin, model=User):
+        class UserAdmin(ModelView, model=User):
             column_formatters_detail = {User.name: lambda m, a: m.name[:10]}
         ```
 
@@ -389,7 +391,7 @@ class ModelAdmin(BaseView, metaclass=ModelAdminMeta):
 
     ???+ example
         ```python
-        class UserAdmin(ModelAdmin, model=User):
+        class UserAdmin(ModelView, model=User):
             column_export_list = [User.id, User.name]
         ```
     """
@@ -400,7 +402,7 @@ class ModelAdmin(BaseView, metaclass=ModelAdminMeta):
 
     ???+ example
         ```python
-        class UserAdmin(ModelAdmin, model=User):
+        class UserAdmin(ModelView, model=User):
             column_export_exclude_list = [User.id, User.name]
         ```
     """
@@ -426,7 +428,7 @@ class ModelAdmin(BaseView, metaclass=ModelAdminMeta):
         class MyForm(Form):
             name = StringField('Name')
 
-        class MyModelAdmin(ModelAdmin, model=User):
+        class MyModelView(ModelView, model=User):
             form = MyForm
         ```
     """
@@ -442,7 +444,7 @@ class ModelAdmin(BaseView, metaclass=ModelAdminMeta):
             def do_something(self):
                 pass
 
-        class MyModelAdmin(ModelAdmin, model=User):
+        class MyModelView(ModelView, model=User):
             form_base_class = MyBaseForm
         ```
     """
@@ -455,7 +457,7 @@ class ModelAdmin(BaseView, metaclass=ModelAdminMeta):
         ```python
         from wtforms.validators import DataRequired
 
-        class MyModelAdmin(ModelAdmin, model=User):
+        class MyModelView(ModelView, model=User):
             form_args = dict(
                 name=dict(label="User Name", validators=[DataRequired()])
             )
@@ -468,7 +470,7 @@ class ModelAdmin(BaseView, metaclass=ModelAdminMeta):
 
     ???+ example
         ```python
-        class UserAdmin(ModelAdmin, model=User):
+        class UserAdmin(ModelView, model=User):
             form_widget_args = {
                 "email": {
                     "readonly": True,
@@ -486,7 +488,7 @@ class ModelAdmin(BaseView, metaclass=ModelAdminMeta):
 
     ???+ example
         ```python
-        class UserAdmin(ModelAdmin, model=User):
+        class UserAdmin(ModelView, model=User):
             form_columns = [User.name, User.mail]
         ```
     """
@@ -497,7 +499,7 @@ class ModelAdmin(BaseView, metaclass=ModelAdminMeta):
 
     ???+ example
         ```python
-        class UserAdmin(ModelAdmin, model=User):
+        class UserAdmin(ModelView, model=User):
             form_excluded_columns = [User.id]
         ```
     """
@@ -507,7 +509,7 @@ class ModelAdmin(BaseView, metaclass=ModelAdminMeta):
 
     ???+ example
         ```python
-        class UserAdmin(ModelAdmin, model=User):
+        class UserAdmin(ModelView, model=User):
             form_overrides = dict(name=wtf.FileField)
         ```
     """
@@ -517,7 +519,7 @@ class ModelAdmin(BaseView, metaclass=ModelAdminMeta):
 
     ???+ example
         ```python
-        class UserAdmin(ModelAdmin, model=User):
+        class UserAdmin(ModelView, model=User):
             form_include_pk = True
         ```
     """
@@ -529,7 +531,7 @@ class ModelAdmin(BaseView, metaclass=ModelAdminMeta):
 
     ???+ example
         ```python
-        class UserAdmin(ModelAdmin, model=User):
+        class UserAdmin(ModelView, model=User):
             column_labels = {User.mail: "Email"}
         ```
     """
@@ -547,7 +549,7 @@ class ModelAdmin(BaseView, metaclass=ModelAdminMeta):
 
     ???+ example
         ```python
-        class UserAdmin(ModelAdmin, model=User):
+        class UserAdmin(ModelView, model=User):
             column_type_formatters = dict()
         ```
     """
@@ -561,7 +563,7 @@ class ModelAdmin(BaseView, metaclass=ModelAdminMeta):
         ```python
         from sqlalchemy import select
 
-        class UserAdmin(ModelAdmin, model=User):
+        class UserAdmin(ModelView, model=User):
             list_query = select(User).filter(User.active == True)
         ```
     """
@@ -575,7 +577,7 @@ class ModelAdmin(BaseView, metaclass=ModelAdminMeta):
         ```python
         from sqlalchemy import select
 
-        class UserAdmin(ModelAdmin, model=User):
+        class UserAdmin(ModelView, model=User):
             count_query = select(func.count(User.id))
         ```
     """
@@ -942,7 +944,7 @@ class ModelAdmin(BaseView, metaclass=ModelAdminMeta):
 
         ???+ example
             ```python
-            class UserAdmin(ModelAdmin, model=User):
+            class UserAdmin(ModelView, model=User):
                 column_labels = dict(name="Name", email="Email")
                 column_searchable_list = [User.name, User.email]
 
@@ -1008,3 +1010,14 @@ class ModelAdmin(BaseView, metaclass=ModelAdminMeta):
             media_type="text/csv",
             headers={"Content-Disposition": f"attachment;filename={filename}"},
         )
+
+
+class ModelAdmin(ModelView):
+    def __init__(self) -> None:  # pragma: no cover
+        import warnings
+
+        warnings.warn(
+            "The class `ModelAdmin` is deprectated, please use `ModelView instead.`",
+            DeprecationWarning,
+        )
+        super().__init__()

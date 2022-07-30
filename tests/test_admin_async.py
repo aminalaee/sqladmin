@@ -20,7 +20,7 @@ from sqlalchemy.orm import relationship, selectinload, sessionmaker
 from starlette.applications import Starlette
 from starlette.requests import Request
 
-from sqladmin import Admin, ModelAdmin
+from sqladmin import Admin, ModelView
 from tests.common import async_engine as engine
 
 pytestmark = pytest.mark.anyio
@@ -133,7 +133,7 @@ async def client(prepare_database: Any) -> AsyncGenerator[AsyncClient, None]:
         yield c
 
 
-class UserAdmin(ModelAdmin, model=User):
+class UserAdmin(ModelView, model=User):
     column_list = [
         User.id,
         User.name,
@@ -162,17 +162,17 @@ class UserAdmin(ModelAdmin, model=User):
     }
 
 
-class AddressAdmin(ModelAdmin, model=Address):
+class AddressAdmin(ModelView, model=Address):
     column_list = ["id", "user_id", "user"]
     name_plural = "Addresses"
     export_max_rows = 3
 
 
-class ProfileAdmin(ModelAdmin, model=Profile):
+class ProfileAdmin(ModelView, model=Profile):
     column_list = ["id", "user_id", "user"]
 
 
-class MovieAdmin(ModelAdmin, model=Movie):
+class MovieAdmin(ModelView, model=Movie):
     can_edit = False
     can_delete = False
     can_view_details = False

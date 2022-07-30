@@ -8,7 +8,7 @@ from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship, sessionmaker
 from starlette.applications import Starlette
 
-from sqladmin import Admin, ModelAdmin
+from sqladmin import Admin, ModelView
 from sqladmin.exceptions import InvalidColumnError, InvalidModelError
 from sqladmin.helpers import get_column_python_type
 from tests.common import sync_engine as engine
@@ -58,25 +58,25 @@ def prepare_database() -> Generator[None, None, None]:
 
 
 def test_model_setup() -> None:
-    class UserAdmin(ModelAdmin, model=User):
+    class UserAdmin(ModelView, model=User):
         pass
 
     assert UserAdmin.model == User
     assert UserAdmin.pk_column == User.id
 
-    class AddressAdmin(ModelAdmin, model=Address):
+    class AddressAdmin(ModelView, model=Address):
         pass
 
     assert AddressAdmin.model == Address
 
-    class ProfileAdmin(ModelAdmin, model=Profile):
+    class ProfileAdmin(ModelView, model=Profile):
         pass
 
     assert ProfileAdmin.model == Profile
 
 
 def test_metadata_setup() -> None:
-    class UserAdmin(ModelAdmin, model=User):
+    class UserAdmin(ModelView, model=User):
         pass
 
     assert UserAdmin.identity == "user"
@@ -86,7 +86,7 @@ def test_metadata_setup() -> None:
     class TempModel(User):
         pass
 
-    class TempAdmin(ModelAdmin, model=TempModel):
+    class TempAdmin(ModelView, model=TempModel):
         icon = "fa-solid fa-user"
 
     assert TempAdmin.icon == "fa-solid fa-user"
@@ -98,28 +98,28 @@ def test_metadata_setup() -> None:
 def test_setup_with_invalid_sqlalchemy_model() -> None:
     with pytest.raises(InvalidModelError) as exc:
 
-        class AddressAdmin(ModelAdmin, model=Starlette):
+        class AddressAdmin(ModelView, model=Starlette):
             pass
 
     assert exc.match("Class Starlette is not a SQLAlchemy model.")
 
 
 def test_column_list_default() -> None:
-    class UserAdmin(ModelAdmin, model=User):
+    class UserAdmin(ModelView, model=User):
         pass
 
     assert UserAdmin().get_list_columns() == [("id", User.id)]
 
 
 def test_column_list_by_model_columns() -> None:
-    class UserAdmin(ModelAdmin, model=User):
+    class UserAdmin(ModelView, model=User):
         column_list = [User.id, User.name]
 
     assert UserAdmin.column_list == [User.id, User.name]
 
 
 def test_column_list_by_str_name() -> None:
-    class AddressAdmin(ModelAdmin, model=Address):
+    class AddressAdmin(ModelView, model=Address):
         column_list = ["id", "user_id"]
 
     assert sorted(AddressAdmin().get_list_columns()) == [
@@ -129,7 +129,7 @@ def test_column_list_by_str_name() -> None:
 
 
 def test_column_list_invalid_attribute() -> None:
-    class ExampleAdmin(ModelAdmin, model=Address):
+    class ExampleAdmin(ModelView, model=Address):
         column_list = ["example"]
 
     with pytest.raises(InvalidColumnError) as exc:
@@ -141,7 +141,7 @@ def test_column_list_invalid_attribute() -> None:
 def test_column_list_both_include_and_exclude() -> None:
     with pytest.raises(AssertionError) as exc:
 
-        class InvalidAdmin(ModelAdmin, model=User):
+        class InvalidAdmin(ModelView, model=User):
             column_list = ["id"]
             column_exclude_list = ["name"]
 
@@ -149,7 +149,7 @@ def test_column_list_both_include_and_exclude() -> None:
 
 
 def test_column_exclude_list_by_str_name() -> None:
-    class UserAdmin(ModelAdmin, model=User):
+    class UserAdmin(ModelView, model=User):
         column_exclude_list = ["id"]
 
     assert sorted(UserAdmin().get_list_columns()) == [
@@ -160,7 +160,7 @@ def test_column_exclude_list_by_str_name() -> None:
 
 
 def test_column_exclude_list_by_model_column() -> None:
-    class UserAdmin(ModelAdmin, model=User):
+    class UserAdmin(ModelView, model=User):
         column_exclude_list = [User.id]
 
     assert sorted(UserAdmin().get_list_columns()) == [
@@ -171,7 +171,7 @@ def test_column_exclude_list_by_model_column() -> None:
 
 
 def test_column_list_formatters() -> None:
-    class UserAdmin(ModelAdmin, model=User):
+    class UserAdmin(ModelView, model=User):
         column_formatters = {
             "id": lambda *args: 2,
             User.name: lambda m, a: m.name[:1],
@@ -186,7 +186,7 @@ def test_column_list_formatters() -> None:
 
 
 def test_column_formatters_detail() -> None:
-    class UserAdmin(ModelAdmin, model=User):
+    class UserAdmin(ModelView, model=User):
         column_formatters_detail = {
             "id": lambda *args: 2,
             User.name: lambda m, a: m.name[:1],
@@ -201,7 +201,7 @@ def test_column_formatters_detail() -> None:
 
 
 def test_column_formatters_default() -> None:
-    class ProfileAdmin(ModelAdmin, model=Profile):
+    class ProfileAdmin(ModelView, model=Profile):
         ...
 
     user = User(id=1, name="Long Name")
@@ -220,7 +220,7 @@ def test_column_formatters_default() -> None:
 def test_column_details_list_both_include_and_exclude() -> None:
     with pytest.raises(AssertionError) as exc:
 
-        class InvalidAdmin(ModelAdmin, model=User):
+        class InvalidAdmin(ModelView, model=User):
             column_details_list = ["id"]
             column_details_exclude_list = ["name"]
 
@@ -230,7 +230,7 @@ def test_column_details_list_both_include_and_exclude() -> None:
 
 
 def test_column_details_list_default() -> None:
-    class UserAdmin(ModelAdmin, model=User):
+    class UserAdmin(ModelView, model=User):
         pass
 
     assert sorted(UserAdmin().get_details_columns()) == [
@@ -242,14 +242,14 @@ def test_column_details_list_default() -> None:
 
 
 def test_column_details_list_by_model_column() -> None:
-    class UserAdmin(ModelAdmin, model=User):
+    class UserAdmin(ModelView, model=User):
         column_details_list = [User.name, User.id]
 
     assert UserAdmin().get_details_columns() == [("name", User.name), ("id", User.id)]
 
 
 def test_column_details_exclude_list_by_model_column() -> None:
-    class UserAdmin(ModelAdmin, model=User):
+    class UserAdmin(ModelView, model=User):
         column_details_exclude_list = [User.id]
 
     assert sorted(UserAdmin().get_details_columns()) == [
@@ -260,13 +260,13 @@ def test_column_details_exclude_list_by_model_column() -> None:
 
 
 def test_column_labels_by_string_name() -> None:
-    class UserAdmin(ModelAdmin, model=User):
+    class UserAdmin(ModelView, model=User):
         column_list = [User.name]
         column_labels = {"name": "Name"}
 
     assert UserAdmin().get_list_columns() == [("Name", User.name)]
 
-    class AddressAdmin(ModelAdmin, model=Address):
+    class AddressAdmin(ModelView, model=Address):
         column_details_list = [Address.user_id]
         form_columns = ["user_id"]
         column_labels = {"user_id": "User ID"}
@@ -276,13 +276,13 @@ def test_column_labels_by_string_name() -> None:
 
 
 def test_column_labels_by_model_columns() -> None:
-    class UserAdmin(ModelAdmin, model=User):
+    class UserAdmin(ModelView, model=User):
         column_list = [User.name]
         column_labels = {User.name: "Name"}
 
     assert UserAdmin().get_list_columns() == [("Name", User.name)]
 
-    class AddressAdmin(ModelAdmin, model=Address):
+    class AddressAdmin(ModelView, model=Address):
         column_details_list = [Address.user_id]
         column_labels = {Address.user_id: "User ID"}
 
@@ -290,7 +290,7 @@ def test_column_labels_by_model_columns() -> None:
 
 
 def test_get_model_attr_by_column() -> None:
-    class UserAdmin(ModelAdmin, model=User):
+    class UserAdmin(ModelView, model=User):
         ...
 
     assert UserAdmin().get_model_attr("name") == User.name
@@ -298,7 +298,7 @@ def test_get_model_attr_by_column() -> None:
 
 
 def test_get_model_attr_by_column_labels() -> None:
-    class UserAdmin(ModelAdmin, model=User):
+    class UserAdmin(ModelView, model=User):
         column_labels = {User.name: "Name"}
 
     assert UserAdmin().get_model_attr("Name") == User.name
@@ -307,7 +307,7 @@ def test_get_model_attr_by_column_labels() -> None:
 
 
 def test_form_columns_default() -> None:
-    class UserAdmin(ModelAdmin, model=User):
+    class UserAdmin(ModelView, model=User):
         pass
 
     assert sorted(UserAdmin().get_form_columns()) == [
@@ -319,14 +319,14 @@ def test_form_columns_default() -> None:
 
 
 def test_form_columns_by_model_columns() -> None:
-    class UserAdmin(ModelAdmin, model=User):
+    class UserAdmin(ModelView, model=User):
         form_columns = [User.id, User.name]
 
     assert UserAdmin.form_columns == [User.id, User.name]
 
 
 def test_form_columns_by_str_name() -> None:
-    class AddressAdmin(ModelAdmin, model=Address):
+    class AddressAdmin(ModelView, model=Address):
         form_columns = ["id", "user_id"]
 
     assert sorted(AddressAdmin().get_form_columns()) == [
@@ -336,7 +336,7 @@ def test_form_columns_by_str_name() -> None:
 
 
 def test_form_columns_invalid_attribute() -> None:
-    class ExampleAdmin(ModelAdmin, model=Address):
+    class ExampleAdmin(ModelView, model=Address):
         form_columns = ["example"]
 
     with pytest.raises(InvalidColumnError) as exc:
@@ -348,7 +348,7 @@ def test_form_columns_invalid_attribute() -> None:
 def test_form_columns_both_include_and_exclude() -> None:
     with pytest.raises(AssertionError) as exc:
 
-        class InvalidAdmin(ModelAdmin, model=User):
+        class InvalidAdmin(ModelView, model=User):
             form_columns = ["id"]
             form_excluded_columns = ["name"]
 
@@ -356,7 +356,7 @@ def test_form_columns_both_include_and_exclude() -> None:
 
 
 def test_form_excluded_columns_by_str_name() -> None:
-    class UserAdmin(ModelAdmin, model=User):
+    class UserAdmin(ModelView, model=User):
         form_excluded_columns = ["id"]
 
     assert sorted(UserAdmin().get_form_columns()) == [
@@ -367,7 +367,7 @@ def test_form_excluded_columns_by_str_name() -> None:
 
 
 def test_form_excluded_columns_by_model_column() -> None:
-    class UserAdmin(ModelAdmin, model=User):
+    class UserAdmin(ModelView, model=User):
         form_excluded_columns = [User.id]
 
     assert sorted(UserAdmin().get_form_columns()) == [
@@ -378,7 +378,7 @@ def test_form_excluded_columns_by_model_column() -> None:
 
 
 def test_export_columns_default() -> None:
-    class UserAdmin(ModelAdmin, model=User):
+    class UserAdmin(ModelView, model=User):
         pass
 
     assert sorted(UserAdmin().get_export_columns()) == [
@@ -387,7 +387,7 @@ def test_export_columns_default() -> None:
 
 
 def test_export_columns_default_to_list_columns() -> None:
-    class UserAdmin(ModelAdmin, model=User):
+    class UserAdmin(ModelView, model=User):
         column_list = [User.id, User.name]
 
     assert UserAdmin().get_export_columns() == [
@@ -395,21 +395,21 @@ def test_export_columns_default_to_list_columns() -> None:
         ("name", User.name.prop),
     ]
 
-    class UserAdmin2(ModelAdmin, model=User):
+    class UserAdmin2(ModelView, model=User):
         column_list = [User.id]
 
     assert UserAdmin2().get_export_columns() == [("id", User.id)]
 
 
 def test_export_columns_by_model_columns() -> None:
-    class UserAdmin(ModelAdmin, model=User):
+    class UserAdmin(ModelView, model=User):
         column_export_list = [User.id, User.name]
 
     assert UserAdmin.column_export_list == [User.id, User.name]
 
 
 def test_export_columns_by_str_name() -> None:
-    class AddressAdmin(ModelAdmin, model=Address):
+    class AddressAdmin(ModelView, model=Address):
         column_export_list = ["id", "user_id"]
 
     assert AddressAdmin().get_export_columns() == [
@@ -419,7 +419,7 @@ def test_export_columns_by_str_name() -> None:
 
 
 def test_export_columns_invalid_attribute() -> None:
-    class ExampleAdmin(ModelAdmin, model=Address):
+    class ExampleAdmin(ModelView, model=Address):
         column_export_list = ["example"]
 
     with pytest.raises(InvalidColumnError) as exc:
@@ -431,7 +431,7 @@ def test_export_columns_invalid_attribute() -> None:
 def test_export_columns_both_include_and_exclude() -> None:
     with pytest.raises(AssertionError) as exc:
 
-        class InvalidAdmin(ModelAdmin, model=User):
+        class InvalidAdmin(ModelView, model=User):
             column_export_list = ["id"]
             column_export_exclude_list = ["name"]
 
@@ -441,7 +441,7 @@ def test_export_columns_both_include_and_exclude() -> None:
 
 
 def test_export_excluded_columns_by_str_name() -> None:
-    class UserAdmin(ModelAdmin, model=User):
+    class UserAdmin(ModelView, model=User):
         column_export_exclude_list = ["id"]
 
     assert sorted(UserAdmin().get_export_columns()) == [
@@ -452,7 +452,7 @@ def test_export_excluded_columns_by_str_name() -> None:
 
 
 def test_export_excluded_columns_by_model_column() -> None:
-    class UserAdmin(ModelAdmin, model=User):
+    class UserAdmin(ModelView, model=User):
         column_export_exclude_list = [User.id]
 
     assert sorted(UserAdmin().get_export_columns()) == [
@@ -473,7 +473,7 @@ def test_get_python_type_postgresql() -> None:
 
 
 def test_get_url_for_details_from_object() -> None:
-    class UserAdmin(ModelAdmin, model=User):
+    class UserAdmin(ModelView, model=User):
         ...
 
     admin = Admin(app=Starlette(), engine=engine)
@@ -490,10 +490,10 @@ def test_get_url_for_details_from_object() -> None:
 
 
 def test_get_url_for_details_from_object_with_attr() -> None:
-    class UserAdmin(ModelAdmin, model=User):
+    class UserAdmin(ModelView, model=User):
         ...
 
-    class AddressAdmin(ModelAdmin, model=Address):
+    class AddressAdmin(ModelView, model=Address):
         ...
 
     admin = Admin(app=Starlette(), engine=engine)
@@ -521,22 +521,22 @@ def test_get_url_for_details_from_object_with_attr() -> None:
 
 
 def test_model_default_sort() -> None:
-    class UserAdmin(ModelAdmin, model=User):
+    class UserAdmin(ModelView, model=User):
         ...
 
     assert UserAdmin()._get_default_sort() == [("id", False)]
 
-    class UserAdmin(ModelAdmin, model=User):
+    class UserAdmin(ModelView, model=User):
         column_default_sort = "name"
 
     assert UserAdmin()._get_default_sort() == [("name", False)]
 
-    class UserAdmin(ModelAdmin, model=User):
+    class UserAdmin(ModelView, model=User):
         column_default_sort = ("name", True)
 
     assert UserAdmin()._get_default_sort() == [("name", True)]
 
-    class UserAdmin(ModelAdmin, model=User):
+    class UserAdmin(ModelView, model=User):
         column_default_sort = [("name", True), ("id", False)]
 
     assert UserAdmin()._get_default_sort() == [("name", True), ("id", False)]

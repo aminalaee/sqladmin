@@ -19,7 +19,7 @@ from starlette.applications import Starlette
 from starlette.requests import Request
 from starlette.testclient import TestClient
 
-from sqladmin import Admin, ModelAdmin
+from sqladmin import Admin, ModelView
 from tests.common import sync_engine as engine
 
 Base = declarative_base()  # type: Any
@@ -126,7 +126,7 @@ def client(prepare_database: Any) -> Generator[TestClient, None, None]:
         yield c
 
 
-class UserAdmin(ModelAdmin, model=User):
+class UserAdmin(ModelView, model=User):
     column_list = [
         User.id,
         User.name,
@@ -155,17 +155,17 @@ class UserAdmin(ModelAdmin, model=User):
     }
 
 
-class AddressAdmin(ModelAdmin, model=Address):
+class AddressAdmin(ModelView, model=Address):
     column_list = ["id", "user_id", "user"]
     name_plural = "Addresses"
     export_max_rows = 3
 
 
-class ProfileAdmin(ModelAdmin, model=Profile):
+class ProfileAdmin(ModelView, model=Profile):
     column_list = ["id", "user_id", "user"]
 
 
-class MovieAdmin(ModelAdmin, model=Movie):
+class MovieAdmin(ModelView, model=Movie):
     can_edit = False
     can_delete = False
     can_view_details = False

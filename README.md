@@ -84,14 +84,14 @@ If you want to use `SQLAdmin` with `FastAPI`:
 
 ```python
 from fastapi import FastAPI
-from sqladmin import Admin, ModelAdmin
+from sqladmin import Admin, ModelView
 
 
 app = FastAPI()
 admin = Admin(app, engine)
 
 
-class UserAdmin(ModelAdmin, model=User):
+class UserAdmin(ModelView, model=User):
     column_list = [User.id, User.name]
 
 
@@ -101,7 +101,7 @@ admin.register_model(UserAdmin)
 Or if you want to use `SQLAdmin` with `Starlette`:
 
 ```python
-from sqladmin import Admin, ModelAdmin
+from sqladmin import Admin, ModelView
 from starlette.applications import Starlette
 
 
@@ -109,7 +109,7 @@ app = Starlette()
 admin = Admin(app, engine)
 
 
-class UserAdmin(ModelAdmin, model=User):
+class UserAdmin(ModelView, model=User):
     column_list = [User.id, User.name]
 
 
