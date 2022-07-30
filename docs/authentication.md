@@ -72,14 +72,14 @@ class UserAdmin(ModelView, model=User):
             return True
 
 
-    admin.register_model(UserAdmin)
+    admin.add_view(UserAdmin)
     ```
 
 Or in some cases you might want to apply authentication to the whole admin application.
 In that case you might want to do something like:
 
 ```python
-class AuthModelAdmin(ModelView):
+class AuthModelView(ModelView):
     def is_accessible(self, request: Request) -> bool:
         return True
 
@@ -87,11 +87,11 @@ class AuthModelAdmin(ModelView):
         return True
 
 
-class UserAdmin(AuthModelAdmin, model=User):
+class UserAdmin(AuthModelView, model=User):
     list_display = [User.id, User.name]
 
 
-class AddressAdmin(AuthModelAdmin, model=Address):
+class AddressAdmin(AuthModelView, model=Address):
     list_display = [Address.id]
 ```
 
@@ -115,7 +115,7 @@ app = Starlette()
 admin = Admin(app=app, engine=engine, middlewares=middlewares)
 
 
-class AuthModelAdmin(ModelView):
+class AuthModelView(ModelView):
     def is_accessible(self, request: Request) -> bool:
         # With Authentication backend you can now access request.user.
         if request.user.is_authenticated:

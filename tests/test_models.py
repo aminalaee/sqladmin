@@ -477,7 +477,7 @@ def test_get_url_for_details_from_object() -> None:
         ...
 
     admin = Admin(app=Starlette(), engine=engine)
-    admin.register_model(UserAdmin)
+    admin.add_view(UserAdmin)
 
     with Session() as session:
         user = User()
@@ -497,8 +497,8 @@ def test_get_url_for_details_from_object_with_attr() -> None:
         ...
 
     admin = Admin(app=Starlette(), engine=engine)
-    admin.register_model(UserAdmin)
-    admin.register_model(AddressAdmin)
+    admin.add_view(UserAdmin)
+    admin.add_view(AddressAdmin)
 
     with Session() as session:
         user = User()

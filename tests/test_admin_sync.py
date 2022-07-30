@@ -177,10 +177,10 @@ class MovieAdmin(ModelView, model=Movie):
         return False
 
 
-admin.register_model(UserAdmin)
-admin.register_model(AddressAdmin)
-admin.register_model(ProfileAdmin)
-admin.register_model(MovieAdmin)
+admin.add_view(UserAdmin)
+admin.add_view(AddressAdmin)
+admin.add_view(ProfileAdmin)
+admin.add_view(MovieAdmin)
 
 
 def test_root_view(client: TestClient) -> None:

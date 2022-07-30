@@ -8,5 +8,7 @@
     handler: python
     selection:
       members:
-        - model_admins
-        - register_model
+        - views
+        - add_view
+        - add_model_view
+        - add_base_view

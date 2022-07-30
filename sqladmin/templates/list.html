@@ -3,32 +3,32 @@
 <div class="col-12">
   <div class="card">
     <div class="card-header">
-      <h3 class="card-title">{{ model_admin.name_plural }}</h3>
+      <h3 class="card-title">{{ model_view.name_plural }}</h3>
       <div class="ms-auto">
-        {% if model_admin.can_export %}
-        {% if model_admin.export_types | length > 1 %}
+        {% if model_view.can_export %}
+        {% if model_view.export_types | length > 1 %}
         <div class="ms-3 d-inline-block dropdown">
           <a href="#" class="btn btn-secondary dropdown-toggle" id="dropdownMenuButton1" data-bs-toggle="dropdown" aria-expanded="false">
             Export
           </a>
           <ul class="dropdown-menu" aria-labelledby="dropdownMenuButton1">
-            {% for export_type in model_admin.export_types %}
-            <li><a class="dropdown-item" href="{{ url_for('admin:export', identity=model_admin.identity, export_type=export_type) }}">{{ export_type | upper }}</a></li>
+            {% for export_type in model_view.export_types %}
+            <li><a class="dropdown-item" href="{{ url_for('admin:export', identity=model_view.identity, export_type=export_type) }}">{{ export_type | upper }}</a></li>
             {% endfor %}
           </ul>
         </div>
-        {% elif model_admin.export_types | length == 1 %}
+        {% elif model_view.export_types | length == 1 %}
         <div class="ms-3 d-inline-block">
-          <a href="{{ url_for('admin:export', identity=model_admin.identity, export_type=model_admin.export_types[0]) }}" class="btn btn-secondary">
+          <a href="{{ url_for('admin:export', identity=model_view.identity, export_type=model_view.export_types[0]) }}" class="btn btn-secondary">
             Export
           </a>
         </div>
         {% endif %}
         {% endif %}
-        {% if model_admin.can_create %}
+        {% if model_view.can_create %}
         <div class="ms-3 d-inline-block">
-          <a href="{{ url_for('admin:create', identity=model_admin.identity) }}" class="btn btn-primary">
-            + New {{ model_admin.name }}
+          <a href="{{ url_for('admin:create', identity=model_view.identity) }}" class="btn btn-primary">
+            + New {{ model_view.name }}
           </a>
         </div>
         {% endif %}
@@ -39,21 +39,21 @@
         <div class="dropdown text-muted">
           Show 
           <a href="#" class="btn btn-light dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-            {{ request.query_params.get("pageSize") or model_admin.page_size }}
+            {{ request.query_params.get("pageSize") or model_view.page_size }}
           </a>
           items
           <div class="dropdown-menu">
-            {% for page_size_option in model_admin.page_size_options %}
+            {% for page_size_option in model_view.page_size_options %}
             <a class="dropdown-item" href="{{ request.url.include_query_params(pageSize=page_size_option) }}">
               {{ page_size_option }}
             </a>
             {% endfor %}
           </div>
         </div>
-        {% if model_admin.column_searchable_list %}
+        {% if model_view.column_searchable_list %}
         <div class="ms-auto text-muted">
           <div class="input-group ms-2">
-            <input id="search-input" type="text" class="form-control" placeholder="Search: {{ model_admin.search_placeholder() }}" value="{{ request.query_params.get('search', '') }}">
+            <input id="search-input" type="text" class="form-control" placeholder="Search: {{ model_view.search_placeholder() }}" value="{{ request.query_params.get('search', '') }}">
             <button id="search-button" class="btn" type="button">Search</button>
             <button id="search-reset" class="btn" type="button" {% if not request.query_params.get('search') %}disabled{% endif %}><i class="fa-solid fa-times"></i></button>
           </div>
@@ -67,9 +67,9 @@
           <tr>
             <th class="w-1"><input class="form-check-input m-0 align-middle" type="checkbox" aria-label="Select all"></th>
             <th class="w-1"></th>
-            {% for name, attr in model_admin._list_attrs %}
+            {% for name, attr in model_view._list_attrs %}
             <th>
-              {% if attr in model_admin._sort_fields %}
+              {% if attr in model_view._sort_fields %}
               {% if request.query_params.get("sortBy") == name and request.query_params.get("sort") == "asc" %}
               <a href="{{ request.url.include_query_params(sort='desc') }}"><i class="fa-solid fa-arrow-down"></i> {{ name }}</a>
               {% elif request.query_params.get("sortBy") == name and request.query_params.get("sort") == "desc" %}
@@ -89,33 +89,33 @@
           <tr>
             <td><input class="form-check-input m-0 align-middle" type="checkbox" aria-label="Select item"></td>
             <td class="text-end">
-              {% if model_admin.can_view_details %}
-              <a href="{{ model_admin._url_for_details(row) }}" data-bs-toggle="tooltip" data-bs-placement="top" title="View">
+              {% if model_view.can_view_details %}
+              <a href="{{ model_view._url_for_details(row) }}" data-bs-toggle="tooltip" data-bs-placement="top" title="View">
                 <span class="me-1"><i class="fa-solid fa-eye"></i></span>
               </a>
               {% endif %}
-              {% if model_admin.can_edit %}
-              <a href="{{ model_admin._url_for_edit(row) }}" data-bs-toggle="tooltip" data-bs-placement="top" title="Edit">
+              {% if model_view.can_edit %}
+              <a href="{{ model_view._url_for_edit(row) }}" data-bs-toggle="tooltip" data-bs-placement="top" title="Edit">
                 <span class="me-1"><i class="fa-solid fa-pen-to-square"></i></span>
               </a>
               {% endif %}
-              {% if model_admin.can_delete %}
-              <a href="#" data-name="{{ model_admin.name }}" data-pk="{{ model_admin.get_attr_value(row, model_admin.pk_column) }}" data-url="{{ model_admin._url_for_delete(row) }}" data-bs-toggle="modal" data-bs-target="#modal-delete" title="Delete">
+              {% if model_view.can_delete %}
+              <a href="#" data-name="{{ model_view.name }}" data-pk="{{ model_view.get_attr_value(row, model_view.pk_column) }}" data-url="{{ model_view._url_for_delete(row) }}" data-bs-toggle="modal" data-bs-target="#modal-delete" title="Delete">
                 <span class="me-1"><i class="fa-solid fa-trash"></i></span>
               </a>
               {% endif %}
             </td>
-            {% for name, column in model_admin._list_attrs %}
-            {% set value, formatted_value = model_admin.get_list_value(row, column) %}
-            {% if column in model_admin._relations %}
+            {% for name, column in model_view._list_attrs %}
+            {% set value, formatted_value = model_view.get_list_value(row, column) %}
+            {% if column in model_view._relations %}
             {% if is_list( value ) %}
             <td>
             {% for elem, formatted_elem in zip(value, formatted_value) %}
-            <a href="{{ model_admin._url_for_details(elem) }}">({{ formatted_elem }})</a>
+            <a href="{{ model_view._url_for_details(elem) }}">({{ formatted_elem }})</a>
             {% endfor %}
             </td>
             {% else %}
-            <td><a href="{{ model_admin._url_for_details_with_attr(row, column) }}">{{ formatted_value }}</a></td>
+            <td><a href="{{ model_view._url_for_details_with_attr(row, column) }}">{{ formatted_value }}</a></td>
             {% endif %}
             {% else %}
             <td>{{ formatted_value }}</td>
