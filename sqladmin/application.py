@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING, List, Sequence, Type
+from typing import List, Sequence, Type
 
 from jinja2 import ChoiceLoader, FileSystemLoader, PackageLoader
 from sqlalchemy.engine import Engine
@@ -13,11 +13,8 @@ from starlette.routing import Mount, Route
 from starlette.staticfiles import StaticFiles
 from starlette.templating import Jinja2Templates
 
+from sqladmin.models import BaseView, ModelAdmin
 from sqladmin.types import _ENGINE_TYPE
-
-if TYPE_CHECKING:
-    from sqladmin.models import ModelAdmin
-
 
 __all__ = [
     "Admin",
@@ -38,28 +35,37 @@ class BaseAdmin:
         base_url: str = "/admin",
         title: str = "Admin",
         logo_url: str = None,
+        templates_dir: str = "templates",
     ) -> None:
         self.app = app
         self.engine = engine
         self.base_url = base_url
-        self._model_admins: List["ModelAdmin"] = []
+        self.templates_dir = templates_dir
+        self._model_admins: List["BaseView"] = []
 
-        self.templates = Jinja2Templates("templates")
-        self.templates.env.loader = ChoiceLoader(
-            [
-                FileSystemLoader("templates"),
-                PackageLoader("sqladmin", "templates"),
-            ]
-        )
-        self.templates.env.globals["min"] = min
-        self.templates.env.globals["zip"] = zip
-        self.templates.env.globals["admin_title"] = title
-        self.templates.env.globals["admin_logo_url"] = logo_url
-        self.templates.env.globals["model_admins"] = self.model_admins
-        self.templates.env.globals["is_list"] = lambda x: isinstance(x, list)
+        self.templates = self.init_templating_engine(title=title, logo_url=logo_url)
+
+    def init_templating_engine(
+        self, title: str, logo_url: str = None
+    ) -> Jinja2Templates:
+        templates = Jinja2Templates("templates")
+        loaders = [
+            FileSystemLoader(self.templates_dir),
+            PackageLoader("sqladmin", "templates"),
+        ]
+
+        templates.env.loader = ChoiceLoader(loaders)
+        templates.env.globals["min"] = min
+        templates.env.globals["zip"] = zip
+        templates.env.globals["admin_title"] = title
+        templates.env.globals["admin_logo_url"] = logo_url
+        templates.env.globals["model_admins"] = self.model_admins
+        templates.env.globals["is_list"] = lambda x: isinstance(x, list)
+
+        return templates
 
     @property
-    def model_admins(self) -> List["ModelAdmin"]:
+    def model_admins(self) -> List["BaseView"]:
         """Get list of ModelAdmins lazily.
 
         Returns:
@@ -70,7 +76,7 @@ class BaseAdmin:
 
     def _find_model_admin(self, identity: str) -> "ModelAdmin":
         for model_admin in self.model_admins:
-            if model_admin.identity == identity:
+            if isinstance(model_admin, ModelAdmin) and model_admin.identity == identity:
                 return model_admin
 
         raise HTTPException(status_code=404)
@@ -115,8 +121,51 @@ class BaseAdmin:
 
         self._model_admins.append((model()))
 
+    def register_view(self, view: Type["BaseView"]) -> None:
+        """Register BaseView to the Admin.
+
+        Args:
+            view: BaseView class to register in Admin.
+
+        ???+ usage
+            ```python
+            from sqladmin import BaseView
+
+            class CustomAdmin(BaseView):
+                   def test_page(self, request: Request):
+                       return self.templates.TemplateResponse("custom.html",
+                                context={"request": request}
+                                )
+
+                   name_plural = "Custom Page"
+                   icon = "fa-solid fa-chart-line"
+                   path = "/custom/test_page"
+                   methods = ["GET"]
+                   endpoint = test_page
+
+            admin.register_view(CustomAdmin)
+            ```
+        """
+        view.url_path_for = self.app.url_path_for
+        view.templates = self.templates
+
+        view_instance = view()
+        self._model_admins.append(view_instance)
+
+        self.app.add_route(
+            route=view_instance.endpoint,
+            path=view_instance.path,
+            methods=view_instance.methods,
+            name=view_instance.name_plural,
+            include_in_schema=view_instance.include_in_schema,
+        )
+
 
 class BaseAdminView(BaseAdmin):
+    """
+    Manage right to access to an action from a model
+    """
+
     async def _list(self, request: Request) -> None:
         model_admin = self._find_model_admin(request.path_params["identity"])
         if not model_admin.is_accessible(request):
@@ -182,6 +231,7 @@ class Admin(BaseAdminView):
         logo_url: str = None,
         middlewares: Sequence[Middleware] = None,
         debug: bool = False,
+        templates_dir: str = "templates",
     ) -> None:
         """
         Args:
@@ -194,7 +244,12 @@ class Admin(BaseAdminView):
 
         assert isinstance(engine, (Engine, AsyncEngine))
         super().__init__(
-            app=app, engine=engine, base_url=base_url, title=title, logo_url=logo_url
+            app=app,
+            engine=engine,
+            base_url=base_url,
+            title=title,
+            logo_url=logo_url,
+            templates_dir=templates_dir,
         )
 
         statics = StaticFiles(packages=["sqladmin"])

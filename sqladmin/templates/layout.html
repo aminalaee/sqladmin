@@ -17,7 +17,11 @@
           {% for model_admin in model_admins %}
           {% if model_admin.is_visible(request) and model_admin.is_accessible(request) %}
           <li class="nav-item">
+            {% if model_admin.is_model %}
             <a class="nav-link {% if model_admin.identity == request.path_params['identity'] %}active{% endif %}" href="{{ url_for('admin:list', identity=model_admin.identity) }}">
+            {% else %}
+            <a class="nav-link {% if model_admin.identity == request.path_params['identity'] %}active{% endif %}" href="{{  model_admin.url_path_for(model_admin.name_plural) }}">
+            {% endif %}
             <span class="nav-link-icon d-md-none d-lg-inline-block">
             {% if model_admin.icon %} <i class="{{ model_admin.icon }}"></i> {% endif %}
             </span>
