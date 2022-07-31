@@ -137,19 +137,54 @@ class BaseModelView:
 
 
 class BaseView(BaseModelView):
+    """Base class for defining admnistrative views for the model.
+
+    ???+ usage
+        ```python
+        from sqladmin import BaseView, expose
+
+        class CustomAdmin(BaseView):
+            name = "Custom Page"
+            icon = "fa-solid fa-chart-line"
+
+            @expose("/custom", methods=["GET"])
+            def test_page(self, request: Request):
+                return self.templates.TemplateResponse(
+                    "custom.html",
+                    context={"request": request},
+                )
+
+        admin.add_base_view(CustomAdmin)
+        ```
+    """
+
+    # Internals
     is_model: ClassVar[bool] = False
-    methods: ClassVar[List[str]] = ["GET"]
-    include_in_schema: ClassVar[bool] = True
-
-    name: ClassVar[str]
-    name_plural: ClassVar[str]
-
-    icon: ClassVar[str]
-    path: ClassVar[str]
-
-    endpoint: ClassVar[Callable]
     url_path_for: ClassVar[Callable]
     templates: ClassVar[Jinja2Templates]
+
+    name: ClassVar[str]
+    """Name of the view to be displayed."""
+
+    identity: ClassVar[str]
+    """Plural name of ModelView.
+    Default value is Model class name + `s`.
+    """
+
+    methods: ClassVar[List[str]] = ["GET"]
+    """List of method names for the endpoint.
+    By default it's set to `["GET"]` only.
+    """
+
+    include_in_schema: ClassVar[bool] = True
+    """Control whether this endpoint
+    should be included in the schema.
+    """
+
+    icon: ClassVar[str]
+    """Display icon for ModelAdmin in the sidebar.
+    Currently only supports FontAwesome icons.
+    """
 
 
 class ModelView(BaseView, metaclass=ModelViewMeta):
@@ -170,7 +205,6 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
 
     # Internals
     pk_column: ClassVar[Column]
-    identity: ClassVar[str]
     sessionmaker: ClassVar[sessionmaker]
     engine: ClassVar[ENGINE_TYPE]
     async_engine: ClassVar[bool]

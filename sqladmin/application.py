@@ -1,4 +1,5 @@
-from typing import List, Sequence, Type, Union
+import inspect
+from typing import Any, Callable, List, Sequence, Type, Union, no_type_check
 
 from jinja2 import ChoiceLoader, FileSystemLoader, PackageLoader
 from sqlalchemy.engine import Engine
@@ -18,6 +19,7 @@ from sqladmin.models import BaseView, ModelView
 
 __all__ = [
     "Admin",
+    "expose",
 ]
 
 
@@ -41,6 +43,7 @@ class BaseAdmin:
         self.engine = engine
         self.base_url = base_url
         self.templates_dir = templates_dir
+        self.admin = Starlette()
         self._views: List[Union[BaseView, ModelView]] = []
 
         self.templates = self.init_templating_engine(title=title, logo_url=logo_url)
@@ -83,6 +86,9 @@ class BaseAdmin:
 
     def add_view(self, view: Union[Type[ModelView], Type[BaseView]]) -> None:
         """Add ModelView or BaseView classes to Admin."""
+
+        view.url_path_for = self.app.url_path_for
+
         if view.is_model:
             self.add_model_view(view)  # type: ignore
         else:
@@ -104,7 +110,6 @@ class BaseAdmin:
 
         # Set database engine from Admin instance
         view.engine = self.engine
-        view.url_path_for = self.app.url_path_for
 
         if isinstance(view.engine, Engine):
             view.sessionmaker = sessionmaker(
@@ -130,37 +135,40 @@ class BaseAdmin:
 
         ???+ usage
             ```python
-            from sqladmin import BaseView
+            from sqladmin import BaseView, expose
 
             class CustomAdmin(BaseView):
+                name = "Custom Page"
+                icon = "fa-solid fa-chart-line"
+
+                @expose("/custom", methods=["GET"])
                 def test_page(self, request: Request):
                     return self.templates.TemplateResponse(
                         "custom.html",
                         context={"request": request},
                     )
 
-                name_plural = "Custom Page"
-                icon = "fa-solid fa-chart-line"
-                path = "/custom/test_page"
-                methods = ["GET"]
-                endpoint = test_page
-
             admin.add_base_view(CustomAdmin)
             ```
         """
-        view.url_path_for = self.app.url_path_for
-        view.templates = self.templates
 
         view_instance = view()
-        self._views.append(view_instance)
+        funcs = inspect.getmembers(view_instance, predicate=inspect.ismethod)
 
-        self.app.add_route(
-            route=view_instance.endpoint,
-            path=view_instance.path,
-            methods=view_instance.methods,
-            name=view_instance.name_plural,
-            include_in_schema=view_instance.include_in_schema,
-        )
+        for _, func in funcs[::-1]:
+            if hasattr(func, "_exposed"):
+                self.admin.add_route(
+                    route=func,
+                    path=func._path,
+                    methods=func._methods,
+                    name=func._identity,
+                    include_in_schema=func._include_in_schema,
+                )
+
+                view.identity = func._identity
+
+        view.templates = self.templates
+        self._views.append(view_instance)
 
     def register_model(self, model: Type[ModelView]) -> None:  # pragma: no cover
         import warnings
@@ -276,44 +284,42 @@ class Admin(BaseAdminView):
                 "error.html", context, status_code=exc.status_code
             )
 
-        admin = Starlette(
-            routes=[
-                Mount("/statics", app=statics, name="statics"),
-                Route("/", endpoint=self.index, name="index"),
-                Route("/{identity}/list", endpoint=self.list, name="list"),
-                Route(
-                    "/{identity}/details/{pk}", endpoint=self.details, name="details"
-                ),
-                Route(
-                    "/{identity}/delete/{pk}",
-                    endpoint=self.delete,
-                    name="delete",
-                    methods=["DELETE"],
-                ),
-                Route(
-                    "/{identity}/create",
-                    endpoint=self.create,
-                    name="create",
-                    methods=["GET", "POST"],
-                ),
-                Route(
-                    "/{identity}/edit/{pk}",
-                    endpoint=self.edit,
-                    name="edit",
-                    methods=["GET", "POST"],
-                ),
-                Route(
-                    "/{identity}/export/{export_type}",
-                    endpoint=self.export,
-                    name="export",
-                    methods=["GET"],
-                ),
-            ],
-            exception_handlers={HTTPException: http_exception},
-            middleware=middlewares,
-            debug=debug,
-        )
-        self.app.mount(base_url, app=admin, name="admin")
+        routes = [
+            Mount("/statics", app=statics, name="statics"),
+            Route("/", endpoint=self.index, name="index"),
+            Route("/{identity}/list", endpoint=self.list, name="list"),
+            Route("/{identity}/details/{pk}", endpoint=self.details, name="details"),
+            Route(
+                "/{identity}/delete/{pk}",
+                endpoint=self.delete,
+                name="delete",
+                methods=["DELETE"],
+            ),
+            Route(
+                "/{identity}/create",
+                endpoint=self.create,
+                name="create",
+                methods=["GET", "POST"],
+            ),
+            Route(
+                "/{identity}/edit/{pk}",
+                endpoint=self.edit,
+                name="edit",
+                methods=["GET", "POST"],
+            ),
+            Route(
+                "/{identity}/export/{export_type}",
+                endpoint=self.export,
+                name="export",
+                methods=["GET"],
+            ),
+        ]
+
+        self.admin.router.routes = routes
+        self.admin.router.middlerware = middlewares
+        self.admin.exception_handlers = {HTTPException: http_exception}
+        self.admin.debug = debug
+        self.app.mount(base_url, app=self.admin, name="admin")
 
     async def index(self, request: Request) -> Response:
         """Index route which can be overridden to create dashboards."""
@@ -463,3 +469,24 @@ class Admin(BaseAdminView):
         model_view = self._find_model_view(identity)
         rows = await model_view.get_model_objects(limit=model_view.export_max_rows)
         return model_view.export_data(rows, export_type=export_type)
+
+
+def expose(
+    path: str,
+    *,
+    methods: List[str] = ["GET"],
+    identity: str = None,
+    include_in_schema: bool = True
+) -> Callable[..., Any]:
+    """Expose View with information."""
+
+    @no_type_check
+    def wrap(func):
+        func._exposed = True
+        func._path = path
+        func._methods = methods
+        func._identity = identity or func.__name__
+        func._include_in_schema = include_in_schema
+        return func
+
+    return wrap

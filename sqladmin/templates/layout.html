@@ -20,12 +20,12 @@
             {% if view.is_model %}
             <a class="nav-link {% if view.identity == request.path_params['identity'] %}active{% endif %}" href="{{ url_for('admin:list', identity=view.identity) }}">
             {% else %}
-            <a class="nav-link {% if view.identity == request.path_params['identity'] %}active{% endif %}" href="{{  view.url_path_for(view.name_plural) }}">
+            <a class="nav-link {% if view.identity == request.path_params['identity'] %}active{% endif %}" href="{{ url_for('admin:%s' | format(view.identity)) }}">
             {% endif %}
             <span class="nav-link-icon d-md-none d-lg-inline-block">
             {% if view.icon %} <i class="{{ view.icon }}"></i> {% endif %}
             </span>
-            <span class="nav-link-title">{{ view.name_plural }}</span>
+            <span class="nav-link-title">{{ view.name_plural or view.name }}</span>
             </a>
           </li>
           {% endif %}
