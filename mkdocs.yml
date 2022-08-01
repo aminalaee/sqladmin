@@ -20,6 +20,7 @@ nav:
   - API Reference:
     - Application: 'api_reference/application.md'
     - ModelView: 'api_reference/model_view.md'
+    - BaseView: 'api_reference/base_view.md'
   - Changelog: 'changelog.md'
 
 markdown_extensions:
@@ -35,6 +36,7 @@ extra_css:
   - stylesheets/extra.css
 
 plugins:
+  - search
   - mkdocstrings:
       default_handler: python
       handlers:
@@ -46,6 +48,9 @@ plugins:
         - sqladmin/
 
 extra:
+  analytics:
+    provider: google
+    property: G-MV427T1Z9X
   social:
     - icon: fontawesome/brands/github
       link: https://github.com/aminalaee
