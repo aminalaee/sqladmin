@@ -85,7 +85,9 @@ class BaseAdmin:
         raise HTTPException(status_code=404)
 
     def add_view(self, view: Union[Type[ModelView], Type[BaseView]]) -> None:
-        """Add ModelView or BaseView classes to Admin."""
+        """Add ModelView or BaseView classes to Admin.
+        This is a shortcut that will handle both `add_model_view` and `add_base_view`.
+        """
 
         view.url_path_for = self.app.url_path_for
 

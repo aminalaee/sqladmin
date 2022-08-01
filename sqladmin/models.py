@@ -163,13 +163,11 @@ class BaseView(BaseModelView):
     url_path_for: ClassVar[Callable]
     templates: ClassVar[Jinja2Templates]
 
-    name: ClassVar[str]
+    name: ClassVar[str] = ""
     """Name of the view to be displayed."""
 
-    identity: ClassVar[str]
-    """Plural name of ModelView.
-    Default value is Model class name + `s`.
-    """
+    identity: ClassVar[str] = ""
+    """Same as name but it will be used for URL of the endpoints."""
 
     methods: ClassVar[List[str]] = ["GET"]
     """List of method names for the endpoint.
