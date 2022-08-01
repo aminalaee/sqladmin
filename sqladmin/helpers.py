@@ -8,7 +8,7 @@ from typing import Any, Callable, Generator, List, TypeVar, Union
 from sqlalchemy import Column, inspect
 from sqlalchemy.orm import RelationshipProperty
 
-from sqladmin.types import _MODEL_ATTR_TYPE
+from sqladmin._types import MODEL_ATTR_TYPE
 
 T = TypeVar("T")
 
@@ -126,15 +126,15 @@ def get_primary_key(model: type) -> Column:
     return pks[0]
 
 
-def get_relationships(model: Any) -> List[_MODEL_ATTR_TYPE]:
+def get_relationships(model: Any) -> List[MODEL_ATTR_TYPE]:
     return list(inspect(model).relationships)
 
 
-def get_attributes(model: Any) -> List[_MODEL_ATTR_TYPE]:
+def get_attributes(model: Any) -> List[MODEL_ATTR_TYPE]:
     return list(inspect(model).attrs)
 
 
-def get_direction(attr: _MODEL_ATTR_TYPE) -> str:
+def get_direction(attr: MODEL_ATTR_TYPE) -> str:
     assert isinstance(attr, RelationshipProperty)
     name = attr.direction.name
     if name == "ONETOMANY" and not attr.uselist:

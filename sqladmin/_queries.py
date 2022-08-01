@@ -4,14 +4,14 @@ from sqlalchemy import select
 from sqlalchemy.orm import joinedload
 from sqlalchemy.sql.expression import Select
 
+from sqladmin._types import MODEL_ATTR_TYPE
 from sqladmin.helpers import get_column_python_type, get_direction, get_primary_key
-from sqladmin.types import _MODEL_ATTR_TYPE
 
 if TYPE_CHECKING:
     from sqladmin.models import ModelView
 
 
-def _get_to_many_stmt(relation: _MODEL_ATTR_TYPE, values: List[Any]) -> Select:
+def _get_to_many_stmt(relation: MODEL_ATTR_TYPE, values: List[Any]) -> Select:
     target = relation.mapper.class_
     target_pk = get_primary_key(target)
     target_pk_type = get_column_python_type(target_pk)
@@ -20,7 +20,7 @@ def _get_to_many_stmt(relation: _MODEL_ATTR_TYPE, values: List[Any]) -> Select:
     return related_stmt
 
 
-def _get_to_one_stmt(relation: _MODEL_ATTR_TYPE, value: Any) -> Select:
+def _get_to_one_stmt(relation: MODEL_ATTR_TYPE, value: Any) -> Select:
     target = relation.mapper.class_
     target_pk = get_primary_key(target)
     target_pk_type = get_column_python_type(target_pk)
