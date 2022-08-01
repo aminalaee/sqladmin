@@ -4,6 +4,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## Version 0.2.0 - 2022-08-01
+
+### Added
+
+* Add `list_query`, `count_query` and `search_query` options in [#243](https://github.com/aminalaee/sqladmin/pull/243)
+* Add `BaseView` for custom pages in [#244](https://github.com/aminalaee/sqladmin/pull/244)
+* Add `expose` for BaseView in [#251](https://github.com/aminalaee/sqladmin/pull/251)
+* Rename `ModelAdmin` to `ModelView` in [#249](https://github.com/aminalaee/sqladmin/pull/249)
+
 ## Version 0.1.12 - 2022-07-13
 
 ### Added
