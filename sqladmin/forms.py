@@ -1,4 +1,5 @@
 import inspect
+import sys
 from enum import Enum
 from typing import (
     Any,
@@ -20,7 +21,6 @@ from sqlalchemy.engine import Engine
 from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession
 from sqlalchemy.orm import ColumnProperty, RelationshipProperty, Session
 from sqlalchemy.sql.schema import Column
-from typing_extensions import Protocol
 from wtforms import (
     BooleanField,
     DateField,
@@ -46,6 +46,11 @@ from sqladmin.fields import (
     SelectField,
 )
 from sqladmin.helpers import get_direction, get_primary_key
+
+if sys.version_info >= (3, 8):
+    from typing import Protocol
+else:
+    from typing_extensions import Protocol
 
 
 class Validator(Protocol):
