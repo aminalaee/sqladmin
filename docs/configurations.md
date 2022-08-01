@@ -267,7 +267,7 @@ For example:
     admin.add_view(CustomView)
     ```
 
-This will assume a `templates` directory created in your project.
+This will assume a `templates` exists in your project.
 You can modify this when you create an Admin instance:
 
 ```python
