@@ -179,7 +179,7 @@ class BaseAdmin:
             "Method `register_model` is deprecated please use `add_view` instead.",
             DeprecationWarning,
         )
-        self.add_model_view(model)
+        self.add_view(model)
 
 
 class BaseAdminView(BaseAdmin):
