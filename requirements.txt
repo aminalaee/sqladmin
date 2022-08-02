@@ -14,7 +14,7 @@ coverage==6.4.2
 flake8==3.9.2
 httpx==0.23.0
 isort==5.10.1
-mypy==0.961
+mypy==0.971
 pytest==7.1.2
 pre-commit==2.19.0
 greenlet==1.1.2
