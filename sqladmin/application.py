@@ -274,6 +274,7 @@ class Admin(BaseAdminView):
         )
 
         statics = StaticFiles(packages=["sqladmin"])
+        middlewares = middlewares or []
 
         def http_exception(request: Request, exc: Exception) -> Response:
             assert isinstance(exc, HTTPException)
@@ -317,8 +318,10 @@ class Admin(BaseAdminView):
             ),
         ]
 
+        for middleware in middlewares:
+            self.admin.add_middleware(middleware)
+
         self.admin.router.routes = routes
-        self.admin.router.middlerware = middlewares
         self.admin.exception_handlers = {HTTPException: http_exception}
         self.admin.debug = debug
         self.app.mount(base_url, app=self.admin, name="admin")
