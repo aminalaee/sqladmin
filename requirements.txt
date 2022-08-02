@@ -10,7 +10,7 @@ sqlmodel==0.0.6
 autoflake==1.4
 babel==2.10.3
 black==22.6.0
-coverage==6.4.1
+coverage==6.4.2
 flake8==3.9.2
 httpx==0.23.0
 isort==5.10.1
