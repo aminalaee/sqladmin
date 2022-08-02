@@ -1,5 +1,5 @@
 import inspect
-from typing import Any, Callable, List, Sequence, Type, Union, no_type_check
+from typing import Any, Callable, List, Optional, Sequence, Type, Union, no_type_check
 
 from jinja2 import ChoiceLoader, FileSystemLoader, PackageLoader
 from sqlalchemy.engine import Engine
@@ -250,7 +250,7 @@ class Admin(BaseAdminView):
         base_url: str = "/admin",
         title: str = "Admin",
         logo_url: str = None,
-        middlewares: Sequence[Middleware] = None,
+        middlewares: Optional[Sequence[Middleware]] = None,
         debug: bool = False,
         templates_dir: str = "templates",
     ) -> None:
