@@ -1,5 +1,5 @@
 import inspect
-from typing import Any, Callable, List, Sequence, Type, Union, no_type_check
+from typing import Any, Callable, List, Optional, Sequence, Type, Union, no_type_check
 
 from jinja2 import ChoiceLoader, FileSystemLoader, PackageLoader
 from sqlalchemy.engine import Engine
@@ -7,7 +7,6 @@ from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession
 from sqlalchemy.orm import Session, sessionmaker
 from starlette.applications import Starlette
 from starlette.exceptions import HTTPException
-from starlette.middleware import Middleware
 from starlette.requests import Request
 from starlette.responses import RedirectResponse, Response
 from starlette.routing import Mount, Route
@@ -250,7 +249,7 @@ class Admin(BaseAdminView):
         base_url: str = "/admin",
         title: str = "Admin",
         logo_url: str = None,
-        middlewares: Sequence[Middleware] = None,
+        middlewares: Optional[Sequence[type]] = None,
         debug: bool = False,
         templates_dir: str = "templates",
     ) -> None:
