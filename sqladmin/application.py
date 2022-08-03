@@ -250,7 +250,7 @@ class Admin(BaseAdminView):
         base_url: str = "/admin",
         title: str = "Admin",
         logo_url: str = None,
-        middlewares: Optional[Sequence[Middleware]] = None,
+        middlewares: Optional[Sequence[type]] = None,
         debug: bool = False,
         templates_dir: str = "templates",
     ) -> None:
