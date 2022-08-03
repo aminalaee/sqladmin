@@ -11,8 +11,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * Fix `middlewares` and `ENGINE_TYPE` types in https://github.com/aminalaee/sqladmin/pull/266
 * Fix middlewares not being applied in https://github.com/aminalaee/sqladmin/pull/267
 
-**Full Changelog**: https://github.com/aminalaee/sqladmin/compare/0.2.0...0.2.1
-
 ## Version 0.2.0 - 2022-08-01
 
 ### Added
