@@ -1,5 +1,6 @@
 from starlette.applications import Starlette
 from starlette.datastructures import MutableHeaders
+from starlette.middleware import Middleware
 from starlette.testclient import TestClient
 from starlette.types import ASGIApp, Message, Receive, Scope, Send
 
@@ -56,7 +57,7 @@ def test_middlewares() -> None:
     Admin(
         app=app,
         engine=engine,
-        middlewares=[CorrelationIdMiddleware],
+        middlewares=[Middleware(CorrelationIdMiddleware)],
     )
 
     with TestClient(app) as client:

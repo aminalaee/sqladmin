@@ -7,6 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession
 from sqlalchemy.orm import Session, sessionmaker
 from starlette.applications import Starlette
 from starlette.exceptions import HTTPException
+from starlette.middleware import Middleware
 from starlette.requests import Request
 from starlette.responses import RedirectResponse, Response
 from starlette.routing import Mount, Route
@@ -37,12 +38,13 @@ class BaseAdmin:
         title: str = "Admin",
         logo_url: str = None,
         templates_dir: str = "templates",
+        middlewares: Optional[Sequence[Middleware]] = None,
     ) -> None:
         self.app = app
         self.engine = engine
         self.base_url = base_url
         self.templates_dir = templates_dir
-        self.admin = Starlette()
+        self.admin = Starlette(middleware=middlewares)
         self._views: List[Union[BaseView, ModelView]] = []
 
         self.templates = self.init_templating_engine(title=title, logo_url=logo_url)
@@ -249,7 +251,7 @@ class Admin(BaseAdminView):
         base_url: str = "/admin",
         title: str = "Admin",
         logo_url: str = None,
-        middlewares: Optional[Sequence[type]] = None,
+        middlewares: Optional[Sequence[Middleware]] = None,
         debug: bool = False,
         templates_dir: str = "templates",
     ) -> None:
@@ -270,10 +272,10 @@ class Admin(BaseAdminView):
             title=title,
             logo_url=logo_url,
             templates_dir=templates_dir,
+            middlewares=middlewares,
         )
 
         statics = StaticFiles(packages=["sqladmin"])
-        middlewares = middlewares or []
 
         def http_exception(request: Request, exc: Exception) -> Response:
             assert isinstance(exc, HTTPException)
@@ -316,9 +318,6 @@ class Admin(BaseAdminView):
                 methods=["GET"],
             ),
         ]
-
-        for middleware in middlewares:
-            self.admin.add_middleware(middleware)
 
         self.admin.router.routes = routes
         self.admin.exception_handlers = {HTTPException: http_exception}
