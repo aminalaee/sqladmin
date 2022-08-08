@@ -82,6 +82,9 @@
               {% endif %}
             </th>
             {% endfor %}
+            {% if model_view.custom_actions_in_list %}
+            <th>Custom action</th>
+            {% endif %}
           </tr>
         </thead>
         <tbody>
@@ -121,6 +124,16 @@
             <td>{{ formatted_value }}</td>
             {% endif %}
             {% endfor %}
+           {% if model_view.custom_actions_in_list %}
+                          <td>
+            {% for custom_action in model_view.custom_actions_in_list %}
+                      <a href="{{ model_view._url_for_action(row, custom_action) }}" class="btn btn-primary">
+                    {{ custom_action }}
+                  </a>
+            {% endfor %}
+
+             </td>
+        {% endif %}
           </tr>
           {% endfor %}
         </tbody>

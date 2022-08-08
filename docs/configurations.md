@@ -275,3 +275,27 @@ from sqladmin import Admin
 
 admin = Admin(templates_dir="my_templates", ...)
 ```
+
+
+## Custom Action
+
+To add custom action on models to the Admin interface, you can use the `action` annotation.
+
+For example:
+
+!!! example
+
+    ```python
+    from sqladmin import BaseView, action
+
+    class UserAdmin(ModelView, model=User):
+    
+        @action(name='Trigger Update', add_in_detail=True, add_in_list=True)
+        async def action_on_user(self, request: Request):
+            model = await self.get_model_by_pk(request.path_params["pk"])
+    
+            ...
+    
+    admin.add_view(UserAdmin)
+    ```
+

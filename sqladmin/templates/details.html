@@ -39,6 +39,17 @@
       </div>
       <div class="card-footer d-flex align-items-right">
         <div class="row">
+
+        {% if model_view.custom_actions_in_detail %}
+            <div class="col">
+            {% for custom_action in model_view.custom_actions_in_detail %}
+                      <a href="{{ model_view._url_for_action(model, custom_action) }}" class="btn btn-primary">
+                    {{ custom_action }}
+                  </a>
+            {% endfor %}
+            </div>
+            {% endif %}
+
           <div class="col">
             <a href="{{ url_for('admin:list', identity=model_view.identity) }}" class="btn">
               Go Back

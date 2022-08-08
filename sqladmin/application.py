@@ -20,6 +20,7 @@ from sqladmin.models import BaseView, ModelView
 __all__ = [
     "Admin",
     "expose",
+    "action",
 ]
 
 
@@ -131,7 +132,26 @@ class BaseAdmin:
             )
             view.async_engine = True
 
-        self._views.append((view()))
+        view_instance = view()
+        funcs = inspect.getmembers(view_instance, predicate=inspect.ismethod)
+
+        for _, func in funcs[::-1]:
+            if hasattr(func, "_action"):
+                self.admin.add_route(
+                    route=func,
+                    path="/{identity}/action/{pk}/{action_name}",
+                    methods=["GET", "POST"],
+                    name=f"{view_instance.identity}-{func._name}",
+                    include_in_schema=func._include_in_schema,
+                )
+
+                if func._add_in_list:
+                    view.custom_actions_in_list.append(func._name)
+                if func._add_in_detail:
+                    view.custom_actions_in_detail.append(func._name)
+
+        view.templates = self.templates
+        self._views.append((view_instance))
 
     def add_base_view(self, view: Type[BaseView]) -> None:
         """Add BaseView to the Admin.
@@ -479,7 +499,7 @@ def expose(
     *,
     methods: List[str] = ["GET"],
     identity: str = None,
-    include_in_schema: bool = True
+    include_in_schema: bool = True,
 ) -> Callable[..., Any]:
     """Expose View with information."""
 
@@ -490,6 +510,27 @@ def expose(
         func._methods = methods
         func._identity = identity or func.__name__
         func._include_in_schema = include_in_schema
+        return func
+
+    return wrap
+
+
+def action(
+    name: str,
+    *,
+    include_in_schema: bool = True,
+    add_in_detail: bool = True,
+    add_in_list: bool = True,
+) -> Callable[..., Any]:
+    """Expose View with information."""
+
+    @no_type_check
+    def wrap(func):
+        func._action = True
+        func._name = name
+        func._include_in_schema = include_in_schema
+        func._add_in_detail = add_in_detail
+        func._add_in_list = add_in_list
         return func
 
     return wrap

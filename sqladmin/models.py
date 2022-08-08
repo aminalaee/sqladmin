@@ -448,6 +448,14 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
     Unlimited by default.
     """
 
+    custom_actions_in_list: ClassVar[List[str]] = []
+    """List of custom action on list page
+    """
+
+    custom_actions_in_detail: ClassVar[List[str]] = []
+    """List of custom action on detail page
+    """
+
     # Form
     form: ClassVar[Optional[Type[Form]]] = None
     """Form class.
@@ -710,6 +718,15 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
             "admin:details",
             identity=slugify_class_name(target.__class__.__name__),
             pk=pk,
+        )
+
+    def _url_for_action(self, obj: Any, action_name: str) -> str:
+        pk = getattr(obj, inspect(obj).mapper.primary_key[0].name)
+        return self.url_path_for(
+            f"admin:{self.identity}-{action_name}",
+            identity=slugify_class_name(obj.__class__.__name__),
+            pk=pk,
+            action_name=action_name,
         )
 
     def _get_default_sort(self) -> List[Tuple[str, bool]]:
