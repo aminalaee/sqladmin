@@ -134,6 +134,17 @@ $("#action-delete").click(function () {
   });
 });
 
+$("[id^='action-custom-']").click(function () {
+  var pks = [];
+  $('.select-box').each(function () {
+    if ($(this).is(':checked')) {
+      pks.push($(this).siblings().get(0).value);
+    }
+  });
+
+  window.location.href = $(this).attr('data-url') + '?pks=' + pks.join(",");
+});
+
 // Select2 Tags
 $(':input[data-role="select2-tags"]').each(function () {
   $(this).select2({

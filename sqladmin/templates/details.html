@@ -58,6 +58,19 @@
             </a>
           </div>
           {% endif %}
+          {% for custom_action,label in model_view._custom_actions_in_detail.items() %}
+          <div class="col-md-1">
+            {% if custom_action in model_view._custom_actions_confirmation %}
+            <a href="#" class="btn btn-secondary" data-bs-toggle="modal" data-bs-target="#modal-confirmation-{{ custom_action }}">
+              {{ label }}
+            </a>
+            {% else %}
+            <a href="{{ model_view._url_for_action(request, custom_action) | string }}?pks={{ model_view._get_pk(model) | string }}" class="btn btn-secondary">
+              {{ label }}
+            </a>
+            {% endif %}
+          </div>
+          {% endfor %}
         </div>
       </div>
     </div>
@@ -66,4 +79,13 @@
 {% if model_view.can_delete %}
 {% include 'modals/delete.html' %}
 {% endif %}
+
+{% for custom_action in model_view._custom_actions_in_detail %}
+{% if custom_action in model_view._custom_actions_confirmation %}
+{% with confirmation_message = model_view._custom_actions_confirmation[custom_action], custom_action=custom_action, url=(model_view._url_for_action(request, custom_action) | string) + '?pks=' + (model_view._get_pk(model) | string) %}
+{% include 'modals/details_action_confirmation.html' %}
+{% endwith %}
+{% endif %}
+{% endfor %}
+
 {% endblock %}
