@@ -290,11 +290,17 @@ For example:
 
     class UserAdmin(ModelView, model=User):
     
-        @action(name='Trigger Update', add_in_detail=True, add_in_list=True)
+        @action(name='approve_user',label="Approve", confirmation_message="Are you sure ?", add_in_detail=True, add_in_list=True)
         async def action_on_user(self, request: Request):
-            model = await self.get_model_by_pk(request.path_params["pk"])
+            model: User = await self.get_model_by_pk(request.path_params["pk"])
+
+            with self.sessionmaker(expire_on_commit=False) as session:
+                ...
+                session.add(model)
+                session.commit()
     
-            ...
+            detail_url = self._url_for_details(model)
+            return Response(content=None)
     
     admin.add_view(UserAdmin)
     ```
