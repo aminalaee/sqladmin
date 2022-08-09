@@ -41,14 +41,25 @@
         <div class="row">
 
         {% if model_view.custom_actions_in_detail %}
-            <div class="col">
-            {% for custom_action in model_view.custom_actions_in_detail %}
-                      <a href="{{ model_view._url_for_action(model, custom_action) }}" class="btn btn-primary">
-                    {{ custom_action }}
-                  </a>
+            {% for custom_action,label in model_view.custom_actions_in_detail.items() %}
+                <div class="col">
+                {% if custom_action in model_view.custom_actions_confirmation %}
+                    <a href="#" id="link-action-confirm-{{ custom_action }}" data-name="{{ custom_action }}"
+                    data-url="{{ model_view._url_for_action(model, custom_action) }}" data-bs-toggle="modal"
+                    data-bs-target="#modal-confirmation-{{ custom_action }}" class="btn btn-primary">
+                    {{ label }}
+                    </a>
+                    {% with confirmation_message = model_view.custom_actions_confirmation[custom_action], custom_action=custom_action %}
+                    {% include 'modals/confirmation.html' %}
+                    {% endwith %}
+                {% else %}
+                    <a href="{{ model_view._url_for_action(model, custom_action) }}" class="btn btn-primary">
+                    {{ label }}
+                    </a>
+                {% endif %}
+                </div>
             {% endfor %}
-            </div>
-            {% endif %}
+        {% endif %}
 
           <div class="col">
             <a href="{{ url_for('admin:list', identity=model_view.identity) }}" class="btn">

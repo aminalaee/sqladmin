@@ -448,12 +448,16 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
     Unlimited by default.
     """
 
-    custom_actions_in_list: ClassVar[List[str]] = []
+    custom_actions_in_list: ClassVar[Dict[str, str]] = {}
     """List of custom action on list page
     """
 
-    custom_actions_in_detail: ClassVar[List[str]] = []
+    custom_actions_in_detail: ClassVar[Dict[str, str]] = {}
     """List of custom action on detail page
+    """
+
+    custom_actions_confirmation: ClassVar[Dict[str, str]] = {}
+    """List of custom action confirmation message in modal
     """
 
     # Form
@@ -726,7 +730,6 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
             f"admin:{self.identity}-{action_name}",
             identity=slugify_class_name(obj.__class__.__name__),
             pk=pk,
-            action_name=action_name,
         )
 
     def _get_default_sort(self) -> List[Tuple[str, bool]]:

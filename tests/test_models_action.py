@@ -6,7 +6,7 @@ from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 from starlette.applications import Starlette
 from starlette.requests import Request
-from starlette.responses import JSONResponse
+from starlette.responses import JSONResponse, Response
 from starlette.testclient import TestClient
 
 from sqladmin import Admin, ModelView
@@ -28,11 +28,26 @@ class User(Base):
 
 
 class UserAdmin(ModelView, model=User):
-    @action(name="Trigger", add_in_detail=True, add_in_list=True)
-    async def action_on_user(self, request: Request):
+    @action(name="approve", add_in_detail=True, add_in_list=True)
+    async def approve_user(self, request: Request):
         model = await self.get_model_by_pk(request.path_params["pk"])
 
         return JSONResponse({"user_id": model.id})
+
+    @action(
+        name="send_notification",
+        label="Send Notification",
+        confirmation_message="Are you sure to send a notification ? ",
+        add_in_detail=False,
+        add_in_list=True,
+    )
+    async def send_notification_user(self, request: Request):
+        model = await self.get_model_by_pk(request.path_params["pk"])
+
+        detail_url = self._url_for_details(model)
+        return Response(
+            content=detail_url
+        )  # redirect to a specific url / use None to return to same page
 
 
 @pytest.fixture(autouse=True)
@@ -51,18 +66,24 @@ def client() -> Generator[TestClient, None, None]:
 def test_model_action(client: TestClient) -> None:
     admin.add_view(UserAdmin)
 
-    assert UserAdmin.custom_actions_in_list == ["Trigger"]
-    assert UserAdmin.custom_actions_in_detail == ["Trigger"]
+    assert UserAdmin.custom_actions_in_list == {
+        "approve": "approve",
+        "send_notification": "Send Notification",
+    }
+
+    assert UserAdmin.custom_actions_in_detail == {"approve": "approve"}
+
+    assert UserAdmin.custom_actions_confirmation == {'send_notification': 'Are you sure to send a notification ? '}
 
     with Session() as session:
         user = User()
         session.add(user)
         session.commit()
 
-        url = UserAdmin()._url_for_action(user, "Trigger")
+        url_approve = UserAdmin()._url_for_action(user, "approve")
 
-    assert url == "/admin/user/action/1/Trigger"
+    assert url_approve == "/admin/user/action/1/approve"
 
-    response = client.get("/admin/user/action/1/Trigger")
+    response = client.get("/admin/user/action/1/approve")
     assert response.status_code == 200
     assert response.json() == {"user_id": 1}

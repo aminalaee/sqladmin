@@ -19,6 +19,17 @@ $(document).on('click','#modal-delete-button',function() {
   });
 });
 
+$(document).on('click','#modal-confirm-button',function() {
+  var actionName = $(this).attr('data-action')
+  $.ajax({
+    url: $('#link-action-confirm-'+actionName).attr('data-url'),
+    method: 'POST',
+    success: function(result) {
+        window.location.href = result;
+    }
+  });
+});
+
 // Search
 $(document).on('click','#search-button',function() {
   var searchTerm = $("#search-input").val();

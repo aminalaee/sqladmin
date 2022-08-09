@@ -139,16 +139,21 @@ class BaseAdmin:
             if hasattr(func, "_action"):
                 self.admin.add_route(
                     route=func,
-                    path="/{identity}/action/{pk}/{action_name}",
+                    path="/{identity}/action/{pk}/" + func._name,
                     methods=["GET", "POST"],
                     name=f"{view_instance.identity}-{func._name}",
                     include_in_schema=func._include_in_schema,
                 )
 
                 if func._add_in_list:
-                    view.custom_actions_in_list.append(func._name)
+                    view.custom_actions_in_list[func._name] = func._label
                 if func._add_in_detail:
-                    view.custom_actions_in_detail.append(func._name)
+                    view.custom_actions_in_detail[func._name] = func._label
+
+                if func._confirmation_message:
+                    view.custom_actions_confirmation[
+                        func._name
+                    ] = func._confirmation_message
 
         view.templates = self.templates
         self._views.append((view_instance))
@@ -517,6 +522,8 @@ def expose(
 
 def action(
     name: str,
+    label: str = None,
+    confirmation_message: str = None,
     *,
     include_in_schema: bool = True,
     add_in_detail: bool = True,
@@ -528,6 +535,8 @@ def action(
     def wrap(func):
         func._action = True
         func._name = name
+        func._label = label or name
+        func._confirmation_message = confirmation_message
         func._include_in_schema = include_in_schema
         func._add_in_detail = add_in_detail
         func._add_in_list = add_in_list
