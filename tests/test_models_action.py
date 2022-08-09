@@ -83,9 +83,18 @@ def test_model_action(client: TestClient) -> None:
         session.commit()
 
         url_approve = UserAdmin()._url_for_action(user, "approve")
+        url_notification = UserAdmin()._url_for_action(user, "send_notification")
 
     assert url_approve == "/admin/user/action/1/approve"
+    assert url_notification == "/admin/user/action/1/send_notification"
 
     response = client.get("/admin/user/action/1/approve")
     assert response.status_code == 200
     assert response.json() == {"user_id": 1}
+
+    response = client.get("/admin/user/action/1/send_notification")
+    assert response.status_code == 200
+    assert response.text == "/admin/user/details/1"
+
+    response = client.get("/admin/user/list")
+    assert response.text.count("Are you sure to send a notification") == 1

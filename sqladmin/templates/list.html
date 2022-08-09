@@ -126,7 +126,7 @@
             {% endfor %}
            {% if model_view.custom_actions_in_list %}
                <td>
-                {% for custom_action,label in model_view.custom_actions_in_detail.items() %}
+                {% for custom_action,label in model_view.custom_actions_in_list.items() %}
                     {% if custom_action in model_view.custom_actions_confirmation %}
                         <a href="#" id="link-action-confirm-{{ custom_action }}" data-name="{{ custom_action }}"
                         data-url="{{ model_view._url_for_action(row, custom_action) }}" data-bs-toggle="modal"
