@@ -73,7 +73,9 @@ def test_model_action(client: TestClient) -> None:
 
     assert UserAdmin.custom_actions_in_detail == {"approve": "approve"}
 
-    assert UserAdmin.custom_actions_confirmation == {'send_notification': 'Are you sure to send a notification ? '}
+    assert UserAdmin.custom_actions_confirmation == {
+        "send_notification": "Are you sure to send a notification ? "
+    }
 
     with Session() as session:
         user = User()
