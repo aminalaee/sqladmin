@@ -717,7 +717,7 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
         )
 
     def _url_for_action(self, obj: Any, action_name: str) -> str:
-        pk = getattr(obj, inspect(obj).mapper.primary_key[0].name)
+        pk = getattr(obj, get_primary_key(obj).name)
         return self.url_path_for(
             f"admin:{self.identity}-{action_name}",
             identity=slugify_class_name(obj.__class__.__name__),
