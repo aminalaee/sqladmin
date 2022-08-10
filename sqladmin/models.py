@@ -448,18 +448,6 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
     Unlimited by default.
     """
 
-    custom_actions_in_list: ClassVar[Dict[str, str]] = {}
-    """List of custom action on list page
-    """
-
-    custom_actions_in_detail: ClassVar[Dict[str, str]] = {}
-    """List of custom action on detail page
-    """
-
-    custom_actions_confirmation: ClassVar[Dict[str, str]] = {}
-    """List of custom action confirmation message in modal
-    """
-
     # Form
     form: ClassVar[Optional[Type[Form]]] = None
     """Form class.
@@ -674,6 +662,10 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
             getattr(self.model, self.get_model_attr(attr).key)
             for attr in self.column_sortable_list
         ]
+
+        self._custom_actions_in_list: Dict[str, str] = {}
+        self._custom_actions_in_detail: Dict[str, str] = {}
+        self._custom_actions_confirmation: Dict[str, str] = {}
 
     def _run_query_sync(self, stmt: ClauseElement) -> Any:
         with self.sessionmaker(expire_on_commit=False) as session:

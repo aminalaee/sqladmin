@@ -146,12 +146,12 @@ class BaseAdmin:
                 )
 
                 if func._add_in_list:
-                    view.custom_actions_in_list[func._name] = func._label
+                    view_instance._custom_actions_in_list[func._name] = func._label
                 if func._add_in_detail:
-                    view.custom_actions_in_detail[func._name] = func._label
+                    view_instance._custom_actions_in_detail[func._name] = func._label
 
                 if func._confirmation_message:
-                    view.custom_actions_confirmation[
+                    view_instance._custom_actions_confirmation[
                         func._name
                     ] = func._confirmation_message
 

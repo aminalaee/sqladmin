@@ -66,14 +66,14 @@ def client() -> Generator[TestClient, None, None]:
 def test_model_action(client: TestClient) -> None:
     admin.add_view(UserAdmin)
 
-    assert UserAdmin.custom_actions_in_list == {
+    assert admin.views[0]._custom_actions_in_list == {
         "approve": "approve",
         "send_notification": "Send Notification",
     }
 
-    assert UserAdmin.custom_actions_in_detail == {"approve": "approve"}
+    assert admin.views[0]._custom_actions_in_detail == {"approve": "approve"}
 
-    assert UserAdmin.custom_actions_confirmation == {
+    assert admin.views[0]._custom_actions_confirmation == {
         "send_notification": "Are you sure to send a notification ? "
     }
 
