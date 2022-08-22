@@ -1,5 +1,5 @@
 import enum
-from typing import Any, AsyncGenerator
+from typing import Any, AsyncGenerator, Dict
 
 import pytest
 from sqlalchemy import (
@@ -18,7 +18,7 @@ from sqlalchemy import (
 from sqlalchemy.dialects.postgresql import INET, MACADDR, UUID
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import relationship, sessionmaker
+from sqlalchemy.orm import ColumnProperty, relationship, sessionmaker
 from sqlalchemy_utils import (
     CurrencyType,
     EmailType,
@@ -28,9 +28,10 @@ from sqlalchemy_utils import (
     UUIDType,
 )
 from wtforms import Field, Form, StringField, TimeField
+from wtforms.fields.core import UnboundField
 
 from sqladmin import ModelView
-from sqladmin.forms import get_model_form
+from sqladmin.forms import ModelConverter, converts, get_model_form
 from tests.common import DummyData, async_engine as engine
 
 pytestmark = pytest.mark.anyio
@@ -247,3 +248,35 @@ async def test_form_converter_when_impl_not_callable() -> None:
 async def test_model_form_include_pk() -> None:
     Form = await get_model_form(model=User, engine=engine, form_include_pk=True)
     assert "id" in Form()._fields
+
+
+async def test_form_override_form_converter() -> None:
+    class ExampleField(Field):
+        pass
+
+    class MyType(TypeDecorator):
+        impl = String
+
+    class MyModelConverter(ModelConverter):
+        @converts("MyType")
+        def conv_my_type(
+            self,
+            model: type,
+            prop: ColumnProperty,
+            kwargs: Dict[str, Any],
+        ) -> UnboundField:
+            return ExampleField(**kwargs)
+
+    class CustomModel(Base):
+        __tablename__ = "override_form_converter"
+
+        id = Column(Integer, primary_key=True)
+        custom = Column(MyType)
+
+    Form = await get_model_form(
+        model=CustomModel,
+        engine=engine,
+        form_converter=MyModelConverter,
+    )
+
+    assert isinstance(Form()._fields["custom"], ExampleField)
