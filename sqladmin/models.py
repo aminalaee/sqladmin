@@ -43,7 +43,7 @@ from sqladmin._queries import (
 from sqladmin._types import ENGINE_TYPE, MODEL_ATTR_TYPE
 from sqladmin.exceptions import InvalidColumnError, InvalidModelError
 from sqladmin.formatters import BASE_FORMATTERS
-from sqladmin.forms import get_model_form
+from sqladmin.forms import ModelConverter, ModelConverterBase, get_model_form
 from sqladmin.helpers import (
     Writer,
     as_str,
@@ -545,6 +545,21 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
         ```
     """
 
+    form_converter: ClassVar[Type[ModelConverterBase]] = ModelConverter
+    """Model form conversion class.
+    Use this to implement custom field conversion logic.
+
+    ???+ example
+        ```python
+        class MyModelConverter(ModelConverter):
+            pass
+
+
+        class UserAdmin(ModelAdmin, model=User):
+            form_converter = MyModelConverter
+        ```
+    """
+
     form_include_pk: ClassVar[bool] = False
     """Control if form should include primary key columns or not.
 
@@ -968,6 +983,7 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
             form_class=self.form_base_class,
             form_overrides=self.form_overrides,
             form_include_pk=self.form_include_pk,
+            form_converter=self.form_converter,
         )
 
     def search_placeholder(self) -> str:
