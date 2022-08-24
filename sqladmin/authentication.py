@@ -1,5 +1,4 @@
 import functools
-import inspect
 from typing import Any, Callable
 
 from starlette.middleware import Middleware
@@ -51,11 +50,10 @@ def login_required(func: Callable[..., Any]) -> Callable[..., Any]:
         auth_backend = admin.authentication_backend
         if auth_backend is not None:
             is_authenticated = await auth_backend.authenticate(request)
+            print(is_authenticated)
             if not is_authenticated:
-                return RedirectResponse(request.url_for("admin:login"))
+                return RedirectResponse(request.url_for("admin:login"), status_code=302)
 
-        if inspect.iscoroutinefunction(func):
-            return await func(*args, **kwargs)
-        return func(*args, **kwargs)
+        return await func(*args, **kwargs)
 
     return wrapper_decorator

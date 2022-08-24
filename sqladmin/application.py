@@ -502,7 +502,9 @@ class Admin(BaseAdminView):
         ok = await self.authentication_backend.login(request)
         if not ok:
             context["error"] = "Invalid credentials."
-            return self.templates.TemplateResponse("login.html", context)
+            return self.templates.TemplateResponse(
+                "login.html", context, status_code=400
+            )
 
         return RedirectResponse(request.url_for("admin:index"), status_code=302)
 
