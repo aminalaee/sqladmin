@@ -5,16 +5,16 @@
     <div class="container-fluid">
       <h1 class="navbar-brand navbar-brand-autodark">
         <a href="{{ url_for('admin:index') }}">
-        {% if admin_logo_url %}
-        <img src="{{ admin_logo_url }}" width="64" height="64" alt="Admin" class="navbar-brand-image"/>
+        {% if admin.logo_url %}
+        <img src="{{ admin.logo_url }}" width="64" height="64" alt="Admin" class="navbar-brand-image"/>
         {% else %}
-        <h3>{{ admin_title }}</h3>
+        <h3>{{ admin.title }}</h3>
         {% endif %}
         </a>
       </h1>
       <div class="collapse navbar-collapse" id="navbar-menu">
         <ul class="navbar-nav pt-lg-3">
-          {% for view in views %}
+          {% for view in admin.views %}
           {% if view.is_visible(request) and view.is_accessible(request) %}
           <li class="nav-item">
             {% if view.is_model %}
@@ -32,6 +32,12 @@
           {% endfor %}
         </ul>
       </div>
+      {% if admin.authentication_backend %}
+      <a href="{{ request.url_for('admin:logout') }}" class="btn btn-secondary btn-icon">
+        <i class="fa fa-sign-out"></i>
+        <span>Logout</span>
+      </a>
+      {% endif %}
     </div>
   </aside>
   <div class="page-wrapper">
@@ -54,8 +60,6 @@
         </div>
       </div>
     </div>
-    {% block footer %}
-    {% endblock %}
   </div>
 </div>
 {% endblock %}

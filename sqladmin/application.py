@@ -15,6 +15,7 @@ from starlette.staticfiles import StaticFiles
 from starlette.templating import Jinja2Templates
 
 from sqladmin._types import ENGINE_TYPE
+from sqladmin.authentication import AuthenticationBackend, login_required
 from sqladmin.models import BaseView, ModelView
 
 __all__ = [
@@ -39,19 +40,27 @@ class BaseAdmin:
         logo_url: str = None,
         templates_dir: str = "templates",
         middlewares: Optional[Sequence[Middleware]] = None,
+        authentication_backend: Optional[AuthenticationBackend] = None,
     ) -> None:
         self.app = app
         self.engine = engine
         self.base_url = base_url
         self.templates_dir = templates_dir
+        self.title = title
+        self.logo_url = logo_url
+
+        middlewares = middlewares or []
+        self.authentication_backend = authentication_backend
+        if authentication_backend:
+            middlewares = list(middlewares)
+            middlewares.extend(authentication_backend.middlewares)
+
         self.admin = Starlette(middleware=middlewares)
         self._views: List[Union[BaseView, ModelView]] = []
 
-        self.templates = self.init_templating_engine(title=title, logo_url=logo_url)
+        self.templates = self.init_templating_engine()
 
-    def init_templating_engine(
-        self, title: str, logo_url: str = None
-    ) -> Jinja2Templates:
+    def init_templating_engine(self) -> Jinja2Templates:
         templates = Jinja2Templates("templates")
         loaders = [
             FileSystemLoader(self.templates_dir),
@@ -61,9 +70,7 @@ class BaseAdmin:
         templates.env.loader = ChoiceLoader(loaders)
         templates.env.globals["min"] = min
         templates.env.globals["zip"] = zip
-        templates.env.globals["admin_title"] = title
-        templates.env.globals["admin_logo_url"] = logo_url
-        templates.env.globals["views"] = self.views
+        templates.env.globals["admin"] = self
         templates.env.globals["is_list"] = lambda x: isinstance(x, list)
 
         return templates
@@ -254,6 +261,7 @@ class Admin(BaseAdminView):
         middlewares: Optional[Sequence[Middleware]] = None,
         debug: bool = False,
         templates_dir: str = "templates",
+        authentication_backend: Optional[AuthenticationBackend] = None,
     ) -> None:
         """
         Args:
@@ -273,6 +281,7 @@ class Admin(BaseAdminView):
             logo_url=logo_url,
             templates_dir=templates_dir,
             middlewares=middlewares,
+            authentication_backend=authentication_backend,
         )
 
         statics = StaticFiles(packages=["sqladmin"])
@@ -317,6 +326,8 @@ class Admin(BaseAdminView):
                 name="export",
                 methods=["GET"],
             ),
+            Route("/login", endpoint=self.login, name="login", methods=["GET", "POST"]),
+            Route("/logout", endpoint=self.logout, name="logout", methods=["GET"]),
         ]
 
         self.admin.router.routes = routes
@@ -324,11 +335,13 @@ class Admin(BaseAdminView):
         self.admin.debug = debug
         self.app.mount(base_url, app=self.admin, name="admin")
 
+    @login_required
     async def index(self, request: Request) -> Response:
         """Index route which can be overridden to create dashboards."""
 
         return self.templates.TemplateResponse("index.html", {"request": request})
 
+    @login_required
     async def list(self, request: Request) -> Response:
         """List route to display paginated Model instances."""
 
@@ -353,6 +366,7 @@ class Admin(BaseAdminView):
 
         return self.templates.TemplateResponse(model_view.list_template, context)
 
+    @login_required
     async def details(self, request: Request) -> Response:
         """Details route."""
 
@@ -373,6 +387,7 @@ class Admin(BaseAdminView):
 
         return self.templates.TemplateResponse(model_view.details_template, context)
 
+    @login_required
     async def delete(self, request: Request) -> Response:
         """Delete route."""
 
@@ -389,6 +404,7 @@ class Admin(BaseAdminView):
 
         return Response(content=request.url_for("admin:list", identity=identity))
 
+    @login_required
     async def create(self, request: Request) -> Response:
         """Create model endpoint."""
 
@@ -423,6 +439,7 @@ class Admin(BaseAdminView):
             status_code=302,
         )
 
+    @login_required
     async def edit(self, request: Request) -> Response:
         """Edit model endpoint."""
 
@@ -461,6 +478,7 @@ class Admin(BaseAdminView):
             status_code=302,
         )
 
+    @login_required
     async def export(self, request: Request) -> Response:
         """Export model endpoint."""
 
@@ -472,6 +490,29 @@ class Admin(BaseAdminView):
         model_view = self._find_model_view(identity)
         rows = await model_view.get_model_objects(limit=model_view.export_max_rows)
         return model_view.export_data(rows, export_type=export_type)
+
+    async def login(self, request: Request) -> Response:
+        assert self.authentication_backend is not None
+
+        context = {"request": request, "error": ""}
+
+        if request.method == "GET":
+            return self.templates.TemplateResponse("login.html", context)
+
+        ok = await self.authentication_backend.login(request)
+        if not ok:
+            context["error"] = "Invalid credentials."
+            return self.templates.TemplateResponse(
+                "login.html", context, status_code=400
+            )
+
+        return RedirectResponse(request.url_for("admin:index"), status_code=302)
+
+    async def logout(self, request: Request) -> Response:
+        assert self.authentication_backend is not None
+
+        await self.authentication_backend.logout(request)
+        return RedirectResponse(request.url_for("admin:index"), status_code=302)
 
 
 def expose(
