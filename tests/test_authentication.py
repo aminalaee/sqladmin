@@ -24,7 +24,6 @@ class CustomBackend(AuthenticationBackend):
         return True
 
     async def authenticate(self, request: Request) -> bool:
-        print("!")
         return "token" in request.session
 
 
@@ -62,7 +61,7 @@ def test_login(client: TestClient) -> None:
 
 
 def test_logout(client: TestClient) -> None:
-    response = client.get("/admin/logout", data={"username": "a", "password": "b"})
+    response = client.get("/admin/logout")
 
     assert len(response.cookies) == 0
     assert response.status_code == 200

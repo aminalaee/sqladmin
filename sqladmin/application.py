@@ -508,7 +508,6 @@ class Admin(BaseAdminView):
 
         return RedirectResponse(request.url_for("admin:index"), status_code=302)
 
-    @login_required
     async def logout(self, request: Request) -> Response:
         assert self.authentication_backend is not None
 
