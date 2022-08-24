@@ -40,7 +40,7 @@ class BaseAdmin:
         logo_url: str = None,
         templates_dir: str = "templates",
         middlewares: Optional[Sequence[Middleware]] = None,
-        authentication_backend: AuthenticationBackend = None,
+        authentication_backend: Optional[AuthenticationBackend] = None,
     ) -> None:
         self.app = app
         self.engine = engine
@@ -261,7 +261,7 @@ class Admin(BaseAdminView):
         middlewares: Optional[Sequence[Middleware]] = None,
         debug: bool = False,
         templates_dir: str = "templates",
-        authentication_backend: AuthenticationBackend = None,
+        authentication_backend: Optional[AuthenticationBackend] = None,
     ) -> None:
         """
         Args:
