@@ -33,23 +33,25 @@ jobs:
         with:
           python-version: "${{ matrix.python-version }}"
       - name: "Install dependencies"
-        run: "scripts/install"
+        run: pip install hatch
       - name: "Run linting checks"
-        run: "scripts/check"
+        run: hatch run check
       - name: "Build package & docs"
-        run: "scripts/build"
+        run: |
+          hatch build
+          mkdocs build
       - name: "Run tests with SQLite"
         env:
           TEST_DATABASE_URI_SYNC: "sqlite:///test.db?check_same_thread=False"
           TEST_DATABASE_URI_ASYNC: "sqlite+aiosqlite:///test.db?check_same_thread=False"
-        run: "scripts/test"
+        run: hatch run test
       - name: "Run tests with PostgreSQL"
         env:
           TEST_DATABASE_URI_SYNC: "postgresql+psycopg2://username:password@localhost:5432/test_db"
           TEST_DATABASE_URI_ASYNC: "postgresql+asyncpg://username:password@localhost:5432/test_db"
-        run: "scripts/test"
+        run: hatch run test
       - name: "Enforce coverage"
-        run: "scripts/coverage"
+        run: hatch run cov
       - name: "Upload Coverage"
         uses: codecov/codecov-action@v3
         with:
