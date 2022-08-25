@@ -90,7 +90,7 @@ class UserAdmin(ModelView, model=User):
         return True
 ```
 
-A full example:
+## Full example
 
 ```python
 from sqladmin import Admin, ModelView
@@ -116,6 +116,7 @@ class User(Base):
 
 
 Base.metadata.create_all(engine)
+
 
 class MyBackend(AuthenticationBackend):
     async def login(self, request: Request) -> bool:
