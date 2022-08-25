@@ -21,7 +21,7 @@ jobs:
       - name: "Build package & docs"
         run: |
           hatch build
-          mkdocs build
+          hatch run docs
       - name: "Publish"
         run: hatch publish
         env:

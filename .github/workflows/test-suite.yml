@@ -39,7 +39,7 @@ jobs:
       - name: "Build package & docs"
         run: |
           hatch build
-          mkdocs build
+          hatch run docs
       - name: "Run tests with SQLite"
         env:
           TEST_DATABASE_URI_SYNC: "sqlite:///test.db?check_same_thread=False"
