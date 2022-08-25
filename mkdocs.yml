@@ -21,6 +21,7 @@ nav:
     - Application: 'api_reference/application.md'
     - ModelView: 'api_reference/model_view.md'
     - BaseView: 'api_reference/base_view.md'
+    - Authentication: 'api_reference/authentication.md'
   - Changelog: 'changelog.md'
 
 markdown_extensions:
