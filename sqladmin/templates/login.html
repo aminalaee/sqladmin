@@ -7,10 +7,10 @@
       <div class="mb-3">
         <label class="form-label">Username</label>
         {% if error %}
-        <input type="text" class="form-control is-invalid" placeholder="Enter username" autocomplete="off">
+        <input name="username" type="text" class="form-control is-invalid" placeholder="Enter username" autocomplete="off">
         <div class="invalid-feedback">{{ error }}</div>
         {% else %}
-        <input type="text" class="form-control" placeholder="Enter username" autocomplete="off">
+        <input name="username" type="text" class="form-control" placeholder="Enter username" autocomplete="off">
         {% endif %}
       </div>
       <div class="mb-2">
@@ -19,10 +19,10 @@
         </label>
         <div class="input-group input-group-flat">
           {% if error %}
-          <input type="password" class="form-control is-invalid"  placeholder="Password"  autocomplete="off">
+          <input name="password" type="password" class="form-control is-invalid"  placeholder="Password"  autocomplete="off">
           <div class="invalid-feedback">{{ error }}</div>
           {% else %}
-          <input type="password" class="form-control"  placeholder="Password"  autocomplete="off">
+          <input name="password" type="password" class="form-control"  placeholder="Password"  autocomplete="off">
           {% endif %}
         </div>
       </div>
