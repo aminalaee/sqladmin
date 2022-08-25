@@ -50,36 +50,3 @@ include = [
 exclude = [
   "tests/*",
 ]
-
-[tool.flake8]
-ignore = [
-  "E203",
-  "W503",
-]
-max-line-length = 88
-
-[tool.mypy]
-disallow_untyped_defs = true
-ignore_missing_imports = true
-show_error_codes = true
-
-[tool.isort]
-profile = "black"
-combine_as_imports = true
-
-[tool.coverage.run]
-branch = true
-parallel = true
-source_pkgs = [
-  "sqladmin",
-  "tests",
-]
-
-[tool.coverage.report]
-exclude_lines = [
-  "pragma: no cover",
-  "pragma: nocover",
-  "except NotImplementedError",
-  "raise NotImplementedError",
-  "if TYPE_CHECKING:",
-]
