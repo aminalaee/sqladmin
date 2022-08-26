@@ -21,11 +21,11 @@ jobs:
       - name: "Build package & docs"
         run: |
           hatch build
-          hatch run docs
+          hatch run docs_build
       - name: "Publish"
         run: |
           hatch publish --no-prompt
-          mkdocs gh-deploy --force
+          hatch run docs_deploy
         env:
           HATCH_INDEX_USER: __token__
           HATCH_INDEX_AUTH: ${{ secrets.PYPI_TOKEN }}
