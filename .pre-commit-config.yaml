@@ -1,9 +1,0 @@
-repos:
-  - repo: local
-    hooks:
-      - id: scripts-check
-        name: scripts-check
-        entry: scripts/check
-        language: script
-        types: [python]
-        pass_filenames: false
