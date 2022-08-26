@@ -17,11 +17,12 @@ jobs:
         with:
           python-version: 3.9
       - name: "Install dependencies"
-        run: "scripts/install"
+        run: pip install hatch
       - name: "Build package & docs"
-        run: "scripts/build"
+        run: |
+          hatch build
+          hatch run docs
       - name: "Publish"
-        run: "scripts/publish"
+        run: hatch publish
         env:
-          TWINE_USERNAME: __token__
-          TWINE_PASSWORD: ${{ secrets.PYPI_TOKEN }}
+          HATCH_INDEX_AUTH: ${{ secrets.PYPI_TOKEN }}
