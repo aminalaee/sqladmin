@@ -20,12 +20,13 @@ jobs:
         run: pip install hatch
       - name: "Build package & docs"
         run: |
+          pip install mkdocs
           hatch build
-          hatch run docs_build
+          mkdocs build
       - name: "Publish"
         run: |
           hatch publish --no-prompt
-          hatch run docs_deploy
+          mkdocs gh-deploy --force
         env:
           HATCH_INDEX_USER: __token__
           HATCH_INDEX_AUTH: ${{ secrets.PYPI_TOKEN }}

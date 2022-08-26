@@ -38,8 +38,9 @@ jobs:
         run: hatch run check
       - name: "Build package & docs"
         run: |
+          pip install mkdocs
           hatch build
-          hatch run docs_build
+          mkdocs build
       - name: "Run tests with SQLite"
         env:
           TEST_DATABASE_URI_SYNC: "sqlite:///test.db?check_same_thread=False"
