@@ -18,14 +18,12 @@ jobs:
           python-version: 3.9
       - name: "Install dependencies"
         run: pip install hatch
-      - name: "Build package & docs"
+      - name: "Build & Publish"
         run: |
-          pip install mkdocs
+          hatch shell
           hatch build
-          mkdocs build
-      - name: "Publish"
-        run: |
           hatch publish --no-prompt
+          mkdocs build
           mkdocs gh-deploy --force
         env:
           HATCH_INDEX_USER: __token__

@@ -38,7 +38,7 @@ jobs:
         run: hatch run check
       - name: "Build package & docs"
         run: |
-          pip install mkdocs
+          hatch shell
           hatch build
           mkdocs build
       - name: "Run tests with SQLite"
