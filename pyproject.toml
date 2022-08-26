@@ -41,6 +41,7 @@ Source = "https://github.com/aminalaee/sqladmin"
 [tool.hatch.version]
 path = "sqladmin/__init__.py"
 
+[tool.hatch.build.targets.wheel]
 [tool.hatch.build.targets.sdist]
 include = [
     "/sqladmin",
