@@ -23,6 +23,9 @@ jobs:
           hatch build
           hatch run docs
       - name: "Publish"
-        run: hatch publish
+        run: |
+          hatch publish --no-prompt
+          mkdocs gh-deploy --force
         env:
+          HATCH_INDEX_USER: __token__
           HATCH_INDEX_AUTH: ${{ secrets.PYPI_TOKEN }}
