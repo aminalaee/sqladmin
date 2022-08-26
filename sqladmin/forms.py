@@ -23,8 +23,6 @@ from sqlalchemy.orm import ColumnProperty, RelationshipProperty, Session
 from sqlalchemy.sql.schema import Column
 from wtforms import (
     BooleanField,
-    DateField,
-    DateTimeField,
     DecimalField,
     Field,
     Form,
@@ -40,6 +38,8 @@ from sqladmin._types import ENGINE_TYPE, MODEL_ATTR_TYPE
 from sqladmin._validators import CurrencyValidator, TimezoneValidator
 from sqladmin.exceptions import NoConverterFound
 from sqladmin.fields import (
+    DateField,
+    DateTimeField,
     JSONField,
     QuerySelectField,
     QuerySelectMultipleField,
