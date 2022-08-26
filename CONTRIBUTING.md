@@ -55,10 +55,10 @@ Ready to contribute? Here's how to set up `sqladmin` for local development.
     $ git clone git@github.com:your_name_here/sqladmin.git
     ```
 
-3. Install dependencies by running the script:
+3. Install [`Hatch`](https://hatch.pypa.io/latest/install/) for project management:
 
     ```
-    $ ./scripts/install
+    $ pip install hatch
     ```
 
 4. Create a branch for local development:
@@ -72,13 +72,14 @@ Ready to contribute? Here's how to set up `sqladmin` for local development.
 5. Apply linting and formatting, if not already done:
 
     ```
-    $ ./scripts/lint
+    $ hatch run lint
     ```
 
 6. When you're done making changes, check that your changes pass the tests:
 
     ```
-    $ ./scripts/test
+    $ hatch run check
+    $ hatch run test
     ```
 
 7. Commit your changes and push your branch to GitHub:
