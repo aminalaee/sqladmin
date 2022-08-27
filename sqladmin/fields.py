@@ -37,28 +37,6 @@ class DateTimeField(fields.DateTimeField):
 
     widget = sqladmin_widgets.DateTimePickerWidget()
 
-    def __init__(
-        self,
-        label: str = None,
-        validators: list = None,
-        format: str = None,
-        **kwargs: Any,
-    ) -> None:
-        """
-        Constructor
-        :param label:
-            Label
-        :param validators:
-            Field validators
-        :param format:
-            Format for text to date conversion. Defaults to '%Y-%m-%d %H:%M:%S'
-        :param kwargs:
-            Any additional parameters
-        """
-        super().__init__(label, validators, **kwargs)
-
-        self.format = format or "%Y-%m-%d %H:%M:%S"
-
 
 class TimeField(fields.Field):
     """

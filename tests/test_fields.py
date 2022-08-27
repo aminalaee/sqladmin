@@ -45,10 +45,9 @@ def test_date_field() -> None:
         date = DateField()
 
     form = F()
-    assert form.date.format == ["%Y-%m-%d"]
 
+    assert form.date.format == ["%Y-%m-%d"]
     assert 'data-role="datepicker"' in form.date()
-    assert 'data-date-format="YYYY-MM-DD"' in form.date()
 
     form = F(DummyData(date=["2021-12-22"]))
     assert form.date.data == date(2021, 12, 22)
@@ -59,10 +58,9 @@ def test_datetime_field() -> None:
         datetime = DateTimeField()
 
     form = F()
-    assert form.datetime.format == "%Y-%m-%d %H:%M:%S"
 
+    assert form.datetime.format == ["%Y-%m-%d %H:%M:%S"]
     assert 'data-role="datetimepicker"' in form.datetime()
-    assert 'data-date-format="YYYY-MM-DD HH:mm:ss"' in form.datetime()
 
     form = F(DummyData(datetime=["2021-12-22 12:30:00"]))
     assert form.datetime.data == datetime(2021, 12, 22, 12, 30, 0, 0)
