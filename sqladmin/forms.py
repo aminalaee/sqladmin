@@ -47,12 +47,7 @@ from sqladmin.fields import (
     QuerySelectMultipleField,
     SelectField,
 )
-from sqladmin.helpers import (
-    get_direction,
-    get_primary_key,
-    is_association_proxy,
-    is_relationship,
-)
+from sqladmin.helpers import get_direction, get_primary_key, is_relationship
 
 if sys.version_info >= (3, 8):
     from typing import Protocol
@@ -283,7 +278,7 @@ class ModelConverterBase:
             return override(**kwargs)
 
         loader = form_ajax_refs.get(prop.key)
-        multiple = is_association_proxy(prop) or (
+        multiple = (
             is_relationship(prop)
             and prop.direction.name in ("ONETOMANY", "MANYTOMANY")
             and prop.uselist

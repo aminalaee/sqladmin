@@ -1,8 +1,8 @@
 from typing import TYPE_CHECKING
 
-from sqlalchemy import String, and_, cast, or_, select, text
+from sqlalchemy import String, and_, cast, inspect, or_, select, text
 
-from sqladmin.helpers import get_primary_key, is_association_proxy, is_relationship
+from sqladmin.helpers import get_primary_key
 
 if TYPE_CHECKING:
     from sqladmin.models import ModelAdmin
@@ -11,7 +11,7 @@ if TYPE_CHECKING:
 DEFAULT_PAGE_SIZE = 10
 
 
-class AjaxModelLoader(object):
+class AjaxModelLoader:
     """Ajax related model loader. Override this to implement custom loading behavior."""
 
     def __init__(self, name: str, options: dict):
@@ -80,12 +80,10 @@ class QueryAjaxModelLoader(AjaxModelLoader):
         stmt = select(self.model)
 
         # no type casting to string if a ColumnAssociationProxyInstance is given
-        filters = (
-            field.ilike("%%%s%%" % term)
-            if is_association_proxy(field)
-            else cast(field, String).ilike("%%%s%%" % term)
-            for field in self._cached_fields
-        )
+        filters = [
+            cast(field, String).ilike("%%%s%%" % term) for field in self._cached_fields
+        ]
+
         stmt = stmt.filter(or_(*filters))
 
         if self.filters:
@@ -99,7 +97,6 @@ class QueryAjaxModelLoader(AjaxModelLoader):
             stmt = stmt.order_by(self.order_by)
 
         stmt = stmt.offset(offset).limit(limit)
-        print(stmt, "!!!")
         result = await self.model_admin._run_query(stmt)
         return result
 
@@ -110,16 +107,12 @@ def create_ajax_loader(
     field_name: str,
     options: dict,
 ):
-    attr = getattr(model_admin.model, field_name, None)
+    mapper = inspect(model_admin.model)
 
-    if attr is None:
-        raise ValueError(f"Model {model_admin.model} does not have field {field_name}.")
-
-    if not is_relationship(attr) and not is_association_proxy(attr):
+    try:
+        attr = mapper.relationships[name]
+    except KeyError:
         raise ValueError(f"{model_admin.model}.{field_name} is not a relation.")
 
-    if is_association_proxy(attr):
-        attr = attr.remote_attr
-
-    remote_model = attr.prop.mapper.class_
+    remote_model = attr.mapper.class_
     return QueryAjaxModelLoader(name, remote_model, model_admin, **options)

@@ -6,7 +6,6 @@ from abc import ABC, abstractmethod
 from typing import Any, Callable, Generator, List, TypeVar, Union
 
 from sqlalchemy import Column, inspect
-from sqlalchemy.ext.associationproxy import ASSOCIATION_PROXY
 from sqlalchemy.orm import RelationshipProperty
 
 from sqladmin._types import MODEL_ATTR_TYPE
@@ -135,16 +134,6 @@ def get_attributes(model: Any) -> List[MODEL_ATTR_TYPE]:
     return list(inspect(model).attrs)
 
 
-def is_association_proxy(attr) -> bool:
-    if hasattr(attr, "parent"):
-        attr = attr.parent
-    return hasattr(attr, "extension_type") and attr.extension_type == ASSOCIATION_PROXY
-
-
-def is_relationship(attr) -> bool:
-    return hasattr(attr, "property") and hasattr(attr.property, "direction")
-
-
 def get_direction(attr: MODEL_ATTR_TYPE) -> str:
     assert isinstance(attr, RelationshipProperty)
     name = attr.direction.name
@@ -158,3 +147,7 @@ def get_column_python_type(column: Column) -> type:
         return column.type.python_type
     except NotImplementedError:
         return str
+
+
+def is_relationship(attr: MODEL_ATTR_TYPE) -> bool:
+    return isinstance(attr, RelationshipProperty)

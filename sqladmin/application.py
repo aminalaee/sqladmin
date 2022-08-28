@@ -15,6 +15,7 @@ from starlette.staticfiles import StaticFiles
 from starlette.templating import Jinja2Templates
 
 from sqladmin._types import ENGINE_TYPE
+from sqladmin.ajax import QueryAjaxModelLoader
 from sqladmin.authentication import AuthenticationBackend, login_required
 from sqladmin.models import BaseView, ModelView
 
@@ -520,7 +521,7 @@ class Admin(BaseAdminView):
         """Ajax lookup route."""
 
         identity = request.path_params["identity"]
-        model_admin = self._find_model_admin(identity)
+        model_view = self._find_model_view(identity)
 
         name = request.query_params.get("name")
         limit = int(request.query_params.get("limit", 0))
@@ -528,12 +529,11 @@ class Admin(BaseAdminView):
         term = request.query_params.get("term", None)
 
         try:
-            loader: QueryAjaxModelLoader = model_admin._form_ajax_refs[name]
+            loader: QueryAjaxModelLoader = model_view._form_ajax_refs[name]
         except KeyError:
             raise HTTPException(status_code=404)
 
         data = [loader.format(m) for m in await loader.get_list(term, offset, limit)]
-        print(data)
         return JSONResponse({"results": data})
 
 
