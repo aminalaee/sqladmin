@@ -16,10 +16,8 @@ from typing import (
 )
 
 import anyio
-from sqlalchemy import Column, asc, desc, func, insert, inspect, or_
-from sqlalchemy.engine.base import Engine
+from sqlalchemy import Column, asc, desc, func, inspect, or_
 from sqlalchemy.exc import NoInspectionAvailable
-from sqlalchemy.ext.asyncio import AsyncEngine
 from sqlalchemy.orm import (
     ColumnProperty,
     RelationshipProperty,
@@ -31,8 +29,18 @@ from sqlalchemy.sql.elements import ClauseElement
 from sqlalchemy.sql.expression import Select, select
 from starlette.requests import Request
 from starlette.responses import StreamingResponse
+from starlette.templating import Jinja2Templates
 from wtforms import Field, Form
 
+from sqladmin._queries import (
+    delete_async,
+    delete_sync,
+    insert_async,
+    insert_sync,
+    update_async,
+    update_sync,
+)
+from sqladmin._types import ENGINE_TYPE, MODEL_ATTR_TYPE
 from sqladmin.ajax import create_ajax_loader
 from sqladmin.exceptions import InvalidColumnError, InvalidModelError
 from sqladmin.formatters import BASE_FORMATTERS
@@ -41,6 +49,7 @@ from sqladmin.helpers import (
     Writer,
     as_str,
     get_attributes,
+    get_column_python_type,
     get_primary_key,
     get_relationships,
     prettify_class_name,
@@ -49,15 +58,16 @@ from sqladmin.helpers import (
     stream_to_csv,
 )
 from sqladmin.pagination import Pagination
-from sqladmin.types import _MODEL_ATTR_TYPE
 
 __all__ = [
-    "ModelAdmin",
+    "BaseView",
+    "ModelView",
+    "ModelView",
 ]
 
 
-class ModelAdminMeta(type):
-    """Metaclass used to specify class variables in ModelAdmin.
+class ModelViewMeta(type):
+    """Metaclass used to specify class variables in ModelView.
 
     Danger:
         This class should almost never be used directly.
@@ -65,7 +75,7 @@ class ModelAdminMeta(type):
 
     @no_type_check
     def __new__(mcls, name, bases, attrs: dict, **kwargs: Any):
-        cls: Type["ModelAdmin"] = super().__new__(mcls, name, bases, attrs)
+        cls: Type["ModelView"] = super().__new__(mcls, name, bases, attrs)
 
         model = kwargs.get("model")
 
@@ -109,7 +119,7 @@ class ModelAdminMeta(type):
             raise AssertionError(f"Cannot use {' and '.join(keys)} together.")
 
 
-class BaseModelAdmin:
+class BaseModelView:
     def is_visible(self, request: Request) -> bool:
         """Override this method if you want dynamically
         hide or show administrative views from SQLAdmin menu structure
@@ -127,16 +137,71 @@ class BaseModelAdmin:
         return True
 
 
-class ModelAdmin(BaseModelAdmin, metaclass=ModelAdminMeta):
+class BaseView(BaseModelView):
+    """Base class for defining admnistrative views for the model.
+
+    ???+ usage
+        ```python
+        from sqladmin import BaseView, expose
+
+        class CustomAdmin(BaseView):
+            name = "Custom Page"
+            icon = "fa-solid fa-chart-line"
+
+            @expose("/custom", methods=["GET"])
+            def test_page(self, request: Request):
+                return self.templates.TemplateResponse(
+                    "custom.html",
+                    context={"request": request},
+                )
+
+        admin.add_base_view(CustomAdmin)
+        ```
+    """
+
+    # Internals
+    pk_column: ClassVar[Column]
+    identity: ClassVar[str]
+    sessionmaker: ClassVar[sessionmaker]
+    engine: ClassVar[ENGINE_TYPE]
+    async_engine: ClassVar[bool]
+    ajax_lookup_url: ClassVar[str] = ""
+    is_model: ClassVar[bool] = False
+    url_path_for: ClassVar[Callable]
+    templates: ClassVar[Jinja2Templates]
+
+    name: ClassVar[str] = ""
+    """Name of the view to be displayed."""
+
+    identity: ClassVar[str] = ""
+    """Same as name but it will be used for URL of the endpoints."""
+
+    methods: ClassVar[List[str]] = ["GET"]
+    """List of method names for the endpoint.
+    By default it's set to `["GET"]` only.
+    """
+
+    include_in_schema: ClassVar[bool] = True
+    """Control whether this endpoint
+    should be included in the schema.
+    """
+
+    icon: ClassVar[str]
+    """Display icon for ModelAdmin in the sidebar.
+    Currently only supports FontAwesome icons.
+    """
+
+
+class ModelView(BaseView, metaclass=ModelViewMeta):
     """Base class for defining admnistrative behaviour for the model.
 
     ???+ usage
         ```python
-        from sqladmin import ModelAdmin
+        from sqladmin import ModelView
 
         from mymodels import User # SQLAlchemy model
 
-        class UserAdmin(ModelAdmin, model=User):
+        class UserAdmin(ModelView, model=User):
             can_create = True
         ```
     """
@@ -145,33 +210,14 @@ class ModelAdmin(BaseModelAdmin, metaclass=ModelAdminMeta):
 
     # Internals
     pk_column: ClassVar[Column]
-    identity: ClassVar[str]
     sessionmaker: ClassVar[sessionmaker]
-    engine: ClassVar[Union[Engine, AsyncEngine]]
+    engine: ClassVar[ENGINE_TYPE]
     async_engine: ClassVar[bool]
-    ajax_lookup_url: ClassVar[str] = ""
-    url_path_for: ClassVar[Callable]
-
-    # Metadata
-    name: ClassVar[str] = ""
-    """Name of ModelAdmin to display.
-    Default value is set to Model class name.
-    """
+    is_model: ClassVar[bool] = True
 
     name_plural: ClassVar[str] = ""
-    """Plural name of ModelAdmin.
+    """Plural name of ModelView.
     Default value is Model class name + `s`.
-    """
-
-    icon: ClassVar[str] = ""
-    """Display icon for ModelAdmin in the sidebar.
-    Currently only supports FontAwesome icons.
-
-    ???+ example
-        ```python
-        class UserAdmin(ModelAdmin, model=User):
-            icon = "fa-solid fa-user"
-        ```
     """
 
     # Permissions
@@ -204,7 +250,7 @@ class ModelAdmin(BaseModelAdmin, metaclass=ModelAdminMeta):
 
     ???+ example
         ```python
-        class UserAdmin(ModelAdmin, model=User):
+        class UserAdmin(ModelView, model=User):
             column_list = [User.id, User.name]
         ```
     """
@@ -215,7 +261,7 @@ class ModelAdmin(BaseModelAdmin, metaclass=ModelAdminMeta):
 
     ???+ example
         ```python
-        class UserAdmin(ModelAdmin, model=User):
+        class UserAdmin(ModelView, model=User):
             column_exclude_list = [User.id, User.name]
         ```
     """
@@ -228,7 +274,7 @@ class ModelAdmin(BaseModelAdmin, metaclass=ModelAdminMeta):
 
     ???+ example
         ```python
-        class UserAdmin(ModelAdmin, model=User):
+        class UserAdmin(ModelView, model=User):
             column_formatters = {User.name: lambda m, a: m.name[:10]}
         ```
 
@@ -248,7 +294,7 @@ class ModelAdmin(BaseModelAdmin, metaclass=ModelAdminMeta):
 
     ???+ example
         ```python
-        class UserAdmin(ModelAdmin, model=User):
+        class UserAdmin(ModelView, model=User):
             page_size = 25
         ```
     """
@@ -259,7 +305,7 @@ class ModelAdmin(BaseModelAdmin, metaclass=ModelAdminMeta):
 
     ???+ example
         ```python
-        class UserAdmin(ModelAdmin, model=User):
+        class UserAdmin(ModelView, model=User):
             page_size_options = [50, 100]
         ```
     """
@@ -271,7 +317,7 @@ class ModelAdmin(BaseModelAdmin, metaclass=ModelAdminMeta):
 
     ???+ example
         ```python
-        class UserAdmin(ModelAdmin, model=User):
+        class UserAdmin(ModelView, model=User):
             column_searchable_list = [User.name]
         ```
     """
@@ -281,7 +327,7 @@ class ModelAdmin(BaseModelAdmin, metaclass=ModelAdminMeta):
 
     ???+ example
         ```python
-        class UserAdmin(ModelAdmin, model=User):
+        class UserAdmin(ModelView, model=User):
             column_sortable_list = [User.name]
         ```
     """
@@ -291,7 +337,7 @@ class ModelAdmin(BaseModelAdmin, metaclass=ModelAdminMeta):
 
     ???+ example
         ```python
-        class UserAdmin(ModelAdmin, model=User):
+        class UserAdmin(ModelView, model=User):
             column_default_sort = "email"
         ```
 
@@ -300,7 +346,7 @@ class ModelAdmin(BaseModelAdmin, metaclass=ModelAdminMeta):
 
     ???+ example
         ```python
-        class UserAdmin(ModelAdmin, model=User):
+        class UserAdmin(ModelView, model=User):
             column_default_sort = ("email", True)
         ```
 
@@ -308,7 +354,7 @@ class ModelAdmin(BaseModelAdmin, metaclass=ModelAdminMeta):
 
     ???+ example
         ```python
-        class UserAdmin(ModelAdmin, model=User):
+        class UserAdmin(ModelView, model=User):
             column_default_sort = [("email", True), ("name", False)]
         ```
     """
@@ -323,7 +369,7 @@ class ModelAdmin(BaseModelAdmin, metaclass=ModelAdminMeta):
 
     ???+ example
         ```python
-        class UserAdmin(ModelAdmin, model=User):
+        class UserAdmin(ModelView, model=User):
             column_details_list = [User.id, User.name, User.mail]
         ```
     """
@@ -336,7 +382,7 @@ class ModelAdmin(BaseModelAdmin, metaclass=ModelAdminMeta):
 
     ???+ example
         ```python
-        class UserAdmin(ModelAdmin, model=User):
+        class UserAdmin(ModelView, model=User):
             column_details_exclude_list = [User.mail]
         ```
     """
@@ -349,7 +395,7 @@ class ModelAdmin(BaseModelAdmin, metaclass=ModelAdminMeta):
 
     ???+ example
         ```python
-        class UserAdmin(ModelAdmin, model=User):
+        class UserAdmin(ModelView, model=User):
             column_formatters_detail = {User.name: lambda m, a: m.name[:10]}
         ```
 
@@ -383,7 +429,7 @@ class ModelAdmin(BaseModelAdmin, metaclass=ModelAdminMeta):
 
     ???+ example
         ```python
-        class UserAdmin(ModelAdmin, model=User):
+        class UserAdmin(ModelView, model=User):
             column_export_list = [User.id, User.name]
         ```
     """
@@ -394,7 +440,7 @@ class ModelAdmin(BaseModelAdmin, metaclass=ModelAdminMeta):
 
     ???+ example
         ```python
-        class UserAdmin(ModelAdmin, model=User):
+        class UserAdmin(ModelView, model=User):
             column_export_exclude_list = [User.id, User.name]
         ```
     """
@@ -420,7 +466,7 @@ class ModelAdmin(BaseModelAdmin, metaclass=ModelAdminMeta):
         class MyForm(Form):
             name = StringField('Name')
 
-        class MyModelAdmin(ModelAdmin, model=User):
+        class MyModelView(ModelView, model=User):
             form = MyForm
         ```
     """
@@ -436,7 +482,7 @@ class ModelAdmin(BaseModelAdmin, metaclass=ModelAdminMeta):
             def do_something(self):
                 pass
 
-        class MyModelAdmin(ModelAdmin, model=User):
+        class MyModelView(ModelView, model=User):
             form_base_class = MyBaseForm
         ```
     """
@@ -449,7 +495,7 @@ class ModelAdmin(BaseModelAdmin, metaclass=ModelAdminMeta):
         ```python
         from wtforms.validators import DataRequired
 
-        class MyModelAdmin(ModelAdmin, model=User):
+        class MyModelView(ModelView, model=User):
             form_args = dict(
                 name=dict(label="User Name", validators=[DataRequired()])
             )
@@ -462,7 +508,7 @@ class ModelAdmin(BaseModelAdmin, metaclass=ModelAdminMeta):
 
     ???+ example
         ```python
-        class UserAdmin(ModelAdmin, model=User):
+        class UserAdmin(ModelView, model=User):
             form_widget_args = {
                 "email": {
                     "readonly": True,
@@ -480,7 +526,7 @@ class ModelAdmin(BaseModelAdmin, metaclass=ModelAdminMeta):
 
     ???+ example
         ```python
-        class UserAdmin(ModelAdmin, model=User):
+        class UserAdmin(ModelView, model=User):
             form_columns = [User.name, User.mail]
         ```
     """
@@ -491,7 +537,7 @@ class ModelAdmin(BaseModelAdmin, metaclass=ModelAdminMeta):
 
     ???+ example
         ```python
-        class UserAdmin(ModelAdmin, model=User):
+        class UserAdmin(ModelView, model=User):
             form_excluded_columns = [User.id]
         ```
     """
@@ -501,7 +547,7 @@ class ModelAdmin(BaseModelAdmin, metaclass=ModelAdminMeta):
 
     ???+ example
         ```python
-        class UserAdmin(ModelAdmin, model=User):
+        class UserAdmin(ModelView, model=User):
             form_overrides = dict(name=wtf.FileField)
         ```
     """
@@ -511,7 +557,7 @@ class ModelAdmin(BaseModelAdmin, metaclass=ModelAdminMeta):
 
     ???+ example
         ```python
-        class UserAdmin(ModelAdmin, model=User):
+        class UserAdmin(ModelView, model=User):
             form_include_pk = True
         ```
     """
@@ -523,7 +569,7 @@ class ModelAdmin(BaseModelAdmin, metaclass=ModelAdminMeta):
 
     ???+ example
         ```python
-        class UserAdmin(ModelAdmin, model=User):
+        class UserAdmin(ModelView, model=User):
             column_labels = {User.mail: "Email"}
         ```
     """
@@ -541,7 +587,7 @@ class ModelAdmin(BaseModelAdmin, metaclass=ModelAdminMeta):
 
     ???+ example
         ```python
-        class UserAdmin(ModelAdmin, model=User):
+        class UserAdmin(ModelView, model=User):
             column_type_formatters = dict()
         ```
     """
@@ -555,7 +601,7 @@ class ModelAdmin(BaseModelAdmin, metaclass=ModelAdminMeta):
         ```python
         from sqlalchemy import select
 
-        class UserAdmin(ModelAdmin, model=User):
+        class UserAdmin(ModelView, model=User):
             list_query = select(User).filter(User.active == True)
         ```
     """
@@ -569,7 +615,7 @@ class ModelAdmin(BaseModelAdmin, metaclass=ModelAdminMeta):
         ```python
         from sqlalchemy import select
 
-        class UserAdmin(ModelAdmin, model=User):
+        class UserAdmin(ModelView, model=User):
             count_query = select(func.count(User.id))
         ```
     """
@@ -593,6 +639,7 @@ class ModelAdmin(BaseModelAdmin, metaclass=ModelAdminMeta):
     """
 
     def __init__(self) -> None:
+        self._mapper = inspect(self.model)
         self._relations = get_relationships(self.model)
         self._attrs = get_attributes(self.model)
 
@@ -657,37 +704,6 @@ class ModelAdmin(BaseModelAdmin, metaclass=ModelAdminMeta):
                 return result.scalars().unique().all()
         else:
             return await anyio.to_thread.run_sync(self._run_query_sync, stmt)
-
-    async def _insert_model_async(self, obj: Any) -> None:
-        async with self.sessionmaker.begin() as session:
-            session.add(obj)
-
-    def _insert_model_sync(self, obj: Any) -> None:
-        with self.sessionmaker.begin() as session:
-            session.add(obj)
-
-    def _delete_object_sync(self, obj: Any) -> None:
-        with self.sessionmaker.begin() as session:
-            session.delete(obj)
-
-    def _update_modeL_sync(self, pk: Any, data: Dict[str, Any]) -> None:
-        stmt = select(self.model).where(
-            self.pk_column == self._get_column_python_type(self.pk_column)(pk)
-        )
-
-        with self.sessionmaker.begin() as session:
-            result = session.execute(stmt).scalars().first()
-            for name, value in data.items():
-                if name in self._relations and isinstance(value, list):
-                    # Load relationship objects into session
-                    session.add_all(value)
-                setattr(result, name, value)
-
-    def _get_column_python_type(self, column: Column) -> type:
-        try:
-            return column.type.python_type
-        except NotImplementedError:
-            return str
 
     def _url_for_details(self, obj: Any) -> str:
         pk = getattr(obj, get_primary_key(obj).name)
@@ -799,9 +815,8 @@ class ModelAdmin(BaseModelAdmin, metaclass=ModelAdminMeta):
         return rows
 
     async def get_model_by_pk(self, value: Any) -> Any:
-        stmt = select(self.model).where(
-            self.pk_column == self._get_column_python_type(self.pk_column)(value)
-        )
+        pk_value = get_column_python_type(self.pk_column)(value)
+        stmt = select(self.model).where(self.pk_column == pk_value)
 
         for relation in self._relations:
             stmt = stmt.options(joinedload(relation.key))
@@ -825,7 +840,7 @@ class ModelAdmin(BaseModelAdmin, metaclass=ModelAdminMeta):
 
         return result
 
-    def get_list_value(self, obj: type, attr: _MODEL_ATTR_TYPE) -> Tuple[Any, Any]:
+    def get_list_value(self, obj: type, attr: MODEL_ATTR_TYPE) -> Tuple[Any, Any]:
         """Get tuple of (value, formatted_value) for the list view."""
         value = self.get_attr_value(obj, attr)
         formatted_value = self._default_formatter(value)
@@ -835,7 +850,7 @@ class ModelAdmin(BaseModelAdmin, metaclass=ModelAdminMeta):
             formatted_value = formatter(obj, attr)
         return value, formatted_value
 
-    def get_detail_value(self, obj: type, attr: _MODEL_ATTR_TYPE) -> Tuple[Any, Any]:
+    def get_detail_value(self, obj: type, attr: MODEL_ATTR_TYPE) -> Tuple[Any, Any]:
         """Get tuple of (value, formatted_value) for the detail view."""
         value = self.get_attr_value(obj, attr)
         formatted_value = self._default_formatter(value)
@@ -847,7 +862,7 @@ class ModelAdmin(BaseModelAdmin, metaclass=ModelAdminMeta):
 
     def get_model_attr(
         self, attr: Union[str, InstrumentedAttribute]
-    ) -> _MODEL_ATTR_TYPE:
+    ) -> MODEL_ATTR_TYPE:
         assert isinstance(attr, (str, InstrumentedAttribute))
 
         if isinstance(attr, str):
@@ -870,10 +885,10 @@ class ModelAdmin(BaseModelAdmin, metaclass=ModelAdminMeta):
 
     def _build_column_list(
         self,
-        default: List[_MODEL_ATTR_TYPE],
+        default: List[MODEL_ATTR_TYPE],
         include: Optional[Sequence[Union[str, InstrumentedAttribute]]] = None,
         exclude: Optional[Sequence[Union[str, InstrumentedAttribute]]] = None,
-    ) -> List[Tuple[str, _MODEL_ATTR_TYPE]]:
+    ) -> List[Tuple[str, MODEL_ATTR_TYPE]]:
         """This function generalizes constructing a list of columns
         for any sequence of inclusions or exclusions.
         """
@@ -887,7 +902,7 @@ class ModelAdmin(BaseModelAdmin, metaclass=ModelAdminMeta):
 
         return [(self._column_labels.get(attr, attr.key), attr) for attr in attrs]
 
-    def get_list_columns(self) -> List[Tuple[str, _MODEL_ATTR_TYPE]]:
+    def get_list_columns(self) -> List[Tuple[str, MODEL_ATTR_TYPE]]:
         """Get list of columns to display in List page."""
 
         column_list = getattr(self, "column_list", None)
@@ -899,7 +914,7 @@ class ModelAdmin(BaseModelAdmin, metaclass=ModelAdminMeta):
             default=[getattr(self.model, self.pk_column.name).prop],
         )
 
-    def get_details_columns(self) -> List[Tuple[str, _MODEL_ATTR_TYPE]]:
+    def get_details_columns(self) -> List[Tuple[str, MODEL_ATTR_TYPE]]:
         """Get list of columns to display in Detail page."""
 
         column_details_list = getattr(self, "column_details_list", None)
@@ -911,11 +926,19 @@ class ModelAdmin(BaseModelAdmin, metaclass=ModelAdminMeta):
             default=self._attrs,
         )
 
-    def get_form_columns(self) -> List[Tuple[str, _MODEL_ATTR_TYPE]]:
+    def get_form_columns(self) -> List[Tuple[str, MODEL_ATTR_TYPE]]:
         """Get list of columns to display in the form."""
 
         form_columns = getattr(self, "form_columns", None)
         form_excluded_columns = getattr(self, "form_excluded_columns", None)
+
+        columns = list(self._mapper.columns)
+        default = []
+        for attr in self._attrs:
+            if attr in self._relations:
+                default.append(attr)
+            if attr in columns:
+                default.append(attr)
 
         return self._build_column_list(
             include=form_columns,
@@ -923,7 +946,7 @@ class ModelAdmin(BaseModelAdmin, metaclass=ModelAdminMeta):
             default=self._attrs,
         )
 
-    def get_export_columns(self) -> List[Tuple[str, _MODEL_ATTR_TYPE]]:
+    def get_export_columns(self) -> List[Tuple[str, MODEL_ATTR_TYPE]]:
         """Get list of columns to export."""
 
         columns = getattr(self, "column_export_list", None)
@@ -937,7 +960,7 @@ class ModelAdmin(BaseModelAdmin, metaclass=ModelAdminMeta):
 
     def get_column_labels(
         self,
-    ) -> Dict[_MODEL_ATTR_TYPE, str]:
+    ) -> Dict[MODEL_ATTR_TYPE, str]:
         return {
             self.get_model_attr(column_label): value
             for column_label, value in self.column_labels.items()
@@ -945,43 +968,21 @@ class ModelAdmin(BaseModelAdmin, metaclass=ModelAdminMeta):
 
     async def delete_model(self, obj: Any) -> None:
         if self.async_engine:
-            async with self.sessionmaker.begin() as session:
-                await session.delete(obj)
+            await delete_async(self, obj)
         else:
-            await anyio.to_thread.run_sync(self._delete_object_sync, obj)
+            await anyio.to_thread.run_sync(delete_sync, self, obj)
 
-    async def insert_model(self, data: Dict[str, Any]) -> Any:
-        obj = self.model()
-        for name, value in data.items():
-            print(self._relations)
-            setattr(obj, name, value)
-
+    async def insert_model(self, data: dict) -> None:
         if self.async_engine:
-            await self._insert_model_async(obj)
+            await insert_async(self, data)
         else:
-            await anyio.to_thread.run_sync(self._insert_model_sync, obj)
+            await anyio.to_thread.run_sync(insert_sync, self, data)
 
     async def update_model(self, pk: Any, data: Dict[str, Any]) -> None:
         if self.async_engine:
-            stmt = select(self.model).where(
-                self.pk_column == self._get_column_python_type(self.pk_column)(pk)
-            )
-
-            for relation in self._relations:
-                stmt = stmt.options(joinedload(relation.key))
-
-            async with self.sessionmaker.begin() as session:
-                result = await session.execute(stmt)
-                result = result.scalars().first()
-                for name, value in data.items():
-                    if isinstance(value, list) and name in [
-                        relation.key for relation in self._relations
-                    ]:
-                        # Load relationship objects into session
-                        session.add_all(value)
-                    setattr(result, name, value)
+            await update_async(self, pk, data)
         else:
-            await anyio.to_thread.run_sync(self._update_modeL_sync, pk, data)
+            await anyio.to_thread.run_sync(update_sync, self, pk, data)
 
     async def scaffold_form(self) -> Type[Form]:
         if self.form is not None:
@@ -1004,7 +1005,7 @@ class ModelAdmin(BaseModelAdmin, metaclass=ModelAdminMeta):
 
         ???+ example
             ```python
-            class UserAdmin(ModelAdmin, model=User):
+            class UserAdmin(ModelView, model=User):
                 column_labels = dict(name="Name", email="Email")
                 column_searchable_list = [User.name, User.email]
 
@@ -1070,3 +1071,14 @@ class ModelAdmin(BaseModelAdmin, metaclass=ModelAdminMeta):
             media_type="text/csv",
             headers={"Content-Disposition": f"attachment;filename={filename}"},
         )
+
+
+class ModelAdmin(ModelView):
+    def __init__(self) -> None:  # pragma: no cover
+        import warnings
+
+        warnings.warn(
+            "The class `ModelAdmin` is deprectated, please use `ModelView instead.`",
+            DeprecationWarning,
+        )
+        super().__init__()

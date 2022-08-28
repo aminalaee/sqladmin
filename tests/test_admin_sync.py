@@ -19,7 +19,7 @@ from starlette.applications import Starlette
 from starlette.requests import Request
 from starlette.testclient import TestClient
 
-from sqladmin import Admin, ModelAdmin
+from sqladmin import Admin, ModelView
 from tests.common import sync_engine as engine
 
 Base = declarative_base()  # type: Any
@@ -126,7 +126,7 @@ def client(prepare_database: Any) -> Generator[TestClient, None, None]:
         yield c
 
 
-class UserAdmin(ModelAdmin, model=User):
+class UserAdmin(ModelView, model=User):
     column_list = [
         User.id,
         User.name,
@@ -155,17 +155,17 @@ class UserAdmin(ModelAdmin, model=User):
     }
 
 
-class AddressAdmin(ModelAdmin, model=Address):
+class AddressAdmin(ModelView, model=Address):
     column_list = ["id", "user_id", "user"]
     name_plural = "Addresses"
     export_max_rows = 3
 
 
-class ProfileAdmin(ModelAdmin, model=Profile):
+class ProfileAdmin(ModelView, model=Profile):
     column_list = ["id", "user_id", "user"]
 
 
-class MovieAdmin(ModelAdmin, model=Movie):
+class MovieAdmin(ModelView, model=Movie):
     can_edit = False
     can_delete = False
     can_view_details = False
@@ -177,10 +177,10 @@ class MovieAdmin(ModelAdmin, model=Movie):
         return False
 
 
-admin.register_model(UserAdmin)
-admin.register_model(AddressAdmin)
-admin.register_model(ProfileAdmin)
-admin.register_model(MovieAdmin)
+admin.add_view(UserAdmin)
+admin.add_view(AddressAdmin)
+admin.add_view(ProfileAdmin)
+admin.add_view(MovieAdmin)
 
 
 def test_root_view(client: TestClient) -> None:
@@ -680,6 +680,14 @@ def test_update_submit_form(client: TestClient) -> None:
     response = client.post("/admin/user/edit/1", data=data)
 
     assert response.status_code == 400
+
+    data = {"user": user.id}
+    response = client.post("/admin/address/edit/1", data=data)
+
+    stmt = select(Address).limit(1)
+    with LocalSession() as s:
+        address = s.execute(stmt).scalar_one()
+    assert address.user_id == 1
 
 
 def test_searchable_list(client: TestClient) -> None:

@@ -45,9 +45,6 @@ class DatePickerWidget(widgets.TextInput):
 
     def __call__(self, field: Field, **kwargs: Any) -> str:
         kwargs.setdefault("data-role", "datepicker")
-        kwargs.setdefault("data-date-format", "YYYY-MM-DD")
-
-        self.date_format = kwargs["data-date-format"]
         return super().__call__(field, **kwargs)
 
 
@@ -58,7 +55,6 @@ class DateTimePickerWidget(widgets.TextInput):
 
     def __call__(self, field: Field, **kwargs: Any) -> str:
         kwargs.setdefault("data-role", "datetimepicker")
-        kwargs.setdefault("data-date-format", "YYYY-MM-DD HH:mm:ss")
         return super().__call__(field, **kwargs)
 
 

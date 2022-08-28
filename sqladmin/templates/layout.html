@@ -5,29 +5,39 @@
     <div class="container-fluid">
       <h1 class="navbar-brand navbar-brand-autodark">
         <a href="{{ url_for('admin:index') }}">
-        {% if admin_logo_url %}
-        <img src="{{ admin_logo_url }}" width="64" height="64" alt="Admin" class="navbar-brand-image"/>
+        {% if admin.logo_url %}
+        <img src="{{ admin.logo_url }}" width="64" height="64" alt="Admin" class="navbar-brand-image"/>
         {% else %}
-        <h3>{{ admin_title }}</h3>
+        <h3>{{ admin.title }}</h3>
         {% endif %}
         </a>
       </h1>
       <div class="collapse navbar-collapse" id="navbar-menu">
         <ul class="navbar-nav pt-lg-3">
-          {% for model_admin in model_admins %}
-          {% if model_admin.is_visible(request) and model_admin.is_accessible(request) %}
+          {% for view in admin.views %}
+          {% if view.is_visible(request) and view.is_accessible(request) %}
           <li class="nav-item">
-            <a class="nav-link {% if model_admin.identity == request.path_params['identity'] %}active{% endif %}" href="{{ url_for('admin:list', identity=model_admin.identity) }}">
+            {% if view.is_model %}
+            <a class="nav-link {% if view.identity == request.path_params['identity'] %}active{% endif %}" href="{{ url_for('admin:list', identity=view.identity) }}">
+            {% else %}
+            <a class="nav-link {% if view.identity == request.path_params['identity'] %}active{% endif %}" href="{{ url_for('admin:%s' | format(view.identity)) }}">
+            {% endif %}
             <span class="nav-link-icon d-md-none d-lg-inline-block">
-            {% if model_admin.icon %} <i class="{{ model_admin.icon }}"></i> {% endif %}
+            {% if view.icon %} <i class="{{ view.icon }}"></i> {% endif %}
             </span>
-            <span class="nav-link-title">{{ model_admin.name_plural }}</span>
+            <span class="nav-link-title">{{ view.name_plural or view.name }}</span>
             </a>
           </li>
           {% endif %}
           {% endfor %}
         </ul>
       </div>
+      {% if admin.authentication_backend %}
+      <a href="{{ request.url_for('admin:logout') }}" class="btn btn-secondary btn-icon">
+        <i class="fa fa-sign-out"></i>
+        <span>Logout</span>
+      </a>
+      {% endif %}
     </div>
   </aside>
   <div class="page-wrapper">
@@ -50,8 +60,6 @@
         </div>
       </div>
     </div>
-    {% block footer %}
-    {% endblock %}
   </div>
 </div>
 {% endblock %}

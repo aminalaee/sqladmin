@@ -1,4 +1,4 @@
-::: sqladmin.models.ModelAdmin
+::: sqladmin.models.ModelView
     handler: python
     selection:
       members:

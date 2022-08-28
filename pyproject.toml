@@ -1,0 +1,110 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "sqladmin"
+description = 'SQLAlchemy admin for FastAPI and Starlette'
+readme = "README.md"
+requires-python = ">=3.7"
+license = "BSD-3-Clause"
+keywords = ["sqlalchemy", "fastapi", "starlette", "admin"]
+authors = [
+  { name = "Amin Alaee", email = "mohammadamin.alaee@gmail.com" },
+]
+classifiers = [
+  "Development Status :: 3 - Alpha",
+  "Programming Language :: Python",
+  "Programming Language :: Python :: 3.7",
+  "Programming Language :: Python :: 3.8",
+  "Programming Language :: Python :: 3.9",
+  "Programming Language :: Python :: 3.10",
+  "Environment :: Web Environment",
+  "Intended Audience :: Developers",
+  "License :: OSI Approved :: BSD License",
+  "Topic :: Internet :: WWW/HTTP",
+  "Operating System :: OS Independent",
+]
+dependencies = [
+  "starlette[full]",
+  "typing_extensions>=4.0;python_version < '3.8'",
+  "sqlalchemy >=1.4, <1.5",
+  "wtforms >=3, <4",
+]
+dynamic = ["version"]
+
+[project.urls]
+Documentation = "https://aminalaee.dev/sqladmin"
+Issues = "https://github.com/aminalaee/sqladmin/issues"
+Source = "https://github.com/aminalaee/sqladmin"
+
+[tool.hatch.version]
+path = "sqladmin/__init__.py"
+
+[tool.hatch.build.targets.wheel]
+[tool.hatch.build.targets.sdist]
+include = [
+    "/sqladmin",
+]
+
+[tool.hatch.build]
+exclude = [
+  "tests/*",
+]
+
+[tool.hatch.envs.default]
+dependencies = [
+  "aiosqlite==0.17.0",
+  "asyncpg==0.26.0",
+  "autoflake==1.4",
+  "babel==2.10.3",
+  "black==22.6.0",
+  "build==0.8.0",
+  "coverage==6.4.2",
+  "email-validator==1.2.1",
+  "greenlet==1.1.2",
+  "httpx==0.23.0",
+  "isort==5.10.1",
+  "itsdangerous==2.1.2",
+  "mkdocs-material==8.3.9",
+  "mkdocs==1.3.1",
+  "mkdocstrings==0.18.1",
+  "mypy==0.971",
+  "psycopg2==2.9.3",
+  "pytest==7.1.2",
+  "sqlalchemy_utils==0.38.3",
+  "sqlmodel==0.0.7",
+]
+[tool.hatch.envs.default.scripts]
+check = "isort --check --project=sqladmin . && black --check . && mypy sqladmin"
+clean = "rm -r dist site"
+cov = "coverage report --show-missing --skip-covered --fail-under=99 && coverage xml"
+docs = "mkdocs serve"
+docs_build = "mkdocs build"
+docs_deploy = "mkdocs gh-deploy --force"
+lint = "autoflake --in-place --recursive .s && isort --project=sqladmin . && black ."
+test = "python -m coverage run --concurrency=thread,greenlet -m pytest"
+
+[tool.mypy]
+disallow_untyped_defs = true
+ignore_missing_imports = true
+show_error_codes = true
+
+[tool.isort]
+profile = "black"
+combine_as_imports = true
+
+[tool.coverage.run]
+source_pkgs = [
+  "sqladmin",
+  "tests",
+]
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "pragma: nocover",
+    "except NotImplementedError",
+    "raise NotImplementedError",
+    "if TYPE_CHECKING:",
+]

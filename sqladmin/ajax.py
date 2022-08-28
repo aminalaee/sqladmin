@@ -2,11 +2,7 @@ from typing import TYPE_CHECKING
 
 from sqlalchemy import String, and_, cast, or_, select, text
 
-from sqladmin.helpers import (
-    get_primary_key,
-    is_association_proxy,
-    is_relationship,
-)
+from sqladmin.helpers import get_primary_key, is_association_proxy, is_relationship
 
 if TYPE_CHECKING:
     from sqladmin.models import ModelAdmin

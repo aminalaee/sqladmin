@@ -48,6 +48,7 @@ $(document).on('keypress', '#search-input', function (e) {
   }
 });
 
+// Ajax Refs
 $('*[data-role="select2-ajax"]').each(function (_, obj) {
   $(obj).select2({
     placeholder: 'Search for a repository',
@@ -64,5 +65,25 @@ $('*[data-role="select2-ajax"]').each(function (_, obj) {
         return query;
       }
     }
+  });
+});
+
+// Date picker
+$(':input[data-role="datepicker"]').each(function () {
+  $(this).flatpickr({
+    enableTime: false,
+    allowInput: true,
+    dateFormat: "Y-m-d",
+  });
+});
+
+// DateTime picker
+$(':input[data-role="datetimepicker"]').each(function () {
+  $(this).flatpickr({
+    enableTime: true,
+    allowInput: true,
+    enableSeconds: true,
+    time_24hr: true,
+    dateFormat: "Y-m-d H:i:s",
   });
 });

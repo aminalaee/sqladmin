@@ -7,8 +7,9 @@ from typing import Any, Callable, Generator, List, TypeVar, Union
 
 from sqlalchemy import Column, inspect
 from sqlalchemy.ext.associationproxy import ASSOCIATION_PROXY
+from sqlalchemy.orm import RelationshipProperty
 
-from sqladmin.types import _MODEL_ATTR_TYPE
+from sqladmin._types import MODEL_ATTR_TYPE
 
 T = TypeVar("T")
 
@@ -126,11 +127,11 @@ def get_primary_key(model: type) -> Column:
     return pks[0]
 
 
-def get_relationships(model: Any) -> List[_MODEL_ATTR_TYPE]:
+def get_relationships(model: Any) -> List[MODEL_ATTR_TYPE]:
     return list(inspect(model).relationships)
 
 
-def get_attributes(model: Any) -> List[_MODEL_ATTR_TYPE]:
+def get_attributes(model: Any) -> List[MODEL_ATTR_TYPE]:
     return list(inspect(model).attrs)
 
 
@@ -142,3 +143,18 @@ def is_association_proxy(attr) -> bool:
 
 def is_relationship(attr) -> bool:
     return hasattr(attr, "property") and hasattr(attr.property, "direction")
+
+
+def get_direction(attr: MODEL_ATTR_TYPE) -> str:
+    assert isinstance(attr, RelationshipProperty)
+    name = attr.direction.name
+    if name == "ONETOMANY" and not attr.uselist:
+        return "ONETOONE"
+    return name
+
+
+def get_column_python_type(column: Column) -> type:
+    try:
+        return column.type.python_type
+    except NotImplementedError:
+        return str

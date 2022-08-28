@@ -29,7 +29,7 @@ from sqlalchemy_utils import (
 )
 from wtforms import Field, Form, StringField, TimeField
 
-from sqladmin import ModelAdmin
+from sqladmin import ModelView
 from sqladmin.forms import get_model_form
 from tests.common import DummyData, async_engine as engine
 
@@ -206,7 +206,7 @@ async def test_form_override_scaffold() -> None:
     class MyForm(Form):
         foo = StringField("Foo")
 
-    class UserAdmin(ModelAdmin, model=User):
+    class UserAdmin(ModelView, model=User):
         form = MyForm
 
     form_type = await UserAdmin().scaffold_form()

@@ -1,4 +1,5 @@
 import inspect
+import sys
 from enum import Enum
 from typing import (
     Any,
@@ -20,11 +21,8 @@ from sqlalchemy.engine import Engine
 from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession
 from sqlalchemy.orm import ColumnProperty, RelationshipProperty, Session
 from sqlalchemy.sql.schema import Column
-from typing_extensions import Protocol
 from wtforms import (
     BooleanField,
-    DateField,
-    DateTimeField,
     DecimalField,
     Field,
     Form,
@@ -36,18 +34,30 @@ from wtforms import (
 )
 from wtforms.fields.core import UnboundField
 
+from sqladmin._types import ENGINE_TYPE, MODEL_ATTR_TYPE
 from sqladmin._validators import CurrencyValidator, TimezoneValidator
 from sqladmin.exceptions import NoConverterFound
 from sqladmin.fields import (
     AjaxSelectField,
     AjaxSelectMultipleField,
+    DateField,
+    DateTimeField,
     JSONField,
     QuerySelectField,
     QuerySelectMultipleField,
     SelectField,
 )
-from sqladmin.helpers import get_primary_key, is_association_proxy, is_relationship
-from sqladmin.types import _MODEL_ATTR_TYPE
+from sqladmin.helpers import (
+    get_direction,
+    get_primary_key,
+    is_association_proxy,
+    is_relationship,
+)
+
+if sys.version_info >= (3, 8):
+    from typing import Protocol
+else:
+    from typing_extensions import Protocol
 
 
 class Validator(Protocol):
@@ -62,7 +72,7 @@ class ConverterCallable(Protocol):
     def __call__(
         self,
         model: type,
-        prop: _MODEL_ATTR_TYPE,
+        prop: MODEL_ATTR_TYPE,
         kwargs: Dict[str, Any],
     ) -> UnboundField:
         ...  # pragma: no cover
@@ -100,13 +110,14 @@ class ModelConverterBase:
 
     async def _prepare_kwargs(
         self,
-        prop: _MODEL_ATTR_TYPE,
-        engine: Union[Engine, AsyncEngine],
+        prop: MODEL_ATTR_TYPE,
+        engine: ENGINE_TYPE,
         field_args: Dict[str, Any],
         field_widget_args: Dict[str, Any],
         form_include_pk: bool,
         label: Optional[str] = None,
     ) -> Optional[Dict[str, Any]]:
+        kwargs: Union[dict, None]
         kwargs = field_args.copy()
         widget_args = field_widget_args.copy()
         widget_args.setdefault("class", "form-control")
@@ -118,86 +129,100 @@ class ModelConverterBase:
         kwargs.setdefault("description", prop.doc)
         kwargs.setdefault("render_kw", widget_args)
 
-        column = None
-
         if isinstance(prop, ColumnProperty):
-            assert len(prop.columns) == 1, "Multiple-column properties not supported"
-            column = prop.columns[0]
-
-            if (column.primary_key or column.foreign_keys) and not form_include_pk:
-                return None
-
-            default = getattr(column, "default", None)
-
-            if default is not None:
-                # Only actually change default if it has an attribute named
-                # 'arg' that's callable.
-                callable_default = getattr(default, "arg", None)
-
-                if callable_default is not None:
-                    # ColumnDefault(val).arg can be also a plain value
-                    default = (
-                        callable_default(None)
-                        if callable(callable_default)
-                        else callable_default
-                    )
-
-            kwargs["default"] = default
-            optional_types = (Boolean,)
-
-            if column.nullable:
-                kwargs["validators"].append(validators.Optional())
-
-            if (
-                not column.nullable
-                and not isinstance(column.type, optional_types)
-                and not column.default
-                and not column.server_default
-            ):
-                kwargs["validators"].append(validators.InputRequired())
+            kwargs = self._prepare_column(
+                prop=prop, kwargs=kwargs, form_include_pk=form_include_pk
+            )
         else:
-            nullable = True
-            for pair in prop.local_remote_pairs:
-                if not pair[0].nullable:
-                    nullable = False
-
-            kwargs["allow_blank"] = nullable
-            kwargs.setdefault(
-                "object_list", await self._prepare_object_list(prop, engine)
+            kwargs = await self._prepare_relationship(
+                prop=prop, engine=engine, kwargs=kwargs
             )
 
         return kwargs
 
-    async def _prepare_object_list(
+    def _prepare_column(
+        self, prop: ColumnProperty, form_include_pk: bool, kwargs: dict
+    ) -> Union[dict, None]:
+        assert len(prop.columns) == 1, "Multiple-column properties not supported"
+        column = prop.columns[0]
+
+        if (column.primary_key or column.foreign_keys) and not form_include_pk:
+            return None
+
+        default = getattr(column, "default", None)
+
+        if default is not None:
+            # Only actually change default if it has an attribute named
+            # 'arg' that's callable.
+            callable_default = getattr(default, "arg", None)
+
+            if callable_default is not None:
+                # ColumnDefault(val).arg can be also a plain value
+                default = (
+                    callable_default(None)
+                    if callable(callable_default)
+                    else callable_default
+                )
+
+        kwargs["default"] = default
+        optional_types = (Boolean,)
+
+        if column.nullable:
+            kwargs["validators"].append(validators.Optional())
+
+        if (
+            not column.nullable
+            and not isinstance(column.type, optional_types)
+            and not column.default
+            and not column.server_default
+        ):
+            kwargs["validators"].append(validators.InputRequired())
+
+        return kwargs
+
+    async def _prepare_relationship(
+        self, prop: RelationshipProperty, kwargs: dict, engine: ENGINE_TYPE
+    ) -> dict:
+        nullable = True
+        for pair in prop.local_remote_pairs:
+            if not pair[0].nullable:
+                nullable = False
+
+        kwargs["allow_blank"] = nullable
+        kwargs.setdefault("data", await self._prepare_select_options(prop, engine))
+
+        return kwargs
+
+    async def _prepare_select_options(
         self,
-        prop: _MODEL_ATTR_TYPE,
-        engine: Union[Engine, AsyncEngine],
-    ) -> List[Tuple[str, object]]:
+        prop: RelationshipProperty,
+        engine: ENGINE_TYPE,
+    ) -> List[Tuple[str, Any]]:
         target_model = prop.mapper.class_
-        pk = get_primary_key(target_model).name
+        pk = get_primary_key(target_model)
         stmt = select(target_model)
 
         if isinstance(engine, Engine):
             with Session(engine) as session:
                 objects = await anyio.to_thread.run_sync(session.execute, stmt)
-                object_list = [
-                    (str(self.get_pk(obj, pk)), obj) for obj in objects.scalars().all()
+                return [
+                    (self._get_pk_value(obj, pk), str(obj))
+                    for obj in objects.scalars().all()
                 ]
-        else:
+        elif isinstance(engine, AsyncEngine):
             async with AsyncSession(engine) as session:
                 objects = await session.execute(stmt)
-                object_list = [
-                    (str(self.get_pk(obj, pk)), obj) for obj in objects.scalars().all()
+                return [
+                    (self._get_pk_value(obj, pk), str(obj))
+                    for obj in objects.scalars().all()
                 ]
 
-        return object_list
+        return []  # pragma: nocover
 
-    def get_converter(self, prop: _MODEL_ATTR_TYPE) -> ConverterCallable:
-        if not isinstance(prop, ColumnProperty):
-            name = prop.direction.name
-            if name == "ONETOMANY" and not prop.uselist:
-                name = "ONETOONE"
-            return self._converters[name]
+    def get_converter(self, prop: MODEL_ATTR_TYPE) -> ConverterCallable:
+        if isinstance(prop, RelationshipProperty):
+            direction = get_direction(prop)
+            return self._converters[direction]
 
         column = prop.columns[0]
         types = inspect.getmro(type(column.type))
@@ -231,8 +256,8 @@ class ModelConverterBase:
     async def convert(
         self,
         model: type,
-        prop: _MODEL_ATTR_TYPE,
-        engine: Union[Engine, AsyncEngine],
+        prop: MODEL_ATTR_TYPE,
+        engine: ENGINE_TYPE,
         field_args: Dict[str, Any],
         field_widget_args: Dict[str, Any],
         form_include_pk: bool,
@@ -273,8 +298,8 @@ class ModelConverterBase:
         converter = self.get_converter(prop=prop)
         return converter(model=model, prop=prop, kwargs=kwargs)
 
-    def get_pk(self, o: Any, pk_name: str) -> Any:
-        return getattr(o, pk_name)
+    def _get_pk_value(self, o: Any, pk: Column) -> str:
+        return str(getattr(o, pk.name))
 
 
 class ModelConverter(ModelConverterBase):
@@ -465,7 +490,7 @@ class ModelConverter(ModelConverterBase):
 
 async def get_model_form(
     model: type,
-    engine: Union[Engine, AsyncEngine],
+    engine: ENGINE_TYPE,
     only: Sequence[str] = None,
     exclude: Sequence[str] = None,
     column_labels: Dict[str, str] = None,
