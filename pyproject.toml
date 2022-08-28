@@ -73,7 +73,7 @@ dependencies = [
   "psycopg2==2.9.3",
   "pytest==7.1.2",
   "sqlalchemy_utils==0.38.3",
-  "sqlmodel==0.0.6",
+  "sqlmodel==0.0.7",
 ]
 [tool.hatch.envs.default.scripts]
 check = "isort --check --project=sqladmin . && black --check . && mypy sqladmin"
