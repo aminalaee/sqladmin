@@ -122,7 +122,6 @@ class BaseAdmin:
         # Set database engine from Admin instance
         view.engine = self.engine
         view.ajax_lookup_url = f"{self.base_url}/{view.identity}/ajax/lookup"
-        view.url_path_for = self.app.url_path_for
 
         if isinstance(view.engine, Engine):
             view.sessionmaker = sessionmaker(
@@ -524,8 +523,6 @@ class Admin(BaseAdminView):
         model_view = self._find_model_view(identity)
 
         name = request.query_params.get("name")
-        limit = int(request.query_params.get("limit", 0))
-        offset = int(request.query_params.get("offset", 0))
         term = request.query_params.get("term", None)
 
         try:
@@ -533,7 +530,7 @@ class Admin(BaseAdminView):
         except KeyError:
             raise HTTPException(status_code=404)
 
-        data = [loader.format(m) for m in await loader.get_list(term, offset, limit)]
+        data = [loader.format(m) for m in await loader.get_list(term)]
         return JSONResponse({"results": data})
 
 

@@ -160,12 +160,6 @@ class BaseView(BaseModelView):
     """
 
     # Internals
-    pk_column: ClassVar[Column]
-    identity: ClassVar[str]
-    sessionmaker: ClassVar[sessionmaker]
-    engine: ClassVar[ENGINE_TYPE]
-    async_engine: ClassVar[bool]
-    ajax_lookup_url: ClassVar[str] = ""
     is_model: ClassVar[bool] = False
     url_path_for: ClassVar[Callable]
     templates: ClassVar[Jinja2Templates]
@@ -214,6 +208,7 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
     engine: ClassVar[ENGINE_TYPE]
     async_engine: ClassVar[bool]
     is_model: ClassVar[bool] = True
+    ajax_lookup_url: ClassVar[str] = ""
 
     name_plural: ClassVar[str] = ""
     """Plural name of ModelView.
@@ -631,9 +626,6 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
             form_ajax_refs = {
                 'address': {
                     'fields': ('street', 'zip_code'),
-                    'placeholder': 'Please select',
-                    'page_size': 10,
-                    'minimum_input_length': 0,
                 }
             }
     """

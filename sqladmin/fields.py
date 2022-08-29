@@ -272,23 +272,22 @@ class QuerySelectMultipleField(QuerySelectField):
 
 class AjaxSelectField(SelectFieldBase):
     widget = sqladmin_widgets.AjaxSelect2Widget()
-
     separator = ","
 
     def __init__(
         self,
         loader,
-        data: list = None,
         label=None,
         validators=None,
         allow_blank=False,
         blank_text="",
         **kwargs,
     ):
-        super().__init__(label, validators, **kwargs)
+        kwargs.pop("data")  # Handled by JS side
         self.loader = loader
         self.allow_blank = allow_blank
         self.blank_text = blank_text
+        super().__init__(label, validators, **kwargs)
 
     @property
     def data(self) -> Any:
@@ -318,9 +317,8 @@ class AjaxSelectField(SelectFieldBase):
 class AjaxSelectMultipleField(AjaxSelectField):
     widget = sqladmin_widgets.AjaxSelect2Widget(multiple=True)
 
-    def __init__(
-        self, loader, label=None, validators=None, default=None, data=None, **kwargs
-    ):
+    def __init__(self, loader, label=None, validators=None, default=None, **kwargs):
+        kwargs.pop("data")  # Handled by JS side
         default = default or []
 
         super().__init__(loader, label, validators, default=default, **kwargs)

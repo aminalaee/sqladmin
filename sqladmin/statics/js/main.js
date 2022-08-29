@@ -91,7 +91,6 @@ $(':input[data-role="select2-ajax"]').each(function () {
         var query = {
           name: $(this).attr("name"),
           term: params.term,
-          limit: 20,
         }
         return query;
       }

@@ -74,9 +74,7 @@ class QueryAjaxModelLoader(AjaxModelLoader):
 
         return {"id": getattr(model, self.pk.key), "text": str(model)}
 
-    async def get_list(
-        self, term: str, offset: int = 0, limit: int = DEFAULT_PAGE_SIZE
-    ):
+    async def get_list(self, term: str, limit: int = DEFAULT_PAGE_SIZE):
         stmt = select(self.model)
 
         # no type casting to string if a ColumnAssociationProxyInstance is given
