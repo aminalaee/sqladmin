@@ -158,50 +158,6 @@ class SelectField(fields.SelectField):
         super().pre_validate(form)
 
 
-class Select2TagsField(fields.StringField):
-    """
-    `Select2 <https://github.com/select2/select2>`_ styled text field.
-    """
-
-    widget = sqladmin_widgets.Select2TagsWidget()
-
-    def __init__(
-        self,
-        label: str = None,
-        validators: list = None,
-        save_as_list: bool = False,
-        coerce: type = str,
-        **kwargs: Any,
-    ) -> None:
-        """
-        Initialization
-
-        :param save_as_list:
-            If `True` then populate ``obj`` using list else string
-        """
-        self.save_as_list = save_as_list
-        self.coerce = coerce
-
-        super().__init__(label, validators, **kwargs)
-
-    def process_formdata(self, valuelist: List[str]) -> None:
-        if valuelist:
-            if self.save_as_list:
-                self.data = [
-                    self.coerce(v.strip()) for v in valuelist[0].split(",") if v.strip()
-                ]
-            else:
-                self.data = self.coerce(valuelist[0])
-
-    def _value(self) -> str:
-        if isinstance(self.data, (list, tuple)):
-            return ",".join(as_str(v) for v in self.data)
-        elif self.data:
-            return as_str(self.data)
-        else:
-            return ""
-
-
 class JSONField(fields.TextAreaField):
     def _value(self) -> str:
         if self.raw_data:
