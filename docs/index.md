@@ -42,7 +42,7 @@ Main features include:
 
 **Source Code**: [https://github.com/aminalaee/sqladmin](https://github.com/aminalaee/sqladmin)
 
-**Online Demo**: [Demo](https://python-sqladmin.herokuapp.com/admin/)
+**Online Demo**: [Demo](https://sqladmin-demo.aminalaee.dev/admin/)
 
 ---
 

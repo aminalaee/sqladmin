@@ -29,7 +29,6 @@ from wtforms import (
     IntegerField,
     StringField,
     TextAreaField,
-    TimeField,
     validators,
 )
 from wtforms.fields.core import UnboundField
@@ -46,6 +45,7 @@ from sqladmin.fields import (
     QuerySelectField,
     QuerySelectMultipleField,
     SelectField,
+    TimeField,
 )
 from sqladmin.helpers import get_direction, get_primary_key, is_relationship
 
