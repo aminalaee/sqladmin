@@ -35,5 +35,4 @@ class TimePickerWidget(widgets.TextInput):
 
     def __call__(self, field: Field, **kwargs: Any) -> str:
         kwargs.setdefault("data-role", "timepicker")
-        kwargs.setdefault("data-date-format", "HH:mm:ss")
         return super().__call__(field, **kwargs)

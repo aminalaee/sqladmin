@@ -70,24 +70,10 @@ def test_time_field() -> None:
         time = TimeField()
 
     form = F()
-    assert form.time.default_format == "%H:%M:%S"
     assert 'data-role="timepicker"' in form.time()
-    assert 'data-date-format="HH:mm:ss"' in form.time()
-
-    form = F(DummyData(time=["12:30:00"]))
-    assert form.time.data == datetime(2021, 12, 22, 12, 30, 0, 0).time()
-    assert 'data-date-format="HH:mm:ss"' in form.time()
 
     form = F(DummyData(time=["12:30"]))
-    form.time.raw_data = None
     assert form.time.data == datetime(2021, 12, 22, 12, 30, 0, 0).time()
-    assert 'data-date-format="HH:mm:ss"' in form.time()
-
-    form = F(DummyData(time=["12:30:00 AM"]))
-    assert form.time.data == datetime(2021, 12, 22, 0, 30, 0, 0).time()
-
-    form = F(DummyData(time=["12:30 AM"]))
-    assert form.time.data == datetime(2021, 12, 22, 0, 30, 0, 0).time()
 
     form = F(DummyData(time=["Invalid"]))
     assert form.time.data is None

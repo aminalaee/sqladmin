@@ -67,3 +67,15 @@ $(':input[data-role="datetimepicker"]').each(function () {
     dateFormat: "Y-m-d H:i:s",
   });
 });
+
+// Time picker
+$(':input[data-role="timepicker"]').each(function () {
+  $(this).flatpickr({
+    noCalendar: true,
+    enableTime: true,
+    allowInput: true,
+    enableSeconds: true,
+    time_24hr: true,
+    dateFormat: "H:i:s",
+  });
+});
