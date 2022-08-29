@@ -94,7 +94,7 @@ class QueryAjaxModelLoader(AjaxModelLoader):
         if self.order_by:
             stmt = stmt.order_by(self.order_by)
 
-        stmt = stmt.offset(offset).limit(limit)
+        stmt = stmt.limit(limit)
         result = await self.model_admin._run_query(stmt)
         return result
 

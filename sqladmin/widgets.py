@@ -58,17 +58,11 @@ class AjaxSelect2Widget(widgets.Select):
         kwargs.setdefault("type", "hidden")
 
         if self.multiple:
-            result = []
-
-            for value in field.data:
-                data = field.loader.format(value)
-                result.append(data)
-
+            result = [field.loader.format(value) for value in field.data]
             kwargs["data-json"] = json.dumps(result)
             kwargs["multiple"] = "1"
         else:
             data = field.loader.format(field.data)
-
             if data:
                 kwargs["data-json"] = json.dumps([data])
 

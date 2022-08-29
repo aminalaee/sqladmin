@@ -283,7 +283,7 @@ class AjaxSelectField(SelectFieldBase):
         blank_text="",
         **kwargs,
     ):
-        kwargs.pop("data")  # Handled by JS side
+        kwargs.pop("data", None)  # Handled by JS side
         self.loader = loader
         self.allow_blank = allow_blank
         self.blank_text = blank_text
@@ -318,23 +318,10 @@ class AjaxSelectMultipleField(AjaxSelectField):
     widget = sqladmin_widgets.AjaxSelect2Widget(multiple=True)
 
     def __init__(self, loader, label=None, validators=None, default=None, **kwargs):
-        kwargs.pop("data")  # Handled by JS side
+        kwargs.pop("data", None)  # Handled by JS side
         default = default or []
 
         super().__init__(loader, label, validators, default=default, **kwargs)
-        self._invalid_formdata = False
-
-    @property
-    def data(self) -> Any:
-        if self._formdata:
-            self.data = self._formdata
-
-        return self._data
-
-    @data.setter
-    def data(self, data) -> None:
-        self._data = data
-        self._formdata = None
 
     def process_formdata(self, valuelist) -> None:
         self._formdata = set()
@@ -342,7 +329,3 @@ class AjaxSelectMultipleField(AjaxSelectField):
         for field in valuelist:
             for n in field.split(self.separator):
                 self._formdata.add(n)
-
-    def pre_validate(self, form: Form) -> None:
-        if self._invalid_formdata:
-            raise ValidationError("Not a valid choice")
