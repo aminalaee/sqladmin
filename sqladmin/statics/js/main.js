@@ -97,7 +97,7 @@ $(':input[data-role="select2-ajax"]').each(function () {
     }
   });
 
-  existing_data = $(this).data("json");
+  existing_data = $(this).data("json") || [];
   for (var i = 0; i < existing_data.length; i++) {
     data = existing_data[i];
     var option = new Option(data.text, data.id, true, true);

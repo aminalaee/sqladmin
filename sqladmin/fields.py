@@ -2,12 +2,13 @@ import datetime
 import json
 import operator
 import time
-from typing import Any, Callable, Generator, List, Optional, Tuple, Union
+from typing import Any, Callable, Generator, List, Optional, Set, Tuple, Union
 
 from sqlalchemy import inspect
 from wtforms import Form, SelectFieldBase, ValidationError, fields, widgets
 
 from sqladmin import widgets as sqladmin_widgets
+from sqladmin.ajax import QueryAjaxModelLoader
 from sqladmin.helpers import as_str
 
 __all__ = [
@@ -276,17 +277,15 @@ class AjaxSelectField(SelectFieldBase):
 
     def __init__(
         self,
-        loader,
-        label=None,
-        validators=None,
-        allow_blank=False,
-        blank_text="",
-        **kwargs,
-    ):
+        loader: QueryAjaxModelLoader,
+        label: str = None,
+        validators: list = None,
+        allow_blank: bool = False,
+        **kwargs: Any,
+    ) -> None:
         kwargs.pop("data", None)  # Handled by JS side
         self.loader = loader
         self.allow_blank = allow_blank
-        self.blank_text = blank_text
         super().__init__(label, validators, **kwargs)
 
     @property
@@ -301,7 +300,7 @@ class AjaxSelectField(SelectFieldBase):
         self._data = data
         self._formdata = None
 
-    def process_formdata(self, valuelist):
+    def process_formdata(self, valuelist: list) -> None:
         if valuelist:
             if self.allow_blank and valuelist[0] == "__None":
                 self.data = None
@@ -309,21 +308,41 @@ class AjaxSelectField(SelectFieldBase):
                 self._data = None
                 self._formdata = valuelist[0]
 
-    def pre_validate(self, form):
+    def pre_validate(self, form: Form) -> None:
         if not self.allow_blank and self.data is None:
             raise ValidationError("Not a valid choice")
 
 
-class AjaxSelectMultipleField(AjaxSelectField):
+class AjaxSelectMultipleField(SelectFieldBase):
     widget = sqladmin_widgets.AjaxSelect2Widget(multiple=True)
 
-    def __init__(self, loader, label=None, validators=None, default=None, **kwargs):
+    def __init__(
+        self,
+        loader: QueryAjaxModelLoader,
+        label: str = None,
+        validators: list = None,
+        default: list = None,
+        **kwargs: Any,
+    ) -> None:
         kwargs.pop("data", None)  # Handled by JS side
         default = default or []
+        self._formdata: Set[Any] = set()
 
         super().__init__(loader, label, validators, default=default, **kwargs)
 
-    def process_formdata(self, valuelist) -> None:
+    @property
+    def data(self) -> Any:
+        if self._formdata:
+            self.data = self._formdata
+
+        return self._data
+
+    @data.setter
+    def data(self, data: Any) -> None:
+        self._data = data
+        self._formdata = set()
+
+    def process_formdata(self, valuelist: list) -> None:
         self._formdata = set()
 
         for field in valuelist:

@@ -35,6 +35,7 @@ from wtforms.fields.core import UnboundField
 
 from sqladmin._types import ENGINE_TYPE, MODEL_ATTR_TYPE
 from sqladmin._validators import CurrencyValidator, TimezoneValidator
+from sqladmin.ajax import QueryAjaxModelLoader
 from sqladmin.exceptions import NoConverterFound
 from sqladmin.fields import (
     AjaxSelectField,
@@ -258,7 +259,7 @@ class ModelConverterBase:
         form_include_pk: bool,
         label: Optional[str] = None,
         override: Optional[Type[Field]] = None,
-        form_ajax_refs: Dict[str, dict] = {},
+        form_ajax_refs: Dict[str, QueryAjaxModelLoader] = {},
     ) -> Optional[UnboundField]:
 
         kwargs = await self._prepare_kwargs(
@@ -493,7 +494,7 @@ async def get_model_form(
     form_widget_args: Dict[str, Dict[str, Any]] = None,
     form_class: Type[Form] = Form,
     form_overrides: Dict[str, Type[Field]] = None,
-    form_ajax_refs: Dict[str, dict] = None,
+    form_ajax_refs: Dict[str, QueryAjaxModelLoader] = None,
     form_include_pk: bool = False,
 ) -> Type[Form]:
     type_name = model.__name__ + "Form"

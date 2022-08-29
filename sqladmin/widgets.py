@@ -1,5 +1,5 @@
 import json
-from typing import Any
+from typing import Any, Dict
 
 from markupsafe import Markup
 from wtforms import Field, widgets
@@ -46,7 +46,7 @@ class AjaxSelect2Widget(widgets.Select):
         self.multiple = multiple
         self.lookup_url = ""
 
-    def __call__(self, field: Field, **kwargs: dict) -> Markup:
+    def __call__(self, field: Field, **kwargs: Any) -> Markup:
         kwargs.setdefault("data-role", "select2-ajax")
         kwargs.setdefault("data-url", field.loader.model_admin.ajax_lookup_url)
 

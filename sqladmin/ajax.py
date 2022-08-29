@@ -1,11 +1,11 @@
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, Dict, List
 
 from sqlalchemy import String, and_, cast, inspect, or_, select, text
 
 from sqladmin.helpers import get_primary_key
 
 if TYPE_CHECKING:
-    from sqladmin.models import ModelAdmin
+    from sqladmin.models import ModelView
 
 
 DEFAULT_PAGE_SIZE = 10
@@ -18,11 +18,11 @@ class AjaxModelLoader:
         self.name = name
         self.options = options
 
-    def format(self, model: type):
+    def format(self, model: type) -> dict:
         """Return (id, name) tuple from the model."""
         raise NotImplementedError()
 
-    def get_list(self, query, offset: int = 0, limit: int = DEFAULT_PAGE_SIZE):
+    async def get_list(self, term: str, limit: int = DEFAULT_PAGE_SIZE) -> List[Any]:
         """Return models that match `query`."""
         raise NotImplementedError()
 
@@ -32,14 +32,14 @@ class QueryAjaxModelLoader(AjaxModelLoader):
         self,
         name: str,
         model: type,
-        model_admin: "ModelAdmin",
-        **options: dict,
+        model_admin: "ModelView",
+        **options: Any,
     ):
         super().__init__(name, options)
 
         self.model = model
         self.model_admin = model_admin
-        self.fields = options.get("fields")
+        self.fields = options.get("fields", {})
         self.order_by = options.get("order_by")
         self.filters = options.get("filters")
 
@@ -52,7 +52,7 @@ class QueryAjaxModelLoader(AjaxModelLoader):
         self._cached_fields = self._process_fields()
         self.pk = get_primary_key(self.model)
 
-    def _process_fields(self):
+    def _process_fields(self) -> list:
         remote_fields = []
 
         for field in self.fields:
@@ -68,13 +68,13 @@ class QueryAjaxModelLoader(AjaxModelLoader):
 
         return remote_fields
 
-    def format(self, model: type) -> dict:
+    def format(self, model: type) -> Dict[str, Any]:
         if not model:
-            return None
+            return {}
 
-        return {"id": getattr(model, self.pk.key), "text": str(model)}
+        return {"id": getattr(model, self.pk.name), "text": str(model)}
 
-    async def get_list(self, term: str, limit: int = DEFAULT_PAGE_SIZE):
+    async def get_list(self, term: str, limit: int = DEFAULT_PAGE_SIZE) -> List[Any]:
         stmt = select(self.model)
 
         # no type casting to string if a ColumnAssociationProxyInstance is given
@@ -85,11 +85,11 @@ class QueryAjaxModelLoader(AjaxModelLoader):
         stmt = stmt.filter(or_(*filters))
 
         if self.filters:
-            filters = [
-                text("%s.%s" % (self.model.__tablename__.lower(), value))
+            filter_options = [
+                text("%s.%s" % (self.model.__tablename__.lower(), value))  # type: ignore
                 for value in self.filters
             ]
-            stmt = stmt.filter(and_(*filters))
+            stmt = stmt.filter(and_(*filter_options))
 
         if self.order_by:
             stmt = stmt.order_by(self.order_by)
@@ -100,17 +100,16 @@ class QueryAjaxModelLoader(AjaxModelLoader):
 
 
 def create_ajax_loader(
-    model_admin: "ModelAdmin",
+    model_admin: "ModelView",
     name: str,
-    field_name: str,
     options: dict,
-):
+) -> QueryAjaxModelLoader:
     mapper = inspect(model_admin.model)
 
     try:
         attr = mapper.relationships[name]
     except KeyError:
-        raise ValueError(f"{model_admin.model}.{field_name} is not a relation.")
+        raise ValueError(f"{model_admin.model}.{name} is not a relation.")
 
     remote_model = attr.mapper.class_
     return QueryAjaxModelLoader(name, remote_model, model_admin, **options)
