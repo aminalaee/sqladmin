@@ -13,7 +13,6 @@ from sqladmin.fields import (
     JSONField,
     QuerySelectField,
     QuerySelectMultipleField,
-    Select2TagsField,
     SelectField,
     TimeField,
 )
@@ -145,29 +144,6 @@ def test_select_field() -> None:
 
     form = F(DummyData(select=["__None"]))
     assert form.select.data is None
-
-
-def test_select2_tags_field() -> None:
-    class F(Form):
-        select = Select2TagsField(coerce=int)
-
-    form = F(DummyData(select=["1"]))
-    assert form.select.data == 1
-    assert 'data-role="select2-tags"' in form.select()
-    assert 'value="1"' in form.select()
-
-    form = F(DummyData(select=["A"]))
-    assert form.select.data is None
-
-    class F(Form):  # type: ignore
-        select = Select2TagsField(coerce=int, save_as_list=True)
-
-    form = F(DummyData(select=["1"]))
-    assert form.select.data == [1]
-    assert 'value="1"' in form.select()
-
-    form = F()
-    assert 'value=""' in form.select()
 
 
 def test_query_select_field() -> None:
