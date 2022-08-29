@@ -5,6 +5,7 @@ from wtforms import Field, widgets
 __all__ = [
     "DatePickerWidget",
     "DateTimePickerWidget",
+    "TimePickerWidget",
 ]
 
 
