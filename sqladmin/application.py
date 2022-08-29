@@ -523,7 +523,10 @@ class Admin(BaseAdminView):
         model_view = self._find_model_view(identity)
 
         name = request.query_params.get("name")
-        term = request.query_params.get("term", None)
+        term = request.query_params.get("term")
+
+        if not name or not term:
+            raise HTTPException(status_code=400)
 
         try:
             loader: QueryAjaxModelLoader = model_view._form_ajax_refs[name]
