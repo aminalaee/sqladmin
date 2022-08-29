@@ -41,7 +41,6 @@ class DateTimeField(fields.DateTimeField):
 class TimeField(fields.TimeField):
     """
     A text field which stores a `datetime.time` object.
-    Accepts time string in multiple formats: 20:10, 20:10:00, 10:00 am, 9:30pm, etc.
     """
 
     widget = sqladmin_widgets.TimePickerWidget()
