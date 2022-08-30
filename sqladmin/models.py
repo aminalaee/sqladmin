@@ -46,7 +46,6 @@ from sqladmin.formatters import BASE_FORMATTERS
 from sqladmin.forms import get_model_form
 from sqladmin.helpers import (
     Writer,
-    as_str,
     get_attributes,
     get_column_python_type,
     get_primary_key,
@@ -1027,9 +1026,7 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
             yield writer.writerow(titles)
 
             for row in data:
-                vals = [
-                    as_str(self.get_attr_value(row, c[1])) for c in self._export_attrs
-                ]
+                vals = [str(self.get_attr_value(row, c[1])) for c in self._export_attrs]
                 yield writer.writerow(vals)
 
         # `get_export_name` can be subclassed.
