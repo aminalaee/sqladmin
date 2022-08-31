@@ -4,6 +4,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## Version 0.4.0 - 2022-08-31
+
+## Added
+
+* Add Date and DateTime pickers using Fatpickr in [#288](https://github.com/aminalaee/sqladmin/pull/288)
+* Add Time picker using Flatpickr in [#294](https://github.com/aminalaee/sqladmin/pull/294)
+
+## Internal
+* Remove MomentJS in [#289](https://github.com/aminalaee/sqladmin/pull/289)
+* Remove Select2 widgets in [#293](https://github.com/aminalaee/sqladmin/pull/293)
+
 ## Version 0.3.0 - 2022-08-26
 
 ### Added
