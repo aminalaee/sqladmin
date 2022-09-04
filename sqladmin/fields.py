@@ -1,7 +1,5 @@
-import datetime
 import json
 import operator
-import time
 from typing import Any, Callable, Generator, List, Optional, Set, Tuple, Union
 
 from sqlalchemy import inspect
@@ -9,7 +7,6 @@ from wtforms import Form, SelectFieldBase, ValidationError, fields, widgets
 
 from sqladmin import widgets as sqladmin_widgets
 from sqladmin.ajax import QueryAjaxModelLoader
-from sqladmin.helpers import as_str
 
 __all__ = [
     "AjaxSelectField",
@@ -102,7 +99,7 @@ class JSONField(fields.TextAreaField):
         if self.raw_data:
             return self.raw_data[0]
         elif self.data:
-            return as_str(json.dumps(self.data, ensure_ascii=False))
+            return str(json.dumps(self.data, ensure_ascii=False))
         else:
             return "{}"
 

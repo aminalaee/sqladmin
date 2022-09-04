@@ -29,13 +29,6 @@ _windows_device_files = (
 )
 
 
-def as_str(s: Union[str, bytes]) -> str:
-    if isinstance(s, bytes):
-        return s.decode("utf-8")
-
-    return str(s)
-
-
 def prettify_class_name(name: str) -> str:
     return re.sub(r"(?<=.)([A-Z])", r" \1", name)
 

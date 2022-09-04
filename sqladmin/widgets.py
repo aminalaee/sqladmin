@@ -8,6 +8,7 @@ from wtforms.widgets import html_params
 __all__ = [
     "DatePickerWidget",
     "DateTimePickerWidget",
+    "TimePickerWidget",
 ]
 
 
