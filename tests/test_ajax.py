@@ -2,10 +2,10 @@ from typing import Any, AsyncGenerator
 
 import pytest
 from httpx import AsyncClient
-from sqlalchemy import Column, ForeignKey, Integer, String
+from sqlalchemy import Column, ForeignKey, Integer, String, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import relationship, sessionmaker
+from sqlalchemy.orm import relationship, selectinload, sessionmaker
 from starlette.applications import Starlette
 
 from sqladmin import Admin, ModelView
@@ -60,6 +60,7 @@ class AddressAdmin(ModelView, model=Address):
     form_ajax_refs = {
         "user": {
             "fields": ("name",),
+            "order_by": ("id"),
         }
     }
 
@@ -118,13 +119,13 @@ async def test_create_ajax_loader_exceptions() -> None:
 
 async def test_create_page_template(client: AsyncClient) -> None:
     response = await client.get("/admin/user/create")
-    assert response.status_code == 200
+
     assert response.text.count('data-json="[]"') == 1
     assert response.text.count('data-role="select2-ajax"') == 1
     assert response.text.count('data-url="/admin/user/ajax/lookup"') == 1
 
     response = await client.get("/admin/address/create")
-    assert response.status_code == 200
+
     assert response.text.count('data-role="select2-ajax"') == 1
     assert response.text.count('data-url="/admin/address/ajax/lookup"') == 1
 
@@ -140,7 +141,6 @@ async def test_edit_page_template(client: AsyncClient) -> None:
         await s.commit()
 
     response = await client.get("/admin/user/edit/1")
-    assert response.status_code == 200
     assert (
         response.text.count(
             'data-json="[{&#34;id&#34;: 1, &#34;text&#34;: &#34;Address 1&#34;}]"'
@@ -151,7 +151,6 @@ async def test_edit_page_template(client: AsyncClient) -> None:
     assert response.text.count('data-url="/admin/user/ajax/lookup"') == 1
 
     response = await client.get("/admin/address/edit/1")
-    assert response.status_code == 200
     assert (
         response.text.count(
             'data-json="[{&#34;id&#34;: 1, &#34;text&#34;: &#34;User 1&#34;}]"'
@@ -160,3 +159,34 @@ async def test_edit_page_template(client: AsyncClient) -> None:
     )
     assert response.text.count('data-role="select2-ajax"') == 1
     assert response.text.count('data-url="/admin/address/ajax/lookup"') == 1
+
+
+async def test_crete_and_edit_forms(client: AsyncClient) -> None:
+    response = await client.post("/admin/address/create", data={})
+    assert response.status_code == 302
+
+    data = {"addresses": ["1"], "name": "Tyrion"}
+    response = await client.post("/admin/user/create", data=data)
+    assert response.status_code == 302
+
+    data = {}
+    response = await client.post("/admin/address/edit/1", data=data)
+    assert response.status_code == 302
+
+    async with LocalSession() as s:
+        stmt = select(User).options(selectinload(User.addresses))
+        result = await s.execute(stmt)
+
+    user = result.scalar_one()
+    assert len(user.addresses) == 0
+
+    data = {"addresses": ["1"]}
+    response = await client.post("/admin/user/edit/1", data=data)
+    assert response.status_code == 302
+
+    async with LocalSession() as s:
+        stmt = select(User).options(selectinload(User.addresses))
+        result = await s.execute(stmt)
+
+    user = result.scalar_one()
+    assert len(user.addresses) == 1

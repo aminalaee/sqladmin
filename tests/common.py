@@ -8,7 +8,8 @@ test_database_uri_sync = os.environ.get(
     "TEST_DATABASE_URI_SYNC", "sqlite:///test.db?check_same_thread=False"
 )
 test_database_uri_async = os.environ.get(
-    "TEST_DATABASE_URI_ASYNC", "sqlite+aiosqlite:///test.db?check_same_thread=False"
+    "TEST_DATABASE_URI_ASYNC",
+    "postgresql+asyncpg://postgres:postgres@localhost/test_db",
 )
 
 sync_engine = create_engine(test_database_uri_sync)

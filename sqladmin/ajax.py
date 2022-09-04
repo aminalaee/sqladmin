@@ -1,6 +1,6 @@
 from typing import TYPE_CHECKING, Any, Dict, List
 
-from sqlalchemy import String, and_, cast, inspect, or_, select, text
+from sqlalchemy import String, cast, inspect, or_, select, text
 
 from sqladmin.helpers import get_primary_key
 
@@ -24,7 +24,6 @@ class QueryAjaxModelLoader:
         self.model_admin = model_admin
         self.fields = options.get("fields", {})
         self.order_by = options.get("order_by")
-        self.filters = options.get("filters")
 
         if not self.fields:
             raise ValueError(
@@ -66,13 +65,6 @@ class QueryAjaxModelLoader:
         ]
 
         stmt = stmt.filter(or_(*filters))
-
-        if self.filters:
-            filter_options = [
-                text("%s.%s" % (self.model.__tablename__.lower(), value))  # type: ignore
-                for value in self.filters
-            ]
-            stmt = stmt.filter(and_(*filter_options))
 
         if self.order_by:
             stmt = stmt.order_by(self.order_by)

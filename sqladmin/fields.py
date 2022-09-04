@@ -312,6 +312,7 @@ class AjaxSelectField(SelectFieldBase):
 
 class AjaxSelectMultipleField(SelectFieldBase):
     widget = sqladmin_widgets.AjaxSelect2Widget(multiple=True)
+    separator = ","
 
     def __init__(
         self,
