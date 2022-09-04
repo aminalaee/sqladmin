@@ -531,7 +531,7 @@ class Admin(BaseAdminView):
         try:
             loader: QueryAjaxModelLoader = model_view._form_ajax_refs[name]
         except KeyError:
-            raise HTTPException(status_code=404)
+            raise HTTPException(status_code=400)
 
         data = [loader.format(m) for m in await loader.get_list(term)]
         return JSONResponse({"results": data})

@@ -319,13 +319,16 @@ class AjaxSelectMultipleField(SelectFieldBase):
         label: str = None,
         validators: list = None,
         default: list = None,
+        allow_blank: bool = False,
         **kwargs: Any,
     ) -> None:
         kwargs.pop("data", None)  # Handled by JS side
+        self.loader = loader
+        self.allow_blank = allow_blank
         default = default or []
         self._formdata: Set[Any] = set()
 
-        super().__init__(loader, label, validators, default=default, **kwargs)
+        super().__init__(label, validators, default=default, **kwargs)
 
     @property
     def data(self) -> Any:

@@ -681,7 +681,9 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
 
         self._form_ajax_refs = {}
         for name, options in self.form_ajax_refs.items():
-            self._form_ajax_refs[name] = create_ajax_loader(self, name, options)
+            self._form_ajax_refs[name] = create_ajax_loader(
+                model_admin=self, name=name, options=options
+            )
 
     def _run_query_sync(self, stmt: ClauseElement) -> Any:
         with self.sessionmaker(expire_on_commit=False) as session:

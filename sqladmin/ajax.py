@@ -11,23 +11,7 @@ if TYPE_CHECKING:
 DEFAULT_PAGE_SIZE = 10
 
 
-class AjaxModelLoader:
-    """Ajax related model loader. Override this to implement custom loading behavior."""
-
-    def __init__(self, name: str, options: dict):
-        self.name = name
-        self.options = options
-
-    def format(self, model: type) -> dict:
-        """Return (id, name) tuple from the model."""
-        raise NotImplementedError()
-
-    async def get_list(self, term: str, limit: int = DEFAULT_PAGE_SIZE) -> List[Any]:
-        """Return models that match `query`."""
-        raise NotImplementedError()
-
-
-class QueryAjaxModelLoader(AjaxModelLoader):
+class QueryAjaxModelLoader:
     def __init__(
         self,
         name: str,
@@ -35,8 +19,7 @@ class QueryAjaxModelLoader(AjaxModelLoader):
         model_admin: "ModelView",
         **options: Any,
     ):
-        super().__init__(name, options)
-
+        self.name = name
         self.model = model
         self.model_admin = model_admin
         self.fields = options.get("fields", {})
@@ -100,6 +83,7 @@ class QueryAjaxModelLoader(AjaxModelLoader):
 
 
 def create_ajax_loader(
+    *,
     model_admin: "ModelView",
     name: str,
     options: dict,
