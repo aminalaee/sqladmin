@@ -112,6 +112,7 @@ class ModelConverterBase:
         field_widget_args: Dict[str, Any],
         form_include_pk: bool,
         label: Optional[str] = None,
+        loader: Optional[QueryAjaxModelLoader] = None,
     ) -> Optional[Dict[str, Any]]:
         kwargs: Union[dict, None]
         kwargs = field_args.copy()
@@ -131,7 +132,7 @@ class ModelConverterBase:
             )
         else:
             kwargs = await self._prepare_relationship(
-                prop=prop, engine=engine, kwargs=kwargs
+                prop=prop, engine=engine, kwargs=kwargs, loader=loader
             )
 
         return kwargs
@@ -177,7 +178,11 @@ class ModelConverterBase:
         return kwargs
 
     async def _prepare_relationship(
-        self, prop: RelationshipProperty, kwargs: dict, engine: ENGINE_TYPE
+        self,
+        prop: RelationshipProperty,
+        kwargs: dict,
+        engine: ENGINE_TYPE,
+        loader: Optional[QueryAjaxModelLoader] = None,
     ) -> dict:
         nullable = True
         for pair in prop.local_remote_pairs:
@@ -185,7 +190,9 @@ class ModelConverterBase:
                 nullable = False
 
         kwargs["allow_blank"] = nullable
-        kwargs.setdefault("data", await self._prepare_select_options(prop, engine))
+
+        if not loader:
+            kwargs.setdefault("data", await self._prepare_select_options(prop, engine))
 
         return kwargs
 
@@ -196,7 +203,7 @@ class ModelConverterBase:
     ) -> List[Tuple[str, Any]]:
         target_model = prop.mapper.class_
         pk = get_primary_key(target_model)
-        stmt = select(target_model)
+        stmt = select(target_model).limit(100)
 
         if isinstance(engine, Engine):
             with Session(engine) as session:
@@ -262,6 +269,7 @@ class ModelConverterBase:
         form_ajax_refs: Dict[str, QueryAjaxModelLoader] = {},
     ) -> Optional[UnboundField]:
 
+        loader = form_ajax_refs.get(prop.key)
         kwargs = await self._prepare_kwargs(
             prop=prop,
             engine=engine,
@@ -269,6 +277,7 @@ class ModelConverterBase:
             field_widget_args=field_widget_args,
             label=label,
             form_include_pk=form_include_pk,
+            loader=loader,
         )
 
         if kwargs is None:
@@ -278,7 +287,6 @@ class ModelConverterBase:
             assert issubclass(override, Field)
             return override(**kwargs)
 
-        loader = form_ajax_refs.get(prop.key)
         multiple = (
             is_relationship(prop)
             and prop.direction.name in ("ONETOMANY", "MANYTOMANY")
