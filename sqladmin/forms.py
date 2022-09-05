@@ -35,8 +35,11 @@ from wtforms.fields.core import UnboundField
 
 from sqladmin._types import ENGINE_TYPE, MODEL_ATTR_TYPE
 from sqladmin._validators import CurrencyValidator, TimezoneValidator
+from sqladmin.ajax import QueryAjaxModelLoader
 from sqladmin.exceptions import NoConverterFound
 from sqladmin.fields import (
+    AjaxSelectField,
+    AjaxSelectMultipleField,
     DateField,
     DateTimeField,
     JSONField,
@@ -45,7 +48,7 @@ from sqladmin.fields import (
     SelectField,
     TimeField,
 )
-from sqladmin.helpers import get_direction, get_primary_key
+from sqladmin.helpers import get_direction, get_primary_key, is_relationship
 
 if sys.version_info >= (3, 8):
     from typing import Protocol
@@ -256,6 +259,7 @@ class ModelConverterBase:
         form_include_pk: bool,
         label: Optional[str] = None,
         override: Optional[Type[Field]] = None,
+        form_ajax_refs: Dict[str, QueryAjaxModelLoader] = {},
     ) -> Optional[UnboundField]:
 
         kwargs = await self._prepare_kwargs(
@@ -273,6 +277,19 @@ class ModelConverterBase:
         if override is not None:
             assert issubclass(override, Field)
             return override(**kwargs)
+
+        loader = form_ajax_refs.get(prop.key)
+        multiple = (
+            is_relationship(prop)
+            and prop.direction.name in ("ONETOMANY", "MANYTOMANY")
+            and prop.uselist
+        )
+
+        if loader:
+            if multiple:
+                return AjaxSelectMultipleField(loader, **kwargs)
+            else:
+                return AjaxSelectField(loader, **kwargs)
 
         converter = self.get_converter(prop=prop)
         return converter(model=model, prop=prop, kwargs=kwargs)
@@ -477,6 +494,7 @@ async def get_model_form(
     form_widget_args: Dict[str, Dict[str, Any]] = None,
     form_class: Type[Form] = Form,
     form_overrides: Dict[str, Type[Field]] = None,
+    form_ajax_refs: Dict[str, QueryAjaxModelLoader] = None,
     form_include_pk: bool = False,
 ) -> Type[Form]:
     type_name = model.__name__ + "Form"
@@ -486,6 +504,7 @@ async def get_model_form(
     form_widget_args = form_widget_args or {}
     column_labels = column_labels or {}
     form_overrides = form_overrides or {}
+    form_ajax_refs = form_ajax_refs or {}
 
     attributes = []
     names = only or mapper.attrs.keys()
@@ -509,6 +528,7 @@ async def get_model_form(
             label=label,
             override=override,
             form_include_pk=form_include_pk,
+            form_ajax_refs=form_ajax_refs,
         )
         if field is not None:
             field_dict[name] = field

@@ -1,13 +1,16 @@
 import json
 import operator
-from typing import Any, Callable, Generator, List, Optional, Tuple, Union
+from typing import Any, Callable, Generator, List, Optional, Set, Tuple, Union
 
 from sqlalchemy import inspect
-from wtforms import Form, ValidationError, fields, widgets
+from wtforms import Form, SelectFieldBase, ValidationError, fields, widgets
 
 from sqladmin import widgets as sqladmin_widgets
+from sqladmin.ajax import QueryAjaxModelLoader
 
 __all__ = [
+    "AjaxSelectField",
+    "AjaxSelectMultipleField",
     "DateField",
     "DateTimeField",
     "JSONField",
@@ -263,3 +266,86 @@ class QuerySelectMultipleField(QuerySelectField):
             for v in self.data:
                 if v not in pk_list:  # pragma: no cover
                     raise ValidationError(self.gettext("Not a valid choice"))
+
+
+class AjaxSelectField(SelectFieldBase):
+    widget = sqladmin_widgets.AjaxSelect2Widget()
+    separator = ","
+
+    def __init__(
+        self,
+        loader: QueryAjaxModelLoader,
+        label: str = None,
+        validators: list = None,
+        allow_blank: bool = False,
+        **kwargs: Any,
+    ) -> None:
+        kwargs.pop("data", None)  # Handled by JS side
+        self.loader = loader
+        self.allow_blank = allow_blank
+        super().__init__(label, validators, **kwargs)
+
+    @property
+    def data(self) -> Any:
+        if self._formdata:
+            self.data = self._formdata
+
+        return self._data
+
+    @data.setter
+    def data(self, data: Any) -> None:
+        self._data = data
+        self._formdata = None
+
+    def process_formdata(self, valuelist: list) -> None:
+        if valuelist:
+            if self.allow_blank and valuelist[0] == "__None":
+                self.data = None
+            else:
+                self._data = None
+                self._formdata = valuelist[0]
+
+    def pre_validate(self, form: Form) -> None:
+        if not self.allow_blank and self.data is None:
+            raise ValidationError("Not a valid choice")
+
+
+class AjaxSelectMultipleField(SelectFieldBase):
+    widget = sqladmin_widgets.AjaxSelect2Widget(multiple=True)
+    separator = ","
+
+    def __init__(
+        self,
+        loader: QueryAjaxModelLoader,
+        label: str = None,
+        validators: list = None,
+        default: list = None,
+        allow_blank: bool = False,
+        **kwargs: Any,
+    ) -> None:
+        kwargs.pop("data", None)  # Handled by JS side
+        self.loader = loader
+        self.allow_blank = allow_blank
+        default = default or []
+        self._formdata: Set[Any] = set()
+
+        super().__init__(label, validators, default=default, **kwargs)
+
+    @property
+    def data(self) -> Any:
+        if self._formdata:
+            self.data = self._formdata
+
+        return self._data
+
+    @data.setter
+    def data(self, data: Any) -> None:
+        self._data = data
+        self._formdata = set()
+
+    def process_formdata(self, valuelist: list) -> None:
+        self._formdata = set()
+
+        for field in valuelist:
+            for n in field.split(self.separator):
+                self._formdata.add(n)

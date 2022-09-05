@@ -9,12 +9,13 @@ from starlette.applications import Starlette
 from starlette.exceptions import HTTPException
 from starlette.middleware import Middleware
 from starlette.requests import Request
-from starlette.responses import RedirectResponse, Response
+from starlette.responses import JSONResponse, RedirectResponse, Response
 from starlette.routing import Mount, Route
 from starlette.staticfiles import StaticFiles
 from starlette.templating import Jinja2Templates
 
 from sqladmin._types import ENGINE_TYPE
+from sqladmin.ajax import QueryAjaxModelLoader
 from sqladmin.authentication import AuthenticationBackend, login_required
 from sqladmin.models import BaseView, ModelView
 
@@ -120,6 +121,7 @@ class BaseAdmin:
 
         # Set database engine from Admin instance
         view.engine = self.engine
+        view.ajax_lookup_url = f"{self.base_url}/{view.identity}/ajax/lookup"
 
         if isinstance(view.engine, Engine):
             view.sessionmaker = sessionmaker(
@@ -321,10 +323,10 @@ class Admin(BaseAdminView):
                 methods=["GET", "POST"],
             ),
             Route(
-                "/{identity}/export/{export_type}",
-                endpoint=self.export,
-                name="export",
-                methods=["GET"],
+                "/{identity}/export/{export_type}", endpoint=self.export, name="export"
+            ),
+            Route(
+                "/{identity}/ajax/lookup", endpoint=self.ajax_lookup, name="ajax_lookup"
             ),
             Route("/login", endpoint=self.login, name="login", methods=["GET", "POST"]),
             Route("/logout", endpoint=self.logout, name="logout", methods=["GET"]),
@@ -514,13 +516,33 @@ class Admin(BaseAdminView):
         await self.authentication_backend.logout(request)
         return RedirectResponse(request.url_for("admin:index"), status_code=302)
 
+    async def ajax_lookup(self, request: Request) -> Response:
+        """Ajax lookup route."""
+
+        identity = request.path_params["identity"]
+        model_view = self._find_model_view(identity)
+
+        name = request.query_params.get("name")
+        term = request.query_params.get("term")
+
+        if not name or not term:
+            raise HTTPException(status_code=400)
+
+        try:
+            loader: QueryAjaxModelLoader = model_view._form_ajax_refs[name]
+        except KeyError:
+            raise HTTPException(status_code=400)
+
+        data = [loader.format(m) for m in await loader.get_list(term)]
+        return JSONResponse({"results": data})
+
 
 def expose(
     path: str,
     *,
     methods: List[str] = ["GET"],
     identity: str = None,
-    include_in_schema: bool = True
+    include_in_schema: bool = True,
 ) -> Callable[..., Any]:
     """Expose View with information."""
 

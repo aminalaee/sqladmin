@@ -79,3 +79,28 @@ $(':input[data-role="timepicker"]').each(function () {
     dateFormat: "H:i:s",
   });
 });
+
+// Ajax Refs
+$(':input[data-role="select2-ajax"]').each(function () {
+  $(this).select2({
+    minimumInputLength: 1,
+    ajax: {
+      url: $(this).data("url"),
+      dataType: 'json',
+      data: function (params) {
+        var query = {
+          name: $(this).attr("name"),
+          term: params.term,
+        }
+        return query;
+      }
+    }
+  });
+
+  existing_data = $(this).data("json") || [];
+  for (var i = 0; i < existing_data.length; i++) {
+    data = existing_data[i];
+    var option = new Option(data.text, data.id, true, true);
+    $(this).append(option).trigger('change');
+  }
+});

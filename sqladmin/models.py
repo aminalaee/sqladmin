@@ -41,6 +41,7 @@ from sqladmin._queries import (
     update_sync,
 )
 from sqladmin._types import ENGINE_TYPE, MODEL_ATTR_TYPE
+from sqladmin.ajax import create_ajax_loader
 from sqladmin.exceptions import InvalidColumnError, InvalidModelError
 from sqladmin.formatters import BASE_FORMATTERS
 from sqladmin.forms import get_model_form
@@ -206,6 +207,7 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
     engine: ClassVar[ENGINE_TYPE]
     async_engine: ClassVar[bool]
     is_model: ClassVar[bool] = True
+    ajax_lookup_url: ClassVar[str] = ""
 
     name_plural: ClassVar[str] = ""
     """Plural name of ModelView.
@@ -612,6 +614,21 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
         ```
     """
 
+    form_ajax_refs: ClassVar[Dict[str, dict]] = {}
+    """Use AJAX for foreign key model loading.
+    Should contain dictionary, where key is field name and
+    value is a dictionary which configures AJAX lookups.
+
+    ???+example
+        ```python
+        class UserAdmin(ModelAdmin, model=User):
+            form_ajax_refs = {
+                'address': {
+                    'fields': ('street', 'zip_code'),
+                }
+            }
+    """
+
     def __init__(self) -> None:
         self._mapper = inspect(self.model)
         self._relations = get_relationships(self.model)
@@ -661,6 +678,12 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
             getattr(self.model, self.get_model_attr(attr).key)
             for attr in self.column_sortable_list
         ]
+
+        self._form_ajax_refs = {}
+        for name, options in self.form_ajax_refs.items():
+            self._form_ajax_refs[name] = create_ajax_loader(
+                model_admin=self, name=name, options=options
+            )
 
     def _run_query_sync(self, stmt: ClauseElement) -> Any:
         with self.sessionmaker(expire_on_commit=False) as session:
@@ -966,6 +989,7 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
             form_widget_args=self.form_widget_args,
             form_class=self.form_base_class,
             form_overrides=self.form_overrides,
+            form_ajax_refs=self._form_ajax_refs,
             form_include_pk=self.form_include_pk,
         )
 

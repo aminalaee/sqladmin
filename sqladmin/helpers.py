@@ -140,3 +140,7 @@ def get_column_python_type(column: Column) -> type:
         return column.type.python_type
     except NotImplementedError:
         return str
+
+
+def is_relationship(attr: MODEL_ATTR_TYPE) -> bool:
+    return isinstance(attr, RelationshipProperty)
