@@ -4,14 +4,27 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## Version 0.5.0 - 2022-09-06
+
+### Added
+
+* Add `remote_ajax_refs` in https://github.com/aminalaee/sqladmin/pull/292
+
+### Internal
+
+* Avoid select query with ajax_form_refs in https://github.com/aminalaee/sqladmin/pull/300
+* Add docs for form_ajax_refs in https://github.com/aminalaee/sqladmin/pull/302
+
+**Full Changelog**: https://github.com/aminalaee/sqladmin/compare/0.4.0...0.5.0
+
 ## Version 0.4.0 - 2022-08-31
 
-## Added
+### Added
 
 * Add Date and DateTime pickers using Fatpickr in https://github.com/aminalaee/sqladmin/pull/288
 * Add Time picker using Flatpickr in https://github.com/aminalaee/sqladmin/pull/294
 
-## Internal
+### Internal
 * Remove MomentJS in https://github.com/aminalaee/sqladmin/pull/289
 * Remove Select2 widgets in https://github.com/aminalaee/sqladmin/pull/293
 
