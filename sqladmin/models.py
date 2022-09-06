@@ -556,6 +556,22 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
         ```
     """
 
+    form_ajax_refs: ClassVar[Dict[str, dict]] = {}
+    """Use Ajax for foreign key model loading.
+    Should contain dictionary, where key is field name and
+    value is a dictionary which configures Ajax lookups.
+
+    ???+example
+        ```python
+        class UserAdmin(ModelAdmin, model=User):
+            form_ajax_refs = {
+                'address': {
+                    'fields': ('street', 'zip_code'),
+                    'order_by': ('id',),
+                }
+            }
+    """
+
     # General options
     column_labels: ClassVar[Dict[Union[str, InstrumentedAttribute], str]] = {}
     """A mapping of column labels, used to map column names to new names.
@@ -612,21 +628,6 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
         class UserAdmin(ModelView, model=User):
             count_query = select(func.count(User.id))
         ```
-    """
-
-    form_ajax_refs: ClassVar[Dict[str, dict]] = {}
-    """Use AJAX for foreign key model loading.
-    Should contain dictionary, where key is field name and
-    value is a dictionary which configures AJAX lookups.
-
-    ???+example
-        ```python
-        class UserAdmin(ModelAdmin, model=User):
-            form_ajax_refs = {
-                'address': {
-                    'fields': ('street', 'zip_code'),
-                }
-            }
     """
 
     def __init__(self) -> None:

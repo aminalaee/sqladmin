@@ -200,6 +200,7 @@ The forms are based on `WTForms` package and include the following options:
 * `form_excluded_columns`: List of model columns to be excluded from the form.
 * `form_overrides`: Dictionary of form fields to override when creating the form.
 * `form_include_pk`: Control if primary key column should be included in create/edit forms. Default is `False`.
+* `form_ajax_refs`: Use Ajax with Select2 for loading relationship models async. This is use ful when the related model has a lot of records.
 
 !!! example
 
@@ -210,6 +211,12 @@ The forms are based on `WTForms` package and include the following options:
         form_widget_args = dict(email=dict(readonly=True))
         form_overrides = dict(email=wtforms.EmailField)
         form_include_pk = True
+        form_ajax_refs = {
+            "address": {
+                "fields": ("zip_code", "street"),
+                "order_by": ("id",),
+            }
+        }
     ```
 
 ## Export options
