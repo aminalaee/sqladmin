@@ -36,6 +36,9 @@ markdown_extensions:
 extra_css:
   - stylesheets/extra.css
 
+watch:
+  - sqladmin/
+
 plugins:
   - search
   - mkdocstrings:
@@ -45,8 +48,6 @@ plugins:
           rendering:
             show_root_heading: true
             show_source: false
-      watch:
-        - sqladmin/
 
 extra:
   analytics:
