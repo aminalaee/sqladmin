@@ -570,6 +570,7 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
                     'order_by': ('id',),
                 }
             }
+        ```
     """
 
     # General options
