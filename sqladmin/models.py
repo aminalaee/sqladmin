@@ -862,15 +862,11 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
         attrs = inspect(self.model).attrs
 
         if isinstance(attr, str):
-            key = attr
+            return attrs[attr]
         else:
             key = attr.prop.key
-
-        if key in attrs:
-            return attrs[key]
-
-        if isinstance(attr.prop, ColumnProperty):
-            return attr
+            if key in attrs:
+                return attrs[key]
 
         raise InvalidColumnError(
             f"Model '{self.model.__name__}' has no attribute '{key}'."
@@ -893,22 +889,7 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
         else:
             attrs = default
 
-        label_column_pairs = []
-        for attr in attrs:
-            label = self._column_labels.get(attr)
-            if label:
-                label_column_pairs.append((label, attr))
-                continue
-
-            # Handle attributes of related model
-            model = attr.parent.class_
-            if self.model == model:
-                label_column_pairs.append((attr.key, attr))
-            else:
-                label = model.__name__ + "." + attr.key
-                label_column_pairs.append((label, attr))
-
-        return label_column_pairs
+        return [(self._column_labels.get(attr, attr.key), attr) for attr in attrs]
 
     def get_list_columns(self) -> List[Tuple[str, MODEL_ATTR_TYPE]]:
         """Get list of columns to display in List page."""
