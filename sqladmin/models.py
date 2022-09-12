@@ -862,11 +862,12 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
         attrs = inspect(self.model).attrs
 
         if isinstance(attr, str):
-            return attrs[attr]
+            key = attr
         else:
             key = attr.prop.key
-            if key in attrs:
-                return attrs[key]
+
+        if key in attrs:
+            return attrs[key]
 
         raise InvalidColumnError(
             f"Model '{self.model.__name__}' has no attribute '{key}'."
