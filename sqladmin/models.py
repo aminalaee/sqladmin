@@ -859,20 +859,15 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
         self, attr: Union[str, InstrumentedAttribute]
     ) -> MODEL_ATTR_TYPE:
         assert isinstance(attr, (str, InstrumentedAttribute))
+        attrs = inspect(self.model).attrs
 
         if isinstance(attr, str):
             key = attr
-        elif isinstance(attr.prop, ColumnProperty):
-            key = attr.key
-        elif isinstance(attr.prop, RelationshipProperty):
+        else:
             key = attr.prop.key
 
-        if key in inspect(self.model).attrs:
-            return inspect(self.model).attrs[key]
-
-        # Get value by column label
-        if key in self._column_labels_value_by_key:
-            return self._column_labels_value_by_key[str(key)]
+        if key in attrs:
+            return attrs[key]
 
         raise InvalidColumnError(
             f"Model '{self.model.__name__}' has no attribute '{key}'."

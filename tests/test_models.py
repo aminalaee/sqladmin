@@ -297,15 +297,6 @@ def test_get_model_attr_by_column() -> None:
     assert UserAdmin().get_model_attr(User.name) == User.name
 
 
-def test_get_model_attr_by_column_labels() -> None:
-    class UserAdmin(ModelView, model=User):
-        column_labels = {User.name: "Name"}
-
-    assert UserAdmin().get_model_attr("Name") == User.name
-    assert UserAdmin().get_model_attr("name") == User.name
-    assert UserAdmin().get_model_attr(User.name) == User.name
-
-
 def test_form_columns_default() -> None:
     class UserAdmin(ModelView, model=User):
         pass
