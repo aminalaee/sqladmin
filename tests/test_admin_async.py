@@ -429,7 +429,7 @@ async def test_delete_endpoint_unauthorized_response(client: AsyncClient) -> Non
 
 
 async def test_delete_endpoint_not_found_response(client: AsyncClient) -> None:
-    response = await client.delete("/admin/user/delete/1")
+    response = await client.delete("/admin/user/delete?pks=1")
 
     assert response.status_code == 404
 

@@ -422,7 +422,7 @@ def test_delete_endpoint_unauthorized_response(client: TestClient) -> None:
 
 
 def test_delete_endpoint_not_found_response(client: TestClient) -> None:
-    response = client.delete("/admin/user/delete/1")
+    response = client.delete("/admin/user/delete?pks=1")
 
     assert response.status_code == 404
 
