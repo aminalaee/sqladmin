@@ -36,7 +36,7 @@
     </div>
     <div class="card-body border-bottom py-3">
       <div class="d-flex">
-        <div class="dropdown text-muted">
+        <div class="dropdown text-muted col-4">
           Show 
           <a href="#" class="btn btn-light dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
             {{ request.query_params.get("pageSize") or model_view.page_size }}
@@ -50,8 +50,16 @@
             {% endfor %}
           </div>
         </div>
+        <div class="dropdown col-4">
+          <button class="btn btn-light dropdown-toggle" type="button" id="dropdownMenuButton" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+            Actions
+          </button>
+          <div class="dropdown-menu" aria-labelledby="dropdownMenuButton">
+            <a class="dropdown-item" id="action-delete" href="#" data-url="{{ url_for('admin:delete', identity=model_view.identity) }}">Delete selected items</a>
+          </div>
+        </div>
         {% if model_view.column_searchable_list %}
-        <div class="ms-auto text-muted">
+        <div class="col-md-4 text-muted">
           <div class="input-group ms-2">
             <input id="search-input" type="text" class="form-control" placeholder="Search: {{ model_view.search_placeholder() }}" value="{{ request.query_params.get('search', '') }}">
             <button id="search-button" class="btn" type="button">Search</button>
@@ -62,10 +70,10 @@
       </div>
     </div>
     <div class="table-responsive">
-      <table class="table card-table table-vcenter text-nowrap datatable">
+      <table class="table card-table table-vcenter text-nowrap">
         <thead>
           <tr>
-            <th class="w-1"><input class="form-check-input m-0 align-middle" type="checkbox" aria-label="Select all"></th>
+            <th class="w-1"><input class="form-check-input m-0 align-middle" type="checkbox" aria-label="Select all" id="select-all"></th>
             <th class="w-1"></th>
             {% for name, attr in model_view._list_attrs %}
             <th>
@@ -87,7 +95,8 @@
         <tbody>
           {% for row in pagination.rows %}
           <tr>
-            <td><input class="form-check-input m-0 align-middle" type="checkbox" aria-label="Select item"></td>
+            <input type="hidden" value="{{ model_view.get_attr_value(row, model_view.pk_column) }}">
+            <td><input class="form-check-input m-0 align-middle select-box" type="checkbox" aria-label="Select item"></td>
             <td class="text-end">
               {% if model_view.can_view_details %}
               <a href="{{ model_view._url_for_details(row) }}" data-bs-toggle="tooltip" data-bs-placement="top" title="View">

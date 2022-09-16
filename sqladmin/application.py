@@ -305,7 +305,7 @@ class Admin(BaseAdminView):
             Route("/{identity}/list", endpoint=self.list, name="list"),
             Route("/{identity}/details/{pk}", endpoint=self.details, name="details"),
             Route(
-                "/{identity}/delete/{pk}",
+                "/{identity}/delete",
                 endpoint=self.delete,
                 name="delete",
                 methods=["DELETE"],
@@ -398,11 +398,13 @@ class Admin(BaseAdminView):
         identity = request.path_params["identity"]
         model_view = self._find_model_view(identity)
 
-        model = await model_view.get_model_by_pk(request.path_params["pk"])
-        if not model:
-            raise HTTPException(status_code=404)
+        pks = request.query_params.get("pks", "")
+        for pk in pks.split(","):
+            model = await model_view.get_model_by_pk(pk)
+            if not model:
+                raise HTTPException(status_code=404)
 
-        await model_view.delete_model(model)
+            await model_view.delete_model(model)
 
         return Response(content=request.url_for("admin:list", identity=identity))
 

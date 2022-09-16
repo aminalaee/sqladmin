@@ -104,3 +104,29 @@ $(':input[data-role="select2-ajax"]').each(function () {
     $(this).append(option).trigger('change');
   }
 });
+
+// Checkbox select
+$("#select-all").click(function () {
+  var checked = $(this).is(':checked');
+  $('.select-box').each(function () {
+    $(this).attr("checked", checked);
+  });
+});
+
+// Bulk delete
+$("#action-delete").click(function () {
+  var pks = [];
+  $('.select-box').each(function () {
+    if ($(this).is(':checked')) {
+      pks.push($(this).parent().siblings().get(0).value);
+    }
+  });
+
+  $.ajax({
+    url: $(this).attr('data-url') + '?pks=' + pks.join(","),
+    method: 'DELETE',
+    success: function (result) {
+      window.location.href = result;
+    }
+  });
+});

@@ -14,6 +14,7 @@ from typing import (
     Union,
     no_type_check,
 )
+from urllib.parse import urlencode
 
 import anyio
 from sqlalchemy import Column, asc, desc, func, inspect, or_
@@ -718,11 +719,11 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
 
     def _url_for_delete(self, obj: Any) -> str:
         pk = getattr(obj, get_primary_key(obj).name)
-        return self.url_path_for(
-            "admin:delete",
-            identity=slugify_class_name(obj.__class__.__name__),
-            pk=pk,
+        query_params = urlencode({"pks": pk})
+        url = self.url_path_for(
+            "admin:delete", identity=slugify_class_name(obj.__class__.__name__)
         )
+        return url + "?" + query_params
 
     def _url_for_details_with_attr(self, obj: Any, attr: RelationshipProperty) -> str:
         target = getattr(obj, attr.key)

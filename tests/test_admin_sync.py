@@ -416,7 +416,7 @@ def test_column_labels(client: TestClient) -> None:
 
 
 def test_delete_endpoint_unauthorized_response(client: TestClient) -> None:
-    response = client.delete("/admin/movie/delete/1")
+    response = client.delete("/admin/movie/delete")
 
     assert response.status_code == 403
 
@@ -438,7 +438,7 @@ def test_delete_endpoint(client: TestClient) -> None:
     with LocalSession() as s:
         assert s.query(User).count() == 1
 
-    response = client.delete("/admin/user/delete/1")
+    response = client.delete("/admin/user/delete?pks=1")
 
     assert response.status_code == 200
 
