@@ -423,13 +423,13 @@ async def test_column_labels(client: AsyncClient) -> None:
 
 
 async def test_delete_endpoint_unauthorized_response(client: AsyncClient) -> None:
-    response = await client.delete("/admin/movie/delete/1")
+    response = await client.delete("/admin/movie/delete")
 
     assert response.status_code == 403
 
 
 async def test_delete_endpoint_not_found_response(client: AsyncClient) -> None:
-    response = await client.delete("/admin/user/delete/1")
+    response = await client.delete("/admin/user/delete?pks=1")
 
     assert response.status_code == 404
 
@@ -451,7 +451,7 @@ async def test_delete_endpoint(client: AsyncClient) -> None:
         result = await s.execute(stmt)
     assert result.scalar_one() == 1
 
-    response = await client.delete("/admin/user/delete/1")
+    response = await client.delete("/admin/user/delete?pks=1")
 
     assert response.status_code == 200
 
