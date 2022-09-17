@@ -337,8 +337,6 @@ class ModelConverter(ModelConverterBase):
     def conv_boolean(
         self, model: type, prop: ColumnProperty, kwargs: Dict[str, Any]
     ) -> UnboundField:
-        kwargs.setdefault("render_kw", {})
-        kwargs["render_kw"]["class"] = "form-check-input"
         return BooleanField(**kwargs)
 
     @converts("Date")
