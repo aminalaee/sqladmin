@@ -3,7 +3,8 @@ from typing import TYPE_CHECKING, Any, Dict, List
 
 import anyio
 from sqlalchemy import select
-from sqlalchemy.orm import joinedload
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import Session, joinedload
 from sqlalchemy.sql.expression import Select
 
 from sqladmin._types import MODEL_ATTR_TYPE
@@ -38,7 +39,7 @@ class Query:
         setattr(obj, fk.name, fk_type(value))
         return obj
 
-    def _set_attributes_sync(self, session, obj, data) -> Any:
+    def _set_attributes_sync(self, session: Session, obj: Any, data: dict) -> Any:
         for key, value in data.items():
             if not value:
                 setattr(obj, key, value)
@@ -62,7 +63,9 @@ class Query:
 
         return obj
 
-    async def _set_attributes_async(self, session, obj, data):
+    async def _set_attributes_async(
+        self, session: AsyncSession, obj: Any, data: dict
+    ) -> Any:
         for key, value in data.items():
             if not value:
                 setattr(obj, key, value)
