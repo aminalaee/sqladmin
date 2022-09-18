@@ -670,7 +670,7 @@ async def test_update_submit_form(client: AsyncClient) -> None:
     session.add(profile)
     await session.commit()
 
-    data = {"name": "Jack"}
+    data = {"name": "Jack", "email": ""}
     response = await client.post("/admin/user/edit/1", data=data)
 
     assert response.status_code == 302
@@ -687,6 +687,7 @@ async def test_update_submit_form(client: AsyncClient) -> None:
     assert user.name == "Jack"
     assert user.addresses == []
     assert user.profile is None
+    assert user.email is None
 
     data = {"name": "Jack", "addresses": "1", "profile": "1"}
     response = await client.post("/admin/user/edit/1", data=data)
