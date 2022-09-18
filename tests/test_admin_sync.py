@@ -646,7 +646,7 @@ def test_update_submit_form(client: TestClient) -> None:
     session.add(profile)
     session.commit()
 
-    data = {"name": "Jack"}
+    data = {"name": "Jack", "email": ""}
     response = client.post("/admin/user/edit/1", data=data)
 
     assert response.status_code == 302
@@ -662,6 +662,7 @@ def test_update_submit_form(client: TestClient) -> None:
     assert user.name == "Jack"
     assert user.addresses == []
     assert user.profile is None
+    assert user.email is None
 
     data = {"name": "Jack", "addresses": "1", "profile": "1"}
     response = client.post("/admin/user/edit/1", data=data)

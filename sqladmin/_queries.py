@@ -41,7 +41,14 @@ class Query:
 
     def _set_attributes_sync(self, session: Session, obj: Any, data: dict) -> Any:
         for key, value in data.items():
+            column = self.model_view._mapper.columns.get(key)
+            relation = self.model_view._mapper.relationships.get(key)
+
             if not value:
+                # Set falsy values to None, if column is Nullable
+                if not relation and column.nullable:
+                    value = None
+
                 setattr(obj, key, value)
                 continue
 
@@ -67,11 +74,17 @@ class Query:
         self, session: AsyncSession, obj: Any, data: dict
     ) -> Any:
         for key, value in data.items():
+            column = self.model_view._mapper.columns.get(key)
+            relation = self.model_view._mapper.relationships.get(key)
+
             if not value:
+                # Set falsy values to None, if column is Nullable
+                if not relation and column.nullable:
+                    value = None
+
                 setattr(obj, key, value)
                 continue
 
-            relation = self.model_view._mapper.relationships.get(key)
             if relation:
                 direction = get_direction(relation)
                 if direction in ["ONETOMANY", "MANYTOMANY"]:
