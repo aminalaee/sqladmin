@@ -33,14 +33,7 @@ from starlette.responses import StreamingResponse
 from starlette.templating import Jinja2Templates
 from wtforms import Field, Form
 
-from sqladmin._queries import (
-    delete_async,
-    delete_sync,
-    insert_async,
-    insert_sync,
-    update_async,
-    update_sync,
-)
+from sqladmin._queries import Query
 from sqladmin._types import ENGINE_TYPE, MODEL_ATTR_TYPE
 from sqladmin.ajax import create_ajax_loader
 from sqladmin.exceptions import InvalidColumnError, InvalidModelError
@@ -958,22 +951,13 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
         }
 
     async def delete_model(self, obj: Any) -> None:
-        if self.async_engine:
-            await delete_async(self, obj)
-        else:
-            await anyio.to_thread.run_sync(delete_sync, self, obj)
+        await Query(self).delete(obj)
 
     async def insert_model(self, data: dict) -> None:
-        if self.async_engine:
-            await insert_async(self, data)
-        else:
-            await anyio.to_thread.run_sync(insert_sync, self, data)
+        await Query(self).insert(data)
 
     async def update_model(self, pk: Any, data: Dict[str, Any]) -> None:
-        if self.async_engine:
-            await update_async(self, pk, data)
-        else:
-            await anyio.to_thread.run_sync(update_sync, self, pk, data)
+        await Query(self).update(pk, data)
 
     async def scaffold_form(self) -> Type[Form]:
         if self.form is not None:
