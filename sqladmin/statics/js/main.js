@@ -15,6 +15,9 @@ $(document).on('click', '#modal-delete-button', function () {
     method: 'DELETE',
     success: function (result) {
       window.location.href = result;
+    },
+    error: function (request, status, error) {
+      alert(request.responseText);
     }
   });
 });
@@ -107,10 +110,7 @@ $(':input[data-role="select2-ajax"]').each(function () {
 
 // Checkbox select
 $("#select-all").click(function () {
-  var checked = $(this).is(':checked');
-  $('.select-box').each(function () {
-    $(this).attr("checked", checked);
-  });
+  $('input.select-box:checkbox').prop('checked', this.checked);
 });
 
 // Bulk delete
@@ -127,6 +127,9 @@ $("#action-delete").click(function () {
     method: 'DELETE',
     success: function (result) {
       window.location.href = result;
+    },
+    error: function (request, status, error) {
+      alert(request.responseText);
     }
   });
 });
