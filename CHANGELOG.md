@@ -4,6 +4,24 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## Version 0.6.0 - 2022-09-19
+
+### Added
+
+* Add bulk delete action by @aminalaee in https://github.com/aminalaee/sqladmin/pull/317
+
+### Fixed
+
+* Handle null values when column is nullable by @aminalaee in https://github.com/aminalaee/sqladmin/pull/323
+* Switch Boolean field to select field by @aminalaee in https://github.com/aminalaee/sqladmin/pull/321
+
+### Internal
+
+* Fix form_ajax_refs example in documentation by @GitBib in https://github.com/aminalaee/sqladmin/pull/311
+* Remove watch in mkdocstrings mkdocs's config by @ischaojie in https://github.com/aminalaee/sqladmin/pull/306
+
+**Full Changelog**: https://github.com/aminalaee/sqladmin/compare/0.5.0...0.6.0
+
 ## Version 0.5.0 - 2022-09-06
 
 ### Added
