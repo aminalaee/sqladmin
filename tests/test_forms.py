@@ -27,9 +27,10 @@ from sqlalchemy_utils import (
     URLType,
     UUIDType,
 )
-from wtforms import Field, Form, StringField, TimeField
+from wtforms import BooleanField, Field, Form, StringField, TimeField
 
 from sqladmin import ModelView
+from sqladmin.fields import SelectField
 from sqladmin.forms import get_model_form
 from tests.common import DummyData, async_engine as engine
 
@@ -54,7 +55,8 @@ class User(Base):
     name = Column(String(32), default="SQLAdmin")
     email = Column(String, nullable=False)
     bio = Column(Text)
-    active = Column(Boolean)
+    active = Column(Boolean, nullable=True)
+    verified = Column(Boolean, nullable=False)
     registered_at = Column(DateTime)
     status = Column(Enum(Status))
     balance = Column(Numeric)
@@ -98,11 +100,12 @@ async def test_model_form() -> None:
     Form = await get_model_form(model=User, engine=engine)
     form = Form()
 
-    assert len(form._fields) == 11
+    assert len(form._fields) == 12
     assert form._fields["active"].flags.required is None
     assert form._fields["name"].flags.required is None
     assert form._fields["email"].flags.required is True
-
+    assert isinstance(form._fields["active"], SelectField)
+    assert isinstance(form._fields["verified"], BooleanField)
     assert isinstance(form._fields["reminder"], TimeField)
 
 
@@ -123,7 +126,7 @@ async def test_model_form_only() -> None:
 
 async def test_model_form_exclude() -> None:
     Form = await get_model_form(model=User, engine=engine, exclude=["status"])
-    assert len(Form()._fields) == 10
+    assert len(Form()._fields) == 11
 
 
 async def test_model_form_form_args() -> None:

@@ -337,7 +337,15 @@ class ModelConverter(ModelConverterBase):
     def conv_boolean(
         self, model: type, prop: ColumnProperty, kwargs: Dict[str, Any]
     ) -> UnboundField:
-        return BooleanField(**kwargs)
+        if not prop.columns[0].nullable:
+            kwargs.setdefault("render_kw", {})
+            kwargs["render_kw"]["class"] = "form-check-input"
+            return BooleanField(**kwargs)
+
+        kwargs["allow_blank"] = True
+        kwargs["choices"] = [(True, "True"), (False, "False")]
+        kwargs["coerce"] = lambda v: str(v) == "True"
+        return SelectField(**kwargs)
 
     @converts("Date")
     def conv_date(
