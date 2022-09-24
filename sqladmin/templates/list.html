@@ -51,12 +51,14 @@
           </div>
         </div>
         <div class="dropdown col-4">
-          <button class="btn btn-light dropdown-toggle" type="button" id="dropdownMenuButton" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+          <button {% if not model_view.can_delete %} disabled {% endif %} class="btn btn-light dropdown-toggle" type="button" id="dropdownMenuButton" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
             Actions
           </button>
+          {% if model_view.can_delete %}
           <div class="dropdown-menu" aria-labelledby="dropdownMenuButton">
             <a class="dropdown-item" id="action-delete" href="#" data-url="{{ url_for('admin:delete', identity=model_view.identity) }}">Delete selected items</a>
           </div>
+          {% endif %}
         </div>
         {% if model_view.column_searchable_list %}
         <div class="col-md-4 text-muted">

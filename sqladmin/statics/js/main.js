@@ -52,7 +52,7 @@ $(document).on('keypress', '#search-input', function (e) {
 });
 
 // Date picker
-$(':input[data-role="datepicker"]').each(function () {
+$(':input[data-role="datepicker"]:not([readonly])').each(function () {
   $(this).flatpickr({
     enableTime: false,
     allowInput: true,
@@ -61,7 +61,7 @@ $(':input[data-role="datepicker"]').each(function () {
 });
 
 // DateTime picker
-$(':input[data-role="datetimepicker"]').each(function () {
+$(':input[data-role="datetimepicker"]:not([readonly])').each(function () {
   $(this).flatpickr({
     enableTime: true,
     allowInput: true,
@@ -72,7 +72,7 @@ $(':input[data-role="datetimepicker"]').each(function () {
 });
 
 // Time picker
-$(':input[data-role="timepicker"]').each(function () {
+$(':input[data-role="timepicker"]:not([readonly])').each(function () {
   $(this).flatpickr({
     noCalendar: true,
     enableTime: true,
