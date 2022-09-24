@@ -44,7 +44,7 @@ class Query:
             column = self.model_view._mapper.columns.get(key)
             relation = self.model_view._mapper.relationships.get(key)
 
-            if not value:
+            if not value and value is not False:
                 # Set falsy values to None, if column is Nullable
                 if not relation and column.nullable:
                     value = None
@@ -77,7 +77,7 @@ class Query:
             column = self.model_view._mapper.columns.get(key)
             relation = self.model_view._mapper.relationships.get(key)
 
-            if not value:
+            if not value and value is not False:
                 # Set falsy values to None, if column is Nullable
                 if not relation and column.nullable:
                     value = None
