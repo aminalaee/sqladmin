@@ -4,6 +4,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## Version 0.6.1 - 2022-09-25
+
+### Fixed
+
+* Fix Boolean field for both nullable and non-nullable cases in https://github.com/aminalaee/sqladmin/pull/336
+* Fix Flatpickr not respecting readonly inputs in https://github.com/aminalaee/sqladmin/pull/336
+* Disable batch delete when can_delete permission is not provided in https://github.com/aminalaee/sqladmin/pull/335
+
+**Full Changelog**: https://github.com/aminalaee/sqladmin/compare/0.6.0...0.6.1
+
 ## Version 0.6.0 - 2022-09-19
 
 ### Added
