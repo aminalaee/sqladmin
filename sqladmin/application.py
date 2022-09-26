@@ -435,6 +435,7 @@ class Admin(BaseAdminView):
                 context,
                 status_code=400,
             )
+
         await model_view.insert_model(form.data)
 
         return RedirectResponse(
