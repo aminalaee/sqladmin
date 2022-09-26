@@ -942,6 +942,12 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
             default=[item[1] for item in self._list_attrs],
         )
 
+    def on_model_change(self, data: dict, pk: Optional[Any] = None) -> dict:
+        """Perform some actions before a model is created or updated.
+        By default, does nothing.
+        """
+        return data
+
     def get_column_labels(
         self,
     ) -> Dict[MODEL_ATTR_TYPE, str]:

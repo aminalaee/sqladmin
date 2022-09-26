@@ -435,8 +435,8 @@ class Admin(BaseAdminView):
                 context,
                 status_code=400,
             )
-
-        await model_view.insert_model(form.data)
+        form_ = model_view.on_model_change(data=form.data)
+        await model_view.insert_model(form_)
 
         return RedirectResponse(
             request.url_for("admin:list", identity=identity),
@@ -475,7 +475,8 @@ class Admin(BaseAdminView):
                 status_code=400,
             )
 
-        await model_view.update_model(pk=request.path_params["pk"], data=form.data)
+        form_ = model_view.on_model_change(data=form.data, pk=request.path_params["pk"])
+        await model_view.update_model(pk=request.path_params["pk"], data=form_)
 
         return RedirectResponse(
             request.url_for("admin:list", identity=identity),
