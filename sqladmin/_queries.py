@@ -143,17 +143,21 @@ class Query:
         obj = self.model_view.model()
 
         with self.model_view.sessionmaker() as session:
+            anyio.from_thread.run(self.model_view.on_model_change, data, obj, True)
             obj = self._set_attributes_sync(session, obj, data)
             session.add(obj)
             session.commit()
+            anyio.from_thread.run(self.model_view.after_model_change, data, obj, True)
 
     async def _insert_async(self, data: Dict[str, Any]) -> None:
         obj = self.model_view.model()
 
         async with self.model_view.sessionmaker() as session:
+            await self.model_view.on_model_change(data, obj, True)
             obj = await self._set_attributes_async(session, obj, data)
             session.add(obj)
             await session.commit()
+            await self.model_view.after_model_change(data, obj, True)
 
     async def delete(self, obj: Any) -> None:
         if self.model_view.async_engine:
