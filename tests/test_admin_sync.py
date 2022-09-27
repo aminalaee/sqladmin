@@ -483,7 +483,7 @@ def test_create_endpoint_post_form(client: TestClient) -> None:
     stmt = select(func.count(User.id))
     with LocalSession() as s:
         assert s.execute(stmt).scalar_one() == 1
-    assert response.status_code == 302
+    assert response.status_code == 200
 
     stmt = (
         select(User)
@@ -649,7 +649,7 @@ def test_update_submit_form(client: TestClient) -> None:
     data = {"name": "Jack", "email": ""}
     response = client.post("/admin/user/edit/1", data=data)
 
-    assert response.status_code == 302
+    assert response.status_code == 200
 
     stmt = (
         select(User)

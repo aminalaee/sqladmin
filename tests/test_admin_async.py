@@ -501,7 +501,7 @@ async def test_create_endpoint_post_form(client: AsyncClient) -> None:
     async with LocalSession() as s:
         result = await s.execute(stmt)
     assert result.scalar_one() == 1
-    assert response.status_code == 302
+    assert response.status_code == 200
 
     stmt = (
         select(User)
@@ -673,7 +673,7 @@ async def test_update_submit_form(client: AsyncClient) -> None:
     data = {"name": "Jack", "email": ""}
     response = await client.post("/admin/user/edit/1", data=data)
 
-    assert response.status_code == 302
+    assert response.status_code == 200
 
     stmt = (
         select(User)
