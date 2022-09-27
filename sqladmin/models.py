@@ -948,7 +948,8 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
         """
 
     async def after_model_change(
-self, data: dict, model: Any, is_created: bool) -> None:
+        self, data: dict, model: Any, is_created: bool
+    ) -> None:
         """Perform some actions after a model was created or updated and committed to the database.
         By default does nothing.
         """
