@@ -504,7 +504,7 @@ def test_create_endpoint_post_form(client: TestClient) -> None:
     stmt = select(func.count(Address.id))
     with LocalSession() as s:
         assert s.execute(stmt).scalar_one() == 1
-    assert response.status_code == 302
+    assert response.status_code == 200
 
     stmt = select(Address).limit(1).options(selectinload(Address.user))
     with LocalSession() as s:
@@ -518,7 +518,7 @@ def test_create_endpoint_post_form(client: TestClient) -> None:
     stmt = select(func.count(Profile.id))
     with LocalSession() as s:
         assert s.execute(stmt).scalar_one() == 1
-    assert response.status_code == 302
+    assert response.status_code == 200
 
     stmt = select(Profile).limit(1).options(selectinload(Profile.user))
     with LocalSession() as s:
@@ -536,7 +536,7 @@ def test_create_endpoint_post_form(client: TestClient) -> None:
     stmt = select(func.count(User.id))
     with LocalSession() as s:
         assert s.execute(stmt).scalar_one() == 2
-    assert response.status_code == 302
+    assert response.status_code == 200
 
     stmt = (
         select(User)
