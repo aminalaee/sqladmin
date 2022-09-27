@@ -501,7 +501,7 @@ async def test_create_endpoint_post_form(client: AsyncClient) -> None:
     async with LocalSession() as s:
         result = await s.execute(stmt)
     assert result.scalar_one() == 1
-    assert response.status_code == 200
+    assert response.status_code == 302
 
     stmt = (
         select(User)
@@ -524,7 +524,7 @@ async def test_create_endpoint_post_form(client: AsyncClient) -> None:
     async with LocalSession() as s:
         result = await s.execute(stmt)
     assert result.scalar_one() == 1
-    assert response.status_code == 200
+    assert response.status_code == 302
 
     stmt = select(Address).limit(1).options(selectinload(Address.user))
     async with LocalSession() as s:
@@ -540,7 +540,7 @@ async def test_create_endpoint_post_form(client: AsyncClient) -> None:
     async with LocalSession() as s:
         result = await s.execute(stmt)
     assert result.scalar_one() == 1
-    assert response.status_code == 200
+    assert response.status_code == 302
 
     stmt = select(Profile).limit(1).options(selectinload(Profile.user))
     async with LocalSession() as s:
