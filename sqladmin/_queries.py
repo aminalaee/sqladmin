@@ -131,13 +131,17 @@ class Query:
 
     def _delete_sync(self, obj: Any) -> None:
         with self.model_view.sessionmaker() as session:
+            anyio.from_thread.run(self.model_view.on_model_delete, obj)
             session.delete(obj)
             session.commit()
+            anyio.from_thread.run(self.model_view.after_model_delete, obj)
 
     async def _delete_async(self, obj: Any) -> None:
         async with self.model_view.sessionmaker() as session:
+            await self.model_view.on_model_delete(obj)
             await session.delete(obj)
             await session.commit()
+            await self.model_view.after_model_delete(obj)
 
     def _insert_sync(self, data: Dict[str, Any]) -> None:
         obj = self.model_view.model()

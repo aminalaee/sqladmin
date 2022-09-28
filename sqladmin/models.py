@@ -971,6 +971,16 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
     async def update_model(self, pk: Any, data: Dict[str, Any]) -> None:
         await Query(self).update(pk, data)
 
+    async def on_model_delete(self, model: Any) -> None:
+        """Perform some actions before a model is created or updated.
+        By default does nothing.
+        """
+
+    async def after_model_delete(self, model: Any) -> None:
+        """Perform some actions before a model is deleted.
+        By default do nothing.
+        """
+
     async def scaffold_form(self) -> Type[Form]:
         if self.form is not None:
             return self.form
