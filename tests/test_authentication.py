@@ -57,7 +57,7 @@ def test_login(client: TestClient) -> None:
     response = client.post("/admin/login", data={"username": "a", "password": "b"})
 
     assert len(response.cookies) == 1
-    assert response.status_code == 302
+    assert response.status_code == 200
 
 
 def test_logout(client: TestClient) -> None:

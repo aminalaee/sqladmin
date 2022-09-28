@@ -942,6 +942,18 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
             default=[item[1] for item in self._list_attrs],
         )
 
+    async def on_model_change(self, data: dict, model: Any, is_created: bool) -> None:
+        """Perform some actions before a model is created or updated.
+        By default does nothing.
+        """
+
+    async def after_model_change(
+        self, data: dict, model: Any, is_created: bool
+    ) -> None:
+        """Perform some actions after a model was created or updated and committed to the database.
+        By default does nothing.
+        """
+
     def get_column_labels(
         self,
     ) -> Dict[MODEL_ATTR_TYPE, str]:

@@ -109,8 +109,10 @@ class Query:
 
         with self.model_view.sessionmaker() as session:
             obj = session.execute(stmt).scalars().first()
+            anyio.from_thread.run(self.model_view.on_model_change, data, obj, False)
             obj = self._set_attributes_sync(session, obj, data)
             session.commit()
+            anyio.from_thread.run(self.model_view.after_model_change, data, obj, False)
 
     async def _update_async(self, pk: Any, data: Dict[str, Any]) -> None:
         pk = get_column_python_type(self.model_view.pk_column)(pk)
@@ -122,8 +124,10 @@ class Query:
         async with self.model_view.sessionmaker() as session:
             result = await session.execute(stmt)
             obj = result.scalars().first()
+            await self.model_view.on_model_change(data, obj, False)
             obj = await self._set_attributes_async(session, obj, data)
             await session.commit()
+            await self.model_view.after_model_change(data, obj, False)
 
     def _delete_sync(self, obj: Any) -> None:
         with self.model_view.sessionmaker() as session:
@@ -143,17 +147,21 @@ class Query:
         obj = self.model_view.model()
 
         with self.model_view.sessionmaker() as session:
+            anyio.from_thread.run(self.model_view.on_model_change, data, obj, True)
             obj = self._set_attributes_sync(session, obj, data)
             session.add(obj)
             session.commit()
+            anyio.from_thread.run(self.model_view.after_model_change, data, obj, True)
 
     async def _insert_async(self, data: Dict[str, Any]) -> None:
         obj = self.model_view.model()
 
         async with self.model_view.sessionmaker() as session:
+            await self.model_view.on_model_change(data, obj, True)
             obj = await self._set_attributes_async(session, obj, data)
             session.add(obj)
             await session.commit()
+            await self.model_view.after_model_change(data, obj, True)
 
     async def delete(self, obj: Any) -> None:
         if self.model_view.async_engine:
