@@ -745,7 +745,11 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
         if type(value) in self.column_type_formatters:
             formatter = self.column_type_formatters[type(value)]
             return formatter(value)
-
+        if isinstance(value, list) and value:
+            inner_type = type(value[0])
+            if inner_type in self.column_type_formatters:
+                formatter = self.column_type_formatters[inner_type]
+                return [formatter(val) for val in value]
         return value
 
     async def count(self) -> int:
