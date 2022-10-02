@@ -118,7 +118,7 @@ $("#action-delete").click(function () {
   var pks = [];
   $('.select-box').each(function () {
     if ($(this).is(':checked')) {
-      pks.push($(this).parent().siblings().get(0).value);
+      pks.push($(this).siblings().get(0).value);
     }
   });
 
