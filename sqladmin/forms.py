@@ -203,7 +203,7 @@ class ModelConverterBase:
     ) -> List[Tuple[str, Any]]:
         target_model = prop.mapper.class_
         pk = get_primary_key(target_model)
-        stmt = select(target_model).limit(100)
+        stmt = select(target_model)
 
         if isinstance(engine, Engine):
             with Session(engine) as session:
