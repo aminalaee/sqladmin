@@ -46,3 +46,7 @@
         - list_query
         - count_query
         - search_query
+        - on_model_change
+        - after_model_change
+        - on_model_delete
+        - after_model_delete
