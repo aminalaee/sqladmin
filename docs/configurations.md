@@ -282,3 +282,30 @@ from sqladmin import Admin
 
 admin = Admin(templates_dir="my_templates", ...)
 ```
+
+## Events
+
+There might be some cases which you want to do some actions
+before or after a model was created, updated or deleted.
+
+There are four methods you can override to achieve this:
+
+* `on_model_change`: Called before a model was created or updated.
+* `after_model_change`: Called after a model was created or updated.
+* `on_model_delete`: Called before a model was deleted.
+* `after_model_delete`: Called after a model was deleted.
+
+By default these methods do nothing.
+
+!!! example
+
+    ```python
+    class UserAdmin(ModelView, model=User):
+        async def on_model_change(self, data, model, is_created):
+            # Perform some other action
+            ...
+
+        async def on_model_delete(self, model):
+            # Perform some other action
+            ...
+    ```
