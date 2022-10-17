@@ -35,21 +35,7 @@
       </div>
     </div>
     <div class="card-body border-bottom py-3">
-      <div class="d-flex">
-        <div class="dropdown text-muted col-4">
-          Show 
-          <a href="#" class="btn btn-light dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-            {{ request.query_params.get("pageSize") or model_view.page_size }}
-          </a>
-          items
-          <div class="dropdown-menu">
-            {% for page_size_option in model_view.page_size_options %}
-            <a class="dropdown-item" href="{{ request.url.include_query_params(pageSize=page_size_option) }}">
-              {{ page_size_option }}
-            </a>
-            {% endfor %}
-          </div>
-        </div>
+      <div class="d-flex justify-content-between">
         <div class="dropdown col-4">
           <button {% if not model_view.can_delete %} disabled {% endif %} class="btn btn-light dropdown-toggle" type="button" id="dropdownMenuButton" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
             Actions
@@ -62,7 +48,7 @@
         </div>
         {% if model_view.column_searchable_list %}
         <div class="col-md-4 text-muted">
-          <div class="input-group ms-2">
+          <div class="input-group">
             <input id="search-input" type="text" class="form-control" placeholder="Search: {{ model_view.search_placeholder() }}" value="{{ request.query_params.get('search', '') }}">
             <button id="search-button" class="btn" type="button">Search</button>
             <button id="search-reset" class="btn" type="button" {% if not request.query_params.get('search') %}disabled{% endif %}><i class="fa-solid fa-times"></i></button>
@@ -97,8 +83,10 @@
         <tbody>
           {% for row in pagination.rows %}
           <tr>
-            <input type="hidden" value="{{ model_view.get_attr_value(row, model_view.pk_column) }}">
-            <td><input class="form-check-input m-0 align-middle select-box" type="checkbox" aria-label="Select item"></td>
+            <td>
+              <input type="hidden" value="{{ model_view.get_attr_value(row, model_view.pk_column) }}">
+              <input class="form-check-input m-0 align-middle select-box" type="checkbox" aria-label="Select item">
+            </td>
             <td class="text-end">
               {% if model_view.can_view_details %}
               <a href="{{ model_view._url_for_details(row) }}" data-bs-toggle="tooltip" data-bs-placement="top" title="View">
@@ -137,7 +125,7 @@
         </tbody>
       </table>
     </div>
-    <div class="card-footer d-flex align-items-center">
+    <div class="card-footer d-flex justify-content-between align-items-center gap-2">
       <p class="m-0 text-muted">Showing <span>{{ ((pagination.page - 1) * pagination.page_size) + 1 }}</span> to <span>{{ min(pagination.page * pagination.page_size, pagination.count) }}</span> of <span>{{ pagination.count }}</span> items</p>
       <ul class="pagination m-0 ms-auto">
         <li class="page-item {% if not pagination.has_previous %}disabled{% endif %}">
@@ -164,6 +152,19 @@
           </a>
         </li>
       </ul>
+      <div class="dropdown text-muted">
+        Show
+        <a href="#" class="btn btn-sm btn-light dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+          {{ request.query_params.get("pageSize") or model_view.page_size }} / Page
+        </a>
+        <div class="dropdown-menu">
+          {% for page_size_option in model_view.page_size_options %}
+          <a class="dropdown-item" href="{{ request.url.include_query_params(pageSize=page_size_option) }}">
+            {{ page_size_option }} / Page
+          </a>
+          {% endfor %}
+        </div>
+      </div>
     </div>
   </div>
   {% include 'modals/delete.html' %}
