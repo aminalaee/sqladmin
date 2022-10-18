@@ -49,12 +49,12 @@ class TimeField(fields.TimeField):
 class SelectField(fields.SelectField):
     def __init__(
         self,
-        label: str = None,
-        validators: list = None,
+        label: Optional[str] = None,
+        validators: Optional[list] = None,
         coerce: type = str,
-        choices: Union[list, Callable] = None,
+        choices: Optional[Union[list, Callable]] = None,
         allow_blank: bool = False,
-        blank_text: str = None,
+        blank_text: Optional[str] = None,
         **kwargs: Any,
     ) -> None:
         super().__init__(label, validators, coerce, choices, **kwargs)
@@ -123,10 +123,10 @@ class QuerySelectField(fields.SelectFieldBase):
 
     def __init__(
         self,
-        data: list = None,
-        label: str = None,
-        validators: list = None,
-        get_label: Union[Callable, str] = None,
+        data: Optional[list] = None,
+        label: Optional[str] = None,
+        validators: Optional[list] = None,
+        get_label: Optional[Union[Callable, str]] = None,
         allow_blank: bool = False,
         blank_text: str = "",
         **kwargs: Any,
@@ -207,9 +207,9 @@ class QuerySelectMultipleField(QuerySelectField):
 
     def __init__(
         self,
-        data: list = None,
-        label: str = None,
-        validators: list = None,
+        data: Optional[list] = None,
+        label: Optional[str] = None,
+        validators: Optional[list] = None,
         default: Any = None,
         **kwargs: Any,
     ) -> None:
@@ -275,8 +275,8 @@ class AjaxSelectField(SelectFieldBase):
     def __init__(
         self,
         loader: QueryAjaxModelLoader,
-        label: str = None,
-        validators: list = None,
+        label: Optional[str] = None,
+        validators: Optional[list] = None,
         allow_blank: bool = False,
         **kwargs: Any,
     ) -> None:
@@ -317,9 +317,9 @@ class AjaxSelectMultipleField(SelectFieldBase):
     def __init__(
         self,
         loader: QueryAjaxModelLoader,
-        label: str = None,
-        validators: list = None,
-        default: list = None,
+        label: Optional[str] = None,
+        validators: Optional[list] = None,
+        default: Optional[list] = None,
         allow_blank: bool = False,
         **kwargs: Any,
     ) -> None:
