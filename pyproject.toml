@@ -89,6 +89,7 @@ test = "python -m coverage run --concurrency=thread,greenlet -m pytest"
 disallow_untyped_defs = true
 ignore_missing_imports = true
 show_error_codes = true
+no_implicit_optional = true
 
 [tool.isort]
 profile = "black"

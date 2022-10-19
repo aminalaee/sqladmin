@@ -38,7 +38,7 @@ class BaseAdmin:
         engine: ENGINE_TYPE,
         base_url: str = "/admin",
         title: str = "Admin",
-        logo_url: str = None,
+        logo_url: Optional[str] = None,
         templates_dir: str = "templates",
         middlewares: Optional[Sequence[Middleware]] = None,
         authentication_backend: Optional[AuthenticationBackend] = None,
@@ -259,7 +259,7 @@ class Admin(BaseAdminView):
         engine: ENGINE_TYPE,
         base_url: str = "/admin",
         title: str = "Admin",
-        logo_url: str = None,
+        logo_url: Optional[str] = None,
         middlewares: Optional[Sequence[Middleware]] = None,
         debug: bool = False,
         templates_dir: str = "templates",
@@ -543,7 +543,7 @@ def expose(
     path: str,
     *,
     methods: List[str] = ["GET"],
-    identity: str = None,
+    identity: Optional[str] = None,
     include_in_schema: bool = True,
 ) -> Callable[..., Any]:
     """Expose View with information."""
