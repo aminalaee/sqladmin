@@ -12,26 +12,32 @@
         {% endif %}
         </a>
       </h1>
-      <div class="collapse navbar-collapse" id="navbar-menu">
-        <ul class="navbar-nav pt-lg-3">
-          {% for view in admin.views %}
-          {% if view.is_visible(request) and view.is_accessible(request) %}
-          <li class="nav-item">
-            {% if view.is_model %}
-            <a class="nav-link {% if view.identity == request.path_params['identity'] %}active{% endif %}" href="{{ url_for('admin:list', identity=view.identity) }}">
-            {% else %}
-            <a class="nav-link {% if view.identity == request.path_params['identity'] %}active{% endif %}" href="{{ url_for('admin:%s' | format(view.identity)) }}">
+      <nav class="navbar navbar-expand-sm" id="navbar-menu">
+        <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+          <span class="navbar-toggler-icon"></span>
+        </button>
+
+        <div class="collapse navbar-collapse" id="navbarSupportedContent">
+          <ul class="navbar-nav pt-lg-3">
+            {% for view in admin.views %}
+            {% if view.is_visible(request) and view.is_accessible(request) %}
+            <li class="nav-item">
+              {% if view.is_model %}
+              <a class="nav-link {% if view.identity == request.path_params['identity'] %}active{% endif %}" href="{{ url_for('admin:list', identity=view.identity) }}">
+              {% else %}
+              <a class="nav-link {% if view.identity == request.path_params['identity'] %}active{% endif %}" href="{{ url_for('admin:%s' | format(view.identity)) }}">
+              {% endif %}
+              <span class="nav-link-icon d-md-none d-lg-inline-block">
+              {% if view.icon %} <i class="{{ view.icon }}"></i> {% endif %}
+              </span>
+              <span class="nav-link-title">{{ view.name_plural or view.name }}</span>
+              </a>
+            </li>
             {% endif %}
-            <span class="nav-link-icon d-md-none d-lg-inline-block">
-            {% if view.icon %} <i class="{{ view.icon }}"></i> {% endif %}
-            </span>
-            <span class="nav-link-title">{{ view.name_plural or view.name }}</span>
-            </a>
-          </li>
-          {% endif %}
-          {% endfor %}
-        </ul>
-      </div>
+            {% endfor %}
+          </ul>
+        </div>
+      </nav>
       {% if admin.authentication_backend %}
       <a href="{{ request.url_for('admin:logout') }}" class="btn btn-secondary btn-icon">
         <i class="fa fa-sign-out"></i>
