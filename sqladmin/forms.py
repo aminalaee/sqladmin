@@ -203,7 +203,7 @@ class ModelConverterBase:
     ) -> List[Tuple[str, Any]]:
         target_model = prop.mapper.class_
         pk = get_primary_key(target_model)
-        stmt = select(target_model).limit(100)
+        stmt = select(target_model)
 
         if isinstance(engine, Engine):
             with Session(engine) as session:
@@ -501,14 +501,14 @@ class ModelConverter(ModelConverterBase):
 async def get_model_form(
     model: type,
     engine: ENGINE_TYPE,
-    only: Sequence[str] = None,
-    exclude: Sequence[str] = None,
-    column_labels: Dict[str, str] = None,
-    form_args: Dict[str, Dict[str, Any]] = None,
-    form_widget_args: Dict[str, Dict[str, Any]] = None,
+    only: Optional[Sequence[str]] = None,
+    exclude: Optional[Sequence[str]] = None,
+    column_labels: Optional[Dict[str, str]] = None,
+    form_args: Optional[Dict[str, Dict[str, Any]]] = None,
+    form_widget_args: Optional[Dict[str, Dict[str, Any]]] = None,
     form_class: Type[Form] = Form,
-    form_overrides: Dict[str, Type[Field]] = None,
-    form_ajax_refs: Dict[str, QueryAjaxModelLoader] = None,
+    form_overrides: Optional[Dict[str, Type[Field]]] = None,
+    form_ajax_refs: Optional[Dict[str, QueryAjaxModelLoader]] = None,
     form_include_pk: bool = False,
 ) -> Type[Form]:
     type_name = model.__name__ + "Form"
