@@ -17,7 +17,7 @@ from typing import (
 from urllib.parse import urlencode
 
 import anyio
-from sqlalchemy import Column, asc, desc, func, inspect, or_, cast, String
+from sqlalchemy import Column, String, asc, cast, desc, func, inspect, or_
 from sqlalchemy.exc import NoInspectionAvailable
 from sqlalchemy.orm import (
     ColumnProperty,
