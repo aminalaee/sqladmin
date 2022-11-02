@@ -17,7 +17,7 @@ from typing import (
 from urllib.parse import urlencode
 
 import anyio
-from sqlalchemy import Column, asc, desc, func, inspect, or_
+from sqlalchemy import Column, String, asc, cast, desc, func, inspect, or_
 from sqlalchemy.exc import NoInspectionAvailable
 from sqlalchemy.orm import (
     ColumnProperty,
@@ -1026,7 +1026,9 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
         return stmt.filter(MyModel.name == term)
         ```
         """
-        expressions = [attr.ilike(f"%{term}%") for attr in self._search_fields]
+        expressions = [
+            cast(attr, String).ilike(f"%{term}%") for attr in self._search_fields
+        ]
         return stmt.filter(or_(*expressions))
 
     def get_export_name(self, export_type: str) -> str:
