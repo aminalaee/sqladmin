@@ -4,6 +4,26 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## Version 0.7.0 - 2022-11-03
+
+### Added
+
+* Add `on_model_change` and `after_model_change` methods in [#342](https://github.com/aminalaee/sqladmin/pull/342)
+* Add `on_model_delete` and `after_model_delete` methods in [#343](https://github.com/aminalaee/sqladmin/pull/343)
+
+### Fixed
+
+* Fix search by uuid column in [#366](https://github.com/aminalaee/sqladmin/pull/366)
+* Update tests after starlette upgrade in [#344](https://github.com/aminalaee/sqladmin/pull/344)
+* Remove hard-coded related model limit in [#354](https://github.com/aminalaee/sqladmin/pull/354)
+* Improve items list UI in [#349](https://github.com/aminalaee/sqladmin/pull/349)
+* Make navbar work on small screens in [#362](https://github.com/aminalaee/sqladmin/pull/362)
+
+### Internal
+* Add mypy check with config no_implicit_optional in [#360](https://github.com/aminalaee/sqladmin/pull/360)
+* Support test-suite py311 in [#365](https://github.com/aminalaee/sqladmin/pull/365)
+* Add py.typed for the package to ship its typing information in [#346](https://github.com/aminalaee/sqladmin/pull/346)
+
 ## Version 0.6.1 - 2022-09-25
 
 ### Fixed
