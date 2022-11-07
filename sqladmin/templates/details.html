@@ -23,11 +23,11 @@
               {% if is_list( value ) %}
               <td>
               {% for elem, formatted_elem in zip(value, formatted_value) %}
-              <a href="{{ model_view._url_for_details(elem) }}">({{ formatted_elem }})</a>
+              <a href="{{ model_view._url_for_details(request, elem) }}">({{ formatted_elem }})</a>
               {% endfor %}
               </td>
               {% else %}
-              <td><a href="{{ model_view._url_for_details_with_attr(model, attr) }}">{{ formatted_value }}</a></td>
+              <td><a href="{{ model_view._url_for_details_with_attr(request, model, attr) }}">{{ formatted_value }}</a></td>
               {% endif %}
               {% else %}
               <td>{{ formatted_value }}</td>
@@ -46,14 +46,14 @@
           </div>
           {% if model_view.can_delete %}
           <div class="col">
-            <a href="#" data-name="{{ model_view.name }}" data-pk="{{ model_view.get_attr_value(model, model_view.pk_column) }}" data-url="{{ model_view._url_for_delete(model) }}" data-bs-toggle="modal" data-bs-target="#modal-delete" class="btn btn-danger">
+            <a href="#" data-name="{{ model_view.name }}" data-pk="{{ model_view.get_attr_value(model, model_view.pk_column) }}" data-url="{{ model_view._url_for_delete(request, model) }}" data-bs-toggle="modal" data-bs-target="#modal-delete" class="btn btn-danger">
               Delete
             </a>
           </div>
           {% endif %}
           {% if model_view.can_edit %}
           <div class="col">
-            <a href="{{ model_view._url_for_edit(model) }}" class="btn btn-primary">
+            <a href="{{ model_view._url_for_edit(request, model) }}" class="btn btn-primary">
               Edit
             </a>
           </div>

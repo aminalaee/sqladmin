@@ -235,9 +235,17 @@ def test_list_view_with_relationships(client: TestClient) -> None:
 
     # Show values of relationships
     assert (
-        response.text.count('<a href="/admin/address/details/1">(Address 1)</a>') == 1
+        response.text.count(
+            '<a href="http://testserver/admin/address/details/1">(Address 1)</a>'
+        )
+        == 1
     )
-    assert response.text.count('<a href="/admin/profile/details/1">Profile 1</a>') == 1
+    assert (
+        response.text.count(
+            '<a href="http://testserver/admin/profile/details/1">Profile 1</a>'
+        )
+        == 1
+    )
 
 
 def test_list_view_with_formatted_relationships(client: TestClient) -> None:
@@ -253,18 +261,8 @@ def test_list_view_with_formatted_relationships(client: TestClient) -> None:
     assert response.status_code == 200
 
     # Show formatted values of relationships
-    assert (
-        response.text.count(
-            '<a href="/admin/address-formattable/details/1">(Formatted Address 1)</a>'
-        )
-        == 1
-    )
-    assert (
-        response.text.count(
-            '<a href="/admin/profile-formattable/details/1">Formatted Profile 1</a>'
-        )
-        == 1
-    )
+    assert response.text.count("(Formatted Address 1)") == 1
+    assert response.text.count("Formatted Profile 1") == 1
 
 
 def test_list_view_multi_page(client: TestClient) -> None:
@@ -371,24 +369,22 @@ def test_detail_page(client: TestClient) -> None:
     assert response.text.count("<td>Amin Alaee</td>") == 1
     assert response.text.count("<td>addresses</td>") == 1
     assert (
-        response.text.count('<a href="/admin/address/details/1">(Address 1)</a>') == 1
+        response.text.count(
+            '<a href="http://testserver/admin/address/details/1">(Address 1)</a>'
+        )
+        == 1
     )
     assert response.text.count("<td>profile</td>") == 1
-    assert response.text.count('<a href="/admin/profile/details/1">Profile 1</a>') == 1
+    assert (
+        response.text.count(
+            '<a href="http://testserver/admin/profile/details/1">Profile 1</a>'
+        )
+        == 1
+    )
     assert response.text.count("<td>addresses_formattable</td>") == 1
-    assert (
-        response.text.count(
-            '<a href="/admin/address-formattable/details/1">(Formatted Address 1)</a>'
-        )
-        == 1
-    )
+    assert response.text.count("(Formatted Address 1)") == 1
     assert response.text.count("<td>profile_formattable</td>") == 1
-    assert (
-        response.text.count(
-            '<a href="/admin/profile-formattable/details/1">Formatted Profile 1</a>'
-        )
-        == 1
-    )
+    assert response.text.count("Formatted Profile 1") == 1
 
     # Action Buttons
     assert response.text.count("http://testserver/admin/user/list") == 2
