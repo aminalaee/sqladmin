@@ -120,14 +120,14 @@ async def test_create_ajax_loader_exceptions() -> None:
 async def test_create_page_template(client: AsyncClient) -> None:
     response = await client.get("/admin/user/create")
 
-    assert response.text.count('data-json="[]"') == 1
-    assert response.text.count('data-role="select2-ajax"') == 1
-    assert response.text.count('data-url="/admin/user/ajax/lookup"') == 1
+    assert 'data-json="[]"' in response.text
+    assert 'data-role="select2-ajax"' in response.text
+    assert 'data-url="/admin/user/ajax/lookup"' in response.text
 
     response = await client.get("/admin/address/create")
 
-    assert response.text.count('data-role="select2-ajax"') == 1
-    assert response.text.count('data-url="/admin/address/ajax/lookup"') == 1
+    assert 'data-role="select2-ajax"' in response.text
+    assert 'data-url="/admin/address/ajax/lookup"' in response.text
 
 
 async def test_edit_page_template(client: AsyncClient) -> None:
@@ -142,23 +142,19 @@ async def test_edit_page_template(client: AsyncClient) -> None:
 
     response = await client.get("/admin/user/edit/1")
     assert (
-        response.text.count(
-            'data-json="[{&#34;id&#34;: 1, &#34;text&#34;: &#34;Address 1&#34;}]"'
-        )
-        == 1
+        'data-json="[{&#34;id&#34;: 1, &#34;text&#34;: &#34;Address 1&#34;}]"'
+        in response.text
     )
-    assert response.text.count('data-role="select2-ajax"') == 1
-    assert response.text.count('data-url="/admin/user/ajax/lookup"') == 1
+    assert 'data-role="select2-ajax"' in response.text
+    assert 'data-url="/admin/user/ajax/lookup"' in response.text
 
     response = await client.get("/admin/address/edit/1")
     assert (
-        response.text.count(
-            'data-json="[{&#34;id&#34;: 1, &#34;text&#34;: &#34;User 1&#34;}]"'
-        )
-        == 1
+        'data-json="[{&#34;id&#34;: 1, &#34;text&#34;: &#34;User 1&#34;}]"'
+        in response.text
     )
-    assert response.text.count('data-role="select2-ajax"') == 1
-    assert response.text.count('data-url="/admin/address/ajax/lookup"') == 1
+    assert 'data-role="select2-ajax"' in response.text
+    assert 'data-url="/admin/address/ajax/lookup"' in response.text
 
 
 async def test_crete_and_edit_forms(client: AsyncClient) -> None:
