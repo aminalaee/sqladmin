@@ -89,17 +89,17 @@
             </td>
             <td class="text-end">
               {% if model_view.can_view_details %}
-              <a href="{{ model_view._url_for_details(row) }}" data-bs-toggle="tooltip" data-bs-placement="top" title="View">
+              <a href="{{ model_view._url_for_details(request, row) }}" data-bs-toggle="tooltip" data-bs-placement="top" title="View">
                 <span class="me-1"><i class="fa-solid fa-eye"></i></span>
               </a>
               {% endif %}
               {% if model_view.can_edit %}
-              <a href="{{ model_view._url_for_edit(row) }}" data-bs-toggle="tooltip" data-bs-placement="top" title="Edit">
+              <a href="{{ model_view._url_for_edit(request, row) }}" data-bs-toggle="tooltip" data-bs-placement="top" title="Edit">
                 <span class="me-1"><i class="fa-solid fa-pen-to-square"></i></span>
               </a>
               {% endif %}
               {% if model_view.can_delete %}
-              <a href="#" data-name="{{ model_view.name }}" data-pk="{{ model_view.get_attr_value(row, model_view.pk_column) }}" data-url="{{ model_view._url_for_delete(row) }}" data-bs-toggle="modal" data-bs-target="#modal-delete" title="Delete">
+              <a href="#" data-name="{{ model_view.name }}" data-pk="{{ model_view.get_attr_value(row, model_view.pk_column) }}" data-url="{{ model_view._url_for_delete(request, row) }}" data-bs-toggle="modal" data-bs-target="#modal-delete" title="Delete">
                 <span class="me-1"><i class="fa-solid fa-trash"></i></span>
               </a>
               {% endif %}
@@ -110,11 +110,11 @@
             {% if is_list( value ) %}
             <td>
             {% for elem, formatted_elem in zip(value, formatted_value) %}
-            <a href="{{ model_view._url_for_details(elem) }}">({{ formatted_elem }})</a>
+            <a href="{{ model_view._url_for_details(request, elem) }}">({{ formatted_elem }})</a>
             {% endfor %}
             </td>
             {% else %}
-            <td><a href="{{ model_view._url_for_details_with_attr(row, column) }}">{{ formatted_value }}</a></td>
+            <td><a href="{{ model_view._url_for_details_with_attr(request, row, column) }}">{{ formatted_value }}</a></td>
             {% endif %}
             {% else %}
             <td>{{ formatted_value }}</td>

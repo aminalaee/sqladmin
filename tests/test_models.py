@@ -463,54 +463,6 @@ def test_get_python_type_postgresql() -> None:
     get_column_python_type(PostgresModel.uuid) is str
 
 
-def test_get_url_for_details_from_object() -> None:
-    class UserAdmin(ModelView, model=User):
-        ...
-
-    admin = Admin(app=Starlette(), engine=engine)
-    admin.add_view(UserAdmin)
-
-    with Session() as session:
-        user = User()
-        session.add(user)
-        session.commit()
-
-        url = UserAdmin()._url_for_details(user)
-
-    assert url == "/admin/user/details/1"
-
-
-def test_get_url_for_details_from_object_with_attr() -> None:
-    class UserAdmin(ModelView, model=User):
-        ...
-
-    class AddressAdmin(ModelView, model=Address):
-        ...
-
-    admin = Admin(app=Starlette(), engine=engine)
-    admin.add_view(UserAdmin)
-    admin.add_view(AddressAdmin)
-
-    with Session() as session:
-        user = User()
-        session.add(user)
-        session.flush()
-
-        address = Address(user_id=user.id)
-        session.add(address)
-        session.commit()
-
-        address2 = Address()
-        session.add(address2)
-        session.commit()
-
-        url = UserAdmin()._url_for_details_with_attr(address, Address.user)
-        url_empty = UserAdmin()._url_for_details_with_attr(address2, Address.user)
-
-    assert url == "/admin/user/details/1"
-    assert url_empty == ""
-
-
 def test_model_default_sort() -> None:
     class UserAdmin(ModelView, model=User):
         ...

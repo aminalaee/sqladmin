@@ -44,9 +44,6 @@ def client() -> Generator[TestClient, None, None]:
 def test_base_view(client: TestClient) -> None:
     admin.add_view(CustomAdmin)
 
-    url = CustomAdmin().url_path_for("admin:custom")
-    assert url == "/admin/custom"
-
     response = client.get("/admin/custom")
 
     assert response.status_code == 200

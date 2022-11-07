@@ -154,7 +154,6 @@ class BaseView(BaseModelView):
 
     # Internals
     is_model: ClassVar[bool] = False
-    url_path_for: ClassVar[Callable]
     templates: ClassVar[Jinja2Templates]
 
     name: ClassVar[str] = ""
@@ -694,37 +693,39 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
         else:
             return await anyio.to_thread.run_sync(self._run_query_sync, stmt)
 
-    def _url_for_details(self, obj: Any) -> str:
+    def _url_for_details(self, request: Request, obj: Any) -> str:
         pk = getattr(obj, get_primary_key(obj).name)
-        return self.url_path_for(
+        return request.url_for(
             "admin:details",
             identity=slugify_class_name(obj.__class__.__name__),
             pk=pk,
         )
 
-    def _url_for_edit(self, obj: Any) -> str:
+    def _url_for_edit(self, request: Request, obj: Any) -> str:
         pk = getattr(obj, get_primary_key(obj).name)
-        return self.url_path_for(
+        return request.url_for(
             "admin:edit",
             identity=slugify_class_name(obj.__class__.__name__),
             pk=pk,
         )
 
-    def _url_for_delete(self, obj: Any) -> str:
+    def _url_for_delete(self, request: Request, obj: Any) -> str:
         pk = getattr(obj, get_primary_key(obj).name)
         query_params = urlencode({"pks": pk})
-        url = self.url_path_for(
+        url = request.url_for(
             "admin:delete", identity=slugify_class_name(obj.__class__.__name__)
         )
         return url + "?" + query_params
 
-    def _url_for_details_with_attr(self, obj: Any, attr: RelationshipProperty) -> str:
+    def _url_for_details_with_attr(
+        self, request: Request, obj: Any, attr: RelationshipProperty
+    ) -> str:
         target = getattr(obj, attr.key)
         if target is None:
             return ""
 
         pk = getattr(target, attr.mapper.primary_key[0].name)
-        return self.url_path_for(
+        return request.url_for(
             "admin:details",
             identity=slugify_class_name(target.__class__.__name__),
             pk=pk,
