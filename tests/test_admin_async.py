@@ -194,8 +194,8 @@ async def test_root_view(client: AsyncClient) -> None:
     response = await client.get("/admin/")
 
     assert response.status_code == 200
-    assert response.text.count('<span class="nav-link-title">Users</span>') == 1
-    assert response.text.count('<span class="nav-link-title">Addresses</span>') == 1
+    assert '<span class="nav-link-title">Users</span>' in response.text
+    assert '<span class="nav-link-title">Addresses</span>' in response.text
 
 
 async def test_invalid_list_page(client: AsyncClient) -> None:
@@ -247,16 +247,12 @@ async def test_list_view_with_relations(client: AsyncClient) -> None:
     )
 
     assert (
-        response.text.count(
-            '<a href="http://testserver/admin/address/details/1">(Address 1)</a>'
-        )
-        == 1
+        '<a href="http://testserver/admin/address/details/1">(Address 1)</a>'
+        in response.text
     )
     assert (
-        response.text.count(
-            '<a href="http://testserver/admin/profile/details/1">Profile 1</a>'
-        )
-        == 1
+        '<a href="http://testserver/admin/profile/details/1">Profile 1</a>'
+        in response.text
     )
 
 
@@ -273,8 +269,8 @@ async def test_list_view_with_formatted_relations(client: AsyncClient) -> None:
     assert response.status_code == 200
 
     # Show values of relationships
-    assert response.text.count("(Formatted Address 1)") == 1
-    assert response.text.count("Formatted Profile 1") == 1
+    assert "(Formatted Address 1)" in response.text
+    assert "Formatted Profile 1" in response.text
 
 
 async def test_list_view_multi_page(client: AsyncClient) -> None:
@@ -373,30 +369,26 @@ async def test_detail_page(client: AsyncClient) -> None:
     response = await client.get("/admin/user/details/1")
 
     assert response.status_code == 200
-    assert response.text.count('<th class="w-1">Column</th>') == 1
-    assert response.text.count('<th class="w-1">Value</th>') == 1
-    assert response.text.count("<td>id</td>") == 1
-    assert response.text.count("<td>1</td>") == 1
-    assert response.text.count("<td>name</td>") == 1
-    assert response.text.count("<td>Amin Alaee</td>") == 1
-    assert response.text.count("<td>addresses</td>") == 1
+    assert '<th class="w-1">Column</th>' in response.text
+    assert '<th class="w-1">Value</th>' in response.text
+    assert "<td>id</td>" in response.text
+    assert "<td>1</td>" in response.text
+    assert "<td>name</td>" in response.text
+    assert "<td>Amin Alaee</td>" in response.text
+    assert "<td>addresses</td>" in response.text
     assert (
-        response.text.count(
-            '<a href="http://testserver/admin/address/details/1">(Address 1)</a>'
-        )
-        == 1
+        '<a href="http://testserver/admin/address/details/1">(Address 1)</a>'
+        in response.text
     )
-    assert response.text.count("<td>profile</td>") == 1
+    assert "<td>profile</td>" in response.text
     assert (
-        response.text.count(
-            '<a href="http://testserver/admin/profile/details/1">Profile 1</a>'
-        )
-        == 1
+        '<a href="http://testserver/admin/profile/details/1">Profile 1</a>'
+        in response.text
     )
-    assert response.text.count("<td>addresses_formattable</td>") == 1
-    assert response.text.count("(Formatted Address 1)") == 1
-    assert response.text.count("<td>profile_formattable</td>") == 1
-    assert response.text.count("Formatted Profile 1</a>") == 1
+    assert "<td>addresses_formattable</td>" in response.text
+    assert "(Formatted Address 1)" in response.text
+    assert "<td>profile_formattable</td>" in response.text
+    assert "Formatted Profile 1</a>" in response.text
 
     # Action Buttons
     assert response.text.count("http://testserver/admin/user/list") == 2
@@ -415,12 +407,12 @@ async def test_column_labels(client: AsyncClient) -> None:
     response = await client.get("/admin/user/list")
 
     assert response.status_code == 200
-    assert response.text.count("Email") == 1
+    assert "Email" in response.text
 
     response = await client.get("/admin/user/details/1")
 
     assert response.status_code == 200
-    assert response.text.count("Email") == 1
+    assert "Email" in response.text
 
 
 async def test_delete_endpoint_unauthorized_response(client: AsyncClient) -> None:
@@ -597,9 +589,9 @@ async def test_is_visible_method(client: AsyncClient) -> None:
     response = await client.get("/admin/")
 
     assert response.status_code == 200
-    assert response.text.count('<span class="nav-link-title">Users</span>') == 1
-    assert response.text.count('<span class="nav-link-title">Addresses</span>') == 1
-    assert response.text.count("Movie") == 0
+    assert '<span class="nav-link-title">Users</span>' in response.text
+    assert '<span class="nav-link-title">Addresses</span>' in response.text
+    assert "Movie" not in response.text
 
 
 async def test_edit_endpoint_unauthorized_response(client: AsyncClient) -> None:
@@ -629,35 +621,27 @@ async def test_update_get_page(client: AsyncClient) -> None:
 
     assert response.status_code == 200
     assert (
-        response.text.count(
-            '<select class="form-control" id="addresses" multiple name="addresses">'
-        )
-        == 1
+        '<select class="form-control" id="addresses" multiple name="addresses">'
+        in response.text
     )
-    assert response.text.count('<option selected value="1">Address 1</option>') == 1
+    assert '<option selected value="1">Address 1</option>' in response.text
+    assert '<select class="form-control" id="profile" name="profile">' in response.text
+    assert '<option selected value="1">Profile 1</option>' in response.text
     assert (
-        response.text.count('<select class="form-control" id="profile" name="profile">')
-        == 1
-    )
-    assert response.text.count('<option selected value="1">Profile 1</option>') == 1
-    assert (
-        response.text.count(
-            'id="name" maxlength="16" name="name" type="text" value="Joe">'
-        )
-        == 1
+        'id="name" maxlength="16" name="name" type="text" value="Joe">' in response.text
     )
 
     response = await client.get("/admin/address/edit/1")
 
-    assert response.text.count('<select class="form-control" id="user" name="user">')
-    assert response.text.count('<option value="__None"></option>')
-    assert response.text.count('<option selected value="1">User 1</option>')
+    assert '<select class="form-control" id="user" name="user">' in response.text
+    assert '<option value="__None"></option>' in response.text
+    assert '<option selected value="1">User 1</option>' in response.text
 
     response = await client.get("/admin/profile/edit/1")
 
-    assert response.text.count('<select class="form-control" id="user" name="user">')
-    assert response.text.count('<option value="__None"></option>')
-    assert response.text.count('<option selected value="1">User 1</option>')
+    assert '<select class="form-control" id="user" name="user">' in response.text
+    assert '<option value="__None"></option>' in response.text
+    assert '<option selected value="1">User 1</option>' in response.text
 
 
 async def test_update_submit_form(client: AsyncClient) -> None:
@@ -728,13 +712,11 @@ async def test_searchable_list(client: AsyncClient) -> None:
     response = await client.get("/admin/user/list")
 
     assert (
-        response.text.count(
-            '<button id="search-button" class="btn" type="button">Search</button>'
-        )
-        == 1
+        '<button id="search-button" class="btn" type="button">Search</button>'
+        in response.text
     )
 
-    assert response.text.count("Search: name") == 1
+    assert "Search: name" in response.text
     assert "/admin/user/details/1" in response.text
 
     response = await client.get("/admin/user/list?search=ro")
@@ -753,17 +735,11 @@ async def test_sortable_list(client: AsyncClient) -> None:
 
     response = await client.get("/admin/user/list?sortBy=id&sort=asc")
 
-    assert (
-        response.text.count("http://testserver/admin/user/list?sortBy=id&amp;sort=desc")
-        == 1
-    )
+    assert "http://testserver/admin/user/list?sortBy=id&amp;sort=desc" in response.text
 
     response = await client.get("/admin/user/list?sortBy=id&sort=desc")
 
-    assert (
-        response.text.count("http://testserver/admin/user/list?sortBy=id&amp;sort=asc")
-        == 1
-    )
+    assert "http://testserver/admin/user/list?sortBy=id&amp;sort=asc" in response.text
 
 
 async def test_export_csv(client: AsyncClient) -> None:

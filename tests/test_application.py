@@ -16,8 +16,8 @@ def test_application_title() -> None:
         response = client.get("/admin")
 
     assert response.status_code == 200
-    assert response.text.count("<h3>Admin</h3>") == 1
-    assert response.text.count("<title>Admin</title>") == 1
+    assert "<h3>Admin</h3>" in response.text
+    assert "<title>Admin</title>" in response.text
 
 
 def test_application_logo() -> None:

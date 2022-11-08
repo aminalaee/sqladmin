@@ -47,7 +47,7 @@ def test_base_view(client: TestClient) -> None:
     response = client.get("/admin/custom")
 
     assert response.status_code == 200
-    assert response.text.count("<p>Here I'm going to display some data.</p>") == 1
+    assert "<p>Here I'm going to display some data.</p>" in response.text
 
     response = client.get("/admin/custom/report")
     assert response.status_code == 200
