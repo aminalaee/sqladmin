@@ -966,11 +966,11 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
     async def delete_model(self, obj: Any) -> None:
         await Query(self).delete(obj)
 
-    async def insert_model(self, data: dict) -> None:
-        await Query(self).insert(data)
+    async def insert_model(self, data: dict) -> Any:
+        return await Query(self).insert(data)
 
-    async def update_model(self, pk: Any, data: Dict[str, Any]) -> None:
-        await Query(self).update(pk, data)
+    async def update_model(self, pk: Any, data: Dict[str, Any]) -> Any:
+        return await Query(self).update(pk, data)
 
     async def on_model_delete(self, model: Any) -> None:
         """Perform some actions before a model is created or updated.

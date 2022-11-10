@@ -24,18 +24,7 @@
           </div>
           {% endfor %}
         </fieldset>
-        <div class="d-flex align-items-right">
-          <div class="row">
-            <div class="col">
-              <a href="{{ url_for('admin:list', identity=model_view.identity) }}" class="btn">
-                Cancel
-              </a>
-            </div>
-            <div class="col">
-              <input type="submit" value="Save" class="btn btn-primary">
-            </div>
-          </div>
-        </div>
+        {% include 'action_buttons.html' %}
       </form>
     </div>
   </div>
