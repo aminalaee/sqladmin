@@ -87,7 +87,7 @@ def test_middlewares() -> None:
     assert "x-correlation-id" in response.headers
 
 
-def test_get_save_redirect_url(prepare_database):
+def test_get_save_redirect_url():
     app = Starlette()
     admin = Admin(app=app, engine=engine)
 
