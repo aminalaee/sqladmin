@@ -6,6 +6,7 @@ from sqlalchemy.engine import Engine
 from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession
 from sqlalchemy.orm import Session, sessionmaker
 from starlette.applications import Starlette
+from starlette.datastructures import FormData
 from starlette.exceptions import HTTPException
 from starlette.middleware import Middleware
 from starlette.requests import Request
@@ -546,7 +547,7 @@ class Admin(BaseAdminView):
         return JSONResponse({"results": data})
 
     def get_save_redirect_url(
-        self, request: Request, form: dict, model_view: ModelView, obj: Any
+        self, request: Request, form: FormData, model_view: ModelView, obj: Any
     ) -> str:
         """Get the redirect URL after a save action is triggered from create/edit page."""
 
