@@ -37,22 +37,22 @@
           </tbody>
         </table>
       </div>
-      <div class="card-footer d-flex align-items-right">
+      <div class="card-footer container">
         <div class="row">
-          <div class="col">
+          <div class="col-md-1">
             <a href="{{ url_for('admin:list', identity=model_view.identity) }}" class="btn">
               Go Back
             </a>
           </div>
           {% if model_view.can_delete %}
-          <div class="col">
+          <div class="col-md-1">
             <a href="#" data-name="{{ model_view.name }}" data-pk="{{ model_view.get_attr_value(model, model_view.pk_column) }}" data-url="{{ model_view._url_for_delete(request, model) }}" data-bs-toggle="modal" data-bs-target="#modal-delete" class="btn btn-danger">
               Delete
             </a>
           </div>
           {% endif %}
           {% if model_view.can_edit %}
-          <div class="col">
+          <div class="col-md-1">
             <a href="{{ model_view._url_for_edit(request, model) }}" class="btn btn-primary">
               Edit
             </a>

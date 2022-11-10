@@ -6,6 +6,7 @@ from sqlalchemy.engine import Engine
 from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession
 from sqlalchemy.orm import Session, sessionmaker
 from starlette.applications import Starlette
+from starlette.datastructures import FormData
 from starlette.exceptions import HTTPException
 from starlette.middleware import Middleware
 from starlette.requests import Request
@@ -415,7 +416,8 @@ class Admin(BaseAdminView):
         model_view = self._find_model_view(identity)
 
         Form = await model_view.scaffold_form()
-        form = Form(await request.form())
+        form_data = await request.form()
+        form = Form(form_data)
 
         context = {
             "request": request,
@@ -433,12 +435,15 @@ class Admin(BaseAdminView):
                 status_code=400,
             )
 
-        await model_view.insert_model(form.data)
+        obj = await model_view.insert_model(form.data)
 
-        return RedirectResponse(
-            request.url_for("admin:list", identity=identity),
-            status_code=302,
+        url = self.get_save_redirect_url(
+            request=request,
+            form=form_data,
+            obj=obj,
+            model_view=model_view,
         )
+        return RedirectResponse(url=url, status_code=302)
 
     @login_required
     async def edit(self, request: Request) -> Response:
@@ -463,7 +468,8 @@ class Admin(BaseAdminView):
             context["form"] = Form(obj=model)
             return self.templates.TemplateResponse(model_view.edit_template, context)
 
-        form = Form(await request.form())
+        form_data = await request.form()
+        form = Form(form_data)
         if not form.validate():
             context["form"] = form
             return self.templates.TemplateResponse(
@@ -472,12 +478,17 @@ class Admin(BaseAdminView):
                 status_code=400,
             )
 
-        await model_view.update_model(pk=request.path_params["pk"], data=form.data)
-
-        return RedirectResponse(
-            request.url_for("admin:list", identity=identity),
-            status_code=302,
+        obj = await model_view.update_model(
+            pk=request.path_params["pk"], data=form.data
         )
+
+        url = self.get_save_redirect_url(
+            request=request,
+            form=form_data,
+            obj=obj,
+            model_view=model_view,
+        )
+        return RedirectResponse(url=url, status_code=302)
 
     @login_required
     async def export(self, request: Request) -> Response:
@@ -534,6 +545,23 @@ class Admin(BaseAdminView):
 
         data = [loader.format(m) for m in await loader.get_list(term)]
         return JSONResponse({"results": data})
+
+    def get_save_redirect_url(
+        self, request: Request, form: FormData, model_view: ModelView, obj: Any
+    ) -> str:
+        """Get the redirect URL after a save action is triggered from create/edit page."""
+
+        identity = request.path_params["identity"]
+        pk = getattr(obj, model_view.pk_column.name)
+
+        if form.get("save") == "Save":
+            url = request.url_for("admin:list", identity=identity)
+        elif form.get("save") == "Save and continue editing":
+            url = request.url_for("admin:edit", identity=identity, pk=pk)
+        else:
+            url = request.url_for("admin:create", identity=identity)
+
+        return url
 
 
 def expose(
