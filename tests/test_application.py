@@ -92,7 +92,7 @@ def test_get_save_redirect_url():
     admin = Admin(app=app, engine=engine)
 
     class UserAdmin(ModelView, model=User):
-        ...
+        save_as = True
 
     admin.add_view(UserAdmin)
 
@@ -109,6 +109,9 @@ def test_get_save_redirect_url():
     assert response.text == "http://testserver/admin/user/list"
 
     response = client.post("/user", data={"save": "Save and continue editing"})
+    assert response.text == "http://testserver/admin/user/edit/1"
+
+    response = client.post("/user", data={"save": "Save as new"})
     assert response.text == "http://testserver/admin/user/edit/1"
 
     response = client.post("/user", data={"save": "Save and add another"})
