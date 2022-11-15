@@ -160,6 +160,7 @@ class UserAdmin(ModelView, model=User):
         ],
         User.profile_formattable: lambda m, a: f"Formatted {m.profile_formattable}",
     }
+    save_as = True
 
 
 class AddressAdmin(ModelView, model=Address):
@@ -696,6 +697,10 @@ async def test_update_submit_form(client: AsyncClient) -> None:
         result = await s.execute(stmt)
     address = result.scalar_one()
     assert address.user_id == 1
+
+    data = {"name": "Jack", "email": "", "save": "Save as new"}
+    response = await client.post("/admin/user/edit/1", data=data, follow_redirects=True)
+    assert response.url == "http://testserver/admin/user/edit/2"
 
 
 async def test_searchable_list(client: AsyncClient) -> None:

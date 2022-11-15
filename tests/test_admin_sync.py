@@ -153,6 +153,7 @@ class UserAdmin(ModelView, model=User):
         ],
         User.profile_formattable: lambda m, a: f"Formatted {m.profile_formattable}",
     }
+    save_as = True
 
 
 class AddressAdmin(ModelView, model=Address):
@@ -663,6 +664,10 @@ def test_update_submit_form(client: TestClient) -> None:
     with LocalSession() as s:
         address = s.execute(stmt).scalar_one()
     assert address.user_id == 1
+
+    data = {"name": "Jack", "email": "", "save": "Save as new"}
+    response = client.post("/admin/user/edit/1", data=data)
+    assert response.url == "http://testserver/admin/user/edit/2"
 
 
 def test_searchable_list(client: TestClient) -> None:
