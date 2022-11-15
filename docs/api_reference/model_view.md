@@ -50,3 +50,4 @@
         - after_model_change
         - on_model_delete
         - after_model_delete
+        - save_as

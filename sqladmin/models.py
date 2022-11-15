@@ -396,6 +396,16 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
         ```
     """
 
+    save_as: ClassVar[bool] = False
+    """Set `save_as` to enable a “save as new” feature on admin change forms.
+
+    Normally, objects have three save options: “Save”, “Save and continue editing”, and “Save and add another”.
+    If save_as is True, “Save and add another” will be replaced by a “Save as new” button 
+    that creates a new object (with a new ID) rather than updating the existing object.
+
+    By default, `save_as` is set to `False`.
+    """
+
     # Templates
     list_template: ClassVar[str] = "list.html"
     """List view template. Default is `list.html`."""
