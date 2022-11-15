@@ -478,9 +478,12 @@ class Admin(BaseAdminView):
                 status_code=400,
             )
 
-        obj = await model_view.update_model(
-            pk=request.path_params["pk"], data=form.data
-        )
+        if model_view.save_as and form_data.get("save") == "Save as new":
+            obj = await model_view.insert_model(form.data)
+        else:
+            obj = await model_view.update_model(
+                pk=request.path_params["pk"], data=form.data
+            )
 
         url = self.get_save_redirect_url(
             request=request,
@@ -556,7 +559,7 @@ class Admin(BaseAdminView):
 
         if form.get("save") == "Save":
             url = request.url_for("admin:list", identity=identity)
-        elif form.get("save") == "Save and continue editing":
+        elif form.get("save") in {"Save and continue editing", "Save as new"}:
             url = request.url_for("admin:edit", identity=identity, pk=pk)
         else:
             url = request.url_for("admin:create", identity=identity)

@@ -175,6 +175,7 @@ There are a few options which apply to both List and Detail pages. They include:
 * `column_labels`: A mapping of column labels, used to map column names to new names in all places.
 * `column_type_formatters`: A mapping of type keys and callable values to format in all places.
 For example you can add custom date formatter to be used in both list and detail pages.
+* `save_as`: A boolean to enable "save as new" option when editing an object.
 
 !!! example
 
@@ -185,6 +186,7 @@ For example you can add custom date formatter to be used in both list and detail
 
         column_labels = {User.mail: "Email"}
         column_type_formatters = dict(ModelView.column_type_formatters, date=date_format)
+        save_as = True
     ```
 
 ## Form options
