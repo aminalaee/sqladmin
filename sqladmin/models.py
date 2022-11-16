@@ -806,7 +806,7 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
     async def get_model_objects(self, limit: Union[int, None] = 0) -> List[Any]:
         # For unlimited rows this should pass None
         limit = None if limit == 0 else limit
-        stmt = select(self.model).limit(limit=limit)
+        stmt = self.list_query.limit(limit=limit)
 
         for relation in self._relations:
             stmt = stmt.options(joinedload(relation.key))
