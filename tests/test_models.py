@@ -13,6 +13,8 @@ from sqladmin.exceptions import InvalidColumnError, InvalidModelError
 from sqladmin.helpers import get_column_python_type
 from tests.common import sync_engine as engine
 
+pytestmark = pytest.mark.anyio
+
 Base = declarative_base()  # type: Any
 
 LocalSession = sessionmaker(bind=engine)
@@ -55,13 +57,6 @@ def prepare_database() -> Generator[None, None, None]:
     Base.metadata.create_all(engine)
     yield
     Base.metadata.drop_all(engine)
-
-
-@pytest.fixture()
-def session(prepare_database) -> LocalSession:
-    sess = LocalSession()
-    yield sess
-    sess.close()
 
 
 def test_model_setup() -> None:
@@ -492,18 +487,13 @@ def test_model_default_sort() -> None:
     assert UserAdmin()._get_default_sort() == [("name", True), ("id", False)]
 
 
-@pytest.mark.asyncio
-async def test_get_model_objects(session) -> None:
+async def test_get_model_objects() -> None:
+    session = LocalSession()
     batman = User(name="batman")
-    bruce = User(name="bruce wayne")
-    superman = User(name="superman")
     session.add(batman)
-    session.add(bruce)
-    session.add(superman)
     session.commit()
     session.refresh(batman)
-    session.refresh(bruce)
-    session.refresh(superman)
+    session.close()
 
     class HerosAdmin(ModelView, model=User):
         async_engine = False
@@ -512,8 +502,9 @@ async def test_get_model_objects(session) -> None:
 
     view = HerosAdmin()
 
-    hero_ids = {batman.id, superman.id}
-    heros = await view.get_model_objects()
-    assert len(heros) == 2
-    for hero in heros:
-        assert hero.id in hero_ids
+    heroes = await view.get_model_objects()
+    assert len(heroes) == 1
+    assert heroes[0].id == batman.id
+
+    view.list_query = select(User).filter(User.name.endswith("man").is_(False))
+    assert len(await view.get_model_objects()) == 0
