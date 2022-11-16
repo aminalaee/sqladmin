@@ -406,6 +406,13 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
     By default, `save_as` is set to `False`.
     """
 
+    save_as_continue: ClassVar[bool] = True
+    """When `save_as=True`, the default redirect after saving the new object is to the edit view for that object.
+    If you set `save_as_continue=False`, the redirect will be to the list view.
+
+    By default, `save_as_continue` is set to `True`.
+    """
+
     # Templates
     list_template: ClassVar[str] = "list.html"
     """List view template. Default is `list.html`."""

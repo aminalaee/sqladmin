@@ -557,14 +557,17 @@ class Admin(BaseAdminView):
         identity = request.path_params["identity"]
         pk = getattr(obj, model_view.pk_column.name)
 
-        if form.get("save") == "Save":
-            url = request.url_for("admin:list", identity=identity)
-        elif form.get("save") in {"Save and continue editing", "Save as new"}:
-            url = request.url_for("admin:edit", identity=identity, pk=pk)
-        else:
-            url = request.url_for("admin:create", identity=identity)
+        list_url = request.url_for("admin:list", identity=identity)
+        edit_url = request.url_for("admin:edit", identity=identity, pk=pk)
+        create_url = request.url_for("admin:create", identity=identity)
 
-        return url
+        if form.get("save") == "Save":
+            return list_url
+        elif form.get("save") == "Save and continue editing":
+            return edit_url
+        elif form.get("save") == "Save as new" and model_view.save_as_continue:
+            return edit_url
+        return create_url
 
 
 def expose(
