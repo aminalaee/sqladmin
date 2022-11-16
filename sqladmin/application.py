@@ -559,9 +559,9 @@ class Admin(BaseAdminView):
 
         if form.get("save") == "Save":
             return request.url_for("admin:list", identity=identity)
-        elif form.get("save") == "Save and continue editing":
-            return request.url_for("admin:edit", identity=identity, pk=pk)
-        elif form.get("save") == "Save as new" and model_view.save_as_continue:
+        elif form.get("save") == "Save and continue editing" or (
+            form.get("save") == "Save as new" and model_view.save_as_continue
+        ):
             return request.url_for("admin:edit", identity=identity, pk=pk)
         return request.url_for("admin:create", identity=identity)
 
