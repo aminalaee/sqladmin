@@ -2,7 +2,7 @@ from typing import Any, Generator
 
 import pytest
 from markupsafe import Markup
-from sqlalchemy import Boolean, Column, ForeignKey, Integer, String
+from sqlalchemy import Boolean, Column, ForeignKey, Integer, String, select
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship, sessionmaker
@@ -15,7 +15,7 @@ from tests.common import sync_engine as engine
 
 Base = declarative_base()  # type: Any
 
-Session = sessionmaker(bind=engine)
+LocalSession = sessionmaker(bind=engine)
 
 app = Starlette()
 admin = Admin(app=app, engine=engine)
@@ -55,6 +55,13 @@ def prepare_database() -> Generator[None, None, None]:
     Base.metadata.create_all(engine)
     yield
     Base.metadata.drop_all(engine)
+
+
+@pytest.fixture()
+def session(prepare_database) -> LocalSession:
+    sess = LocalSession()
+    yield sess
+    sess.close()
 
 
 def test_model_setup() -> None:
@@ -483,3 +490,30 @@ def test_model_default_sort() -> None:
         column_default_sort = [("name", True), ("id", False)]
 
     assert UserAdmin()._get_default_sort() == [("name", True), ("id", False)]
+
+
+@pytest.mark.asyncio
+async def test_get_model_objects(session) -> None:
+    batman = User(name="batman")
+    bruce = User(name="bruce wayne")
+    superman = User(name="superman")
+    session.add(batman)
+    session.add(bruce)
+    session.add(superman)
+    session.commit()
+    session.refresh(batman)
+    session.refresh(bruce)
+    session.refresh(superman)
+
+    class HerosAdmin(ModelView, model=User):
+        async_engine = False
+        sessionmaker = LocalSession
+        list_query = select(User).filter(User.name.endswith("man"))
+
+    view = HerosAdmin()
+
+    hero_ids = {batman.id, superman.id}
+    heros = await view.get_model_objects()
+    assert len(heros) == 2
+    for hero in heros:
+        assert hero.id in hero_ids
