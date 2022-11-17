@@ -45,7 +45,7 @@ class User(Base):
 
     id = Column(Integer, primary_key=True)
     name = Column(String(length=16))
-    email = Column(String)
+    email = Column(String, unique=True)
     date_of_birth = Column(Date)
     status = Column(Enum(Status), default=Status.ACTIVE)
     meta_data = Column(JSON)
@@ -488,7 +488,7 @@ async def test_create_endpoint_post_form(client: AsyncClient) -> None:
         '<div class="invalid-feedback">Not a valid date value.</div>' in response.text
     )
 
-    data = {"name": "SQLAlchemy"}
+    data = {"name": "SQLAlchemy", "email": "amin"}
     response = await client.post("/admin/user/create", data=data)
 
     stmt = select(func.count(User.id))
@@ -506,7 +506,7 @@ async def test_create_endpoint_post_form(client: AsyncClient) -> None:
         result = await s.execute(stmt)
     user = result.scalar_one()
     assert user.name == "SQLAlchemy"
-    assert user.email is None
+    assert user.email == "amin"
     assert user.addresses == []
     assert user.profile is None
 
@@ -564,6 +564,11 @@ async def test_create_endpoint_post_form(client: AsyncClient) -> None:
     assert user.name == "SQLAdmin"
     assert user.addresses[0].id == address.id
     assert user.profile.id == profile.id
+
+    data = {"name": "SQLAlchemy", "email": "amin"}
+    response = await client.post("/admin/user/create", data=data)
+    assert response.status_code == 400
+    assert "alert alert-danger" in response.text
 
 
 async def test_list_view_page_size_options(client: AsyncClient) -> None:
@@ -652,7 +657,7 @@ async def test_update_submit_form(client: AsyncClient) -> None:
     session.add(profile)
     await session.commit()
 
-    data = {"name": "Jack", "email": ""}
+    data = {"name": "Jack", "email": "amin"}
     response = await client.post("/admin/user/edit/1", data=data)
 
     stmt = (
@@ -667,7 +672,7 @@ async def test_update_submit_form(client: AsyncClient) -> None:
     assert user.name == "Jack"
     assert user.addresses == []
     assert user.profile is None
-    assert user.email is None
+    assert user.email == "amin"
 
     data = {"name": "Jack", "addresses": "1", "profile": "1"}
     response = await client.post("/admin/user/edit/1", data=data)
@@ -701,6 +706,12 @@ async def test_update_submit_form(client: AsyncClient) -> None:
     data = {"name": "Jack", "email": "", "save": "Save as new"}
     response = await client.post("/admin/user/edit/1", data=data, follow_redirects=True)
     assert response.url == "http://testserver/admin/user/edit/2"
+
+    data = {"name": "Jack", "email": "amin"}
+    await client.post("/admin/user/edit/1", data=data)
+    response = await client.post("/admin/user/edit/2", data=data)
+    assert response.status_code == 400
+    assert "alert alert-danger" in response.text
 
 
 async def test_searchable_list(client: AsyncClient) -> None:
