@@ -25,6 +25,9 @@
           {% endfor %}
         </fieldset>
         <div class="row">
+          {% if error %}
+          <div class="alert alert-danger" role="alert">{{ error }}</div>
+          {% endif %}
           <div class="col-md-2">
             <a href="{{ url_for('admin:list', identity=model_view.identity) }}" class="btn">
               Cancel

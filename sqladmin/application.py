@@ -430,12 +430,16 @@ class Admin(BaseAdminView):
 
         if not form.validate():
             return self.templates.TemplateResponse(
-                model_view.create_template,
-                context,
-                status_code=400,
+                model_view.create_template, context, status_code=400
             )
 
-        obj = await model_view.insert_model(form.data)
+        try:
+            obj = await model_view.insert_model(form.data)
+        except Exception as e:
+            context["error"] = str(e)
+            return self.templates.TemplateResponse(
+                model_view.create_template, context, status_code=400
+            )
 
         url = self.get_save_redirect_url(
             request=request,
@@ -462,10 +466,10 @@ class Admin(BaseAdminView):
         context = {
             "request": request,
             "model_view": model_view,
+            "form": Form(obj=model),
         }
 
         if request.method == "GET":
-            context["form"] = Form(obj=model)
             return self.templates.TemplateResponse(model_view.edit_template, context)
 
         form_data = await request.form()
@@ -473,16 +477,20 @@ class Admin(BaseAdminView):
         if not form.validate():
             context["form"] = form
             return self.templates.TemplateResponse(
-                model_view.edit_template,
-                context,
-                status_code=400,
+                model_view.edit_template, context, status_code=400
             )
 
-        if model_view.save_as and form_data.get("save") == "Save as new":
-            obj = await model_view.insert_model(form.data)
-        else:
-            obj = await model_view.update_model(
-                pk=request.path_params["pk"], data=form.data
+        try:
+            if model_view.save_as and form_data.get("save") == "Save as new":
+                obj = await model_view.insert_model(form.data)
+            else:
+                obj = await model_view.update_model(
+                    pk=request.path_params["pk"], data=form.data
+                )
+        except Exception as e:
+            context["error"] = str(e)
+            return self.templates.TemplateResponse(
+                model_view.edit_template, context, status_code=400
             )
 
         url = self.get_save_redirect_url(

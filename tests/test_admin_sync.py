@@ -42,7 +42,7 @@ class User(Base):
 
     id = Column(Integer, primary_key=True)
     name = Column(String(length=16))
-    email = Column(String)
+    email = Column(String, unique=True)
     birthdate = Column(Date)
     status = Column(Enum(Status), default=Status.ACTIVE)
     meta_data = Column(JSON)
@@ -466,7 +466,7 @@ def test_create_endpoint_post_form(client: TestClient) -> None:
         '<div class="invalid-feedback">Not a valid date value.</div>' in response.text
     )
 
-    data = {"name": "SQLAlchemy"}
+    data = {"name": "SQLAlchemy", "email": "amin"}
     response = client.post("/admin/user/create", data=data)
 
     stmt = select(func.count(User.id))
@@ -482,7 +482,7 @@ def test_create_endpoint_post_form(client: TestClient) -> None:
     with LocalSession() as s:
         user = s.execute(stmt).scalar_one()
     assert user.name == "SQLAlchemy"
-    assert user.email is None
+    assert user.email == "amin"
     assert user.addresses == []
     assert user.profile is None
 
@@ -535,6 +535,11 @@ def test_create_endpoint_post_form(client: TestClient) -> None:
     assert user.name == "SQLAdmin"
     assert user.addresses[0].id == address.id
     assert user.profile.id == profile.id
+
+    data = {"name": "SQLAlchemy", "email": "amin"}
+    response = client.post("/admin/user/create", data=data)
+    assert response.status_code == 400
+    assert "alert alert-danger" in response.text
 
 
 def test_list_view_page_size_options(client: TestClient) -> None:
@@ -623,7 +628,7 @@ def test_update_submit_form(client: TestClient) -> None:
     session.add(profile)
     session.commit()
 
-    data = {"name": "Jack", "email": ""}
+    data = {"name": "Jack", "email": "amin"}
     response = client.post("/admin/user/edit/1", data=data)
 
     stmt = (
@@ -637,7 +642,7 @@ def test_update_submit_form(client: TestClient) -> None:
     assert user.name == "Jack"
     assert user.addresses == []
     assert user.profile is None
-    assert user.email is None
+    assert user.email == "amin"
 
     data = {"name": "Jack", "addresses": "1", "profile": "1"}
     response = client.post("/admin/user/edit/1", data=data)
@@ -668,6 +673,12 @@ def test_update_submit_form(client: TestClient) -> None:
     data = {"name": "Jack", "email": "", "save": "Save as new"}
     response = client.post("/admin/user/edit/1", data=data)
     assert response.url == "http://testserver/admin/user/edit/2"
+
+    data = {"name": "Jack", "email": "amin"}
+    client.post("/admin/user/edit/1", data=data)
+    response = client.post("/admin/user/edit/2", data=data)
+    assert response.status_code == 400
+    assert "alert alert-danger" in response.text
 
 
 def test_searchable_list(client: TestClient) -> None:
