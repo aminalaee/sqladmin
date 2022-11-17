@@ -51,3 +51,4 @@
         - on_model_delete
         - after_model_delete
         - save_as
+        - save_as_continue

@@ -176,6 +176,7 @@ There are a few options which apply to both List and Detail pages. They include:
 * `column_type_formatters`: A mapping of type keys and callable values to format in all places.
 For example you can add custom date formatter to be used in both list and detail pages.
 * `save_as`: A boolean to enable "save as new" option when editing an object.
+* `save_as_continue`: A boolean to control the redirect URL if `save_as` is enabled.
 
 !!! example
 
