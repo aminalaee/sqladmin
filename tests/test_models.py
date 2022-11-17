@@ -2,7 +2,7 @@ from typing import Any, Generator
 
 import pytest
 from markupsafe import Markup
-from sqlalchemy import Boolean, Column, ForeignKey, Integer, String
+from sqlalchemy import Boolean, Column, ForeignKey, Integer, String, select
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship, sessionmaker
@@ -13,9 +13,11 @@ from sqladmin.exceptions import InvalidColumnError, InvalidModelError
 from sqladmin.helpers import get_column_python_type
 from tests.common import sync_engine as engine
 
+pytestmark = pytest.mark.anyio
+
 Base = declarative_base()  # type: Any
 
-Session = sessionmaker(bind=engine)
+LocalSession = sessionmaker(bind=engine)
 
 app = Starlette()
 admin = Admin(app=app, engine=engine)
@@ -483,3 +485,24 @@ def test_model_default_sort() -> None:
         column_default_sort = [("name", True), ("id", False)]
 
     assert UserAdmin()._get_default_sort() == [("name", True), ("id", False)]
+
+
+async def test_get_model_objects_uses_list_query() -> None:
+    session = LocalSession()
+    batman = User(name="batman")
+    session.add(batman)
+    session.commit()
+    session.refresh(batman)
+    session.close()
+
+    class HerosAdmin(ModelView, model=User):
+        async_engine = False
+        sessionmaker = LocalSession
+
+    view = HerosAdmin()
+
+    view.list_query = select(User).filter(User.name.endswith("man"))
+    assert len(await view.get_model_objects()) == 1
+
+    view.list_query = select(User).filter(User.name.endswith("man").is_(False))
+    assert len(await view.get_model_objects()) == 0
