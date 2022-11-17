@@ -487,7 +487,7 @@ def test_model_default_sort() -> None:
     assert UserAdmin()._get_default_sort() == [("name", True), ("id", False)]
 
 
-async def test_get_model_objects() -> None:
+async def test_get_model_objects_uses_list_query() -> None:
     session = LocalSession()
     batman = User(name="batman")
     session.add(batman)
@@ -498,13 +498,11 @@ async def test_get_model_objects() -> None:
     class HerosAdmin(ModelView, model=User):
         async_engine = False
         sessionmaker = LocalSession
-        list_query = select(User).filter(User.name.endswith("man"))
 
     view = HerosAdmin()
 
-    heroes = await view.get_model_objects()
-    assert len(heroes) == 1
-    assert heroes[0].id == batman.id
+    view.list_query = select(User).filter(User.name.endswith("man"))
+    assert len(await view.get_model_objects()) == 1
 
     view.list_query = select(User).filter(User.name.endswith("man").is_(False))
     assert len(await view.get_model_objects()) == 0
