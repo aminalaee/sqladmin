@@ -7,6 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## Version 0.8.0 - 2022-11-22
 
 ### Added
+
 * Add `save_as` option by @aminalaee in https://github.com/aminalaee/sqladmin/pull/377
 * Add `save_as_continue` option by @aminalaee in https://github.com/aminalaee/sqladmin/pull/379
 * Add extra Save buttons for Create/Edit page by @aminalaee in https://github.com/aminalaee/sqladmin/pull/373
