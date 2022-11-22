@@ -4,6 +4,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## Version 0.8.0 - 2022-11-22
+
+### Added
+
+* Add `save_as` option by @aminalaee in [#377](https://github.com/aminalaee/sqladmin/pull/377)
+* Add `save_as_continue` option by @aminalaee in [#379](https://github.com/aminalaee/sqladmin/pull/379)
+* Add extra Save buttons for Create/Edit page by @aminalaee in [#373](https://github.com/aminalaee/sqladmin/pull/373)
+* Display errors in alert for create/edit page by @aminalaee in [#382](https://github.com/aminalaee/sqladmin/pull/382)
+
+### Fixed
+
+* Fix `_url_for` methods ignoring root_path by @aminalaee in [#371](https://github.com/aminalaee/sqladmin/pull/371)
+* Fix export to use `list_query` option by @villqrd in [#381](https://github.com/aminalaee/sqladmin/pull/381)
+
 ## Version 0.7.0 - 2022-11-03
 
 ### Added
