@@ -166,7 +166,11 @@ class QuerySelectField(fields.SelectFieldBase):
             yield ("__None", self.blank_text, self.data is None)
 
         if self.data:
-            primary_key = str(inspect(self.data).identity[0])
+            primary_key = (
+                self.data
+                if isinstance(self.data, str)
+                else str(inspect(self.data).identity[0])
+            )
         else:
             primary_key = None
 
@@ -251,7 +255,11 @@ class QuerySelectMultipleField(QuerySelectField):
 
     def iter_choices(self) -> Generator[Tuple[str, Any, bool], None, None]:
         if self.data is not None:
-            primary_keys = [str(inspect(m).identity[0]) for m in self.data]
+            primary_keys = (
+                self.data
+                if all(isinstance(d, str) for d in self.data)
+                else [str(inspect(m).identity[0]) for m in self.data]
+            )
             for pk, label in self._select_data:
                 yield (pk, self.get_label(label), pk in primary_keys)
 
