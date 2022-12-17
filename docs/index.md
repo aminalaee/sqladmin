@@ -54,6 +54,11 @@ $ pip install sqladmin
 
 ---
 
+## Screenshots
+
+<img width="1492" alt="sqladmin-1" src="https://user-images.githubusercontent.com/19784933/208232730-0114a155-2740-4e89-9d73-64a4e51a5cf5.png">
+<img width="1492" alt="sqladmin-2" src="https://user-images.githubusercontent.com/19784933/208232731-6d783dde-b93e-41c0-911b-3d1c3c73f1d5.png">
+
 ## Quickstart
 
 Let's define an example SQLAlchemy model:
