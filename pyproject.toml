@@ -70,6 +70,7 @@ dependencies = [
   "mypy==0.982",
   "psycopg2-binary==2.9.5",
   "pytest==7.2.0",
+  "python-dateutil==2.8.2",
   "sqlalchemy_utils==0.38.3",
   "sqlmodel==0.0.8",
 ]
