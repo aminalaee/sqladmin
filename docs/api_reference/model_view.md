@@ -42,6 +42,7 @@
         - form_widget_args
         - form_include_pk
         - form_ajax_refs
+        - form_converter
         - column_type_formatters
         - list_query
         - count_query

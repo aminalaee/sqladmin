@@ -204,6 +204,7 @@ The forms are based on `WTForms` package and include the following options:
 * `form_overrides`: Dictionary of form fields to override when creating the form.
 * `form_include_pk`: Control if primary key column should be included in create/edit forms. Default is `False`.
 * `form_ajax_refs`: Use Ajax with Select2 for loading relationship models async. This is use ful when the related model has a lot of records.
+* `form_converter`: Allow adding custom converters to support additional column types.
 
 !!! example
 
