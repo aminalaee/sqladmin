@@ -510,9 +510,10 @@ async def get_model_form(
     form_overrides: Optional[Dict[str, Type[Field]]] = None,
     form_ajax_refs: Optional[Dict[str, QueryAjaxModelLoader]] = None,
     form_include_pk: bool = False,
+    form_converter: Type[ModelConverterBase] = ModelConverter,
 ) -> Type[Form]:
     type_name = model.__name__ + "Form"
-    converter = ModelConverter()
+    converter = form_converter()
     mapper = sqlalchemy_inspect(model)
     form_args = form_args or {}
     form_widget_args = form_widget_args or {}
