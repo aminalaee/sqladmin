@@ -38,7 +38,7 @@ from sqladmin._types import ENGINE_TYPE, MODEL_ATTR_TYPE
 from sqladmin.ajax import create_ajax_loader
 from sqladmin.exceptions import InvalidColumnError, InvalidModelError
 from sqladmin.formatters import BASE_FORMATTERS
-from sqladmin.forms import get_model_form
+from sqladmin.forms import ModelConverter, ModelConverterBase, get_model_form
 from sqladmin.helpers import (
     Writer,
     get_attributes,
@@ -583,6 +583,20 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
         ```
     """
 
+    form_converter: ClassVar[Type[ModelConverterBase]] = ModelConverter
+    """Custom form converter class.
+    Useful if you want to add custom form conversion in addition to the defaults.
+
+    ???+ example
+        ```python
+        class PhoneNumberConverter(ModelConverter):
+            pass
+
+        class UserAdmin(ModelAdmin, model=User):
+            form_converter = PhoneNumberConverter
+        ```
+    """
+
     # General options
     column_labels: ClassVar[Dict[Union[str, InstrumentedAttribute], str]] = {}
     """A mapping of column labels, used to map column names to new names.
@@ -1013,6 +1027,7 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
             form_overrides=self.form_overrides,
             form_ajax_refs=self._form_ajax_refs,
             form_include_pk=self.form_include_pk,
+            form_converter=self.form_converter,
         )
 
     def search_placeholder(self) -> str:
