@@ -67,11 +67,8 @@ dependencies = [
   "httpx==0.23.0",
   "isort==5.10.1",
   "itsdangerous==2.1.2",
-  "mkdocs-material==8.5.7",
-  "mkdocs==1.4.1",
-  "mkdocstrings==0.18.1",
   "mypy==0.982",
-  "psycopg2==2.9.5",
+  "psycopg2-binary==2.9.5",
   "pytest==7.2.0",
   "sqlalchemy_utils==0.38.3",
   "sqlmodel==0.0.8",
@@ -80,11 +77,19 @@ dependencies = [
 check = "isort --check --project=sqladmin . && black --check . && mypy sqladmin"
 clean = "rm -r dist site"
 cov = "coverage report --show-missing --skip-covered --fail-under=99 && coverage xml"
-docs = "mkdocs serve"
-docs_build = "mkdocs build"
-docs_deploy = "mkdocs gh-deploy --force"
 lint = "autoflake --in-place --recursive .s && isort --project=sqladmin . && black ."
 test = "python -m coverage run --concurrency=thread,greenlet -m pytest"
+
+[tool.hatch.envs.docs]
+dependencies = [
+  "mkdocs-material==8.5.7",
+  "mkdocs==1.4.1",
+  "mkdocstrings==0.18.1",
+]
+[tool.hatch.envs.docs.scripts]
+build = "mkdocs build"
+serve = "mkdocs serve --dev-addr localhost:8080"
+deploy = "mkdocs gh-deploy --force"
 
 [tool.mypy]
 disallow_untyped_defs = true
