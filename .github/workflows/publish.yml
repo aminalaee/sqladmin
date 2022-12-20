@@ -21,11 +21,11 @@ jobs:
       - name: "Build package & docs"
         run: |
           hatch build
-          hatch run docs_build
+          hatch run docs:build
       - name: "Publish"
         run: |
           hatch publish --no-prompt
-          hatch run docs_deploy
+          hatch run docs:deploy
         env:
           HATCH_INDEX_USER: __token__
           HATCH_INDEX_AUTH: ${{ secrets.PYPI_TOKEN }}
