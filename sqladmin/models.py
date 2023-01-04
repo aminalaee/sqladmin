@@ -911,8 +911,8 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
         if include:
             attrs = [self.get_model_attr(attr) for attr in include]
         elif exclude:
-            exclude_columns = [self.get_model_attr(attr) for attr in exclude]
-            attrs = list(set(self._attrs) - set(exclude_columns))
+            exclude_columns = {self.get_model_attr(attr) for attr in exclude}
+            attrs = [attr for attr in self._attrs if attr not in exclude_columns]
         else:
             attrs = default
 
