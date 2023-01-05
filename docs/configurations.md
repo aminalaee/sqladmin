@@ -253,40 +253,6 @@ The pages available are:
 
 For more information about working with template see [Working with Templates](./working_with_templates.md).
 
-## Custom Views
-
-To add custom views to the Admin interface, you can use the `BaseView` included in SQLAdmin.
-
-For example:
-
-!!! example
-
-    ```python
-    from sqladmin import BaseView, expose
-
-    class CustomView(BaseView):
-        name = "Custom Page"
-        icon = "fa-chart-line"
-
-        @expose("/custom", methods=["GET"])
-        def custom_page(self, request):
-            return self.templates.TemplateResponse(
-                "custom.html",
-                context={"request": request},
-            )
-
-    admin.add_view(CustomView)
-    ```
-
-This will assume a `templates` directory exists in your project.
-You can modify this when you create an Admin instance:
-
-```python
-from sqladmin import Admin
-
-admin = Admin(templates_dir="my_templates", ...)
-```
-
 ## Events
 
 There might be some cases which you want to do some actions
