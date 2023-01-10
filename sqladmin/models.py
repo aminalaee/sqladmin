@@ -671,12 +671,22 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
             for (name, attr) in self._list_attrs
             if isinstance(attr, ColumnProperty)
         ]
+        self._list_relations = [
+            attr
+            for (_, attr) in self._list_attrs
+            if isinstance(attr, RelationshipProperty)
+        ]
 
         self._details_attrs = self.get_details_columns()
         self._details_columns = [
             (name, attr)
             for (name, attr) in self._details_attrs
             if isinstance(attr, ColumnProperty)
+        ]
+        self._details_relations = [
+            attr
+            for (_, attr) in self._details_attrs
+            if isinstance(attr, RelationshipProperty)
         ]
 
         column_formatters = getattr(self, "column_formatters", {})
@@ -797,7 +807,7 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
         count = await self.count()
         stmt = self.list_query.limit(page_size).offset((page - 1) * page_size)
 
-        for relation in self._relations:
+        for relation in self._list_relations:
             stmt = stmt.options(joinedload(relation.key))
 
         if sort_by:
@@ -829,7 +839,7 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
         limit = None if limit == 0 else limit
         stmt = self.list_query.limit(limit=limit)
 
-        for relation in self._relations:
+        for relation in self._list_relations:
             stmt = stmt.options(joinedload(relation.key))
 
         rows = await self._run_query(stmt)
