@@ -29,7 +29,7 @@ classifiers = [
 dependencies = [
   "starlette[full]",
   "typing_extensions>=4.0;python_version < '3.8'",
-  "sqlalchemy >=1.4, <1.5",
+  "sqlalchemy >=1.4",
   "wtforms >=3, <4",
 ]
 dynamic = ["version"]

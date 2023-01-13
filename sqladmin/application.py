@@ -488,6 +488,7 @@ class Admin(BaseAdminView):
                     pk=request.path_params["pk"], data=form.data
                 )
         except Exception as e:
+            print("!", e)
             context["error"] = str(e)
             return self.templates.TemplateResponse(
                 model_view.edit_template, context, status_code=400

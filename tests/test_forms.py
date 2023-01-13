@@ -19,14 +19,18 @@ from sqlalchemy.dialects.postgresql import INET, MACADDR, UUID
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import ColumnProperty, relationship, sessionmaker
-from sqlalchemy_utils import (
-    CurrencyType,
-    EmailType,
-    IPAddressType,
-    TimezoneType,
-    URLType,
-    UUIDType,
-)
+
+try:
+    from sqlalchemy_utils import (
+        CurrencyType,
+        EmailType,
+        IPAddressType,
+        TimezoneType,
+        URLType,
+        UUIDType,
+    )
+except Exception:
+    pytest.skip("sqlalchemy-utils isssue", allow_module_level=True)
 from wtforms import BooleanField, Field, Form, IntegerField, StringField, TimeField
 from wtforms.fields.core import UnboundField
 

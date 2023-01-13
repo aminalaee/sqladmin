@@ -120,7 +120,7 @@ class Query:
         stmt = select(self.model_view.model).where(self.model_view.pk_column == pk)
 
         for relation in self.model_view._relations:
-            stmt = stmt.options(joinedload(relation.key))
+            stmt = stmt.options(joinedload(relation))
 
         async with self.model_view.sessionmaker(expire_on_commit=False) as session:
             result = await session.execute(stmt)
