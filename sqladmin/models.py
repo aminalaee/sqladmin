@@ -808,7 +808,7 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
         stmt = self.list_query.limit(page_size).offset((page - 1) * page_size)
 
         for relation in self._list_relations:
-            stmt = stmt.options(joinedload(relation))
+            stmt = stmt.options(joinedload(getattr(self.model, relation.key)))
 
         if sort_by:
             sort_fields = [(sort_by, sort == "desc")]
@@ -840,7 +840,7 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
         stmt = self.list_query.limit(limit=limit)
 
         for relation in self._list_relations:
-            stmt = stmt.options(joinedload(relation))
+            stmt = stmt.options(joinedload(getattr(self.model, relation.key)))
 
         rows = await self._run_query(stmt)
         return rows
@@ -850,7 +850,7 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
         stmt = select(self.model).where(self.pk_column == pk_value)
 
         for relation in self._relations:
-            stmt = stmt.options(joinedload(relation))
+            stmt = stmt.options(joinedload(getattr(self.model, relation.key)))
 
         rows = await self._run_query(stmt)
         if rows:
