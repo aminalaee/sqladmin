@@ -45,9 +45,9 @@ from sqladmin.fields import (
     JSONField,
     QuerySelectField,
     QuerySelectMultipleField,
+    Select2TagsField,
     SelectField,
     TimeField,
-    Select2TagsField,
 )
 from sqladmin.helpers import get_direction, get_primary_key, is_relationship
 
