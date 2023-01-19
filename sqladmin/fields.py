@@ -357,3 +357,13 @@ class AjaxSelectMultipleField(SelectFieldBase):
         for field in valuelist:
             for n in field.split(self.separator):
                 self._formdata.add(n)
+
+
+class Select2TagsField(fields.SelectField):
+    widget = sqladmin_widgets.Select2TagsWidget()
+
+    def pre_validate(self, form):
+        ...
+
+    def process_formdata(self, valuelist):
+        self.data = valuelist

@@ -47,6 +47,7 @@ from sqladmin.fields import (
     QuerySelectMultipleField,
     SelectField,
     TimeField,
+    Select2TagsField,
 )
 from sqladmin.helpers import get_direction, get_primary_key, is_relationship
 
@@ -442,6 +443,12 @@ class ModelConverter(ModelConverterBase):
         kwargs.setdefault("validators", [])
         kwargs["validators"].append(validators.UUID())
         return StringField(**kwargs)
+
+    @converts(
+        "sqlalchemy.dialects.postgresql.base.ARRAY", "sqlalchemy.sql.sqltypes.ARRAY"
+    )
+    def conv_ARRAY(self, model: type, prop: ColumnProperty, kwargs: Dict[str, Any]):
+        return Select2TagsField(**kwargs)
 
     @converts("sqlalchemy_utils.types.email.EmailType")
     def conv_email(

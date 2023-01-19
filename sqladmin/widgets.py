@@ -1,13 +1,15 @@
 import json
-from typing import Any, Dict
+from typing import Any
 
 from markupsafe import Markup
 from wtforms import Field, widgets
 from wtforms.widgets import html_params
 
 __all__ = [
+    "AjaxSelect2Widget",
     "DatePickerWidget",
     "DateTimePickerWidget",
+    "Select2TagsWidget",
     "TimePickerWidget",
 ]
 
@@ -68,3 +70,9 @@ class AjaxSelect2Widget(widgets.Select):
                 kwargs["data-json"] = json.dumps([data])
 
         return Markup(f"<select {html_params(name=field.name, **kwargs)}></select>")
+
+
+class Select2TagsWidget(widgets.Select):
+    def __call__(self, field, **kwargs):
+        kwargs.setdefault("data-role", "select2-tags")
+        return super().__call__(field, **kwargs)

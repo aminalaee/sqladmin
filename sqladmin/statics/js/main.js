@@ -133,3 +133,11 @@ $("#action-delete").click(function () {
     }
   });
 });
+
+// Select2 Tags
+$(':input[data-role="select2-tags"]').each(function () {
+  $(this).select2({
+    tags: true,
+    multiple: true,
+  });
+});
