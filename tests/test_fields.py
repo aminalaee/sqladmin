@@ -13,6 +13,7 @@ from sqladmin.fields import (
     JSONField,
     QuerySelectField,
     QuerySelectMultipleField,
+    Select2TagsField,
     SelectField,
     TimeField,
 )
@@ -175,3 +176,18 @@ def test_query_select_multiple_field() -> None:
     form.select._select_data = data
     assert form.select.data == []
     assert form.validate() is False
+
+
+def test_seelct2_tags_field() -> None:
+    class F(Form):
+        array = Select2TagsField()
+
+    form = F()
+    assert 'data-role="select2-tags"' in form.array()
+    assert form.array.pre_validate(form) is None
+
+    form = F(DummyData(array=["a", "b", "abc"]))
+    assert form.array.data == ["a", "b", "abc"]
+
+    form = F(DummyData(array=[]))
+    assert form.array.data == []

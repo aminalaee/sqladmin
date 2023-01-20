@@ -31,7 +31,7 @@ from wtforms import BooleanField, Field, Form, IntegerField, StringField, TimeFi
 from wtforms.fields.core import UnboundField
 
 from sqladmin import ModelView
-from sqladmin.fields import SelectField
+from sqladmin.fields import Select2TagsField, SelectField
 from sqladmin.forms import ModelConverter, converts, get_model_form
 from tests.common import DummyData, async_engine as engine
 
@@ -187,7 +187,9 @@ async def test_model_form_postgresql() -> None:
         array = Column(ARRAY(String))
 
     Form = await get_model_form(model=PostgresModel, engine=engine)
+
     assert len(Form()._fields) == 4
+    assert isinstance(Form()._fields["array"], Select2TagsField)
 
 
 async def test_model_form_sqlalchemy_utils() -> None:
