@@ -447,7 +447,9 @@ class ModelConverter(ModelConverterBase):
     @converts(
         "sqlalchemy.dialects.postgresql.base.ARRAY", "sqlalchemy.sql.sqltypes.ARRAY"
     )
-    def conv_ARRAY(self, model: type, prop: ColumnProperty, kwargs: Dict[str, Any]):
+    def conv_ARRAY(
+        self, model: type, prop: ColumnProperty, kwargs: Dict[str, Any]
+    ) -> UnboundField:
         return Select2TagsField(**kwargs)
 
     @converts("sqlalchemy_utils.types.email.EmailType")

@@ -362,8 +362,11 @@ class AjaxSelectMultipleField(SelectFieldBase):
 class Select2TagsField(fields.SelectField):
     widget = sqladmin_widgets.Select2TagsWidget()
 
-    def pre_validate(self, form):
+    def pre_validate(self, form: Form) -> None:
         ...
 
-    def process_formdata(self, valuelist):
+    def process_formdata(self, valuelist: list) -> None:
         self.data = valuelist
+
+    def process_data(self, value: Optional[list]) -> None:
+        self.data = value or []

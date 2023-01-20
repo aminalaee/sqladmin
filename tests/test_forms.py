@@ -15,7 +15,7 @@ from sqlalchemy import (
     Time,
     TypeDecorator,
 )
-from sqlalchemy.dialects.postgresql import INET, MACADDR, UUID
+from sqlalchemy.dialects.postgresql import ARRAY, INET, MACADDR, UUID
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import ColumnProperty, relationship, sessionmaker
@@ -184,9 +184,10 @@ async def test_model_form_postgresql() -> None:
         uuid = Column(UUID)
         ip = Column(INET)
         mac = Column(MACADDR)
+        array = Column(ARRAY(String))
 
     Form = await get_model_form(model=PostgresModel, engine=engine)
-    assert len(Form()._fields) == 3
+    assert len(Form()._fields) == 4
 
 
 async def test_model_form_sqlalchemy_utils() -> None:
