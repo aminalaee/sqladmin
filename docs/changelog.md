@@ -4,6 +4,21 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## Version 0.9.0 - 2023-01-23
+
+### Added
+
+* Support PostgreSQL arrays in [#414](https://github.com/aminalaee/sqladmin/pull/414)
+* Add custom form converters in [#399](https://github.com/aminalaee/sqladmin/pull/399)
+* Add Custom Views docs in [#399](https://github.com/aminalaee/sqladmin/pull/408)
+
+### Fixed
+
+* Fix re-rendering create/edit page with existing data in [#385](https://github.com/aminalaee/sqladmin/pull/385)
+* Fix exclude columns breaking order in [#407](https://github.com/aminalaee/sqladmin/pull/407)
+* Fix control relationships in list page in [#409](https://github.com/aminalaee/sqladmin/pull/409)
+* Fix asyncpg BigInt query in [#416](https://github.com/aminalaee/sqladmin/pull/416)
+
 ## Version 0.8.0 - 2022-11-22
 
 ### Added
