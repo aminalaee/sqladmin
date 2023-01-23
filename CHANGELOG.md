@@ -8,16 +8,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-* Support PostgreSQL arrays by @aminalaee in https://github.com/aminalaee/sqladmin/pull/414
-* Add custom form converters by @aminalaee in https://github.com/aminalaee/sqladmin/pull/399
-* Add Custom Views docs by @aminalaee in https://github.com/aminalaee/sqladmin/pull/408
+* Support PostgreSQL arrays in https://github.com/aminalaee/sqladmin/pull/414
+* Add custom form converters in https://github.com/aminalaee/sqladmin/pull/399
+* Add Custom Views docs in https://github.com/aminalaee/sqladmin/pull/408
 
 ### Fixed
 
-* Fix re-rendering create/edit page with existing data by @aminalaee in https://github.com/aminalaee/sqladmin/pull/385
-* Fix exclude columns breaking order by @aminalaee in https://github.com/aminalaee/sqladmin/pull/407
-* Fix control relationships in list page by @aminalaee in https://github.com/aminalaee/sqladmin/pull/409
-* Fix asyncpg BigInt query by @aminalaee in https://github.com/aminalaee/sqladmin/pull/416
+* Fix re-rendering create/edit page with existing data in https://github.com/aminalaee/sqladmin/pull/385
+* Fix exclude columns breaking order in https://github.com/aminalaee/sqladmin/pull/407
+* Fix control relationships in list page in https://github.com/aminalaee/sqladmin/pull/409
+* Fix asyncpg BigInt query in https://github.com/aminalaee/sqladmin/pull/416
 
 **Full Changelog**: https://github.com/aminalaee/sqladmin/compare/0.8.0...0.9.0
 
