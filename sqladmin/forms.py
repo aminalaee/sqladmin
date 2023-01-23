@@ -45,6 +45,7 @@ from sqladmin.fields import (
     JSONField,
     QuerySelectField,
     QuerySelectMultipleField,
+    Select2TagsField,
     SelectField,
     TimeField,
 )
@@ -442,6 +443,14 @@ class ModelConverter(ModelConverterBase):
         kwargs.setdefault("validators", [])
         kwargs["validators"].append(validators.UUID())
         return StringField(**kwargs)
+
+    @converts(
+        "sqlalchemy.dialects.postgresql.base.ARRAY", "sqlalchemy.sql.sqltypes.ARRAY"
+    )
+    def conv_ARRAY(
+        self, model: type, prop: ColumnProperty, kwargs: Dict[str, Any]
+    ) -> UnboundField:
+        return Select2TagsField(**kwargs)
 
     @converts("sqlalchemy_utils.types.email.EmailType")
     def conv_email(

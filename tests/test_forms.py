@@ -15,7 +15,7 @@ from sqlalchemy import (
     Time,
     TypeDecorator,
 )
-from sqlalchemy.dialects.postgresql import INET, MACADDR, UUID
+from sqlalchemy.dialects.postgresql import ARRAY, INET, MACADDR, UUID
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import ColumnProperty, relationship, sessionmaker
@@ -31,7 +31,7 @@ from wtforms import BooleanField, Field, Form, IntegerField, StringField, TimeFi
 from wtforms.fields.core import UnboundField
 
 from sqladmin import ModelView
-from sqladmin.fields import SelectField
+from sqladmin.fields import Select2TagsField, SelectField
 from sqladmin.forms import ModelConverter, converts, get_model_form
 from tests.common import DummyData, async_engine as engine
 
@@ -184,9 +184,12 @@ async def test_model_form_postgresql() -> None:
         uuid = Column(UUID)
         ip = Column(INET)
         mac = Column(MACADDR)
+        array = Column(ARRAY(String))
 
     Form = await get_model_form(model=PostgresModel, engine=engine)
-    assert len(Form()._fields) == 3
+
+    assert len(Form()._fields) == 4
+    assert isinstance(Form()._fields["array"], Select2TagsField)
 
 
 async def test_model_form_sqlalchemy_utils() -> None:
