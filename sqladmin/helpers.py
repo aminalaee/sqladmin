@@ -3,12 +3,12 @@ import os
 import re
 import unicodedata
 from abc import ABC, abstractmethod
-from typing import Any, Callable, Generator, List, TypeVar, Union
+from typing import Callable, Generator, List, TypeVar
 
 from sqlalchemy import Column, inspect
 from sqlalchemy.orm import RelationshipProperty
 
-from sqladmin._types import MODEL_ATTR_TYPE
+from sqladmin._types import MODEL_PROPERTY
 
 T = TypeVar("T")
 
@@ -119,28 +119,22 @@ def get_primary_key(model: type) -> Column:
     return pks[0]
 
 
-def get_relationships(model: Any) -> List[MODEL_ATTR_TYPE]:
-    return list(inspect(model).relationships)
-
-
-def get_attributes(model: Any) -> List[MODEL_ATTR_TYPE]:
-    return list(inspect(model).attrs)
-
-
-def get_direction(attr: MODEL_ATTR_TYPE) -> str:
-    assert isinstance(attr, RelationshipProperty)
-    name = attr.direction.name
-    if name == "ONETOMANY" and not attr.uselist:
+def get_direction(prop: MODEL_PROPERTY) -> str:
+    assert isinstance(prop, RelationshipProperty)
+    name = prop.direction.name
+    if name == "ONETOMANY" and not prop.uselist:
         return "ONETOONE"
     return name
 
 
 def get_column_python_type(column: Column) -> type:
     try:
+        if hasattr(column.type, "impl"):
+            return column.type.impl.python_type
         return column.type.python_type
     except NotImplementedError:
         return str
 
 
-def is_relationship(attr: MODEL_ATTR_TYPE) -> bool:
-    return isinstance(attr, RelationshipProperty)
+def is_relationship(prop: MODEL_PROPERTY) -> bool:
+    return isinstance(prop, RelationshipProperty)

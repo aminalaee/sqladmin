@@ -5,6 +5,7 @@ import pytest
 from httpx import AsyncClient
 from sqlalchemy import (
     JSON,
+    BigInteger,
     Column,
     Date,
     Enum,
@@ -77,7 +78,7 @@ class Address(Base):
 class Profile(Base):
     __tablename__ = "profiles"
 
-    id = Column(Integer, primary_key=True)
+    id = Column(BigInteger().with_variant(Integer, "sqlite"), primary_key=True)
     user_id = Column(Integer, ForeignKey("users.id"), unique=True)
 
     user = relationship("User", back_populates="profile")

@@ -133,3 +133,17 @@ $("#action-delete").click(function () {
     }
   });
 });
+
+// Select2 Tags
+$(':input[data-role="select2-tags"]').each(function () {
+  $(this).select2({
+    tags: true,
+    multiple: true,
+  });
+
+  existing_data = $(this).data("json") || [];
+  for (var i = 0; i < existing_data.length; i++) {
+    var option = new Option(existing_data[i], existing_data[i], true, true);
+    $(this).append(option).trigger('change');
+  }
+});

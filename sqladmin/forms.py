@@ -33,7 +33,7 @@ from wtforms import (
 )
 from wtforms.fields.core import UnboundField
 
-from sqladmin._types import ENGINE_TYPE, MODEL_ATTR_TYPE
+from sqladmin._types import ENGINE_TYPE, MODEL_PROPERTY
 from sqladmin._validators import CurrencyValidator, TimezoneValidator
 from sqladmin.ajax import QueryAjaxModelLoader
 from sqladmin.exceptions import NoConverterFound
@@ -45,6 +45,7 @@ from sqladmin.fields import (
     JSONField,
     QuerySelectField,
     QuerySelectMultipleField,
+    Select2TagsField,
     SelectField,
     TimeField,
 )
@@ -68,7 +69,7 @@ class ConverterCallable(Protocol):
     def __call__(
         self,
         model: type,
-        prop: MODEL_ATTR_TYPE,
+        prop: MODEL_PROPERTY,
         kwargs: Dict[str, Any],
     ) -> UnboundField:
         ...  # pragma: no cover
@@ -106,7 +107,7 @@ class ModelConverterBase:
 
     async def _prepare_kwargs(
         self,
-        prop: MODEL_ATTR_TYPE,
+        prop: MODEL_PROPERTY,
         engine: ENGINE_TYPE,
         field_args: Dict[str, Any],
         field_widget_args: Dict[str, Any],
@@ -222,7 +223,7 @@ class ModelConverterBase:
 
         return []  # pragma: nocover
 
-    def get_converter(self, prop: MODEL_ATTR_TYPE) -> ConverterCallable:
+    def get_converter(self, prop: MODEL_PROPERTY) -> ConverterCallable:
         if isinstance(prop, RelationshipProperty):
             direction = get_direction(prop)
             return self._converters[direction]
@@ -259,7 +260,7 @@ class ModelConverterBase:
     async def convert(
         self,
         model: type,
-        prop: MODEL_ATTR_TYPE,
+        prop: MODEL_PROPERTY,
         engine: ENGINE_TYPE,
         field_args: Dict[str, Any],
         field_widget_args: Dict[str, Any],
@@ -442,6 +443,14 @@ class ModelConverter(ModelConverterBase):
         kwargs.setdefault("validators", [])
         kwargs["validators"].append(validators.UUID())
         return StringField(**kwargs)
+
+    @converts(
+        "sqlalchemy.dialects.postgresql.base.ARRAY", "sqlalchemy.sql.sqltypes.ARRAY"
+    )
+    def conv_ARRAY(
+        self, model: type, prop: ColumnProperty, kwargs: Dict[str, Any]
+    ) -> UnboundField:
+        return Select2TagsField(**kwargs)
 
     @converts("sqlalchemy_utils.types.email.EmailType")
     def conv_email(

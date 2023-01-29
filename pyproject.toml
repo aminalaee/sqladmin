@@ -79,7 +79,7 @@ check = "isort --check --project=sqladmin . && black --check . && mypy sqladmin"
 clean = "rm -r dist site"
 cov = "coverage report --show-missing --skip-covered --fail-under=99 && coverage xml"
 lint = "autoflake --in-place --recursive .s && isort --project=sqladmin . && black ."
-test = "python -m coverage run --concurrency=thread,greenlet -m pytest"
+test = "coverage run -a --concurrency=thread,greenlet -m pytest"
 
 [tool.hatch.envs.docs]
 dependencies = [

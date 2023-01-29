@@ -3,7 +3,7 @@ import operator
 from typing import Any, Callable, Generator, List, Optional, Set, Tuple, Union
 
 from sqlalchemy import inspect
-from wtforms import Form, SelectFieldBase, ValidationError, fields, widgets
+from wtforms import Form, ValidationError, fields, widgets
 
 from sqladmin import widgets as sqladmin_widgets
 from sqladmin.ajax import QueryAjaxModelLoader
@@ -276,7 +276,7 @@ class QuerySelectMultipleField(QuerySelectField):
                     raise ValidationError(self.gettext("Not a valid choice"))
 
 
-class AjaxSelectField(SelectFieldBase):
+class AjaxSelectField(fields.SelectFieldBase):
     widget = sqladmin_widgets.AjaxSelect2Widget()
     separator = ","
 
@@ -318,7 +318,7 @@ class AjaxSelectField(SelectFieldBase):
             raise ValidationError("Not a valid choice")
 
 
-class AjaxSelectMultipleField(SelectFieldBase):
+class AjaxSelectMultipleField(fields.SelectFieldBase):
     widget = sqladmin_widgets.AjaxSelect2Widget(multiple=True)
     separator = ","
 
@@ -357,3 +357,16 @@ class AjaxSelectMultipleField(SelectFieldBase):
         for field in valuelist:
             for n in field.split(self.separator):
                 self._formdata.add(n)
+
+
+class Select2TagsField(fields.SelectField):
+    widget = sqladmin_widgets.Select2TagsWidget()
+
+    def pre_validate(self, form: Form) -> None:
+        ...
+
+    def process_formdata(self, valuelist: list) -> None:
+        self.data = valuelist
+
+    def process_data(self, value: Optional[list]) -> None:
+        self.data = value or []
