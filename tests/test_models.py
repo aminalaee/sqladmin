@@ -295,8 +295,8 @@ def test_get_model_attr_by_column() -> None:
     class UserAdmin(ModelView, model=User):
         ...
 
-    assert UserAdmin().get_model_attr("name") == User.name
-    assert UserAdmin().get_model_attr(User.name) == User.name
+    assert UserAdmin()._attr_to_prop("name") == User.name
+    assert UserAdmin()._attr_to_prop(User.name) == User.name
 
 
 def test_form_columns_default() -> None:

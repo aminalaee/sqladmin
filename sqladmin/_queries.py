@@ -7,7 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import Session, joinedload
 from sqlalchemy.sql.expression import Select
 
-from sqladmin._types import MODEL_ATTR_TYPE
+from sqladmin._types import MODEL_PROPERTY
 from sqladmin.helpers import get_column_python_type, get_direction, get_primary_key
 
 if TYPE_CHECKING:
@@ -18,7 +18,7 @@ class Query:
     def __init__(self, model_view: "ModelView") -> None:
         self.model_view = model_view
 
-    def _get_to_many_stmt(self, relation: MODEL_ATTR_TYPE, values: List[Any]) -> Select:
+    def _get_to_many_stmt(self, relation: MODEL_PROPERTY, values: List[Any]) -> Select:
         target = relation.mapper.class_
         target_pk = get_primary_key(target)
         target_pk_type = get_column_python_type(target_pk)
@@ -26,14 +26,14 @@ class Query:
         related_stmt = select(target).where(target_pk.in_(pk_values))
         return related_stmt
 
-    def _get_to_one_stmt(self, relation: MODEL_ATTR_TYPE, value: Any) -> Select:
+    def _get_to_one_stmt(self, relation: MODEL_PROPERTY, value: Any) -> Select:
         target = relation.mapper.class_
         target_pk = get_primary_key(target)
         target_pk_type = get_column_python_type(target_pk)
         related_stmt = select(target).where(target_pk == target_pk_type(value))
         return related_stmt
 
-    def _set_many_to_one(self, obj: Any, relation: MODEL_ATTR_TYPE, value: Any) -> Any:
+    def _set_many_to_one(self, obj: Any, relation: MODEL_PROPERTY, value: Any) -> Any:
         fk = relation.local_remote_pairs[0][0]
         fk_type = get_column_python_type(fk)
         setattr(obj, fk.name, fk_type(value))
@@ -119,7 +119,7 @@ class Query:
         pk = get_column_python_type(self.model_view.pk_column)(pk)
         stmt = select(self.model_view.model).where(self.model_view.pk_column == pk)
 
-        for relation in self.model_view._relations:
+        for relation in self.model_view._relation_props:
             stmt = stmt.options(joinedload(relation.key))
 
         async with self.model_view.sessionmaker(expire_on_commit=False) as session:
