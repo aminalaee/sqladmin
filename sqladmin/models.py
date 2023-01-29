@@ -677,17 +677,6 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
         ]
 
         self._details_props = self.get_details_columns()
-        # TODO
-        # self._details_columns = [
-        #     (name, attr)
-        #     for (name, attr) in self._details_props
-        #     if isinstance(attr, ColumnProperty)
-        # ]
-        # self._details_relations = [
-        #     attr
-        #     for (_, attr) in self._details_props
-        #     if isinstance(attr, RelationshipProperty)
-        # ]
 
         column_formatters = getattr(self, "column_formatters", {})
         self._list_formatters = {
@@ -706,7 +695,8 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
         self._export_props = self.get_export_columns()
 
         self._search_fields = [
-            self._attr_to_prop(attr) for attr in self.column_searchable_list
+            getattr(self.model, attr) if isinstance(attr, str) else attr
+            for attr in self.column_searchable_list
         ]
 
         self._sort_fields = [
