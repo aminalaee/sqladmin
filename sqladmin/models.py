@@ -656,6 +656,9 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
     def __init__(self) -> None:
         self._mapper = inspect(self.model)
         self._relation_props = list(self._mapper.relationships)
+        self._relation_attrs = [
+            getattr(self.model, prop.key) for prop in self._relation_props
+        ]
         self._column_props = list(self._mapper.columns)
         self._props = self._mapper.attrs
 
@@ -674,6 +677,9 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
             prop
             for (_, prop) in self._list_props
             if isinstance(prop, RelationshipProperty)
+        ]
+        self._list_relation_attrs = [
+            getattr(self.model, prop.key) for prop in self._list_relations
         ]
 
         self._details_props = self.get_details_columns()
@@ -795,8 +801,8 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
         count = await self.count()
         stmt = self.list_query.limit(page_size).offset((page - 1) * page_size)
 
-        for relation in self._list_relations:
-            stmt = stmt.options(joinedload(relation.key))
+        for relation in self._list_relation_attrs:
+            stmt = stmt.options(joinedload(relation))
 
         if sort_by:
             sort_fields = [(sort_by, sort == "desc")]
@@ -827,8 +833,8 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
         limit = None if limit == 0 else limit
         stmt = self.list_query.limit(limit=limit)
 
-        for relation in self._list_relations:
-            stmt = stmt.options(joinedload(relation.key))
+        for relation in self._list_relation_attrs:
+            stmt = stmt.options(joinedload(relation))
 
         rows = await self._run_query(stmt)
         return rows
@@ -837,8 +843,8 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
         pk_value = get_column_python_type(self.pk_column)(value)
         stmt = select(self.model).where(self.pk_column == pk_value)
 
-        for relation in self._relation_props:
-            stmt = stmt.options(joinedload(relation.key))
+        for relation in self._relation_attrs:
+            stmt = stmt.options(joinedload(relation))
 
         rows = await self._run_query(stmt)
         if rows:

@@ -119,8 +119,8 @@ class Query:
         pk = get_column_python_type(self.model_view.pk_column)(pk)
         stmt = select(self.model_view.model).where(self.model_view.pk_column == pk)
 
-        for relation in self.model_view._relation_props:
-            stmt = stmt.options(joinedload(relation.key))
+        for relation in self.model_view._relation_attrs:
+            stmt = stmt.options(joinedload(relation))
 
         async with self.model_view.sessionmaker(expire_on_commit=False) as session:
             result = await session.execute(stmt)

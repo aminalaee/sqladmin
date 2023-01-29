@@ -157,7 +157,7 @@ async def test_edit_page_template(client: AsyncClient) -> None:
     assert 'data-url="/admin/address/ajax/lookup"' in response.text
 
 
-async def test_crete_and_edit_forms(client: AsyncClient) -> None:
+async def test_create_and_edit_forms(client: AsyncClient) -> None:
     response = await client.post("/admin/address/create", data={})
     assert response.status_code == 302
 

@@ -2,7 +2,6 @@ from typing import AsyncGenerator, List, Optional
 from uuid import UUID, uuid4
 
 import pytest
-from httpx import AsyncClient
 from sqlalchemy.orm import sessionmaker
 from sqlmodel import Field, Relationship, Session, SQLModel
 
