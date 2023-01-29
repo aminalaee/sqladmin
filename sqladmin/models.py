@@ -706,7 +706,7 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
         self._export_props = self.get_export_columns()
 
         self._search_fields = [
-            self._attr_to_prop(attr).key for attr in self.column_searchable_list
+            self._attr_to_prop(attr) for attr in self.column_searchable_list
         ]
 
         self._sort_fields = [
@@ -1062,7 +1062,7 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
         ```
         """
         expressions = [
-            cast(attr, String).ilike(f"%{term}%") for attr in self._search_fields
+            cast(prop, String).ilike(f"%{term}%") for prop in self._search_fields
         ]
         return stmt.filter(or_(*expressions))
 
