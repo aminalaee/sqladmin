@@ -34,17 +34,15 @@ from starlette.templating import Jinja2Templates
 from wtforms import Field, Form
 
 from sqladmin._queries import Query
-from sqladmin._types import ENGINE_TYPE, MODEL_ATTR_TYPE
+from sqladmin._types import ENGINE_TYPE, MODEL_PROPERTY
 from sqladmin.ajax import create_ajax_loader
 from sqladmin.exceptions import InvalidColumnError, InvalidModelError
 from sqladmin.formatters import BASE_FORMATTERS
 from sqladmin.forms import ModelConverter, ModelConverterBase, get_model_form
 from sqladmin.helpers import (
     Writer,
-    get_attributes,
     get_column_python_type,
     get_primary_key,
-    get_relationships,
     prettify_class_name,
     secure_filename,
     slugify_class_name,
@@ -657,62 +655,52 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
 
     def __init__(self) -> None:
         self._mapper = inspect(self.model)
-        self._relations = get_relationships(self.model)
-        self._attrs = get_attributes(self.model)
+        self._relation_props = list(self._mapper.relationships)
+        self._column_props = list(self._mapper.columns)
+        self._props = self._mapper.attrs
 
         self._column_labels = self.get_column_labels()
         self._column_labels_value_by_key = {
             v: k for k, v in self._column_labels.items()
         }
 
-        self._list_attrs = self.get_list_columns()
+        self._list_props = self.get_list_columns()
         self._list_columns = [
-            (name, attr)
-            for (name, attr) in self._list_attrs
-            if isinstance(attr, ColumnProperty)
+            (name, prop)
+            for (name, prop) in self._list_props
+            if isinstance(prop, ColumnProperty)
         ]
         self._list_relations = [
-            attr
-            for (_, attr) in self._list_attrs
-            if isinstance(attr, RelationshipProperty)
+            prop
+            for (_, prop) in self._list_props
+            if isinstance(prop, RelationshipProperty)
         ]
 
-        self._details_attrs = self.get_details_columns()
-        self._details_columns = [
-            (name, attr)
-            for (name, attr) in self._details_attrs
-            if isinstance(attr, ColumnProperty)
-        ]
-        self._details_relations = [
-            attr
-            for (_, attr) in self._details_attrs
-            if isinstance(attr, RelationshipProperty)
-        ]
+        self._details_props = self.get_details_columns()
 
         column_formatters = getattr(self, "column_formatters", {})
         self._list_formatters = {
-            self.get_model_attr(attr): formatter
+            self._attr_to_prop(attr): formatter
             for (attr, formatter) in column_formatters.items()
         }
 
         column_formatters_detail = getattr(self, "column_formatters_detail", {})
         self._detail_formatters = {
-            self.get_model_attr(attr): formatter
+            self._attr_to_prop(attr): formatter
             for (attr, formatter) in column_formatters_detail.items()
         }
 
-        self._form_attrs = self.get_form_columns()
+        self._form_props = self.get_form_columns()
 
-        self._export_attrs = self.get_export_columns()
+        self._export_props = self.get_export_columns()
 
         self._search_fields = [
-            getattr(self.model, self.get_model_attr(attr).key)
+            getattr(self.model, attr) if isinstance(attr, str) else attr
             for attr in self.column_searchable_list
         ]
 
         self._sort_fields = [
-            getattr(self.model, self.get_model_attr(attr).key)
-            for attr in self.column_sortable_list
+            self._attr_to_prop(attr).key for attr in self.column_sortable_list
         ]
 
         self._form_ajax_refs = {}
@@ -735,7 +723,7 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
             return await anyio.to_thread.run_sync(self._run_query_sync, stmt)
 
     def _url_for_details(self, request: Request, obj: Any) -> str:
-        pk = getattr(obj, get_primary_key(obj).name)
+        pk = getattr(obj, self.pk_column.name)
         return request.url_for(
             "admin:details",
             identity=slugify_class_name(obj.__class__.__name__),
@@ -743,7 +731,7 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
         )
 
     def _url_for_edit(self, request: Request, obj: Any) -> str:
-        pk = getattr(obj, get_primary_key(obj).name)
+        pk = getattr(obj, self.pk_column.name)
         return request.url_for(
             "admin:edit",
             identity=slugify_class_name(obj.__class__.__name__),
@@ -751,21 +739,21 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
         )
 
     def _url_for_delete(self, request: Request, obj: Any) -> str:
-        pk = getattr(obj, get_primary_key(obj).name)
+        pk = getattr(obj, self.pk_column.name)
         query_params = urlencode({"pks": pk})
         url = request.url_for(
             "admin:delete", identity=slugify_class_name(obj.__class__.__name__)
         )
         return url + "?" + query_params
 
-    def _url_for_details_with_attr(
-        self, request: Request, obj: Any, attr: RelationshipProperty
+    def _url_for_details_with_prop(
+        self, request: Request, obj: Any, prop: RelationshipProperty
     ) -> str:
-        target = getattr(obj, attr.key)
+        target = getattr(obj, prop.key)
         if target is None:
             return ""
 
-        pk = getattr(target, attr.mapper.primary_key[0].name)
+        pk = getattr(target, prop.mapper.primary_key[0].name)
         return request.url_for(
             "admin:details",
             identity=slugify_class_name(target.__class__.__name__),
@@ -849,7 +837,7 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
         pk_value = get_column_python_type(self.pk_column)(value)
         stmt = select(self.model).where(self.pk_column == pk_value)
 
-        for relation in self._relations:
+        for relation in self._relation_props:
             stmt = stmt.options(joinedload(relation.key))
 
         rows = await self._run_query(stmt)
@@ -857,53 +845,50 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
             return rows[0]
         return None
 
-    def get_attr_value(
-        self, obj: type, attr: Union[Column, ColumnProperty, RelationshipProperty]
+    def get_prop_value(
+        self, obj: type, prop: Union[Column, ColumnProperty, RelationshipProperty]
     ) -> Any:
         result = None
 
-        if isinstance(attr, Column):
-            result = getattr(obj, attr.name)
+        if isinstance(prop, Column):
+            result = getattr(obj, prop.name)
 
-        if isinstance(attr, (ColumnProperty, RelationshipProperty)):
-            result = getattr(obj, attr.key)
+        if isinstance(prop, (ColumnProperty, RelationshipProperty)):
+            result = getattr(obj, prop.key)
             result = result.value if isinstance(result, Enum) else result
 
         return result
 
-    def get_list_value(self, obj: type, attr: MODEL_ATTR_TYPE) -> Tuple[Any, Any]:
+    def get_list_value(self, obj: type, prop: MODEL_PROPERTY) -> Tuple[Any, Any]:
         """Get tuple of (value, formatted_value) for the list view."""
-        value = self.get_attr_value(obj, attr)
+        value = self.get_prop_value(obj, prop)
         formatted_value = self._default_formatter(value)
 
-        formatter = self._list_formatters.get(attr)
+        formatter = self._list_formatters.get(prop)
         if formatter:
-            formatted_value = formatter(obj, attr)
+            formatted_value = formatter(obj, prop)
         return value, formatted_value
 
-    def get_detail_value(self, obj: type, attr: MODEL_ATTR_TYPE) -> Tuple[Any, Any]:
+    def get_detail_value(self, obj: type, prop: MODEL_PROPERTY) -> Tuple[Any, Any]:
         """Get tuple of (value, formatted_value) for the detail view."""
-        value = self.get_attr_value(obj, attr)
+        value = self.get_prop_value(obj, prop)
         formatted_value = self._default_formatter(value)
 
-        formatter = self._detail_formatters.get(attr)
+        formatter = self._detail_formatters.get(prop)
         if formatter:
-            formatted_value = formatter(obj, attr)
+            formatted_value = formatter(obj, prop)
         return value, formatted_value
 
-    def get_model_attr(
-        self, attr: Union[str, InstrumentedAttribute]
-    ) -> MODEL_ATTR_TYPE:
+    def _attr_to_prop(self, attr: Union[str, InstrumentedAttribute]) -> MODEL_PROPERTY:
         assert isinstance(attr, (str, InstrumentedAttribute))
-        attrs = inspect(self.model).attrs
 
         if isinstance(attr, str):
             key = attr
         else:
             key = attr.prop.key
 
-        if key in attrs:
-            return attrs[key]
+        if key in self._props:
+            return self._props[key]
 
         raise InvalidColumnError(
             f"Model '{self.model.__name__}' has no attribute '{key}'."
@@ -911,25 +896,25 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
 
     def _build_column_list(
         self,
-        default: List[MODEL_ATTR_TYPE],
+        defaults: List[MODEL_PROPERTY],
         include: Optional[Sequence[Union[str, InstrumentedAttribute]]] = None,
         exclude: Optional[Sequence[Union[str, InstrumentedAttribute]]] = None,
-    ) -> List[Tuple[str, MODEL_ATTR_TYPE]]:
+    ) -> List[Tuple[str, MODEL_PROPERTY]]:
         """This function generalizes constructing a list of columns
         for any sequence of inclusions or exclusions.
         """
         if include:
-            attrs = [self.get_model_attr(attr) for attr in include]
+            props = [self._attr_to_prop(prop) for prop in include]
         elif exclude:
-            exclude_columns = {self.get_model_attr(attr) for attr in exclude}
-            attrs = [attr for attr in self._attrs if attr not in exclude_columns]
+            exclude_props = {self._attr_to_prop(prop) for prop in exclude}
+            props = [prop for prop in self._props if prop not in exclude_props]
         else:
-            attrs = default
+            props = defaults
 
-        return [(self._column_labels.get(attr, attr.key), attr) for attr in attrs]
+        return [(self._column_labels.get(prop, prop.key), prop) for prop in props]
 
-    def get_list_columns(self) -> List[Tuple[str, MODEL_ATTR_TYPE]]:
-        """Get list of columns to display in List page."""
+    def get_list_columns(self) -> List[Tuple[str, MODEL_PROPERTY]]:
+        """Get list of properties to display in List page."""
 
         column_list = getattr(self, "column_list", None)
         column_exclude_list = getattr(self, "column_exclude_list", None)
@@ -937,11 +922,11 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
         return self._build_column_list(
             include=column_list,
             exclude=column_exclude_list,
-            default=[getattr(self.model, self.pk_column.name).prop],
+            defaults=[self._props[self.pk_column.key]],
         )
 
-    def get_details_columns(self) -> List[Tuple[str, MODEL_ATTR_TYPE]]:
-        """Get list of columns to display in Detail page."""
+    def get_details_columns(self) -> List[Tuple[str, MODEL_PROPERTY]]:
+        """Get list of properties to display in Detail page."""
 
         column_details_list = getattr(self, "column_details_list", None)
         column_details_exclude_list = getattr(self, "column_details_exclude_list", None)
@@ -949,31 +934,28 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
         return self._build_column_list(
             include=column_details_list,
             exclude=column_details_exclude_list,
-            default=self._attrs,
+            defaults=self._props,
         )
 
-    def get_form_columns(self) -> List[Tuple[str, MODEL_ATTR_TYPE]]:
-        """Get list of columns to display in the form."""
+    def get_form_columns(self) -> List[Tuple[str, MODEL_PROPERTY]]:
+        """Get list of properties to display in the form."""
 
         form_columns = getattr(self, "form_columns", None)
         form_excluded_columns = getattr(self, "form_excluded_columns", None)
 
-        columns = list(self._mapper.columns)
         default = []
-        for attr in self._attrs:
-            if attr in self._relations:
-                default.append(attr)
-            if attr in columns:
-                default.append(attr)
+        for prop in self._props:
+            if prop in self._relation_props or prop in self._column_props:
+                default.append(prop)
 
         return self._build_column_list(
             include=form_columns,
             exclude=form_excluded_columns,
-            default=self._attrs,
+            defaults=self._props,
         )
 
-    def get_export_columns(self) -> List[Tuple[str, MODEL_ATTR_TYPE]]:
-        """Get list of columns to export."""
+    def get_export_columns(self) -> List[Tuple[str, MODEL_PROPERTY]]:
+        """Get list of properties to export."""
 
         columns = getattr(self, "column_export_list", None)
         excluded_columns = getattr(self, "column_export_exclude_list", None)
@@ -981,7 +963,7 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
         return self._build_column_list(
             include=columns,
             exclude=excluded_columns,
-            default=[item[1] for item in self._list_attrs],
+            defaults=[item[1] for item in self._list_props],
         )
 
     async def on_model_change(self, data: dict, model: Any, is_created: bool) -> None:
@@ -998,9 +980,9 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
 
     def get_column_labels(
         self,
-    ) -> Dict[MODEL_ATTR_TYPE, str]:
+    ) -> Dict[MODEL_PROPERTY, str]:
         return {
-            self.get_model_attr(column_label): value
+            self._attr_to_prop(column_label): value
             for column_label, value in self.column_labels.items()
         }
 
@@ -1029,7 +1011,7 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
         return await get_model_form(
             model=self.model,
             engine=self.engine,
-            only=[i[1].key or i[1].name for i in self._form_attrs],
+            only=[i[1].key or i[1].name for i in self._form_props],
             column_labels={k.key: v for k, v in self._column_labels.items()},
             form_args=self.form_args,
             form_widget_args=self.form_widget_args,
@@ -1054,7 +1036,7 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
         """
 
         search_fields = [
-            self.get_model_attr(attr) for attr in self.column_searchable_list
+            self._attr_to_prop(attr) for attr in self.column_searchable_list
         ]
         field_names = [
             self._column_labels.get(field, field.key) for field in search_fields
@@ -1070,14 +1052,14 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
         ```
         """
         expressions = [
-            cast(attr, String).ilike(f"%{term}%") for attr in self._search_fields
+            cast(prop, String).ilike(f"%{term}%") for prop in self._search_fields
         ]
         return stmt.filter(or_(*expressions))
 
     def get_export_name(self, export_type: str) -> str:
         """The file name when exporting."""
-        filename = f"{self.name}_{time.strftime('%Y-%m-%d_%H-%M-%S')}.{export_type}"
-        return filename
+
+        return f"{self.name}_{time.strftime('%Y-%m-%d_%H-%M-%S')}.{export_type}"
 
     def export_data(
         self,
@@ -1095,11 +1077,11 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
     ) -> StreamingResponse:
         def generate(writer: Writer) -> Generator[Any, None, None]:
             # Append the column titles at the beginning
-            titles = [c[0] for c in self._export_attrs]
+            titles = [c[0] for c in self._export_props]
             yield writer.writerow(titles)
 
             for row in data:
-                vals = [str(self.get_attr_value(row, c[1])) for c in self._export_attrs]
+                vals = [str(self.get_prop_value(row, c[1])) for c in self._export_props]
                 yield writer.writerow(vals)
 
         # `get_export_name` can be subclassed.

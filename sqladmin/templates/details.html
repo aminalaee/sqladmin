@@ -3,7 +3,7 @@
 <div class="col-12">
   <div class="card">
     <div class="card-header">
-      <h3 class="card-title">{{ model_view.pk_column.name }}: {{ model_view.get_attr_value(model, model_view.pk_column) }}</h3>
+      <h3 class="card-title">{{ model_view.pk_column.name }}: {{ model_view.get_prop_value(model, model_view.pk_column) }}</h3>
     </div>
     <div class="card-body border-bottom py-3">
       <div class="table-responsive">
@@ -15,11 +15,11 @@
             </tr>
           </thead>
           <tbody>
-            {% for name, attr in model_view._details_attrs %}
+            {% for name, prop in model_view._details_props %}
             <tr>
               <td>{{ name }}</td>
-              {% set value, formatted_value = model_view.get_detail_value(model, attr) %}
-              {% if attr in model_view._relations %}
+              {% set value, formatted_value = model_view.get_detail_value(model, prop) %}
+              {% if prop in model_view._relation_props %}
               {% if is_list( value ) %}
               <td>
               {% for elem, formatted_elem in zip(value, formatted_value) %}
@@ -27,7 +27,7 @@
               {% endfor %}
               </td>
               {% else %}
-              <td><a href="{{ model_view._url_for_details_with_attr(request, model, attr) }}">{{ formatted_value }}</a></td>
+              <td><a href="{{ model_view._url_for_details_with_prop(request, model, prop) }}">{{ formatted_value }}</a></td>
               {% endif %}
               {% else %}
               <td>{{ formatted_value }}</td>
@@ -46,7 +46,7 @@
           </div>
           {% if model_view.can_delete %}
           <div class="col-md-1">
-            <a href="#" data-name="{{ model_view.name }}" data-pk="{{ model_view.get_attr_value(model, model_view.pk_column) }}" data-url="{{ model_view._url_for_delete(request, model) }}" data-bs-toggle="modal" data-bs-target="#modal-delete" class="btn btn-danger">
+            <a href="#" data-name="{{ model_view.name }}" data-pk="{{ model_view.get_prop_value(model, model_view.pk_column) }}" data-url="{{ model_view._url_for_delete(request, model) }}" data-bs-toggle="modal" data-bs-target="#modal-delete" class="btn btn-danger">
               Delete
             </a>
           </div>
