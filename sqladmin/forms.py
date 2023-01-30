@@ -413,6 +413,7 @@ class ModelConverter(ModelConverterBase):
 
     @converts(
         "sqlalchemy.dialects.postgresql.base.INET",
+        "sqlalchemy.dialects.postgresql.types.INET",
         "sqlalchemy_utils.types.ip_address.IPAddressType",
     )
     def conv_ip_address(
@@ -423,7 +424,10 @@ class ModelConverter(ModelConverterBase):
         kwargs["validators"].append(validators.IPAddress(ipv4=True, ipv6=True))
         return StringField(**kwargs)
 
-    @converts("sqlalchemy.dialects.postgresql.base.MACADDR")
+    @converts(
+        "sqlalchemy.dialects.postgresql.base.MACADDR",
+        "sqlalchemy.dialects.postgresql.types.MACADDR",
+    )
     def conv_mac_address(
         self, model: type, prop: ColumnProperty, kwargs: Dict[str, Any]
     ) -> UnboundField:
@@ -434,6 +438,7 @@ class ModelConverter(ModelConverterBase):
 
     @converts(
         "sqlalchemy.dialects.postgresql.base.UUID",
+        "sqlalchemy.sql.sqltypes.UUID",
         "sqlalchemy_utils.types.uuid.UUIDType",
     )
     def conv_uuid(

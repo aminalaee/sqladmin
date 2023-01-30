@@ -53,7 +53,7 @@ exclude = [
   "tests/*",
 ]
 
-[tool.hatch.envs.default]
+[tool.hatch.envs.test]
 dependencies = [
   "aiosqlite==0.17.0",
   "asyncpg==0.27.0",
@@ -73,7 +73,6 @@ dependencies = [
 [tool.hatch.envs.lint]
 dependencies = [
   "black==22.10.0",
-  "coverage==6.5.0",
   "isort==5.10.1",
   "mypy==0.982",
   "ruff==0.0.237",
@@ -87,7 +86,7 @@ dependencies = [
   "mkdocstrings==0.18.1",
 ]
 
-[tool.hatch.envs.default.scripts]
+[tool.hatch.envs.test.scripts]
 cov = [
   "coverage report --show-missing --skip-covered --fail-under=99",
   "coverage xml",
@@ -102,9 +101,9 @@ check = [
   "mypy sqladmin",
 ]
 format = [
-  "ruff --fix .",
   "isort --project=sqladmin .",
   "black .",
+  "ruff --fix .",
 ]
 
 [tool.hatch.envs.docs.scripts]
@@ -112,10 +111,10 @@ build = "mkdocs build"
 serve = "mkdocs serve --dev-addr localhost:8080"
 deploy = "mkdocs gh-deploy --force"
 
-[[tool.hatch.envs.default.matrix]]
+[[tool.hatch.envs.test.matrix]]
 sqlalchemy = ["1.4", "2.0"]
 
-[tool.hatch.envs.default.overrides]
+[tool.hatch.envs.test.overrides]
 matrix.sqlalchemy.dependencies = [
   { value = "sqlalchemy~=1.4", if = ["1.4"] },
   { value = "sqlmodel==0.0.8", if = ["1.4"] },

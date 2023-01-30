@@ -44,14 +44,14 @@ jobs:
         env:
           TEST_DATABASE_URI_SYNC: "sqlite:///test.db?check_same_thread=False"
           TEST_DATABASE_URI_ASYNC: "sqlite+aiosqlite:///test.db?check_same_thread=False"
-        run: hatch run test
+        run: hatch run test:test
       - name: "Run tests with PostgreSQL"
         env:
           TEST_DATABASE_URI_SYNC: "postgresql+psycopg2://username:password@localhost:5432/test_db"
           TEST_DATABASE_URI_ASYNC: "postgresql+asyncpg://username:password@localhost:5432/test_db"
-        run: hatch run test
+        run: hatch run test:test
       - name: "Enforce coverage"
-        run: hatch run cov
+        run: hatch run test:cov
       - name: "Upload Coverage"
         uses: codecov/codecov-action@v3
         with:
