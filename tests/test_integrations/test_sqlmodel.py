@@ -3,7 +3,11 @@ from uuid import UUID, uuid4
 
 import pytest
 from sqlalchemy.orm import sessionmaker
-from sqlmodel import Field, Relationship, Session, SQLModel
+
+try:
+    from sqlmodel import Field, Relationship, Session, SQLModel
+except ImportError:
+    pytest.skip("SQLModel support for SQLAlchemy v2.", allow_module_level=True)
 
 from sqladmin.forms import get_model_form
 from tests.common import sync_engine as engine

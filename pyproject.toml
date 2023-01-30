@@ -13,7 +13,7 @@ authors = [
   { name = "Amin Alaee", email = "mohammadamin.alaee@gmail.com" },
 ]
 classifiers = [
-  "Development Status :: 3 - Alpha",
+  "Development Status :: 4 - Beta",
   "Programming Language :: Python",
   "Programming Language :: Python :: 3.7",
   "Programming Language :: Python :: 3.8",
@@ -57,30 +57,27 @@ exclude = [
 dependencies = [
   "aiosqlite==0.17.0",
   "asyncpg==0.27.0",
-  "autoflake==1.7.7",
   "babel==2.10.3",
-  "black==22.10.0",
   "build==0.9.0",
   "coverage==6.5.0",
   "email-validator==1.3.0",
   "greenlet==2.0.0",
   "httpx==0.23.0",
-  "isort==5.10.1",
   "itsdangerous==2.1.2",
-  "mypy==0.982",
   "psycopg2-binary==2.9.5",
   "pytest==7.2.0",
   "python-dateutil==2.8.2",
-  "sqlalchemy_utils==0.38.3",
-  "sqlmodel==0.0.8",
+  "sqlalchemy_utils==0.38.3", 
 ]
-[tool.hatch.envs.default.scripts]
-check = "isort --check --project=sqladmin . && black --check . && mypy sqladmin"
-clean = "rm -r dist site"
-cov = "coverage report --show-missing --skip-covered --fail-under=99 && coverage xml"
-lint = "autoflake --in-place --recursive .s && isort --project=sqladmin . && black ."
-test = "coverage run -a --concurrency=thread,greenlet -m pytest"
 
+[tool.hatch.envs.lint]
+dependencies = [
+  "black==22.10.0",
+  "coverage==6.5.0",
+  "isort==5.10.1",
+  "mypy==0.982",
+  "ruff==0.0.237",
+]
 
 [tool.hatch.envs.docs]
 dependencies = [
@@ -88,10 +85,41 @@ dependencies = [
   "mkdocs==1.4.1",
   "mkdocstrings==0.18.1",
 ]
+
+[tool.hatch.envs.default.scripts]
+cov = [
+  "coverage report --show-missing --skip-covered --fail-under=99",
+  "coverage xml",
+]
+test = "coverage run -a --concurrency=thread,greenlet -m pytest"
+
+[tool.hatch.envs.lint.scripts]
+check = [
+  "ruff .",
+  "isort --check --project=sqladmin .",
+  "black --check .",
+  "mypy sqladmin",
+]
+format = [
+  "ruff --fix .",
+  "isort --project=sqladmin .",
+  "black .",
+]
+
 [tool.hatch.envs.docs.scripts]
 build = "mkdocs build"
 serve = "mkdocs serve --dev-addr localhost:8080"
 deploy = "mkdocs gh-deploy --force"
+
+[[tool.hatch.envs.default.matrix]]
+sqlalchemy = ["1.4", "2.0"]
+
+[tool.hatch.envs.default.overrides]
+matrix.sqlalchemy.dependencies = [
+  { value = "sqlalchemy~=1.4", if = ["1.4"] },
+  { value = "sqlmodel==0.0.8", if = ["1.4"] },
+  { value = "sqlalchemy~=2.0", if = ["2.0"] },
+]
 
 [tool.mypy]
 disallow_untyped_defs = true

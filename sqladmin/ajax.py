@@ -1,6 +1,6 @@
 from typing import TYPE_CHECKING, Any, Dict, List
 
-from sqlalchemy import String, cast, inspect, or_, select, text
+from sqlalchemy import String, cast, inspect, or_, select
 
 from sqladmin.helpers import get_primary_key
 

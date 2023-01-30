@@ -35,7 +35,7 @@ jobs:
       - name: "Install dependencies"
         run: pip install hatch
       - name: "Run linting checks"
-        run: hatch run check
+        run: hatch run lint:check
       - name: "Build package & docs"
         run: |
           hatch build

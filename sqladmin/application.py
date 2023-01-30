@@ -560,7 +560,10 @@ class Admin(BaseAdminView):
     def get_save_redirect_url(
         self, request: Request, form: FormData, model_view: ModelView, obj: Any
     ) -> str:
-        """Get the redirect URL after a save action is triggered from create/edit page."""
+        """
+        Get the redirect URL after a save action
+        which is triggered from create/edit page.
+        """
 
         identity = request.path_params["identity"]
         pk = getattr(obj, model_view.pk_column.name)

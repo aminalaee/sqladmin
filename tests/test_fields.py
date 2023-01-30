@@ -1,5 +1,5 @@
 from datetime import date, datetime
-from typing import Any, Generator
+from typing import Generator
 
 import pytest
 from sqlalchemy import Column, Integer, String
@@ -19,7 +19,7 @@ from sqladmin.fields import (
 )
 from tests.common import DummyData, sync_engine as engine
 
-Base = declarative_base()  # type: Any
+Base = declarative_base()  # type: ignore
 
 LocalSession = sessionmaker(bind=engine)
 
