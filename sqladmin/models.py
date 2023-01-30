@@ -398,12 +398,10 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
     """Set `save_as` to enable a “save as new” feature on admin change forms.
 
     Normally, objects have three save options:
-        - “Save”
-        - “Save and continue editing”
-        - “Save and add another”
+    ``Save`, `Save and continue editing` and `Save and add another`.
 
-    If save_as is True, “Save and add another” will be replaced 
-    by a “Save as new” button 
+    If save_as is True, `Save and add another` will be replaced 
+    by a `Save as new` button 
     that creates a new object (with a new ID) 
     rather than updating the existing object.
 

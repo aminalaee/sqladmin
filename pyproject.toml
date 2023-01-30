@@ -77,6 +77,7 @@ dependencies = [
   "isort==5.10.1",
   "mypy==0.982",
   "ruff==0.0.237",
+  "sqlalchemy~=1.4", # MyPy issues with SQLAlchemy V2
 ]
 
 [tool.hatch.envs.docs]
