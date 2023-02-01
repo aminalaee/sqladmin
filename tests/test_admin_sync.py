@@ -14,7 +14,7 @@ from sqlalchemy import (
     select,
 )
 from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import Session, relationship, selectinload, sessionmaker
+from sqlalchemy.orm import relationship, selectinload, sessionmaker
 from starlette.applications import Starlette
 from starlette.requests import Request
 from starlette.testclient import TestClient
@@ -23,10 +23,7 @@ from sqladmin import Admin, ModelView
 from tests.common import sync_engine as engine
 
 Base = declarative_base()  # type: Any
-
 LocalSession = sessionmaker(bind=engine)
-
-session: Session = LocalSession()
 
 app = Starlette()
 admin = Admin(app=app, engine=engine)
@@ -199,10 +196,11 @@ def test_invalid_list_page(client: TestClient) -> None:
 
 
 def test_list_view_single_page(client: TestClient) -> None:
-    for _ in range(5):
-        user = User(name="John Doe")
-        session.add(user)
-    session.commit()
+    with LocalSession() as session:
+        for _ in range(5):
+            user = User(name="John Doe")
+            session.add(user)
+        session.commit()
 
     response = client.get("/admin/user/list")
 
@@ -223,12 +221,13 @@ def test_list_view_single_page(client: TestClient) -> None:
 
 
 def test_list_view_with_relationships(client: TestClient) -> None:
-    for _ in range(5):
-        user = User(name="John Doe")
-        user.addresses.append(Address())
-        user.profile = Profile()
-        session.add(user)
-    session.commit()
+    with LocalSession() as session:
+        for _ in range(5):
+            user = User(name="John Doe")
+            user.addresses.append(Address())
+            user.profile = Profile()
+            session.add(user)
+        session.commit()
 
     response = client.get("/admin/user/list")
 
@@ -246,12 +245,13 @@ def test_list_view_with_relationships(client: TestClient) -> None:
 
 
 def test_list_view_with_formatted_relationships(client: TestClient) -> None:
-    for _ in range(5):
-        user = User(name="John Doe")
-        user.addresses_formattable.append(AddressFormattable())
-        user.profile_formattable = ProfileFormattable()
-        session.add(user)
-    session.commit()
+    with LocalSession() as session:
+        for _ in range(5):
+            user = User(name="John Doe")
+            user.addresses_formattable.append(AddressFormattable())
+            user.profile_formattable = ProfileFormattable()
+            session.add(user)
+        session.commit()
 
     response = client.get("/admin/user/list")
 
@@ -263,10 +263,11 @@ def test_list_view_with_formatted_relationships(client: TestClient) -> None:
 
 
 def test_list_view_multi_page(client: TestClient) -> None:
-    for _ in range(45):
-        user = User(name="John Doe")
-        session.add(user)
-    session.commit()
+    with LocalSession() as session:
+        for _ in range(45):
+            user = User(name="John Doe")
+            session.add(user)
+        session.commit()
 
     response = client.get("/admin/user/list")
 
@@ -303,15 +304,16 @@ def test_list_view_multi_page(client: TestClient) -> None:
 
 
 def test_list_page_permission_actions(client: TestClient) -> None:
-    for _ in range(10):
-        user = User(name="John Doe")
-        session.add(user)
-        session.flush()
+    with LocalSession() as session:
+        for _ in range(10):
+            user = User(name="John Doe")
+            session.add(user)
+            session.flush()
 
-        address = Address(user_id=user.id)
-        session.add(address)
+            address = Address(user_id=user.id)
+            session.add(address)
 
-    session.commit()
+        session.commit()
 
     response = client.get("/admin/user/list")
 
@@ -340,20 +342,21 @@ def test_not_found_detail_page(client: TestClient) -> None:
 
 
 def test_detail_page(client: TestClient) -> None:
-    user = User(name="Amin Alaee")
-    session.add(user)
-    session.flush()
+    with LocalSession() as session:
+        user = User(name="Amin Alaee")
+        session.add(user)
+        session.flush()
 
-    for _ in range(2):
-        address = Address(user_id=user.id)
-        session.add(address)
-        address_formattable = AddressFormattable(user_id=user.id)
-        session.add(address_formattable)
-    profile = Profile(user=user)
-    session.add(profile)
-    profile_formattable = ProfileFormattable(user=user)
-    session.add(profile_formattable)
-    session.commit()
+        for _ in range(2):
+            address = Address(user_id=user.id)
+            session.add(address)
+            address_formattable = AddressFormattable(user_id=user.id)
+            session.add(address_formattable)
+        profile = Profile(user=user)
+        session.add(profile)
+        profile_formattable = ProfileFormattable(user=user)
+        session.add(profile_formattable)
+        session.commit()
 
     response = client.get("/admin/user/details/1")
 
@@ -389,9 +392,10 @@ def test_detail_page(client: TestClient) -> None:
 
 
 def test_column_labels(client: TestClient) -> None:
-    user = User(name="Foo")
-    session.add(user)
-    session.commit()
+    with LocalSession() as session:
+        user = User(name="Foo")
+        session.add(user)
+        session.commit()
 
     response = client.get("/admin/user/list")
 
@@ -420,9 +424,10 @@ def test_delete_endpoint_not_found_response(client: TestClient) -> None:
 
 
 def test_delete_endpoint(client: TestClient) -> None:
-    user = User(name="Bar")
-    session.add(user)
-    session.commit()
+    with LocalSession() as session:
+        user = User(name="Bar")
+        session.add(user)
+        session.commit()
 
     with LocalSession() as s:
         assert s.query(User).count() == 1
@@ -580,15 +585,16 @@ def test_not_found_edit_page(client: TestClient) -> None:
 
 
 def test_update_get_page(client: TestClient) -> None:
-    user = User(name="Joe", meta_data={"A": "B"})
-    session.add(user)
-    session.flush()
+    with LocalSession() as session:
+        user = User(name="Joe", meta_data={"A": "B"})
+        session.add(user)
+        session.flush()
 
-    address = Address(user=user)
-    session.add(address)
-    profile = Profile(user=user)
-    session.add(profile)
-    session.commit()
+        address = Address(user=user)
+        session.add(address)
+        profile = Profile(user=user)
+        session.add(profile)
+        session.commit()
 
     response = client.get("/admin/user/edit/1")
 
@@ -618,15 +624,16 @@ def test_update_get_page(client: TestClient) -> None:
 
 
 def test_update_submit_form(client: TestClient) -> None:
-    user = User(name="Joe")
-    session.add(user)
-    session.flush()
+    with LocalSession() as session:
+        user = User(name="Joe")
+        session.add(user)
+        session.flush()
 
-    address = Address(user=user)
-    session.add(address)
-    profile = Profile(user=user)
-    session.add(profile)
-    session.commit()
+        address = Address(user=user)
+        session.add(address)
+        profile = Profile(user=user)
+        session.add(profile)
+        session.commit()
 
     data = {"name": "Jack", "email": "amin"}
     response = client.post("/admin/user/edit/1", data=data)
@@ -682,9 +689,10 @@ def test_update_submit_form(client: TestClient) -> None:
 
 
 def test_searchable_list(client: TestClient) -> None:
-    user = User(name="Ross")
-    session.add(user)
-    session.commit()
+    with LocalSession() as session:
+        user = User(name="Ross")
+        session.add(user)
+        session.commit()
 
     response = client.get("/admin/user/list")
 
@@ -704,9 +712,10 @@ def test_searchable_list(client: TestClient) -> None:
 
 
 def test_sortable_list(client: TestClient) -> None:
-    user = User(name="Lisa")
-    session.add(user)
-    session.commit()
+    with LocalSession() as session:
+        user = User(name="Lisa")
+        session.add(user)
+        session.commit()
 
     response = client.get("/admin/user/list?sortBy=id&sort=asc")
 
@@ -718,9 +727,10 @@ def test_sortable_list(client: TestClient) -> None:
 
 
 def test_export_csv(client: TestClient) -> None:
-    user = User(name="Daniel", status="ACTIVE")
-    session.add(user)
-    session.commit()
+    with LocalSession() as session:
+        user = User(name="Daniel", status="ACTIVE")
+        session.add(user)
+        session.commit()
 
     response = client.get("/admin/user/export/csv")
     assert response.text == "name,status\r\nDaniel,ACTIVE\r\n"
@@ -730,15 +740,16 @@ def test_export_csv_row_count(client: TestClient) -> None:
     def row_count(resp) -> int:
         return resp.text.count("\r\n") - 1
 
-    for _ in range(20):
-        user = User(name="Raymond")
-        session.add(user)
-        session.flush()
+    with LocalSession() as session:
+        for _ in range(20):
+            user = User(name="Raymond")
+            session.add(user)
+            session.flush()
 
-        address = Address(user_id=user.id)
-        session.add(address)
+            address = Address(user_id=user.id)
+            session.add(address)
 
-    session.commit()
+        session.commit()
 
     response = client.get("/admin/user/export/csv")
     assert row_count(response) == 20

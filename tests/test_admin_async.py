@@ -27,10 +27,7 @@ from tests.common import async_engine as engine
 pytestmark = pytest.mark.anyio
 
 Base = declarative_base()  # type: Any
-
 LocalSession = sessionmaker(bind=engine, class_=AsyncSession, expire_on_commit=False)
-
-session: AsyncSession = LocalSession()
 
 app = Starlette()
 admin = Admin(app=app, engine=engine)
@@ -207,10 +204,11 @@ async def test_invalid_list_page(client: AsyncClient) -> None:
 
 
 async def test_list_view_single_page(client: AsyncClient) -> None:
-    for _ in range(5):
-        user = User(name="John Doe")
-        session.add(user)
-    await session.commit()
+    async with LocalSession() as session:
+        for _ in range(5):
+            user = User(name="John Doe")
+            session.add(user)
+        await session.commit()
 
     response = await client.get("/admin/user/list")
 
@@ -231,12 +229,13 @@ async def test_list_view_single_page(client: AsyncClient) -> None:
 
 
 async def test_list_view_with_relations(client: AsyncClient) -> None:
-    for _ in range(5):
-        user = User(name="John Doe")
-        user.addresses.append(Address())
-        user.profile = Profile()
-        session.add(user)
-    await session.commit()
+    async with LocalSession() as session:
+        for _ in range(5):
+            user = User(name="John Doe")
+            user.addresses.append(Address())
+            user.profile = Profile()
+            session.add(user)
+        await session.commit()
 
     response = await client.get("/admin/user/list")
 
@@ -259,12 +258,13 @@ async def test_list_view_with_relations(client: AsyncClient) -> None:
 
 
 async def test_list_view_with_formatted_relations(client: AsyncClient) -> None:
-    for _ in range(5):
-        user = User(name="John Doe")
-        user.addresses_formattable.append(AddressFormattable())
-        user.profile_formattable = ProfileFormattable()
-        session.add(user)
-    await session.commit()
+    async with LocalSession() as session:
+        for _ in range(5):
+            user = User(name="John Doe")
+            user.addresses_formattable.append(AddressFormattable())
+            user.profile_formattable = ProfileFormattable()
+            session.add(user)
+        await session.commit()
 
     response = await client.get("/admin/user/list")
 
@@ -276,10 +276,11 @@ async def test_list_view_with_formatted_relations(client: AsyncClient) -> None:
 
 
 async def test_list_view_multi_page(client: AsyncClient) -> None:
-    for _ in range(45):
-        user = User(name="John Doe")
-        session.add(user)
-    await session.commit()
+    async with LocalSession() as session:
+        for _ in range(45):
+            user = User(name="John Doe")
+            session.add(user)
+        await session.commit()
 
     response = await client.get("/admin/user/list")
 
@@ -316,15 +317,16 @@ async def test_list_view_multi_page(client: AsyncClient) -> None:
 
 
 async def test_list_page_permission_actions(client: AsyncClient) -> None:
-    for _ in range(10):
-        user = User(name="John Doe")
-        session.add(user)
-        await session.flush()
+    async with LocalSession() as session:
+        for _ in range(10):
+            user = User(name="John Doe")
+            session.add(user)
+            await session.flush()
 
-        address = Address(user_id=user.id)
-        session.add(address)
+            address = Address(user_id=user.id)
+            session.add(address)
 
-    await session.commit()
+        await session.commit()
 
     response = await client.get("/admin/user/list")
 
@@ -353,20 +355,21 @@ async def test_not_found_detail_page(client: AsyncClient) -> None:
 
 
 async def test_detail_page(client: AsyncClient) -> None:
-    user = User(name="Amin Alaee")
-    session.add(user)
-    await session.flush()
+    async with LocalSession() as session:
+        user = User(name="Amin Alaee")
+        session.add(user)
+        await session.flush()
 
-    for _ in range(2):
-        address = Address(user_id=user.id)
-        session.add(address)
-        address_formattable = AddressFormattable(user_id=user.id)
-        session.add(address_formattable)
-    profile = Profile(user_id=user.id)
-    session.add(profile)
-    profile_formattable = ProfileFormattable(user=user)
-    session.add(profile_formattable)
-    await session.commit()
+        for _ in range(2):
+            address = Address(user_id=user.id)
+            session.add(address)
+            address_formattable = AddressFormattable(user_id=user.id)
+            session.add(address_formattable)
+        profile = Profile(user_id=user.id)
+        session.add(profile)
+        profile_formattable = ProfileFormattable(user=user)
+        session.add(profile_formattable)
+        await session.commit()
 
     response = await client.get("/admin/user/details/1")
 
@@ -402,9 +405,10 @@ async def test_detail_page(client: AsyncClient) -> None:
 
 
 async def test_column_labels(client: AsyncClient) -> None:
-    user = User(name="Foo")
-    session.add(user)
-    await session.commit()
+    async with LocalSession() as session:
+        user = User(name="Foo")
+        session.add(user)
+        await session.commit()
 
     response = await client.get("/admin/user/list")
 
@@ -436,9 +440,10 @@ async def test_delete_endpoint_not_found_response(client: AsyncClient) -> None:
 
 
 async def test_delete_endpoint(client: AsyncClient) -> None:
-    user = User(name="Bar")
-    session.add(user)
-    await session.commit()
+    async with LocalSession() as session:
+        user = User(name="Bar")
+        session.add(user)
+        await session.commit()
 
     stmt = select(func.count(User.id))
 
@@ -610,15 +615,16 @@ async def test_not_found_edit_page(client: AsyncClient) -> None:
 
 
 async def test_update_get_page(client: AsyncClient) -> None:
-    user = User(name="Joe", meta_data={"A": "B"})
-    session.add(user)
-    await session.flush()
+    async with LocalSession() as session:
+        user = User(name="Joe", meta_data={"A": "B"})
+        session.add(user)
+        await session.flush()
 
-    address = Address(user=user)
-    session.add(address)
-    profile = Profile(user=user)
-    session.add(profile)
-    await session.commit()
+        address = Address(user=user)
+        session.add(address)
+        profile = Profile(user=user)
+        session.add(profile)
+        await session.commit()
 
     response = await client.get("/admin/user/edit/1")
 
@@ -648,15 +654,16 @@ async def test_update_get_page(client: AsyncClient) -> None:
 
 
 async def test_update_submit_form(client: AsyncClient) -> None:
-    user = User(name="Joe")
-    session.add(user)
-    await session.flush()
+    async with LocalSession() as session:
+        user = User(name="Joe")
+        session.add(user)
+        await session.flush()
 
-    address = Address(user=user)
-    session.add(address)
-    profile = Profile(user=user)
-    session.add(profile)
-    await session.commit()
+        address = Address(user=user)
+        session.add(address)
+        profile = Profile(user=user)
+        session.add(profile)
+        await session.commit()
 
     data = {"name": "Jack", "email": "amin"}
     response = await client.post("/admin/user/edit/1", data=data)
@@ -716,9 +723,10 @@ async def test_update_submit_form(client: AsyncClient) -> None:
 
 
 async def test_searchable_list(client: AsyncClient) -> None:
-    user = User(name="Ross")
-    session.add(user)
-    await session.commit()
+    async with LocalSession() as session:
+        user = User(name="Ross")
+        session.add(user)
+        await session.commit()
 
     response = await client.get("/admin/user/list")
 
@@ -740,9 +748,10 @@ async def test_searchable_list(client: AsyncClient) -> None:
 
 
 async def test_sortable_list(client: AsyncClient) -> None:
-    user = User(name="Lisa")
-    session.add(user)
-    await session.commit()
+    async with LocalSession() as session:
+        user = User(name="Lisa")
+        session.add(user)
+        await session.commit()
 
     response = await client.get("/admin/user/list?sortBy=id&sort=asc")
 
@@ -754,9 +763,10 @@ async def test_sortable_list(client: AsyncClient) -> None:
 
 
 async def test_export_csv(client: AsyncClient) -> None:
-    user = User(name="Daniel", status="ACTIVE")
-    session.add(user)
-    await session.commit()
+    async with LocalSession() as session:
+        user = User(name="Daniel", status="ACTIVE")
+        session.add(user)
+        await session.commit()
 
     response = await client.get("/admin/user/export/csv")
     assert response.text == "name,status\r\nDaniel,ACTIVE\r\n"
@@ -766,15 +776,16 @@ async def test_export_csv_row_count(client: AsyncClient) -> None:
     def row_count(resp) -> int:
         return resp.text.count("\r\n") - 1
 
-    for _ in range(20):
-        user = User(name="Raymond")
-        session.add(user)
-        await session.flush()
+    async with LocalSession() as session:
+        for _ in range(20):
+            user = User(name="Raymond")
+            session.add(user)
+            await session.flush()
 
-        address = Address(user_id=user.id)
-        session.add(address)
+            address = Address(user_id=user.id)
+            session.add(address)
 
-    await session.commit()
+        await session.commit()
 
     response = await client.get("/admin/user/export/csv")
     assert row_count(response) == 20
