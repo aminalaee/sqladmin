@@ -1,4 +1,4 @@
-from typing import Any, Generator
+from typing import Generator
 
 import pytest
 from markupsafe import Markup
@@ -15,7 +15,7 @@ from tests.common import sync_engine as engine
 
 pytestmark = pytest.mark.anyio
 
-Base = declarative_base()  # type: Any
+Base = declarative_base()  # type: ignore
 
 LocalSession = sessionmaker(bind=engine)
 

@@ -397,15 +397,20 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
     save_as: ClassVar[bool] = False
     """Set `save_as` to enable a “save as new” feature on admin change forms.
 
-    Normally, objects have three save options: “Save”, “Save and continue editing”, and “Save and add another”.
-    If save_as is True, “Save and add another” will be replaced by a “Save as new” button 
-    that creates a new object (with a new ID) rather than updating the existing object.
+    Normally, objects have three save options:
+    ``Save`, `Save and continue editing` and `Save and add another`.
+
+    If save_as is True, `Save and add another` will be replaced 
+    by a `Save as new` button 
+    that creates a new object (with a new ID) 
+    rather than updating the existing object.
 
     By default, `save_as` is set to `False`.
     """
 
     save_as_continue: ClassVar[bool] = True
-    """When `save_as=True`, the default redirect after saving the new object is to the edit view for that object.
+    """When `save_as=True`, the default redirect after saving the new object 
+    is to the edit view for that object.
     If you set `save_as_continue=False`, the redirect will be to the list view.
 
     By default, `save_as_continue` is set to `True`.
@@ -980,7 +985,8 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
     async def after_model_change(
         self, data: dict, model: Any, is_created: bool
     ) -> None:
-        """Perform some actions after a model was created or updated and committed to the database.
+        """Perform some actions after a model was created
+        or updated and committed to the database.
         By default does nothing.
         """
 
@@ -1050,7 +1056,8 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
         return ", ".join(field_names)
 
     def search_query(self, stmt: Select, term: str) -> Select:
-        """Specify the search query given the SQLAlchemy statement and term to search for.
+        """Specify the search query given the SQLAlchemy statement
+        and term to search for.
         It can be used for doing more complex queries like JSON objects. For example:
 
         ```py

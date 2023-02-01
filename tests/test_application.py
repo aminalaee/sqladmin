@@ -1,5 +1,3 @@
-from typing import Any
-
 from sqlalchemy import Column, Integer, String
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
@@ -14,7 +12,7 @@ from starlette.types import ASGIApp, Message, Receive, Scope, Send
 from sqladmin import Admin, ModelView
 from tests.common import sync_engine as engine
 
-Base = declarative_base()  # type: Any
+Base = declarative_base()  # type: ignore
 
 LocalSession = sessionmaker(bind=engine)
 
