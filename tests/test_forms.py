@@ -1,5 +1,5 @@
 import enum
-from typing import Any, AsyncGenerator, Dict
+from typing import Any, AsyncGenerator, Dict, Tuple
 
 import pytest
 from sqlalchemy import (
@@ -17,31 +17,38 @@ from sqlalchemy import (
 )
 from sqlalchemy.dialects.postgresql import ARRAY, INET, MACADDR, UUID
 from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import ColumnProperty, relationship
-from sqlalchemy_utils import (
-    CurrencyType,
-    EmailType,
-    IPAddressType,
-    TimezoneType,
-    URLType,
-    UUIDType,
-)
+from sqlalchemy.orm import ColumnProperty, composite, relationship
 from wtforms import BooleanField, Field, Form, IntegerField, StringField, TimeField
 from wtforms.fields.core import UnboundField
 
 from sqladmin import ModelView
 from sqladmin.fields import Select2TagsField, SelectField
 from sqladmin.forms import ModelConverter, converts, get_model_form
-from tests.common import DummyData, async_engine as engine
+from tests.common import async_engine as engine
 
 pytestmark = pytest.mark.anyio
 
-Base = declarative_base()  # type: Any
+Base = declarative_base()  # type: ignore
 
 
 class Status(enum.Enum):
     REGISTERED = 1
     ACTIVE = 2
+
+
+class Point:  # pragma: no cover
+    def __init__(self, x: int, y: int) -> None:
+        self.x = x
+        self.y = y
+
+    def __composite_values__(self) -> Tuple[int, int]:
+        return self.x, self.y
+
+    def __eq__(self, other: "Point") -> bool:
+        return isinstance(other, Point) and other.x == self.x and other.y == self.y
+
+    def __ne__(self, other: "Point") -> bool:
+        return not self.__eq__(other)
 
 
 class User(Base):
@@ -58,9 +65,12 @@ class User(Base):
     balance = Column(Numeric)
     number = Column(Integer)
     reminder = Column(Time)
+    x = Column(Integer)
+    y = Column(Integer)
 
     addresses = relationship("Address", back_populates="user")
     profile = relationship("Profile", back_populates="user", uselist=False)
+    point = composite(Point, x, y)
 
 
 class Address(Base):
@@ -96,7 +106,7 @@ async def test_model_form() -> None:
     Form = await get_model_form(model=User, engine=engine)
     form = Form()
 
-    assert len(form._fields) == 12
+    assert len(form._fields) == 14
     assert form._fields["active"].flags.required is None
     assert form._fields["name"].flags.required is None
     assert form._fields["email"].flags.required is True
@@ -122,7 +132,7 @@ async def test_model_form_only() -> None:
 
 async def test_model_form_exclude() -> None:
     Form = await get_model_form(model=User, engine=engine, exclude=["status"])
-    assert len(Form()._fields) == 11
+    assert len(Form()._fields) == 13
 
 
 async def test_model_form_form_args() -> None:
@@ -185,23 +195,6 @@ async def test_model_form_postgresql() -> None:
 
     assert len(Form()._fields) == 4
     assert isinstance(Form()._fields["array"], Select2TagsField)
-
-
-async def test_model_form_sqlalchemy_utils() -> None:
-    class SQLAlchemyUtilsModel(Base):
-        __tablename__ = "sqlalchemy_utils_model"
-
-        id = Column(Integer, primary_key=True)
-        email = Column(EmailType)
-        ip = Column(IPAddressType)
-        uuid = Column(UUIDType)
-        url = Column(URLType)
-        currency = Column(CurrencyType)
-        timezone = Column(TimezoneType)
-
-    Form = await get_model_form(model=SQLAlchemyUtilsModel, engine=engine)
-    form = Form(DummyData(currency="IR", timezone=["Iran/Tehran"]))
-    assert form.validate() is False
 
 
 async def test_form_override_scaffold() -> None:
