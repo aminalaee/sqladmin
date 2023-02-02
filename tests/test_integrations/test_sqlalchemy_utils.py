@@ -35,5 +35,6 @@ async def test_model_form_sqlalchemy_utils() -> None:
         color = Column(ColorType)
 
     Form = await get_model_form(model=SQLAlchemyUtilsModel, engine=engine)
-    form = Form(DummyData(currency="IR", timezone=["Iran/Tehran"], color="bbb"))
+    data = DummyData(currency="IR", timezone=["Iran/Tehran"], color="bbb", phone="abc")
+    form = Form(data)
     assert form.validate() is False
