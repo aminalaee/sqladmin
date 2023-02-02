@@ -15,6 +15,30 @@ class CurrencyValidator:
             raise ValidationError("Not a valid ISO currency code (e.g. USD, EUR, CNY).")
 
 
+class PhoneNumberValidator:
+    """Form validator for sqlalchemy_utils PhoneNumberType."""
+
+    def __call__(self, form: Form, field: Field) -> None:
+        from sqlalchemy_utils import PhoneNumber, PhoneNumberParseException
+
+        try:
+            PhoneNumber(field.data)
+        except PhoneNumberParseException:
+            raise ValidationError("Not a valid phone number.")
+
+
+class ColorValidator:
+    """General Color validator using `colour` package."""
+
+    def __call__(self, form: Form, field: Field) -> None:
+        from colour import Color
+
+        try:
+            Color(field.data)
+        except ValueError:
+            raise ValidationError('Not a valid color (e.g. "red", "#f00", "#ff0000").')
+
+
 class TimezoneValidator:
     """Form validator for sqlalchemy_utils TimezoneType."""
 

@@ -34,7 +34,12 @@ from wtforms import (
 from wtforms.fields.core import UnboundField
 
 from sqladmin._types import ENGINE_TYPE, MODEL_PROPERTY
-from sqladmin._validators import CurrencyValidator, TimezoneValidator
+from sqladmin._validators import (
+    ColorValidator,
+    CurrencyValidator,
+    PhoneNumberValidator,
+    TimezoneValidator,
+)
 from sqladmin.ajax import QueryAjaxModelLoader
 from sqladmin.exceptions import NoConverterFound
 from sqladmin.fields import (
@@ -493,6 +498,22 @@ class ModelConverter(ModelConverterBase):
         kwargs["validators"].append(
             TimezoneValidator(coerce_function=prop.columns[0].type._coerce)
         )
+        return StringField(**kwargs)
+
+    @converts("sqlalchemy_utils.types.phone_number.PhoneNumberType")
+    def conv_phone_number(
+        self, model: type, prop: ColumnProperty, kwargs: Dict[str, Any]
+    ) -> UnboundField:
+        kwargs.setdefault("validators", [])
+        kwargs["validators"].append(PhoneNumberValidator())
+        return StringField(**kwargs)
+
+    @converts("sqlalchemy_utils.types.color.ColorType")
+    def conv_color(
+        self, model: type, prop: ColumnProperty, kwargs: Dict[str, Any]
+    ) -> UnboundField:
+        kwargs.setdefault("validators", [])
+        kwargs["validators"].append(ColorValidator())
         return StringField(**kwargs)
 
     @converts("ONETOONE")
