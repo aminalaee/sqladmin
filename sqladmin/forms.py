@@ -115,6 +115,9 @@ class ModelConverterBase:
         label: Optional[str] = None,
         loader: Optional[QueryAjaxModelLoader] = None,
     ) -> Optional[Dict[str, Any]]:
+        if not isinstance(prop, (RelationshipProperty, ColumnProperty)):
+            return None
+
         kwargs: Union[dict, None]
         kwargs = field_args.copy()
         widget_args = field_widget_args.copy()

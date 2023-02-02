@@ -863,10 +863,10 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
 
         if isinstance(prop, Column):
             result = getattr(obj, prop.name)
-
-        if isinstance(prop, (ColumnProperty, RelationshipProperty)):
+        else:
             result = getattr(obj, prop.key)
             result = result.value if isinstance(result, Enum) else result
+            result = getattr(obj, prop.key)
 
         return result
 
@@ -891,8 +891,6 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
         return value, formatted_value
 
     def _attr_to_prop(self, attr: Union[str, InstrumentedAttribute]) -> MODEL_PROPERTY:
-        assert isinstance(attr, (str, InstrumentedAttribute))
-
         if isinstance(attr, str):
             key = attr
         else:
