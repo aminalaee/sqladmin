@@ -2,9 +2,11 @@ import pytest
 from sqlalchemy import Column, Integer
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy_utils import (
+    ColorType,
     CurrencyType,
     EmailType,
     IPAddressType,
+    PhoneNumberType,
     TimezoneType,
     URLType,
     UUIDType,
@@ -29,7 +31,9 @@ async def test_model_form_sqlalchemy_utils() -> None:
         url = Column(URLType)
         currency = Column(CurrencyType)
         timezone = Column(TimezoneType)
+        phone = Column(PhoneNumberType)
+        color = Column(ColorType)
 
     Form = await get_model_form(model=SQLAlchemyUtilsModel, engine=engine)
-    form = Form(DummyData(currency="IR", timezone=["Iran/Tehran"]))
+    form = Form(DummyData(currency="IR", timezone=["Iran/Tehran"], color="bbb"))
     assert form.validate() is False
