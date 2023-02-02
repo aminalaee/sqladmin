@@ -2,7 +2,6 @@ from typing import Generator
 
 import pytest
 from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import sessionmaker
 from starlette.applications import Starlette
 from starlette.requests import Request
 from starlette.testclient import TestClient
@@ -10,9 +9,7 @@ from starlette.testclient import TestClient
 from sqladmin import Admin, BaseView, expose
 from tests.common import sync_engine as engine
 
-Base = declarative_base()  # type: Any
-
-Session = sessionmaker(bind=engine)
+Base = declarative_base()  # type: ignore
 
 app = Starlette()
 admin = Admin(app=app, engine=engine, templates_dir="tests/templates")

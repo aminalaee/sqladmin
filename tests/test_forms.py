@@ -16,9 +16,8 @@ from sqlalchemy import (
     TypeDecorator,
 )
 from sqlalchemy.dialects.postgresql import ARRAY, INET, MACADDR, UUID
-from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import ColumnProperty, relationship, sessionmaker
+from sqlalchemy.orm import ColumnProperty, relationship
 from sqlalchemy_utils import (
     CurrencyType,
     EmailType,
@@ -38,10 +37,6 @@ from tests.common import DummyData, async_engine as engine
 pytestmark = pytest.mark.anyio
 
 Base = declarative_base()  # type: Any
-
-LocalSession = sessionmaker(bind=engine, class_=AsyncSession)
-
-session: AsyncSession = LocalSession()
 
 
 class Status(enum.Enum):

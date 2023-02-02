@@ -4,7 +4,6 @@ from typing import Generator
 import pytest
 from sqlalchemy import Column, Integer, String
 from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import Session, sessionmaker
 from wtforms import Form
 
 from sqladmin.fields import (
@@ -20,10 +19,6 @@ from sqladmin.fields import (
 from tests.common import DummyData, sync_engine as engine
 
 Base = declarative_base()  # type: ignore
-
-LocalSession = sessionmaker(bind=engine)
-
-session: Session = LocalSession()
 
 
 class User(Base):

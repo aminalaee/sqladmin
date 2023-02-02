@@ -15,10 +15,7 @@ from tests.common import async_engine as engine
 pytestmark = pytest.mark.anyio
 
 Base = declarative_base()  # type: Any
-
 LocalSession = sessionmaker(bind=engine, class_=AsyncSession, expire_on_commit=False)
-
-session: AsyncSession = LocalSession()
 
 app = Starlette()
 admin = Admin(app=app, engine=engine)
