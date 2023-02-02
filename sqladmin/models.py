@@ -866,7 +866,6 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
         else:
             result = getattr(obj, prop.key)
             result = result.value if isinstance(result, Enum) else result
-            result = getattr(obj, prop.key)
 
         return result
 
