@@ -56,6 +56,7 @@ exclude = [
 [tool.hatch.envs.test]
 dependencies = [
   "aiosqlite==0.17.0",
+  "arrow==1.2.3",
   "asyncpg==0.27.0",
   "babel==2.10.3",
   "build==0.9.0",
