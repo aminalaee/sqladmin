@@ -4,13 +4,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## Version 0.9.0 - 2023-01-23
+## Version 0.9.0 - 2023-02-07
 
 ### Added
 
+* Support SQLAlchemy v2 in [#411](https://github.com/aminalaee/sqladmin/pull/411)
 * Support PostgreSQL arrays in [#414](https://github.com/aminalaee/sqladmin/pull/414)
 * Add custom form converters in [#399](https://github.com/aminalaee/sqladmin/pull/399)
-* Add Custom Views docs in [#399](https://github.com/aminalaee/sqladmin/pull/408)
+* Support SQLAlchemy composite types in [#421](https://github.com/aminalaee/sqladmin/pull/421)
+* Add sqlalchemy_utils `PhoneNumberType`, `ColorType` and `ArrowType` in [#422](https://github.com/aminalaee/sqladmin/pull/422)
 
 ### Fixed
 
