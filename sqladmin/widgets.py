@@ -86,10 +86,14 @@ class FileInputWidget(widgets.FileInput):
 
     def __call__(self, field: Field, **kwargs: Any) -> str:
         file_input = super().__call__(field, **kwargs)
-        checkbox = Markup(f"""
-        <div class="form-check">
-            <input class="form-check-input" type="checkbox" id="{field.id}_checkbox" name="{field.name}_checkbox">
-            <label class="form-check-label" for="{field.id}_checkbox">Clear</label>
-        </div>
-        """)
+        checkbox_id = f"{field.id}_checkbox"
+        checkbox_label = Markup(
+            f'<label class="form-check-label" for="{checkbox_id}">Clear</label>'
+        )
+        checkbox_input = Markup(
+            f'<input class="form-check-input" type="checkbox" id="{checkbox_id}" name="{checkbox_id}">'  # noqa: E501
+        )
+        checkbox = Markup(
+            f'<div class="form-check">{checkbox_input}{checkbox_label}</div>'
+        )
         return file_input + checkbox

@@ -1,5 +1,15 @@
 import inspect
-from typing import Any, Callable, List, Optional, Sequence, Type, Union, no_type_check
+from typing import (
+    Any,
+    Callable,
+    Dict,
+    List,
+    Optional,
+    Sequence,
+    Type,
+    Union,
+    no_type_check,
+)
 
 from jinja2 import ChoiceLoader, FileSystemLoader, PackageLoader
 from sqlalchemy.engine import Engine
@@ -577,7 +587,7 @@ class Admin(BaseAdminView):
         return request.url_for("admin:create", identity=identity)
 
     def _handle_form_data(self, form: FormData) -> FormData:
-        form_data = {}
+        form_data: Dict[str, Any] = {}
         for key, value in form.items():
             if isinstance(value, UploadFile):
                 should_clear = form.get(key + "_checkbox")

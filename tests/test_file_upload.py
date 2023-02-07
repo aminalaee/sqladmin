@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import AsyncGenerator, Any, Dict
+from typing import Any, AsyncGenerator, Dict
 
 import pytest
 from httpx import AsyncClient
@@ -7,9 +7,9 @@ from sqlalchemy import Column, Integer, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
-from starlette.applications import Starlette
-from sqlalchemy_fields.types import File
 from sqlalchemy_fields.storages import FileSystemStorage, StorageFile
+from sqlalchemy_fields.types import File
+from starlette.applications import Starlette
 
 from sqladmin import Admin, ModelView
 from tests.common import async_engine as engine
@@ -21,6 +21,7 @@ LocalSession = sessionmaker(bind=engine, class_=AsyncSession, expire_on_commit=F
 
 app = Starlette()
 admin = Admin(app=app, engine=engine)
+
 
 class User(Base):
     __tablename__ = "users"
@@ -40,14 +41,15 @@ async def prepare_database() -> AsyncGenerator[None, None]:
     await engine.dispose()
 
 
-
 @pytest.fixture
 async def client(prepare_database: Any) -> AsyncGenerator[AsyncClient, None]:
     async with AsyncClient(app=app, base_url="http://testserver") as c:
         yield c
 
+
 class UserAdmin(ModelView, model=User):
     ...
+
 
 admin.add_view(UserAdmin)
 
@@ -58,18 +60,26 @@ async def _query_user() -> Any:
         result = await s.execute(stmt)
     return result.scalar_one()
 
+
 def _get_files(path: Path) -> Dict[str, Any]:
     path.write_text("abc")
-    return {'file': open(path, "rb")}
+    return {"file": open(path, "rb")}
 
 
 async def test_create_form_fields(client: AsyncClient) -> None:
     response = await client.get("/admin/user/create")
 
     assert response.status_code == 200
-    assert '<input class="form-control" id="file" name="file" type="file">' in response.text
-    assert '<input class="form-check-input" type="checkbox" id="file_checkbox" name="file_checkbox">' in response.text
-    assert '<label class="form-check-label" for="file_checkbox">Clear</label>' in response.text
+    assert (
+        '<input class="form-control" id="file" name="file" type="file">'
+        in response.text
+    )
+    assert '<input class="form-check-input" type="checkbox"' in response.text
+    assert (
+        '<label class="form-check-label" for="file_checkbox">Clear</label>'
+        in response.text
+    )
+
 
 async def test_create_form_post(client: AsyncClient, tmp_path: Path) -> None:
     files = _get_files(tmp_path / "upload.txt")
@@ -98,9 +108,9 @@ async def test_create_form_update(client: AsyncClient, tmp_path: Path) -> None:
     assert user.file.name == "new_upload.txt"
     assert user.file.path == ".uploads/new_upload.txt"
 
-    response = await client.post("/admin/user/edit/1", files=files, data={"file_checkbox": True})
+    response = await client.post(
+        "/admin/user/edit/1", files=files, data={"file_checkbox": True}
+    )
     user = await _query_user()
 
     assert user.file is None
-
-

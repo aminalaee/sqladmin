@@ -47,12 +47,12 @@ from sqladmin.fields import (
     AjaxSelectMultipleField,
     DateField,
     DateTimeField,
+    FileField,
     JSONField,
     QuerySelectField,
     QuerySelectMultipleField,
     Select2TagsField,
     SelectField,
-    FileField,
     TimeField,
 )
 from sqladmin.helpers import get_direction, get_primary_key, is_relationship

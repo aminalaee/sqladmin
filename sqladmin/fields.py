@@ -374,7 +374,7 @@ class Select2TagsField(fields.SelectField):
 
 class FileField(fields.FileField):
     """
-    File field which is clearable.    
+    File field which is clearable.
     """
 
     widget = sqladmin_widgets.FileInputWidget()
