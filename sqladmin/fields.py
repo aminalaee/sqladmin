@@ -370,3 +370,11 @@ class Select2TagsField(fields.SelectField):
 
     def process_data(self, value: Optional[list]) -> None:
         self.data = value or []
+
+
+class FileField(fields.FileField):
+    """
+    File field which is clearable.    
+    """
+
+    widget = sqladmin_widgets.FileInputWidget()

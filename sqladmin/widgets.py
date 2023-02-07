@@ -77,3 +77,19 @@ class Select2TagsWidget(widgets.Select):
         kwargs.setdefault("data-role", "select2-tags")
         kwargs.setdefault("data-json", json.dumps(field.data))
         return super().__call__(field, **kwargs)
+
+
+class FileInputWidget(widgets.FileInput):
+    """
+    File input widget with clear checkbox.
+    """
+
+    def __call__(self, field: Field, **kwargs: Any) -> str:
+        file_input = super().__call__(field, **kwargs)
+        checkbox = Markup(f"""
+        <div class="form-check">
+            <input class="form-check-input" type="checkbox" id="{field.id}_checkbox" name="{field.name}_checkbox">
+            <label class="form-check-label" for="{field.id}_checkbox">Clear</label>
+        </div>
+        """)
+        return file_input + checkbox

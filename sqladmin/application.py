@@ -6,7 +6,7 @@ from sqlalchemy.engine import Engine
 from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession
 from sqlalchemy.orm import Session, sessionmaker
 from starlette.applications import Starlette
-from starlette.datastructures import FormData
+from starlette.datastructures import FormData, UploadFile
 from starlette.exceptions import HTTPException
 from starlette.middleware import Middleware
 from starlette.requests import Request
@@ -416,7 +416,7 @@ class Admin(BaseAdminView):
         model_view = self._find_model_view(identity)
 
         Form = await model_view.scaffold_form()
-        form_data = await request.form()
+        form_data = self._handle_form_data(await request.form())
         form = Form(form_data)
 
         context = {
@@ -472,7 +472,7 @@ class Admin(BaseAdminView):
         if request.method == "GET":
             return self.templates.TemplateResponse(model_view.edit_template, context)
 
-        form_data = await request.form()
+        form_data = self._handle_form_data(await request.form())
         form = Form(form_data)
         if not form.validate():
             context["form"] = form
@@ -575,6 +575,17 @@ class Admin(BaseAdminView):
         ):
             return request.url_for("admin:edit", identity=identity, pk=pk)
         return request.url_for("admin:create", identity=identity)
+
+    def _handle_form_data(self, form: FormData) -> FormData:
+        form_data = {}
+        for key, value in form.items():
+            if isinstance(value, UploadFile):
+                should_clear = form.get(key + "_checkbox")
+                if should_clear:
+                    form_data[key] = None
+                    continue
+            form_data[key] = value
+        return FormData(form_data)
 
 
 def expose(

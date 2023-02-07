@@ -70,7 +70,8 @@ dependencies = [
   "psycopg2-binary==2.9.5",
   "pytest==7.2.0",
   "python-dateutil==2.8.2",
-  "sqlalchemy_utils==0.38.3", 
+  "sqlalchemy_utils==0.38.3",
+  "sqlalchemy-fields",
 ]
 
 [tool.hatch.envs.lint]

@@ -52,6 +52,7 @@ from sqladmin.fields import (
     QuerySelectMultipleField,
     Select2TagsField,
     SelectField,
+    FileField,
     TimeField,
 )
 from sqladmin.helpers import get_direction, get_primary_key, is_relationship
@@ -515,6 +516,12 @@ class ModelConverter(ModelConverterBase):
         kwargs.setdefault("validators", [])
         kwargs["validators"].append(ColorValidator())
         return StringField(**kwargs)
+
+    @converts("sqlalchemy_fields.types.file.File")
+    def conv_file(
+        self, model: type, prop: ColumnProperty, kwargs: Dict[str, Any]
+    ) -> UnboundField:
+        return FileField(**kwargs)
 
     @converts("ONETOONE")
     def conv_one_to_one(
