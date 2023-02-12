@@ -426,7 +426,7 @@ class Admin(BaseAdminView):
         model_view = self._find_model_view(identity)
 
         Form = await model_view.scaffold_form()
-        form_data = self._handle_form_data(await request.form())
+        form_data = await self._handle_form_data(request)
         form = Form(form_data)
 
         context = {
@@ -482,7 +482,7 @@ class Admin(BaseAdminView):
         if request.method == "GET":
             return self.templates.TemplateResponse(model_view.edit_template, context)
 
-        form_data = self._handle_form_data(await request.form())
+        form_data = await self._handle_form_data(request, model)
         form = Form(form_data)
         if not form.validate():
             context["form"] = form
@@ -586,15 +586,29 @@ class Admin(BaseAdminView):
             return request.url_for("admin:edit", identity=identity, pk=pk)
         return request.url_for("admin:create", identity=identity)
 
-    def _handle_form_data(self, form: FormData) -> FormData:
+    async def _handle_form_data(self, request: Request, obj: Any = None) -> FormData:
+        """
+        Handle form data and modify in case of UplaodFile.
+        This is needed since in edit page
+        there's no way to show current file of object.
+        """
+
+        form = await request.form()
         form_data: Dict[str, Any] = {}
+
         for key, value in form.items():
-            if isinstance(value, UploadFile):
-                should_clear = form.get(key + "_checkbox")
-                if should_clear:
-                    form_data[key] = None
-                    continue
-            form_data[key] = value
+            if not isinstance(value, UploadFile):
+                form_data[key] = value
+                continue
+
+            should_clear = form.get(key + "_checkbox")
+            if should_clear:
+                form_data[key] = None
+            elif not value.filename and getattr(obj, key):
+                f = getattr(obj, key)  # In case of update, imitate UploadFile
+                form_data[key] = UploadFile(filename=f.name, file=f.open())
+            else:
+                form_data[key] = value
         return FormData(form_data)
 
 
