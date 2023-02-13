@@ -1,5 +1,4 @@
-from pathlib import Path
-from typing import Any, AsyncGenerator, Dict
+from typing import Any, AsyncGenerator
 
 import pytest
 from httpx import AsyncClient
@@ -61,11 +60,6 @@ async def _query_user() -> Any:
     return result.scalar_one()
 
 
-def _get_files(path: Path) -> Dict[str, Any]:
-    path.write_text("abc")
-    return {"file": open(path, "rb")}
-
-
 async def test_create_form_fields(client: AsyncClient) -> None:
     response = await client.get("/admin/user/create")
 
@@ -81,8 +75,8 @@ async def test_create_form_fields(client: AsyncClient) -> None:
     )
 
 
-async def test_create_form_post(client: AsyncClient, tmp_path: Path) -> None:
-    files = _get_files(tmp_path / "upload.txt")
+async def test_create_form_post(client: AsyncClient) -> None:
+    files = {"file": ("upload.txt", b"abc")}
     response = await client.post("/admin/user/create", files=files)
 
     user = await _query_user()
@@ -93,24 +87,31 @@ async def test_create_form_post(client: AsyncClient, tmp_path: Path) -> None:
     assert user.file.path == ".uploads/upload.txt"
 
 
-async def test_create_form_update(client: AsyncClient, tmp_path: Path) -> None:
-    files = _get_files(tmp_path / "upload.txt")
+async def test_create_form_update(client: AsyncClient) -> None:
+    files = {"file": ("upload.txt", b"abc")}
     response = await client.post("/admin/user/create", files=files)
 
     user = await _query_user()
 
-    files = _get_files(tmp_path / "new_upload.txt")
+    files = {"file": ("new_upload.txt", b"abc")}
     response = await client.post("/admin/user/edit/1", files=files)
 
     user = await _query_user()
-
     assert response.status_code == 302
     assert user.file.name == "new_upload.txt"
     assert user.file.path == ".uploads/new_upload.txt"
 
+    files = {"file": ("empty.txt", b"")}
+    response = await client.post("/admin/user/edit/1", files=files)
+
+    user = await _query_user()
+    assert user.file.name == "new_upload.txt"
+    assert user.file.path == ".uploads/new_upload.txt"
+
+    files = {"file": ("new_upload.txt", b"abc")}
     response = await client.post(
         "/admin/user/edit/1", files=files, data={"file_checkbox": True}
     )
-    user = await _query_user()
 
+    user = await _query_user()
     assert user.file is None

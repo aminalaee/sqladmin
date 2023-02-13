@@ -602,9 +602,10 @@ class Admin(BaseAdminView):
                 continue
 
             should_clear = form.get(key + "_checkbox")
+            empty_upload = len(await value.read(1)) != 1
             if should_clear:
                 form_data[key] = None
-            elif not value.filename and getattr(obj, key):
+            elif empty_upload and getattr(obj, key):
                 f = getattr(obj, key)  # In case of update, imitate UploadFile
                 form_data[key] = UploadFile(filename=f.name, file=f.open())
             else:
