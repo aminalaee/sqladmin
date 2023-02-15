@@ -7,7 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy_fields.storages import FileSystemStorage, StorageFile
-from sqlalchemy_fields.types import File
+from sqlalchemy_fields.types import FileType
 from starlette.applications import Starlette
 
 from sqladmin import Admin, ModelView
@@ -26,7 +26,7 @@ class User(Base):
     __tablename__ = "users"
 
     id = Column(Integer, primary_key=True)
-    file = Column(File(FileSystemStorage(".uploads")))
+    file = Column(FileType(FileSystemStorage(".uploads")))
 
 
 @pytest.fixture

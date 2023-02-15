@@ -517,7 +517,7 @@ class ModelConverter(ModelConverterBase):
         kwargs["validators"].append(ColorValidator())
         return StringField(**kwargs)
 
-    @converts("sqlalchemy_fields.types.file.File")
+    @converts("sqlalchemy_fields.types.file.FileType")
     def conv_file(
         self, model: type, prop: ColumnProperty, kwargs: Dict[str, Any]
     ) -> UnboundField:
