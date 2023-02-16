@@ -1,12 +1,22 @@
 import inspect
-from typing import Any, Callable, List, Optional, Sequence, Type, Union, no_type_check
+from typing import (
+    Any,
+    Callable,
+    Dict,
+    List,
+    Optional,
+    Sequence,
+    Type,
+    Union,
+    no_type_check,
+)
 
 from jinja2 import ChoiceLoader, FileSystemLoader, PackageLoader
 from sqlalchemy.engine import Engine
 from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession
 from sqlalchemy.orm import Session, sessionmaker
 from starlette.applications import Starlette
-from starlette.datastructures import FormData
+from starlette.datastructures import FormData, UploadFile
 from starlette.exceptions import HTTPException
 from starlette.middleware import Middleware
 from starlette.requests import Request
@@ -416,7 +426,7 @@ class Admin(BaseAdminView):
         model_view = self._find_model_view(identity)
 
         Form = await model_view.scaffold_form()
-        form_data = await request.form()
+        form_data = await self._handle_form_data(request)
         form = Form(form_data)
 
         context = {
@@ -472,7 +482,7 @@ class Admin(BaseAdminView):
         if request.method == "GET":
             return self.templates.TemplateResponse(model_view.edit_template, context)
 
-        form_data = await request.form()
+        form_data = await self._handle_form_data(request, model)
         form = Form(form_data)
         if not form.validate():
             context["form"] = form
@@ -575,6 +585,32 @@ class Admin(BaseAdminView):
         ):
             return request.url_for("admin:edit", identity=identity, pk=pk)
         return request.url_for("admin:create", identity=identity)
+
+    async def _handle_form_data(self, request: Request, obj: Any = None) -> FormData:
+        """
+        Handle form data and modify in case of UplaodFile.
+        This is needed since in edit page
+        there's no way to show current file of object.
+        """
+
+        form = await request.form()
+        form_data: Dict[str, Any] = {}
+
+        for key, value in form.items():
+            if not isinstance(value, UploadFile):
+                form_data[key] = value
+                continue
+
+            should_clear = form.get(key + "_checkbox")
+            empty_upload = len(await value.read(1)) != 1
+            if should_clear:
+                form_data[key] = None
+            elif empty_upload and getattr(obj, key):
+                f = getattr(obj, key)  # In case of update, imitate UploadFile
+                form_data[key] = UploadFile(filename=f.name, file=f.open())
+            else:
+                form_data[key] = value
+        return FormData(form_data)
 
 
 def expose(

@@ -486,7 +486,7 @@ async def test_create_endpoint_get_form(client: AsyncClient) -> None:
 
 
 async def test_create_endpoint_post_form(client: AsyncClient) -> None:
-    data: dict = {"date_of_birth": "Wrong Date Format"}
+    data = {"date_of_birth": "Wrong Date Format"}
     response = await client.post("/admin/user/create", data=data)
 
     assert response.status_code == 400

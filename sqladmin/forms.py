@@ -47,6 +47,7 @@ from sqladmin.fields import (
     AjaxSelectMultipleField,
     DateField,
     DateTimeField,
+    FileField,
     JSONField,
     QuerySelectField,
     QuerySelectMultipleField,
@@ -515,6 +516,12 @@ class ModelConverter(ModelConverterBase):
         kwargs.setdefault("validators", [])
         kwargs["validators"].append(ColorValidator())
         return StringField(**kwargs)
+
+    @converts("sqlalchemy_fields.types.file.FileType")
+    def conv_file(
+        self, model: type, prop: ColumnProperty, kwargs: Dict[str, Any]
+    ) -> UnboundField:
+        return FileField(**kwargs)
 
     @converts("ONETOONE")
     def conv_one_to_one(

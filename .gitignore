@@ -11,3 +11,4 @@ htmlcov/
 coverage.xml
 examples/
 .vscode/
+.uploads
