@@ -951,11 +951,6 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
         form_columns = getattr(self, "form_columns", None)
         form_excluded_columns = getattr(self, "form_excluded_columns", None)
 
-        default = []
-        for prop in self._props:
-            if prop in self._relation_props or prop in self._column_props:
-                default.append(prop)
-
         return self._build_column_list(
             include=form_columns,
             exclude=form_excluded_columns,
