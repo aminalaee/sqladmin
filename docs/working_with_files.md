@@ -48,6 +48,8 @@ class UserAdmin(ModelView, model=User):
     column_list = [User.id]
 
 
+Base.metadata.create_all(engine)  # Create tables
+
 admin.add_view(UserAdmin)
 ```
 
@@ -59,17 +61,22 @@ The `FileSystemStorage` is configured to store files in the `/tmp` directory of 
 Custom types are not limited to `SQLAdmin`, you can for example query User objects with:
 
 ```python
-from sqlalchemy import select
+import io
+
+from fastapi import UploadFile  # Or from starlette.datastructures import UploadFile
 from sqlalchemy.orm import Session
 
+data = io.BytesIO(b"abc")  # Simulate a file-like object
+upload_file = UploadFile(file=data, filename="example.txt")
+user = User(ip="127.0.0.1", file=upload_file)
+
 with Session(engine) as session:
-    stmt = select(User).limit(1)
-    result = session.execute(stmt)
-    user = result.scalars().one()
-    print(file, type(file))
+    session.add(user)
+    session.commit()
+    print(user.file, type(user.file))
 
 """
-/tmp/example.txt, sqlalchemy_fields.storages.StorageFile
+example.txt, <class 'sqlalchemy_fields.storages.StorageFile'>
 """
 ```
 
