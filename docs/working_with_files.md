@@ -76,7 +76,7 @@ with Session(engine) as session:
     print(user.file, type(user.file))
 
 """
-example.txt, <class 'sqlalchemy_fields.storages.StorageFile'>
+/tmp/example.txt, <class 'sqlalchemy_fields.storages.StorageFile'>
 """
 ```
 
