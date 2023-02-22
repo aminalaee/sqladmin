@@ -54,6 +54,8 @@ admin.add_view(UserAdmin)
 Now visiting `/admin/user` to create a new User,
 there's an HTML file field to upload files form local.
 
+The `FileSystemStorage` is configured to store files in the `/tmp` directory of your local.
+
 Custom types are not limited to `SQLAdmin`, you can for example query User objects with:
 
 ```python
