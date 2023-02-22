@@ -17,6 +17,7 @@ nav:
   - Authentication: 'authentication.md'
   - Working with Templates: 'working_with_templates.md'
   - Working with Custom Views: 'writing_custom_views.md'
+  - Working with Files and Images: `working_with_files.md`
   - Frequently Asked Questions: 'faq.md'
   - API Reference:
     - Application: 'api_reference/application.md'
