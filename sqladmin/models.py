@@ -1000,12 +1000,12 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
         return await Query(self).update(pk, data)
 
     async def on_model_delete(self, model: Any) -> None:
-        """Perform some actions before a model is created or updated.
+        """Perform some actions before a model is deleted.
         By default does nothing.
         """
 
     async def after_model_delete(self, model: Any) -> None:
-        """Perform some actions before a model is deleted.
+        """Perform some actions after a model is deleted.
         By default do nothing.
         """
 
