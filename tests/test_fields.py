@@ -200,3 +200,6 @@ def test_interval_field() -> None:
 
     form = F(DummyData(interval=["1 1 1 1 1"]))
     assert form.validate() is False
+
+    form = F(DummyData(interval=[]))
+    assert form.validate() is True
