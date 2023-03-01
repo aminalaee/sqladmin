@@ -1,4 +1,4 @@
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 from typing import Generator
 
 import pytest
@@ -9,6 +9,7 @@ from wtforms import Form
 from sqladmin.fields import (
     DateField,
     DateTimeField,
+    IntervalField,
     JSONField,
     QuerySelectField,
     QuerySelectMultipleField,
@@ -186,3 +187,19 @@ def test_seelct2_tags_field() -> None:
 
     form = F(DummyData(array=[]))
     assert form.array.data == []
+
+
+def test_interval_field() -> None:
+    class F(Form):
+        interval = IntervalField()
+
+    form = F()
+
+    form = F(DummyData(interval=["1 day 22:30:00"]))
+    assert form.interval.data == timedelta(days=1, seconds=81000)
+
+    form = F(DummyData(interval=["1 1 1 1 1"]))
+    assert form.validate() is False
+
+    form = F(DummyData(interval=[]))
+    assert form.validate() is True

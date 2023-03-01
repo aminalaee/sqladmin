@@ -48,6 +48,7 @@ from sqladmin.fields import (
     DateField,
     DateTimeField,
     FileField,
+    IntervalField,
     JSONField,
     QuerySelectField,
     QuerySelectMultipleField,
@@ -415,10 +416,12 @@ class ModelConverter(ModelConverterBase):
     ) -> UnboundField:
         return JSONField(**kwargs)
 
-    # @converts("dialects.mysql.types.YEAR", "dialects.mysql.base.YEAR")
-    # def conv_MSYear(self, field_args: Dict, **kwargs: Any) -> Field:
-    #     field_args["validators"].append(validators.NumberRange(min=1901, max=2155))
-    #     return StringField(**field_args)
+    @converts("Interval")
+    def conv_interval(
+        self, model: type, prop: ColumnProperty, kwargs: Dict[str, Any]
+    ) -> UnboundField:
+        kwargs["render_kw"]["placeholder"] = "Like: 1 day 1:25:33.652"
+        return IntervalField(**kwargs)
 
     @converts(
         "sqlalchemy.dialects.postgresql.base.INET",
@@ -428,7 +431,6 @@ class ModelConverter(ModelConverterBase):
     def conv_ip_address(
         self, model: type, prop: ColumnProperty, kwargs: Dict[str, Any]
     ) -> UnboundField:
-        kwargs.setdefault("label", "IP Address")
         kwargs.setdefault("validators", [])
         kwargs["validators"].append(validators.IPAddress(ipv4=True, ipv6=True))
         return StringField(**kwargs)
@@ -440,7 +442,6 @@ class ModelConverter(ModelConverterBase):
     def conv_mac_address(
         self, model: type, prop: ColumnProperty, kwargs: Dict[str, Any]
     ) -> UnboundField:
-        kwargs.setdefault("label", "MAC Address")
         kwargs.setdefault("validators", [])
         kwargs["validators"].append(validators.MacAddress())
         return StringField(**kwargs)
@@ -453,7 +454,6 @@ class ModelConverter(ModelConverterBase):
     def conv_uuid(
         self, model: type, prop: ColumnProperty, kwargs: Dict[str, Any]
     ) -> UnboundField:
-        kwargs.setdefault("label", "UUID")
         kwargs.setdefault("validators", [])
         kwargs["validators"].append(validators.UUID())
         return StringField(**kwargs)
@@ -470,7 +470,6 @@ class ModelConverter(ModelConverterBase):
     def conv_email(
         self, model: type, prop: ColumnProperty, kwargs: Dict[str, Any]
     ) -> UnboundField:
-        kwargs.setdefault("label", "Email")
         kwargs.setdefault("validators", [])
         kwargs["validators"].append(validators.Email())
         return StringField(**kwargs)

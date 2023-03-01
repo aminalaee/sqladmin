@@ -7,12 +7,14 @@ from wtforms import Form, ValidationError, fields, widgets
 
 from sqladmin import widgets as sqladmin_widgets
 from sqladmin.ajax import QueryAjaxModelLoader
+from sqladmin.helpers import parse_interval
 
 __all__ = [
     "AjaxSelectField",
     "AjaxSelectMultipleField",
     "DateField",
     "DateTimeField",
+    "IntervalField",
     "JSONField",
     "QuerySelectField",
     "QuerySelectMultipleField",
@@ -44,6 +46,22 @@ class TimeField(fields.TimeField):
     """
 
     widget = sqladmin_widgets.TimePickerWidget()
+
+
+class IntervalField(fields.StringField):
+    """
+    A text field which stores a `datetime.timedelta` object.
+    """
+
+    def process_formdata(self, valuelist: List[str]) -> None:
+        if not valuelist:
+            return
+
+        interval = parse_interval(valuelist[0])
+        if not interval:
+            raise ValueError("Invalide timedelta format.")
+
+        self.data = interval
 
 
 class SelectField(fields.SelectField):
