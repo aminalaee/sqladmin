@@ -9,6 +9,7 @@ from sqlalchemy import (
     Enum,
     ForeignKey,
     Integer,
+    Interval,
     Numeric,
     String,
     Text,
@@ -67,6 +68,7 @@ class User(Base):
     reminder = Column(Time)
     x = Column(Integer)
     y = Column(Integer)
+    interval = Column(Interval)
 
     addresses = relationship("Address", back_populates="user")
     profile = relationship("Profile", back_populates="user", uselist=False)
@@ -106,7 +108,7 @@ async def test_model_form() -> None:
     Form = await get_model_form(model=User, engine=engine)
     form = Form()
 
-    assert len(form._fields) == 14
+    assert len(form._fields) == 15
     assert form._fields["active"].flags.required is None
     assert form._fields["name"].flags.required is None
     assert form._fields["email"].flags.required is True
@@ -132,7 +134,7 @@ async def test_model_form_only() -> None:
 
 async def test_model_form_exclude() -> None:
     Form = await get_model_form(model=User, engine=engine, exclude=["status"])
-    assert len(Form()._fields) == 13
+    assert len(Form()._fields) == 14
 
 
 async def test_model_form_form_args() -> None:
