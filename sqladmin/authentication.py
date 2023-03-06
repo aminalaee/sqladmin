@@ -1,10 +1,10 @@
 import functools
-from typing import Any, Callable, Union
+from typing import Any, Callable, Optional
 
 from starlette.middleware import Middleware
 from starlette.middleware.sessions import SessionMiddleware
 from starlette.requests import Request
-from starlette.responses import RedirectResponse, Response
+from starlette.responses import Response
 
 
 class AuthenticationBackend:
@@ -31,10 +31,14 @@ class AuthenticationBackend:
         """
         raise NotImplementedError()
 
-    async def authenticate(self, request: Request) -> Union[bool, Response]:
+    async def authenticate(self, request: Request) -> Optional[Response]:
         """Implement authenticate logic here.
         This method will be called for each incoming request
         to validate the authentication.
+
+        If the request is authenticated, this method should return `None`.
+        Otherwise it should return a `Response` object,
+        like a redirect to the login page or SSO page.
         """
         raise NotImplementedError()
 
@@ -49,14 +53,9 @@ def login_required(func: Callable[..., Any]) -> Callable[..., Any]:
         admin, request = args[0], args[1]
         auth_backend = admin.authentication_backend
         if auth_backend is not None:
-            if hasattr(auth_backend, "authenticate"):
-                ...
-
-            is_authenticated = await auth_backend.authenticate(request)
-            if not is_authenticated:
-                return RedirectResponse(request.url_for("admin:login"), status_code=302)
-            if isinstance(is_authenticated, RedirectResponse):
-                return is_authenticated
+            response = await auth_backend.authenticate(request)
+            if response and isinstance(response, Response):
+                return response
 
         return await func(*args, **kwargs)
 

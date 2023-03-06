@@ -17,6 +17,7 @@ from sqladmin import Admin
 from sqladmin.authentication import AuthenticationBackend
 
 from starlette.requests import Request
+from starlette.responses import RedirectResponse
 
 
 class AdminAuth(AuthenticationBackend):
@@ -39,7 +40,7 @@ class AdminAuth(AuthenticationBackend):
         token = request.session.get("token")
 
         if not token:
-            return False
+            return RedirectResponse(request.url_for("admin:login"), status_code=302)
 
         # Check the token
         return True
@@ -61,6 +62,7 @@ admin = Admin(app=..., authentication_backend=authentication_backend، ...)
     from sqlalchemy.ext.declarative import declarative_base
     from starlette.applications import Starlette
     from starlette.requests import Request
+    from starlette.responses import RedirectResponse
 
 
     Base = declarative_base()
@@ -89,8 +91,9 @@ admin = Admin(app=..., authentication_backend=authentication_backend، ...)
             request.session.clear()
             return True
 
-        async def authenticate(self, request: Request) -> bool:
-            return "token" in request.session
+        async def authenticate(self, request: Request) -> RedirectResponse:
+            if not "token" in request.session:
+                return RedirectResponse(request.url_for("admin:login"), status_code=302)
 
 
     app = Starlette()
@@ -120,7 +123,7 @@ from sqladmin.authentication import AuthenticationBackend
 from starlette.applications import Starlette
 from starlette.middleware.sessions import SessionMiddleware
 from starlette.requests import Request
-from starlette.responses import RedirectResponse, Response
+from starlette.responses import RedirectResponse
 
 
 app = Starlette()
@@ -148,12 +151,11 @@ class AdminAuth(AuthenticationBackend):
         request.session.clear()
         return True
 
-    async def authenticate(self, request: Request) -> Union[bool, Response]:
+    async def authenticate(self, request: Request) -> RedirectResponse:
         user = request.session.get("user")
         if not user:
             redirect_uri = request.url_for('login_google')
             return await google.authorize_redirect(request, redirect_uri)
-        return True
 
 
 admin = Admin(app=app, engine=engine, authentication_backend=AdminAuth("test"))
