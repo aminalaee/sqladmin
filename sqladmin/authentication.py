@@ -51,10 +51,10 @@ def login_required(func: Callable[..., Any]) -> Callable[..., Any]:
         if auth_backend is not None:
             if hasattr(auth_backend, "authenticate"):
                 ...
-            
+
             is_authenticated = await auth_backend.authenticate(request)
             if not is_authenticated:
-                return RedirectResponse(request.url_for("admin:login"), status_code=302)    
+                return RedirectResponse(request.url_for("admin:login"), status_code=302)
             if isinstance(is_authenticated, RedirectResponse):
                 return is_authenticated
 
