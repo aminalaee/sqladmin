@@ -120,9 +120,9 @@ sqlalchemy = ["1.4", "2.0"]
 
 [tool.hatch.envs.test.overrides]
 matrix.sqlalchemy.dependencies = [
-  { value = "sqlalchemy~=1.4", if = ["1.4"] },
+  { value = "sqlalchemy==1.4.41", if = ["1.4"] },
   { value = "sqlmodel==0.0.8", if = ["1.4"] },
-  { value = "sqlalchemy~=2.0", if = ["2.0"] },
+  { value = "sqlalchemy==2.0", if = ["2.0"] },
 ]
 
 [tool.mypy]

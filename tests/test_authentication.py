@@ -3,6 +3,7 @@ from typing import Generator
 import pytest
 from starlette.applications import Starlette
 from starlette.requests import Request
+from starlette.responses import RedirectResponse
 from starlette.testclient import TestClient
 
 from sqladmin import Admin
@@ -23,8 +24,9 @@ class CustomBackend(AuthenticationBackend):
         request.session.clear()
         return True
 
-    async def authenticate(self, request: Request) -> bool:
-        return "token" in request.session
+    async def authenticate(self, request: Request) -> RedirectResponse:
+        if "token" not in request.session:
+            return RedirectResponse(request.url_for("admin:login"), status_code=302)
 
 
 app = Starlette()
