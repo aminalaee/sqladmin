@@ -36,7 +36,7 @@ class AuthenticationBackend:
         This method will be called for each incoming request
         to validate the authentication.
 
-        If the request is authenticated, this method should return `None`.
+        If the request is authenticated, this method should return `None` or do nothing.
         Otherwise it should return a `Response` object,
         like a redirect to the login page or SSO page.
         """

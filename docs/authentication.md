@@ -13,9 +13,10 @@ The class `AuthenticationBackend` has three methods you need to override:
 * `logout`: Will be called only for the logout, usually clearin the session.
 
 ```python
+from typing import Optional
+
 from sqladmin import Admin
 from sqladmin.authentication import AuthenticationBackend
-
 from starlette.requests import Request
 from starlette.responses import RedirectResponse
 
@@ -36,14 +37,13 @@ class AdminAuth(AuthenticationBackend):
         request.session.clear()
         return True
 
-    async def authenticate(self, request: Request) -> bool:
+    async def authenticate(self, request: Request) -> Optional[RedirectResponse]:
         token = request.session.get("token")
 
         if not token:
             return RedirectResponse(request.url_for("admin:login"), status_code=302)
 
-        # Check the token
-        return True
+        # Check the token in depth
 
 
 authentication_backend = AdminAuth(secret_key="...")
@@ -56,6 +56,8 @@ admin = Admin(app=..., authentication_backend=authentication_backend، ...)
 ??? example "Full Example"
 
     ```python
+    from typing import Optional
+
     from sqladmin import Admin, ModelView
     from sqladmin.authentication import AuthenticationBackend
     from sqlalchemy import Column, Integer, String, create_engine
@@ -91,7 +93,7 @@ admin = Admin(app=..., authentication_backend=authentication_backend، ...)
             request.session.clear()
             return True
 
-        async def authenticate(self, request: Request) -> RedirectResponse:
+        async def authenticate(self, request: Request) -> Optional[RedirectResponse]:
             if not "token" in request.session:
                 return RedirectResponse(request.url_for("admin:login"), status_code=302)
 
@@ -118,6 +120,8 @@ You can also integrate OAuth into SQLAdmin, for this example we will integrate G
 If you have followed the previous example, there are only two changes required to the authentication flow:
 
 ```python
+from typing import Optional
+
 from authlib.integrations.starlette_client import OAuth
 from sqladmin.authentication import AuthenticationBackend
 from starlette.applications import Starlette
@@ -151,7 +155,7 @@ class AdminAuth(AuthenticationBackend):
         request.session.clear()
         return True
 
-    async def authenticate(self, request: Request) -> RedirectResponse:
+    async def authenticate(self, request: Request) -> Optional[RedirectResponse]:
         user = request.session.get("user")
         if not user:
             redirect_uri = request.url_for('login_google')
