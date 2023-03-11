@@ -414,7 +414,7 @@ class Admin(BaseAdminView):
 
             await model_view.delete_model(model)
 
-        return Response(content=request.url_for("admin:list", identity=identity))
+        return Response(content=str(request.url_for("admin:list", identity=identity)))
 
     @login_required
     async def create(self, request: Request) -> Response:
