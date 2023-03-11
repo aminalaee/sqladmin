@@ -16,7 +16,7 @@ from sqlalchemy.engine import Engine
 from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession
 from sqlalchemy.orm import Session, sessionmaker
 from starlette.applications import Starlette
-from starlette.datastructures import FormData, UploadFile
+from starlette.datastructures import URL, FormData, UploadFile
 from starlette.exceptions import HTTPException
 from starlette.middleware import Middleware
 from starlette.requests import Request
@@ -414,7 +414,7 @@ class Admin(BaseAdminView):
 
             await model_view.delete_model(model)
 
-        return Response(content=request.url_for("admin:list", identity=identity))
+        return Response(content=str(request.url_for("admin:list", identity=identity)))
 
     @login_required
     async def create(self, request: Request) -> Response:
@@ -569,7 +569,7 @@ class Admin(BaseAdminView):
 
     def get_save_redirect_url(
         self, request: Request, form: FormData, model_view: ModelView, obj: Any
-    ) -> str:
+    ) -> Union[str, URL]:
         """
         Get the redirect URL after a save action
         which is triggered from create/edit page.

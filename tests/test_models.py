@@ -10,7 +10,7 @@ from starlette.applications import Starlette
 
 from sqladmin import Admin, ModelView
 from sqladmin.exceptions import InvalidColumnError, InvalidModelError
-from sqladmin.helpers import get_column_python_type
+from sqladmin.helpers import get_column_python_type, map_attr_to_prop
 from tests.common import sync_engine as engine
 
 pytestmark = pytest.mark.anyio
@@ -295,8 +295,8 @@ def test_get_model_attr_by_column() -> None:
     class UserAdmin(ModelView, model=User):
         ...
 
-    assert UserAdmin()._attr_to_prop("name") == User.name
-    assert UserAdmin()._attr_to_prop(User.name) == User.name
+    assert map_attr_to_prop("name", UserAdmin()) == User.name
+    assert map_attr_to_prop(User.name, UserAdmin()) == User.name
 
 
 def test_form_columns_default() -> None:
@@ -326,16 +326,6 @@ def test_form_columns_by_str_name() -> None:
         ("id", Address.id),
         ("user_id", Address.user_id),
     ]
-
-
-def test_form_columns_invalid_attribute() -> None:
-    class ExampleAdmin(ModelView, model=Address):
-        form_columns = ["example"]
-
-    with pytest.raises(InvalidColumnError) as exc:
-        ExampleAdmin().get_form_columns()
-
-    assert exc.match("Model 'Address' has no attribute 'example'.")
 
 
 def test_form_columns_both_include_and_exclude() -> None:
@@ -409,16 +399,6 @@ def test_export_columns_by_str_name() -> None:
         ("id", Address.id),
         ("user_id", Address.user_id),
     ]
-
-
-def test_export_columns_invalid_attribute() -> None:
-    class ExampleAdmin(ModelView, model=Address):
-        column_export_list = ["example"]
-
-    with pytest.raises(InvalidColumnError) as exc:
-        ExampleAdmin().get_export_columns()
-
-    assert exc.match("Model 'Address' has no attribute 'example'.")
 
 
 def test_export_columns_both_include_and_exclude() -> None:

@@ -28,6 +28,7 @@ from sqlalchemy.orm import (
 from sqlalchemy.orm.attributes import InstrumentedAttribute
 from sqlalchemy.sql.elements import ClauseElement
 from sqlalchemy.sql.expression import Select, select
+from starlette.datastructures import URL
 from starlette.requests import Request
 from starlette.responses import StreamingResponse
 from starlette.templating import Jinja2Templates
@@ -36,13 +37,14 @@ from wtforms import Field, Form
 from sqladmin._queries import Query
 from sqladmin._types import ENGINE_TYPE, MODEL_PROPERTY
 from sqladmin.ajax import create_ajax_loader
-from sqladmin.exceptions import InvalidColumnError, InvalidModelError
+from sqladmin.exceptions import InvalidModelError
 from sqladmin.formatters import BASE_FORMATTERS
 from sqladmin.forms import ModelConverter, ModelConverterBase, get_model_form
 from sqladmin.helpers import (
     Writer,
     get_column_python_type,
     get_primary_key,
+    map_attr_to_prop,
     prettify_class_name,
     secure_filename,
     slugify_class_name,
@@ -691,13 +693,13 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
 
         column_formatters = getattr(self, "column_formatters", {})
         self._list_formatters = {
-            self._attr_to_prop(attr): formatter
+            map_attr_to_prop(attr, self): formatter
             for (attr, formatter) in column_formatters.items()
         }
 
         column_formatters_detail = getattr(self, "column_formatters_detail", {})
         self._detail_formatters = {
-            self._attr_to_prop(attr): formatter
+            map_attr_to_prop(attr, self): formatter
             for (attr, formatter) in column_formatters_detail.items()
         }
 
@@ -711,7 +713,7 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
         ]
 
         self._sort_fields = [
-            self._attr_to_prop(attr).key for attr in self.column_sortable_list
+            map_attr_to_prop(attr, self).key for attr in self.column_sortable_list
         ]
 
         self._form_ajax_refs = {}
@@ -733,7 +735,7 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
         else:
             return await anyio.to_thread.run_sync(self._run_query_sync, stmt)
 
-    def _url_for_details(self, request: Request, obj: Any) -> str:
+    def _url_for_details(self, request: Request, obj: Any) -> Union[str, URL]:
         pk = getattr(obj, self.pk_column.name)
         return request.url_for(
             "admin:details",
@@ -741,7 +743,7 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
             pk=pk,
         )
 
-    def _url_for_edit(self, request: Request, obj: Any) -> str:
+    def _url_for_edit(self, request: Request, obj: Any) -> Union[str, URL]:
         pk = getattr(obj, self.pk_column.name)
         return request.url_for(
             "admin:edit",
@@ -755,11 +757,11 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
         url = request.url_for(
             "admin:delete", identity=slugify_class_name(obj.__class__.__name__)
         )
-        return url + "?" + query_params
+        return str(url) + "?" + query_params
 
     def _url_for_details_with_prop(
         self, request: Request, obj: Any, prop: RelationshipProperty
-    ) -> str:
+    ) -> Union[str, URL]:
         target = getattr(obj, prop.key)
         if target is None:
             return ""
@@ -889,19 +891,6 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
             formatted_value = formatter(obj, prop)
         return value, formatted_value
 
-    def _attr_to_prop(self, attr: Union[str, InstrumentedAttribute]) -> MODEL_PROPERTY:
-        if isinstance(attr, str):
-            key = attr
-        else:
-            key = attr.prop.key
-
-        if key in self._props:
-            return self._props[key]
-
-        raise InvalidColumnError(
-            f"Model '{self.model.__name__}' has no attribute '{key}'."
-        )
-
     def _build_column_list(
         self,
         defaults: List[MODEL_PROPERTY],
@@ -912,9 +901,9 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
         for any sequence of inclusions or exclusions.
         """
         if include:
-            props = [self._attr_to_prop(prop) for prop in include]
+            props = [map_attr_to_prop(prop, self) for prop in include]
         elif exclude:
-            exclude_props = {self._attr_to_prop(prop) for prop in exclude}
+            exclude_props = {map_attr_to_prop(prop, self) for prop in exclude}
             props = [prop for prop in self._props if prop not in exclude_props]
         else:
             props = defaults
@@ -986,7 +975,7 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
         self,
     ) -> Dict[MODEL_PROPERTY, str]:
         return {
-            self._attr_to_prop(column_label): value
+            map_attr_to_prop(column_label, self): value
             for column_label, value in self.column_labels.items()
         }
 
@@ -1040,7 +1029,7 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
         """
 
         search_fields = [
-            self._attr_to_prop(attr) for attr in self.column_searchable_list
+            map_attr_to_prop(attr, self) for attr in self.column_searchable_list
         ]
         field_names = [
             self._column_labels.get(field, field.key) for field in search_fields

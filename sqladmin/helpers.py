@@ -4,12 +4,27 @@ import re
 import unicodedata
 from abc import ABC, abstractmethod
 from datetime import timedelta
-from typing import Any, Callable, Dict, Generator, List, Optional, TypeVar
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Callable,
+    Dict,
+    Generator,
+    List,
+    Optional,
+    TypeVar,
+    Union,
+)
 
 from sqlalchemy import Column, inspect
 from sqlalchemy.orm import RelationshipProperty
+from sqlalchemy.orm.attributes import InstrumentedAttribute
 
 from sqladmin._types import MODEL_PROPERTY
+from sqladmin.exceptions import InvalidColumnError
+
+if TYPE_CHECKING:
+    from sqladmin.models import ModelView
 
 T = TypeVar("T")
 
@@ -198,3 +213,17 @@ def parse_interval(value: str) -> Optional[timedelta]:
     if match.re == iso8601_duration_re:
         days *= sign
     return days + sign * timedelta(**kw)
+
+
+def map_attr_to_prop(
+    attr: Union[str, InstrumentedAttribute], model_admin: "ModelView"
+) -> MODEL_PROPERTY:
+    if isinstance(attr, InstrumentedAttribute):
+        attr = attr.prop.key
+
+    try:
+        return model_admin._props[attr]
+    except KeyError:
+        raise InvalidColumnError(
+            f"Model '{model_admin.model.__name__}' has no attribute '{attr}'."
+        )
