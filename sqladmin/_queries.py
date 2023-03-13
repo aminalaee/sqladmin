@@ -44,8 +44,13 @@ class Query:
             relation = self.model_view._mapper.relationships.get(key)
 
             if not value:
-                # Set falsy values to None, if column is Nullable - but exclude False and zero values.
-                if not relation and column.nullable and value is not False and value is not 0:
+                # Set falsy values to None, if column is Nullable
+                if (
+                    not relation
+                    and column.nullable
+                    and value is not False
+                    and (value != 0 if isinstance(value, int) else False)
+                ):
                     value = None
 
                 setattr(obj, key, value)
@@ -77,8 +82,13 @@ class Query:
             relation = self.model_view._mapper.relationships.get(key)
 
             if not value:
-                # Set falsy values to None, if column is Nullable - but exclude False and zero values.
-                if not relation and column.nullable and value is not False and value is not 0:
+                # Set falsy values to None, if column is Nullable
+                if (
+                    not relation
+                    and column.nullable
+                    and value is not False
+                    and (value != 0 if isinstance(value, int) else False)
+                ):
                     value = None
 
                 setattr(obj, key, value)
