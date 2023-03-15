@@ -86,8 +86,8 @@ class Query:
                 if (
                     not relation
                     and column.nullable
+                    and isinstance(value, bool)
                     and value is not False
-                    and (value != 0 if isinstance(value, int) else False)
                 ):
                     value = None
 
