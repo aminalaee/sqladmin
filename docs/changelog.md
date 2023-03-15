@@ -6,15 +6,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Version 0.10.0 - 2023-03-15
 
-## Breaking change
+### Breaking change
 
 * Change AuthenticationBackend `authenticate` signature to support OAuth in [#440](https://github.com/aminalaee/sqladmin/pull/440)
 
 ### Added
+
 * Add File field in [#424](https://github.com/aminalaee/sqladmin/pull/424)
 * Support SQLALchemy Interval type in [#438](https://github.com/aminalaee/sqladmin/pull/438)
 
 ### Fixed
+
 * Fix docstrings in [#434](https://github.com/aminalaee/sqladmin/pull/434)
 * Update to work with Starlette URL type in url_for in [#444](https://github.com/aminalaee/sqladmin/pull/444)
 * Fix nullable Integers to accept zero value in [#445](https://github.com/aminalaee/sqladmin/pull/445)
