@@ -4,6 +4,25 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## Version 0.10.0 - 2023-03-15
+
+### Breaking change
+
+* Change AuthenticationBackend `authenticate` signature to support OAuth in https://github.com/aminalaee/sqladmin/pull/440
+
+### Added
+
+* Add File field in https://github.com/aminalaee/sqladmin/pull/424
+* Support SQLALchemy Interval type in https://github.com/aminalaee/sqladmin/pull/438
+
+### Fixed
+
+* Fix docstrings by @linomp in https://github.com/aminalaee/sqladmin/pull/434
+* Update to work with Starlette URL type in url_for by @aminalaee in https://github.com/aminalaee/sqladmin/pull/444
+* Fix nullable Integers to accept zero value by @ovginkel in [#445](https://github.com/aminalaee/sqladmin/pull/445)
+
+**Full Changelog**: https://github.com/aminalaee/sqladmin/compare/0.9.0...0.10.0
+
 ## Version 0.9.0 - 2023-02-07
 
 ### Added
