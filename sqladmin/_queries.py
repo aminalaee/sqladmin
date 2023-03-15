@@ -45,7 +45,12 @@ class Query:
 
             if not value:
                 # Set falsy values to None, if column is Nullable
-                if not relation and column.nullable and value is not False:
+                if (
+                    not relation
+                    and column.nullable
+                    and isinstance(value, bool)
+                    and value is not False
+                ):
                     value = None
 
                 setattr(obj, key, value)
@@ -78,7 +83,12 @@ class Query:
 
             if not value:
                 # Set falsy values to None, if column is Nullable
-                if not relation and column.nullable and value is not False:
+                if (
+                    not relation
+                    and column.nullable
+                    and isinstance(value, bool)
+                    and value is not False
+                ):
                     value = None
 
                 setattr(obj, key, value)
