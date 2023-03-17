@@ -736,7 +736,7 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
             return await anyio.to_thread.run_sync(self._run_query_sync, stmt)
 
     def _url_for_details(self, request: Request, obj: Any) -> Union[str, URL]:
-        pk = getattr(obj, self.pk_column.name)
+        pk = getattr(obj, get_primary_key(obj).name)
         return request.url_for(
             "admin:details",
             identity=slugify_class_name(obj.__class__.__name__),
@@ -744,7 +744,7 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
         )
 
     def _url_for_edit(self, request: Request, obj: Any) -> Union[str, URL]:
-        pk = getattr(obj, self.pk_column.name)
+        pk = getattr(obj, get_primary_key(obj).name)
         return request.url_for(
             "admin:edit",
             identity=slugify_class_name(obj.__class__.__name__),
@@ -752,7 +752,7 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
         )
 
     def _url_for_delete(self, request: Request, obj: Any) -> str:
-        pk = getattr(obj, self.pk_column.name)
+        pk = getattr(obj, get_primary_key(obj).name)
         query_params = urlencode({"pks": pk})
         url = request.url_for(
             "admin:delete", identity=slugify_class_name(obj.__class__.__name__)
