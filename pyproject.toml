@@ -74,6 +74,9 @@ dependencies = [
   "sqlalchemy-fields",
 ]
 
+[[tool.hatch.envs.test.matrix]]
+python = ["37", "38", "39", "310", "311"]
+
 [tool.hatch.envs.lint]
 dependencies = [
   "black==23.1.0",
