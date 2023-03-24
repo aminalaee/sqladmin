@@ -12,3 +12,5 @@ coverage.xml
 examples/
 .vscode/
 .uploads
+test.db
+coverage.xml
