@@ -279,7 +279,6 @@ class ModelConverterBase:
         override: Optional[Type[Field]] = None,
         form_ajax_refs: Dict[str, QueryAjaxModelLoader] = {},
     ) -> Optional[UnboundField]:
-
         loader = form_ajax_refs.get(prop.key)
         kwargs = await self._prepare_kwargs(
             prop=prop,
