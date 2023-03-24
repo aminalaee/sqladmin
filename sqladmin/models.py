@@ -45,6 +45,7 @@ from sqladmin.helpers import (
     get_column_python_type,
     get_primary_key,
     map_attr_to_prop,
+    pluralize,
     prettify_class_name,
     secure_filename,
     slugify_class_name,
@@ -87,7 +88,7 @@ class ModelViewMeta(type):
         cls.model = model
 
         cls.name = attrs.get("name", prettify_class_name(cls.model.__name__))
-        cls.name_plural = attrs.get("name_plural", f"{cls.name}s")
+        cls.name_plural = attrs.get("name_plural", pluralize(cls.name))
         cls.icon = attrs.get("icon")
 
         cls.list_query = attrs.get("list_query", select(model))
