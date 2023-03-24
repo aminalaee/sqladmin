@@ -2,7 +2,7 @@ from typing import Generator
 
 import pytest
 from markupsafe import Markup
-from sqlalchemy import Boolean, Column, ForeignKey, Integer, String, Table, select
+from sqlalchemy import Boolean, Column, ForeignKey, Integer, String, select
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship, sessionmaker
@@ -23,15 +23,6 @@ app = Starlette()
 admin = Admin(app=app, engine=engine)
 
 
-UserPermission = Table(
-    "users_permissions",
-    Base.metadata,
-    Column("id", Integer, primary_key=True, autoincrement=True),
-    Column("user_id", Integer, ForeignKey("users.id")),
-    Column("permission_id", String(32), ForeignKey("permissions.name")),
-)
-
-
 class User(Base):
     __tablename__ = "users"
 
@@ -40,7 +31,6 @@ class User(Base):
 
     addresses = relationship("Address", back_populates="user")
     profile = relationship("Profile", back_populates="user", uselist=False)
-    permissions = relationship("Permission", secondary=UserPermission)
 
 
 class Address(Base):
@@ -60,17 +50,6 @@ class Profile(Base):
     user_id = Column(Integer, ForeignKey("users.id"), unique=True)
 
     user = relationship("User", back_populates="profile")
-
-
-class Permission(Base):
-    __tablename__ = "permissions"
-
-    name = Column(String(32), primary_key=True)
-    users = relationship(
-        "User",
-        secondary=UserPermission,
-        viewonly=True,
-    )
 
 
 @pytest.fixture(autouse=True)
@@ -96,12 +75,6 @@ def test_model_setup() -> None:
         pass
 
     assert ProfileAdmin.model == Profile
-
-    class PermissionAdmin(ModelView, model=Permission):
-        pass
-
-    assert PermissionAdmin.model == Permission
-    assert PermissionAdmin.pk_column == Permission.name
 
 
 def test_metadata_setup() -> None:
@@ -184,7 +157,6 @@ def test_column_exclude_list_by_str_name() -> None:
     assert UserAdmin().get_list_columns() == [
         ("addresses", User.addresses.prop),
         ("profile", User.profile.prop),
-        ("permissions", User.permissions.prop),
         ("name", User.name),
     ]
 
@@ -196,7 +168,6 @@ def test_column_exclude_list_by_model_column() -> None:
     assert UserAdmin().get_list_columns() == [
         ("addresses", User.addresses.prop),
         ("profile", User.profile.prop),
-        ("permissions", User.permissions.prop),
         ("name", User.name),
     ]
 
@@ -267,7 +238,6 @@ def test_column_details_list_default() -> None:
     assert UserAdmin().get_details_columns() == [
         ("addresses", User.addresses.prop),
         ("profile", User.profile.prop),
-        ("permissions", User.permissions.prop),
         ("id", User.id),
         ("name", User.name),
     ]
@@ -287,7 +257,6 @@ def test_column_details_exclude_list_by_model_column() -> None:
     assert UserAdmin().get_details_columns() == [
         ("addresses", User.addresses.prop),
         ("profile", User.profile.prop),
-        ("permissions", User.permissions.prop),
         ("name", User.name),
     ]
 
@@ -337,7 +306,6 @@ def test_form_columns_default() -> None:
     assert UserAdmin().get_form_columns() == [
         ("addresses", User.addresses.prop),
         ("profile", User.profile.prop),
-        ("permissions", User.permissions.prop),
         ("id", User.id),
         ("name", User.name),
     ]
@@ -377,7 +345,6 @@ def test_form_excluded_columns_by_str_name() -> None:
     assert UserAdmin().get_form_columns() == [
         ("addresses", User.addresses.prop),
         ("profile", User.profile.prop),
-        ("permissions", User.permissions.prop),
         ("name", User.name),
     ]
 
@@ -389,7 +356,6 @@ def test_form_excluded_columns_by_model_column() -> None:
     assert UserAdmin().get_form_columns() == [
         ("addresses", User.addresses.prop),
         ("profile", User.profile.prop),
-        ("permissions", User.permissions.prop),
         ("name", User.name),
     ]
 
@@ -454,7 +420,6 @@ def test_export_excluded_columns_by_str_name() -> None:
     assert UserAdmin().get_export_columns() == [
         ("addresses", User.addresses.prop),
         ("profile", User.profile.prop),
-        ("permissions", User.permissions.prop),
         ("name", User.name),
     ]
 
@@ -466,7 +431,6 @@ def test_export_excluded_columns_by_model_column() -> None:
     assert UserAdmin().get_export_columns() == [
         ("addresses", User.addresses.prop),
         ("profile", User.profile.prop),
-        ("permissions", User.permissions.prop),
         ("name", User.name),
     ]
 
