@@ -1,5 +1,5 @@
 from typing import Generator
-from unittest.mock import Mock, patch
+from unittest.mock import Mock, call, patch
 
 import pytest
 from markupsafe import Markup
@@ -501,10 +501,11 @@ def test_url_for() -> None:
 
     with patch("starlette.requests.Request.url_for", Mock()) as mock:
         view._url_for_details(request, user)
-
-    assert mock.call_args.kwargs == {"identity": "user", "pk": 1}
-
-    with patch("starlette.requests.Request.url_for", Mock()) as mock:
         view._url_for_edit(request, address)
+        view._url_for_delete(request, address)
 
-    assert mock.call_args.kwargs == {"identity": "address", "pk": 2}
+    assert mock.call_args_list == [
+        call("admin:details", identity="user", pk=1),
+        call("admin:edit", identity="address", pk=2),
+        call("admin:delete", identity="address"),
+    ]
