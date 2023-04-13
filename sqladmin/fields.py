@@ -396,3 +396,12 @@ class FileField(fields.FileField):
     """
 
     widget = sqladmin_widgets.FileInputWidget()
+
+
+class NullableStringField(fields.StringField):
+    """
+    String field which stores either a non-empty string or None.
+    """
+
+    def _value(self) -> Optional[str]:
+        return str(self.data) if self.data else None

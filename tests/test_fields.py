@@ -11,6 +11,7 @@ from sqladmin.fields import (
     DateTimeField,
     IntervalField,
     JSONField,
+    NullableStringField,
     QuerySelectField,
     QuerySelectMultipleField,
     Select2TagsField,
@@ -203,3 +204,23 @@ def test_interval_field() -> None:
 
     form = F(DummyData(interval=[]))
     assert form.validate() is True
+
+
+def test_nullable_string_field() -> None:
+    class F(Form):
+        text = NullableStringField()
+
+    form = F()
+    assert form.validate() is True
+
+    form = F(DummyData(text="hannah-montana"))
+    assert form.validate() is True
+    assert form.text._value() == "hannah-montana"
+
+    form = F(DummyData(text=None))
+    assert form.validate() is True
+    assert form.text._value() is None
+
+    form = F(DummyData(text=""))
+    assert form.validate() is True
+    assert form.text._value() is None

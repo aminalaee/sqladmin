@@ -50,6 +50,7 @@ from sqladmin.fields import (
     FileField,
     IntervalField,
     JSONField,
+    NullableStringField,
     QuerySelectField,
     QuerySelectMultipleField,
     Select2TagsField,
@@ -455,7 +456,7 @@ class ModelConverter(ModelConverterBase):
     ) -> UnboundField:
         kwargs.setdefault("validators", [])
         kwargs["validators"].append(validators.UUID())
-        return StringField(**kwargs)
+        return NullableStringField(**kwargs)
 
     @converts(
         "sqlalchemy.dialects.postgresql.base.ARRAY", "sqlalchemy.sql.sqltypes.ARRAY"

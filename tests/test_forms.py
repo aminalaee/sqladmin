@@ -23,7 +23,7 @@ from wtforms import BooleanField, Field, Form, IntegerField, StringField, TimeFi
 from wtforms.fields.core import UnboundField
 
 from sqladmin import ModelView
-from sqladmin.fields import Select2TagsField, SelectField
+from sqladmin.fields import NullableStringField, Select2TagsField, SelectField
 from sqladmin.forms import ModelConverter, converts, get_model_form
 from tests.common import async_engine as engine
 
@@ -278,3 +278,17 @@ async def test_form_override_form_converter() -> None:
 
     assert isinstance(Form()._fields["email"], EmailField)
     assert isinstance(Form()._fields["number"], IntegerField)
+
+
+@pytest.mark.skipif(engine.name != "postgresql", reason="PostgreSQL only")
+async def test_form_with_uuids() -> None:
+    class UUIDModel(Base):
+        __tablename__ = "uuid_model"
+
+        id = Column(UUID(as_uuid=True), primary_key=True)
+        team_id = Column(UUID(as_uuid=True))
+
+    Form = await get_model_form(model=UUIDModel, engine=engine)
+
+    assert len(Form()._fields) == 1
+    assert isinstance(Form()._fields["team_id"], NullableStringField)
