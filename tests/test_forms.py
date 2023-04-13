@@ -196,6 +196,7 @@ async def test_model_form_postgresql() -> None:
     Form = await get_model_form(model=PostgresModel, engine=engine)
 
     assert len(Form()._fields) == 4
+    assert isinstance(Form()._fields["uuid"], NullableStringField)
     assert isinstance(Form()._fields["array"], Select2TagsField)
 
 
