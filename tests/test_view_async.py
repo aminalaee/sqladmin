@@ -687,7 +687,7 @@ async def test_update_submit_form(client: AsyncClient) -> None:
     data = {"name": "Jack", "addresses": "1", "profile": "1"}
     response = await client.post("/admin/user/edit/1", data=data)
 
-    stmt = select(Address).limit(1)
+    stmt = select(Address).filter(Address.id == 1).limit(1)
     async with LocalSession() as s:
         result = await s.execute(stmt)
     address = result.scalar_one()
@@ -707,7 +707,7 @@ async def test_update_submit_form(client: AsyncClient) -> None:
     data = {"user": user.id}
     response = await client.post("/admin/address/edit/1", data=data)
 
-    stmt = select(Address).limit(1)
+    stmt = select(Address).filter(Address.id == 1).limit(1)
     async with LocalSession() as s:
         result = await s.execute(stmt)
     address = result.scalar_one()

@@ -656,7 +656,7 @@ def test_update_submit_form(client: TestClient) -> None:
     data = {"name": "Jack", "addresses": "1", "profile": "1"}
     response = client.post("/admin/user/edit/1", data=data)
 
-    stmt = select(Address).limit(1)
+    stmt = select(Address).filter(Address.id == 1).limit(1)
     with LocalSession() as s:
         address = s.execute(stmt).scalar_one()
     assert address.user_id == 1
@@ -674,7 +674,7 @@ def test_update_submit_form(client: TestClient) -> None:
     data = {"user": user.id}
     response = client.post("/admin/address/edit/1", data=data)
 
-    stmt = select(Address).limit(1)
+    stmt = select(Address).filter(Address.id == 1).limit(1)
     with LocalSession() as s:
         address = s.execute(stmt).scalar_one()
     assert address.user_id == 1
