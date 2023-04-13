@@ -2,10 +2,10 @@ import inspect
 from typing import (
     Any,
     Callable,
-    Dict,
     List,
     Optional,
     Sequence,
+    Tuple,
     Type,
     Union,
     no_type_check,
@@ -594,22 +594,21 @@ class Admin(BaseAdminView):
         """
 
         form = await request.form()
-        form_data: Dict[str, Any] = {}
-
-        for key, value in form.items():
+        form_data: List[Tuple[str, Union[str, UploadFile]]] = []
+        for key, value in form.multi_items():
             if not isinstance(value, UploadFile):
-                form_data[key] = value
+                form_data.append((key, value))
                 continue
 
             should_clear = form.get(key + "_checkbox")
             empty_upload = len(await value.read(1)) != 1
             if should_clear:
-                form_data[key] = None
+                continue
             elif empty_upload and getattr(obj, key):
                 f = getattr(obj, key)  # In case of update, imitate UploadFile
-                form_data[key] = UploadFile(filename=f.name, file=f.open())
+                form_data.append((key, UploadFile(filename=f.name, file=f.open())))
             else:
-                form_data[key] = value
+                form_data.append((key, value))
         return FormData(form_data)
 
 
