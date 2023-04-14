@@ -1,4 +1,5 @@
 import inspect
+import io
 from typing import (
     Any,
     Callable,
@@ -603,7 +604,7 @@ class Admin(BaseAdminView):
             should_clear = form.get(key + "_checkbox")
             empty_upload = len(await value.read(1)) != 1
             if should_clear:
-                continue
+                form_data.append((key, UploadFile(io.BytesIO(b""))))
             elif empty_upload and getattr(obj, key):
                 f = getattr(obj, key)  # In case of update, imitate UploadFile
                 form_data.append((key, UploadFile(filename=f.name, file=f.open())))
