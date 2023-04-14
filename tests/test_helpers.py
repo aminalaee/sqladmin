@@ -1,6 +1,6 @@
 from datetime import timedelta
 
-from sqladmin.helpers import parse_interval, secure_filename
+from sqladmin.helpers import is_falsy_value, parse_interval, secure_filename
 
 
 def test_secure_filename(monkeypatch):
@@ -19,3 +19,10 @@ def test_parse_interval():
     assert parse_interval("-1 day") == timedelta(days=-1)
     assert parse_interval("1.10000") == timedelta(seconds=1, microseconds=100000)
     assert parse_interval("P3DT01H00M00S") == timedelta(days=3, seconds=3600)
+
+
+def test_is_falsy_values():
+    assert is_falsy_value(None) is True
+    assert is_falsy_value("") is True
+    assert is_falsy_value(0) is False
+    assert is_falsy_value("example") is False
