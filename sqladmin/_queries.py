@@ -7,7 +7,12 @@ from sqlalchemy.orm import Session, joinedload
 from sqlalchemy.sql.expression import Select
 
 from sqladmin._types import MODEL_PROPERTY
-from sqladmin.helpers import get_column_python_type, get_direction, get_primary_key
+from sqladmin.helpers import (
+    get_column_python_type,
+    get_direction,
+    get_primary_key,
+    is_falsy_value,
+)
 
 if TYPE_CHECKING:
     from sqladmin.models import ModelView
@@ -43,20 +48,13 @@ class Query:
             column = self.model_view._mapper.columns.get(key)
             relation = self.model_view._mapper.relationships.get(key)
 
+            # Set falsy values to None, if column is Nullable
             if not value:
-                # Set falsy values to None, if column is Nullable
-                if (
-                    not relation
-                    and column.nullable
-                    and isinstance(value, bool)
-                    and value is not False
-                ):
+                if is_falsy_value(value) and not relation and column.nullable:
                     value = None
-
                 setattr(obj, key, value)
                 continue
 
-            relation = self.model_view._mapper.relationships.get(key)
             if relation:
                 direction = get_direction(relation)
                 if direction in ["ONETOMANY", "MANYTOMANY"]:
@@ -81,16 +79,10 @@ class Query:
             column = self.model_view._mapper.columns.get(key)
             relation = self.model_view._mapper.relationships.get(key)
 
+            # Set falsy values to None, if column is Nullable
             if not value:
-                # Set falsy values to None, if column is Nullable
-                if (
-                    not relation
-                    and column.nullable
-                    and isinstance(value, bool)
-                    and value is not False
-                ):
+                if is_falsy_value(value) and not relation and column.nullable:
                     value = None
-
                 setattr(obj, key, value)
                 continue
 
