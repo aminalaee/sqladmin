@@ -227,3 +227,12 @@ def map_attr_to_prop(
         raise InvalidColumnError(
             f"Model '{model_admin.model.__name__}' has no attribute '{attr}'."
         )
+
+
+def is_falsy_value(value: Any) -> bool:
+    if value is None:
+        return True
+    elif not value and isinstance(value, str):
+        return True
+    else:
+        return False
