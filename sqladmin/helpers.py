@@ -232,8 +232,6 @@ def map_attr_to_prop(
 def is_falsy_value(value: Any) -> bool:
     if value is None:
         return True
-    elif not value and isinstance(value, bool) and value is not False:
-        return True
     elif not value and isinstance(value, str):
         return True
     else:
