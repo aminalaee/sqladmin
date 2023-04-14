@@ -157,6 +157,8 @@ async def test_edit_page_template(client: AsyncClient) -> None:
 async def test_create_and_edit_forms(client: AsyncClient) -> None:
     response = await client.post("/admin/address/create", data={})
     assert response.status_code == 302
+    response = await client.post("/admin/address/create", data={"id": "2"})
+    assert response.status_code == 302
 
     data = {"addresses": ["1"], "name": "Tyrion"}
     response = await client.post("/admin/user/create", data=data)
@@ -183,3 +185,14 @@ async def test_create_and_edit_forms(client: AsyncClient) -> None:
 
     user = result.scalar_one()
     assert len(user.addresses) == 1
+
+    data = {"addresses": ["1", "2"]}
+    response = await client.post("/admin/user/edit/1", data=data)
+    assert response.status_code == 302
+
+    async with LocalSession() as s:
+        stmt = select(User).options(selectinload(User.addresses))
+        result = await s.execute(stmt)
+
+    user = result.scalar_one()
+    assert len(user.addresses) == 2

@@ -661,6 +661,8 @@ async def test_update_submit_form(client: AsyncClient) -> None:
 
         address = Address(user=user)
         session.add(address)
+        address_2 = Address(id=2)
+        session.add(address_2)
         profile = Profile(user=user)
         session.add(profile)
         await session.commit()
@@ -685,7 +687,7 @@ async def test_update_submit_form(client: AsyncClient) -> None:
     data = {"name": "Jack", "addresses": "1", "profile": "1"}
     response = await client.post("/admin/user/edit/1", data=data)
 
-    stmt = select(Address).limit(1)
+    stmt = select(Address).filter(Address.id == 1).limit(1)
     async with LocalSession() as s:
         result = await s.execute(stmt)
     address = result.scalar_one()
@@ -705,7 +707,7 @@ async def test_update_submit_form(client: AsyncClient) -> None:
     data = {"user": user.id}
     response = await client.post("/admin/address/edit/1", data=data)
 
-    stmt = select(Address).limit(1)
+    stmt = select(Address).filter(Address.id == 1).limit(1)
     async with LocalSession() as s:
         result = await s.execute(stmt)
     address = result.scalar_one()
@@ -720,6 +722,15 @@ async def test_update_submit_form(client: AsyncClient) -> None:
     response = await client.post("/admin/user/edit/2", data=data)
     assert response.status_code == 400
     assert "alert alert-danger" in response.text
+
+    data = {"name": "Jack", "addresses": ["1", "2"], "profile": "1"}
+    response = await client.post("/admin/user/edit/1", data=data)
+
+    stmt = select(Address).limit(1)
+    async with LocalSession() as s:
+        result = await s.execute(stmt)
+    for address in result:
+        assert address[0].user_id == 1
 
 
 async def test_searchable_list(client: AsyncClient) -> None:

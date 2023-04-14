@@ -631,6 +631,8 @@ def test_update_submit_form(client: TestClient) -> None:
 
         address = Address(user=user)
         session.add(address)
+        address_2 = Address(id=2)
+        session.add(address_2)
         profile = Profile(user=user)
         session.add(profile)
         session.commit()
@@ -654,7 +656,7 @@ def test_update_submit_form(client: TestClient) -> None:
     data = {"name": "Jack", "addresses": "1", "profile": "1"}
     response = client.post("/admin/user/edit/1", data=data)
 
-    stmt = select(Address).limit(1)
+    stmt = select(Address).filter(Address.id == 1).limit(1)
     with LocalSession() as s:
         address = s.execute(stmt).scalar_one()
     assert address.user_id == 1
@@ -672,7 +674,7 @@ def test_update_submit_form(client: TestClient) -> None:
     data = {"user": user.id}
     response = client.post("/admin/address/edit/1", data=data)
 
-    stmt = select(Address).limit(1)
+    stmt = select(Address).filter(Address.id == 1).limit(1)
     with LocalSession() as s:
         address = s.execute(stmt).scalar_one()
     assert address.user_id == 1
@@ -686,6 +688,15 @@ def test_update_submit_form(client: TestClient) -> None:
     response = client.post("/admin/user/edit/2", data=data)
     assert response.status_code == 400
     assert "alert alert-danger" in response.text
+
+    data = {"name": "Jack", "addresses": ["1", "2"], "profile": "1"}
+    response = client.post("/admin/user/edit/1", data=data)
+
+    stmt = select(Address).limit(2)
+    with LocalSession() as s:
+        result = s.execute(stmt).all()
+    for address in result:
+        assert address[0].user_id == 1
 
 
 def test_searchable_list(client: TestClient) -> None:
