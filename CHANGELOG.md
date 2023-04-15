@@ -4,6 +4,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## Version 0.10.2 - 2023-04-15
+
+### Fixed
+
+* Fix nullable string fields by @aminalaee in https://github.com/aminalaee/sqladmin/pull/465
+* Fix Multiselect field saving only one value by @nik-joseph in https://github.com/aminalaee/sqladmin/pull/463
+
+**Full Changelog**: https://github.com/aminalaee/sqladmin/compare/0.10.1...0.10.2
+
 ## Version 0.10.1 - 2023-03-25
 
 ### Fixed
