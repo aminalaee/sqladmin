@@ -71,7 +71,7 @@ dependencies = [
   "pytest==7.2.2",
   "python-dateutil==2.8.2",
   "sqlalchemy_utils==0.40.0",
-  "sqlalchemy-fields @ git+ssh://git@github.com/aminalaee/sqlalchemy-fields",
+  "sqlalchemy-fields @ git+https://github.com/aminalaee/sqlalchemy-fields",
 ]
 
 [[tool.hatch.envs.test.matrix]]
