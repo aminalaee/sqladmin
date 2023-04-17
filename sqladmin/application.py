@@ -1,5 +1,6 @@
 import inspect
 import io
+import logging
 from typing import (
     Any,
     Callable,
@@ -35,6 +36,8 @@ __all__ = [
     "Admin",
     "expose",
 ]
+
+logger = logging.getLogger(__name__)
 
 
 class BaseAdmin:
@@ -447,6 +450,7 @@ class Admin(BaseAdminView):
         try:
             obj = await model_view.insert_model(form.data)
         except Exception as e:
+            logger.exception(e)
             context["error"] = str(e)
             return self.templates.TemplateResponse(
                 model_view.create_template, context, status_code=400
@@ -499,6 +503,7 @@ class Admin(BaseAdminView):
                     pk=request.path_params["pk"], data=form.data
                 )
         except Exception as e:
+            logger.exception(e)
             context["error"] = str(e)
             return self.templates.TemplateResponse(
                 model_view.edit_template, context, status_code=400
@@ -605,7 +610,7 @@ class Admin(BaseAdminView):
             empty_upload = len(await value.read(1)) != 1
             if should_clear:
                 form_data.append((key, UploadFile(io.BytesIO(b""))))
-            elif empty_upload and getattr(obj, key):
+            elif empty_upload and obj and getattr(obj, key):
                 f = getattr(obj, key)  # In case of update, imitate UploadFile
                 form_data.append((key, UploadFile(filename=f.name, file=f.open())))
             else:
