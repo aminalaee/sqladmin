@@ -521,7 +521,7 @@ class ModelConverter(ModelConverterBase):
     ) -> UnboundField:
         return FileField(**kwargs)
 
-    @converts("sqlalchemy_fields.types.file.ImageType")
+    @converts("sqlalchemy_fields.types.image.ImageType")
     def conv_image(
         self, model: type, prop: ColumnProperty, kwargs: Dict[str, Any]
     ) -> UnboundField:
