@@ -608,6 +608,7 @@ class Admin(BaseAdminView):
 
             should_clear = form.get(key + "_checkbox")
             empty_upload = len(await value.read(1)) != 1
+            await value.seek(0)
             if should_clear:
                 form_data.append((key, UploadFile(io.BytesIO(b""))))
             elif empty_upload and obj and getattr(obj, key):
