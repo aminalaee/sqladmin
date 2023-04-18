@@ -521,6 +521,12 @@ class ModelConverter(ModelConverterBase):
     ) -> UnboundField:
         return FileField(**kwargs)
 
+    @converts("sqlalchemy_fields.types.file.ImageType")
+    def conv_image(
+        self, model: type, prop: ColumnProperty, kwargs: Dict[str, Any]
+    ) -> UnboundField:
+        return FileField(**kwargs)
+
     @converts("ONETOONE")
     def conv_one_to_one(
         self, model: type, prop: RelationshipProperty, kwargs: Dict[str, Any]
