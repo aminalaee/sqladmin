@@ -86,6 +86,7 @@ async def test_create_form_post(client: AsyncClient) -> None:
     assert isinstance(user.file, StorageFile) is True
     assert user.file.name == "upload.txt"
     assert user.file.path == ".uploads/upload.txt"
+    assert user.file.open().read() == b"abc"
 
 
 async def test_create_form_update(client: AsyncClient) -> None:
