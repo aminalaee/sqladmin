@@ -388,7 +388,7 @@ class Admin(BaseAdminView):
 
         model_view = self._find_model_view(request.path_params["identity"])
 
-        model = await model_view.get_model_by_pk(request.path_params["pk"])
+        model = await model_view.get_object_for_details(request.path_params["pk"])
         if not model:
             raise HTTPException(status_code=404)
 
@@ -412,7 +412,7 @@ class Admin(BaseAdminView):
 
         pks = request.query_params.get("pks", "")
         for pk in pks.split(","):
-            model = await model_view.get_model_by_pk(pk)
+            model = await model_view.get_object_for_delete(pk)
             if not model:
                 raise HTTPException(status_code=404)
 
@@ -473,7 +473,7 @@ class Admin(BaseAdminView):
         identity = request.path_params["identity"]
         model_view = self._find_model_view(identity)
 
-        model = await model_view.get_model_by_pk(request.path_params["pk"])
+        model = await model_view.get_object_for_edit(request.path_params["pk"])
         if not model:
             raise HTTPException(status_code=404)
 

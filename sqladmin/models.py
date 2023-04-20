@@ -690,6 +690,11 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
         ]
 
         self._details_props = self.get_details_columns()
+        self._details_relation_attrs = [
+            getattr(self.model, prop.key)
+            for (_, prop) in self._details_props
+            if isinstance(prop, RelationshipProperty)
+        ]
 
         column_formatters = getattr(self, "column_formatters", {})
         self._list_formatters = {
@@ -704,6 +709,11 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
         }
 
         self._form_props = self.get_form_columns()
+        self._form_relation_attrs = [
+            getattr(self.model, prop.key)
+            for (_, prop) in self._form_props
+            if isinstance(prop, RelationshipProperty)
+        ]
 
         self._export_props = self.get_export_columns()
 
@@ -846,17 +856,32 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
         rows = await self._run_query(stmt)
         return rows
 
-    async def get_model_by_pk(self, value: Any) -> Any:
+    async def _get_object_by_pk(self, stmt: Select) -> Any:
+        rows = await self._run_query(stmt)
+        return rows[0] if rows else None
+
+    async def get_object_for_details(self, value: Any) -> Any:
         pk_value = get_column_python_type(self.pk_column)(value)
         stmt = select(self.model).where(self.pk_column == pk_value)
 
-        for relation in self._relation_attrs:
+        for relation in self._details_relation_attrs:
             stmt = stmt.options(joinedload(relation))
 
-        rows = await self._run_query(stmt)
-        if rows:
-            return rows[0]
-        return None
+        return await self._get_object_by_pk(stmt)
+
+    async def get_object_for_edit(self, value: Any) -> Any:
+        pk_value = get_column_python_type(self.pk_column)(value)
+        stmt = select(self.model).where(self.pk_column == pk_value)
+
+        for relation in self._form_relation_attrs:
+            stmt = stmt.options(joinedload(relation))
+
+        return await self._get_object_by_pk(stmt)
+
+    async def get_object_for_delete(self, value: Any) -> Any:
+        pk_value = get_column_python_type(self.pk_column)(value)
+        stmt = select(self.model).where(self.pk_column == pk_value)
+        return await self._get_object_by_pk(stmt)
 
     def get_prop_value(
         self, obj: type, prop: Union[Column, ColumnProperty, RelationshipProperty]
