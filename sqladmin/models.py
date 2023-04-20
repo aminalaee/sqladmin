@@ -675,18 +675,10 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
         }
 
         self._list_props = self.get_list_columns()
-        self._list_columns = [
-            (name, prop)
-            for (name, prop) in self._list_props
-            if isinstance(prop, ColumnProperty)
-        ]
-        self._list_relations = [
-            prop
+        self._list_relation_attrs = [
+            getattr(self.model, prop.key)
             for (_, prop) in self._list_props
             if isinstance(prop, RelationshipProperty)
-        ]
-        self._list_relation_attrs = [
-            getattr(self.model, prop.key) for prop in self._list_relations
         ]
 
         self._details_props = self.get_details_columns()
