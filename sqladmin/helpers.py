@@ -1,4 +1,5 @@
 import csv
+import enum
 import os
 import re
 import unicodedata
@@ -236,3 +237,22 @@ def is_falsy_value(value: Any) -> bool:
         return True
     else:
         return False
+
+
+def choice_type_coerce_factory(type_: Any) -> Callable[[Any], Any]:
+    from sqlalchemy_utils import Choice
+
+    choices = type_.choices
+    if isinstance(choices, type) and issubclass(choices, enum.Enum):
+        key, choice_cls = "value", choices
+    else:
+        key, choice_cls = "code", Choice
+
+    def choice_coerce(value: Any) -> Any:
+        if value is None:
+            return None
+        if isinstance(value, choice_cls):
+            return getattr(value, key)
+        return type_.python_type(value)
+
+    return choice_coerce

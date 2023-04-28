@@ -1,3 +1,7 @@
+"""
+The converters are borrowed from Flask-Admin project.
+"""
+import enum
 import inspect
 import sys
 from enum import Enum
@@ -56,7 +60,12 @@ from sqladmin.fields import (
     SelectField,
     TimeField,
 )
-from sqladmin.helpers import get_direction, get_primary_key, is_relationship
+from sqladmin.helpers import (
+    choice_type_coerce_factory,
+    get_direction,
+    get_primary_key,
+    is_relationship,
+)
 
 if sys.version_info >= (3, 8):
     from typing import Protocol
@@ -514,6 +523,36 @@ class ModelConverter(ModelConverterBase):
         kwargs.setdefault("validators", [])
         kwargs["validators"].append(ColorValidator())
         return StringField(**kwargs)
+
+    @converts("sqlalchemy_utils.types.choice.ChoiceType")
+    @no_type_check
+    def convert_choice_type(
+        self, model: type, prop: ColumnProperty, kwargs: Dict[str, Any]
+    ) -> UnboundField:
+        available_choices = []
+        column = prop.columns[0]
+
+        if isinstance(column.type.choices, enum.EnumMeta):
+            available_choices = [(f.value, f.name) for f in column.type.choices]
+        else:
+            available_choices = column.type.choices
+
+        accepted_values = [
+            choice[0] if isinstance(choice, tuple) else choice.value
+            for choice in available_choices
+        ]
+
+        if column.nullable:
+            kwargs["allow_blank"] = column.nullable
+            accepted_values.append(None)
+            filters = kwargs.get("filters", [])
+            filters.append(lambda x: x or None)
+            kwargs["filters"] = filters
+
+        kwargs["choices"] = available_choices
+        kwargs["validators"].append(validators.AnyOf(accepted_values))
+        kwargs["coerce"] = choice_type_coerce_factory(column.type)
+        return SelectField(**kwargs)
 
     @converts("sqlalchemy_fields.types.file.FileType")
     def conv_file(
