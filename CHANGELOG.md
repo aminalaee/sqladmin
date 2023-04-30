@@ -4,6 +4,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## Version 0.10.3 - 2023-04-21
+
+### Fixed
+
+* Fix ImageType converter by @aminalaee in https://github.com/aminalaee/sqladmin/pull/471
+* reset UploadFile seek after reading by @murrple-1 in https://github.com/aminalaee/sqladmin/pull/473
+* Fix unnecessary joins in details and edit page by @aminalaee in https://github.com/aminalaee/sqladmin/pull/476
+
+**Full Changelog**: https://github.com/aminalaee/sqladmin/compare/0.10.2...0.10.3
+
 ## Version 0.10.2 - 2023-04-15
 
 ### Fixed
