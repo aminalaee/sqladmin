@@ -51,7 +51,12 @@ async def test_model_form_sqlalchemy_utils(choices) -> None:
 
     Form = await get_model_form(model=SQLAlchemyUtilsModel, engine=engine)
     data = DummyData(
-        currency="IR", timezone=["Iran/Tehran"], color="bbb", phone="abc", arrow="wrong"
+        currency="IR",
+        timezone=["Iran/Tehran"],
+        color="bbb",
+        phone="abc",
+        arrow="wrong",
+        role=None,
     )
     form = Form(data)
     assert form.validate() is False
@@ -62,6 +67,7 @@ async def test_model_form_sqlalchemy_utils(choices) -> None:
         color="red",
         phone="+9823456789",
         arrow="2023-02-06 12:00:0",
+        role="admin",
     )
     form = Form(data)
     assert form.validate() is True
