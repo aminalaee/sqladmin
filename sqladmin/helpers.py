@@ -251,8 +251,11 @@ def choice_type_coerce_factory(type_: Any) -> Callable[[Any], Any]:
     def choice_coerce(value: Any) -> Any:
         if value is None:
             return None
-        if isinstance(value, choice_cls):
-            return getattr(value, key)
-        return type_.python_type(value)
+
+        return (
+            getattr(value, key)
+            if isinstance(value, choice_cls)
+            else type_.python_type(value)
+        )
 
     return choice_coerce

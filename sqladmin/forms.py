@@ -1,5 +1,5 @@
 """
-The converters are borrowed from Flask-Admin project.
+The converters are from Flask-Admin project.
 """
 import enum
 import inspect
