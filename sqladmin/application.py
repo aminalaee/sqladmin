@@ -713,10 +713,12 @@ def action(
 ) -> Callable[..., Any]:
     """Decorate a [`ModelView`][sqladmin.models.ModelView] function
     with this to:
+
     * expose it as a custom "action" route
     * add a button to the admin panel to invoke the action
 
     When invoked from the admin panel, the following query parameter(s) are passed:
+
     * `pks`: the comma-separated list of selected object PKs - can be empty
 
     Args:
