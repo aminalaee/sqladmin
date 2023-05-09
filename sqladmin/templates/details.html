@@ -65,7 +65,7 @@
               {{ label }}
             </a>
             {% else %}
-            <a href="{{ model_view._url_for_action(request, custom_action) | string }}?pks={{ model_view._get_pk(model) | string }}" class="btn btn-secondary">
+            <a href="{{ model_view._url_for_action(request, custom_action) }}?pks={{ model_view._get_pk(model) | string }}" class="btn btn-secondary">
               {{ label }}
             </a>
             {% endif %}
@@ -82,7 +82,7 @@
 
 {% for custom_action in model_view._custom_actions_in_detail %}
 {% if custom_action in model_view._custom_actions_confirmation %}
-{% with confirmation_message = model_view._custom_actions_confirmation[custom_action], custom_action=custom_action, url=(model_view._url_for_action(request, custom_action) | string) + '?pks=' + (model_view._get_pk(model) | string) %}
+{% with confirmation_message = model_view._custom_actions_confirmation[custom_action], custom_action=custom_action, url=model_view._url_for_action(request, custom_action) + '?pks=' + (model_view._get_pk(model) | string) %}
 {% include 'modals/details_action_confirmation.html' %}
 {% endwith %}
 {% endif %}

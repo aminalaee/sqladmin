@@ -779,10 +779,12 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
             pk=pk,
         )
 
-    def _url_for_action(self, request: Request, action_name: str) -> Union[str, URL]:
-        return request.url_for(
-            f"admin:{self.identity}-{action_name}",
-            identity=self.identity,
+    def _url_for_action(self, request: Request, action_name: str) -> str:
+        return str(
+            request.url_for(
+                f"admin:{self.identity}-{action_name}",
+                identity=self.identity,
+            )
         )
 
     def _get_pk(self, obj: Any) -> Any:
