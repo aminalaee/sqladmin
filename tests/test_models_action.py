@@ -47,7 +47,7 @@ class UserAdmin(ModelView, model=User):
         response.headers["X-Objs"] = ",".join(obj_strs)
         return response
 
-    @action(name="detail", add_in_detaisl=True, add_in_list=False)
+    @action(name="detail", add_in_details=True, add_in_list=False)
     async def action_detail(self, request: Request) -> Response:
         return await self._action_stub(request)  # pragma: no cover
 
