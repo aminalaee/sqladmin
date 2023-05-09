@@ -12,3 +12,6 @@
         - add_view
         - add_model_view
         - add_base_view
+
+::: sqladmin.application.action
+    handler: python

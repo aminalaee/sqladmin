@@ -47,22 +47,22 @@ class UserAdmin(ModelView, model=User):
         response.headers["X-Objs"] = ",".join(obj_strs)
         return response
 
-    @action(name="detail", add_in_detail=True, add_in_list=False)
+    @action(name="detail", add_in_detaisl=True, add_in_list=False)
     async def action_detail(self, request: Request) -> Response:
         return await self._action_stub(request)  # pragma: no cover
 
-    @action(name="list", add_in_detail=False, add_in_list=True)
+    @action(name="list", add_in_details=False, add_in_list=True)
     async def action_list(self, request: Request) -> Response:
         return await self._action_stub(request)  # pragma: no cover
 
-    @action(name="detail_list", add_in_detail=True, add_in_list=True)
+    @action(name="detail_list", add_in_details=True, add_in_list=True)
     async def action_detail_list(self, request: Request) -> Response:
         return await self._action_stub(request)  # pragma: no cover
 
     @action(
         name="detail_confirm",
         confirmation_message="!Detail Confirm?!",
-        add_in_detail=True,
+        add_in_details=True,
         add_in_list=False,
     )
     async def action_detail_confirm(self, request: Request) -> Response:
@@ -71,7 +71,7 @@ class UserAdmin(ModelView, model=User):
     @action(
         name="list_confirm",
         confirmation_message="!List Confirm?!",
-        add_in_detail=False,
+        add_in_details=False,
         add_in_list=True,
     )
     async def action_list_confirm(self, request: Request) -> Response:
@@ -80,20 +80,23 @@ class UserAdmin(ModelView, model=User):
     @action(
         name="detail_list_confirm",
         confirmation_message="!Detail List Confirm?!",
-        add_in_detail=True,
+        add_in_details=True,
         add_in_list=True,
     )
     async def action_detail_list_confirm(self, request: Request) -> Response:
         return await self._action_stub(request)  # pragma: no cover
 
     @action(
-        name="label_detail", label="Label Detail", add_in_detail=True, add_in_list=False
+        name="label_detail",
+        label="Label Detail",
+        add_in_details=True,
+        add_in_list=False,
     )
     async def action_label_detail(self, request: Request) -> Response:
         return await self._action_stub(request)  # pragma: no cover
 
     @action(
-        name="label_list", label="Label List", add_in_detail=False, add_in_list=True
+        name="label_list", label="Label List", add_in_details=False, add_in_list=True
     )
     async def action_label_list(self, request: Request) -> Response:
         return await self._action_stub(request)  # pragma: no cover
@@ -101,7 +104,7 @@ class UserAdmin(ModelView, model=User):
     @action(
         name="label_detail_list",
         label="Label Detail List",
-        add_in_detail=True,
+        add_in_details=True,
         add_in_list=True,
     )
     async def action_label_detail_list(self, request: Request) -> Response:
@@ -111,7 +114,7 @@ class UserAdmin(ModelView, model=User):
         name="label_detail_confirm",
         label="Label Detail Confirm",
         confirmation_message="!Label Detail Confirm?!",
-        add_in_detail=True,
+        add_in_details=True,
         add_in_list=False,
     )
     async def action_label_detail_confirm(self, request: Request) -> Response:
@@ -121,7 +124,7 @@ class UserAdmin(ModelView, model=User):
         name="label_list_confirm",
         label="Label List Confirm",
         confirmation_message="!Label List Confirm?!",
-        add_in_detail=False,
+        add_in_details=False,
         add_in_list=True,
     )
     async def action_label_list_confirm(self, request: Request) -> Response:
@@ -131,7 +134,7 @@ class UserAdmin(ModelView, model=User):
         name="label_detail_list_confirm",
         label="Label Detail List Confirm",
         confirmation_message="!Label Detail List Confirm?!",
-        add_in_detail=True,
+        add_in_details=True,
         add_in_list=True,
     )
     async def action_label_detail_list_confirm(self, request: Request) -> Response:

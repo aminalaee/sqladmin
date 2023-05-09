@@ -154,7 +154,7 @@ class BaseAdmin:
                 view_instance._custom_actions_in_list[getattr(func, "_name")] = getattr(
                     func, "_label"
                 )
-            if getattr(func, "_add_in_detail"):
+            if getattr(func, "_add_in_details"):
                 view_instance._custom_actions_in_detail[
                     getattr(func, "_name")
                 ] = getattr(func, "_label")
@@ -708,10 +708,25 @@ def action(
     confirmation_message: Optional[str] = None,
     *,
     include_in_schema: bool = True,
-    add_in_detail: bool = True,
+    add_in_details: bool = True,
     add_in_list: bool = True,
 ) -> Callable[..., Any]:
-    """Expose View with information."""
+    """Decorate a [`ModelView`][sqladmin.models.ModelView] function
+    with this to:
+    * expose it as a custom "action" route
+    * add a button to the admin panel to invoke the action
+
+    When invoked from the admin panel, the following query parameter(s) are passed:
+    * `pks`: the comma-separated list of selected object PKs - can be empty
+
+    Args:
+        name: Unique name for the action (should be usable as path identifier)
+        label: Human-readable text describing action
+        confirmation_message: Message to show before confirming action
+        include_in_schema: Should the endpoint be included in the schema?
+        add_in_details: Should action be invocable from the "details" view?
+        add_in_list: Should action be invocable from the "list" view?
+    """
 
     @no_type_check
     def wrap(func):
@@ -720,7 +735,7 @@ def action(
         func._label = label or name
         func._confirmation_message = confirmation_message
         func._include_in_schema = include_in_schema
-        func._add_in_detail = add_in_detail
+        func._add_in_details = add_in_details
         func._add_in_list = add_in_list
         return func
 
