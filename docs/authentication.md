@@ -203,11 +203,11 @@ from starlette.requests import Request
 class UserAdmin(ModelView, model=User):
     def is_accessible(self, request: Request) -> bool:
         # Check incoming request
-        # For example request.session if using AuthenticatoinBackend
+        # For example request.session if using AuthenticationBackend
         return True
 
     def is_visible(self, request: Request) -> bool:
         # Check incoming request
-        # For example request.session if using AuthenticatoinBackend
+        # For example request.session if using AuthenticationBackend
         return True
 ```
