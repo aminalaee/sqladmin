@@ -482,7 +482,10 @@ class ModelConverter(ModelConverterBase):
         kwargs["validators"].append(validators.Email())
         return StringField(**kwargs)
 
-    @converts("sqlalchemy_utils.types.url.URLType", "sqlalchemy_fields.types.url.URLType")
+    @converts(
+        "sqlalchemy_utils.types.url.URLType",
+        "sqlalchemy_fields.types.url.URLType",
+    )
     def conv_url(
         self, model: type, prop: ColumnProperty, kwargs: Dict[str, Any]
     ) -> UnboundField:
