@@ -1,6 +1,7 @@
 import inspect
 import io
 import logging
+import re
 from types import MethodType
 from typing import (
     Any,
@@ -32,6 +33,7 @@ from starlette.templating import Jinja2Templates
 from sqladmin._types import ENGINE_TYPE
 from sqladmin.ajax import QueryAjaxModelLoader
 from sqladmin.authentication import AuthenticationBackend, login_required
+from sqladmin.helpers import slugify_action_name
 from sqladmin.models import BaseView, ModelView
 
 __all__ = [
@@ -144,24 +146,24 @@ class BaseAdmin:
             view_instance = cast(ModelView, view_instance)
             self.admin.add_route(
                 route=func,
-                path="/{identity}/action/" + getattr(func, "_name"),
+                path="/{identity}/action/" + getattr(func, "_slug"),
                 methods=["GET"],
-                name=f"{view_instance.identity}-{getattr(func, '_name')}",
+                name=f"{view_instance.identity}-{getattr(func, '_slug')}",
                 include_in_schema=getattr(func, "_include_in_schema"),
             )
 
             if getattr(func, "_add_in_list"):
-                view_instance._custom_actions_in_list[getattr(func, "_name")] = getattr(
+                view_instance._custom_actions_in_list[getattr(func, "_slug")] = getattr(
                     func, "_label"
                 )
             if getattr(func, "_add_in_details"):
                 view_instance._custom_actions_in_detail[
-                    getattr(func, "_name")
+                    getattr(func, "_slug")
                 ] = getattr(func, "_label")
 
             if getattr(func, "_confirmation_message"):
                 view_instance._custom_actions_confirmation[
-                    getattr(func, "_name")
+                    getattr(func, "_slug")
                 ] = getattr(func, "_confirmation_message")
 
     def _handle_expose_decorated_func(
@@ -722,7 +724,7 @@ def action(
     * `pks`: the comma-separated list of selected object PKs - can be empty
 
     Args:
-        name: Unique name for the action (should be usable as path identifier)
+        name: Unique name for the action - must match `^[A-Za-z0-9 \-_]+$` regex
         label: Human-readable text describing action
         confirmation_message: Message to show before confirming action
         include_in_schema: Should the endpoint be included in the schema?
@@ -730,11 +732,17 @@ def action(
         add_in_list: Should action be invocable from the "list" view?
     """
 
+    if not re.search(r"^[A-Za-z0-9 \-_]+$", name):
+        raise ValueError(
+            "name must be non-empty and contain only allowed characters"
+            " - use `label` for more expressive names"
+        )
+
     @no_type_check
     def wrap(func):
         func._action = True
-        func._name = name
-        func._label = label or name
+        func._slug = slugify_action_name(name)
+        func._label = label if label is not None else name
         func._confirmation_message = confirmation_message
         func._include_in_schema = include_in_schema
         func._add_in_details = add_in_details

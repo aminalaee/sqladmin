@@ -93,6 +93,10 @@ def slugify_class_name(name: str) -> str:
     return re.sub("([a-z0-9])([A-Z])", r"\1-\2", dashed).lower()
 
 
+def slugify_action_name(name: str) -> str:
+    return re.sub(r"[_ ]", "-", name).lower()
+
+
 def secure_filename(filename: str) -> str:
     """Ported from Werkzeug.
 
