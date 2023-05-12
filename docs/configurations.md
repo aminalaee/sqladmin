@@ -296,7 +296,7 @@ For example:
             name="approve_users",
             label="Approve",
             confirmation_message="Are you sure?",
-            add_in_details=True,
+            add_in_detail=True,
             add_in_list=True,
         )
         async def approve_users(self, request: Request):

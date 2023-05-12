@@ -47,97 +47,97 @@ class UserAdmin(ModelView, model=User):
         response.headers["X-Objs"] = ",".join(obj_strs)
         return response
 
-    @action(name="detail", add_in_details=True, add_in_list=False)
-    async def action_detail(self, request: Request) -> Response:
+    @action(name="details", add_in_detail=True, add_in_list=False)
+    async def action_details(self, request: Request) -> Response:
         return await self._action_stub(request)  # pragma: no cover
 
-    @action(name="list", add_in_details=False, add_in_list=True)
+    @action(name="list", add_in_detail=False, add_in_list=True)
     async def action_list(self, request: Request) -> Response:
         return await self._action_stub(request)  # pragma: no cover
 
-    @action(name="detail_list", add_in_details=True, add_in_list=True)
-    async def action_detail_list(self, request: Request) -> Response:
+    @action(name="details_list", add_in_detail=True, add_in_list=True)
+    async def action_details_list(self, request: Request) -> Response:
         return await self._action_stub(request)  # pragma: no cover
 
     @action(
-        name="detail_confirm",
-        confirmation_message="!Detail Confirm?!",
-        add_in_details=True,
+        name="details_confirm",
+        confirmation_message="!Details Confirm?!",
+        add_in_detail=True,
         add_in_list=False,
     )
-    async def action_detail_confirm(self, request: Request) -> Response:
+    async def action_details_confirm(self, request: Request) -> Response:
         return await self._action_stub(request)  # pragma: no cover
 
     @action(
         name="list_confirm",
         confirmation_message="!List Confirm?!",
-        add_in_details=False,
+        add_in_detail=False,
         add_in_list=True,
     )
     async def action_list_confirm(self, request: Request) -> Response:
         return await self._action_stub(request)  # pragma: no cover
 
     @action(
-        name="detail_list_confirm",
-        confirmation_message="!Detail List Confirm?!",
-        add_in_details=True,
+        name="details_list_confirm",
+        confirmation_message="!Details List Confirm?!",
+        add_in_detail=True,
         add_in_list=True,
     )
-    async def action_detail_list_confirm(self, request: Request) -> Response:
+    async def action_details_list_confirm(self, request: Request) -> Response:
         return await self._action_stub(request)  # pragma: no cover
 
     @action(
-        name="label_detail",
-        label="Label Detail",
-        add_in_details=True,
+        name="label_details",
+        label="Label Details",
+        add_in_detail=True,
         add_in_list=False,
     )
-    async def action_label_detail(self, request: Request) -> Response:
+    async def action_label_details(self, request: Request) -> Response:
         return await self._action_stub(request)  # pragma: no cover
 
     @action(
-        name="label_list", label="Label List", add_in_details=False, add_in_list=True
+        name="label_list", label="Label List", add_in_detail=False, add_in_list=True
     )
     async def action_label_list(self, request: Request) -> Response:
         return await self._action_stub(request)  # pragma: no cover
 
     @action(
-        name="label_detail_list",
-        label="Label Detail List",
-        add_in_details=True,
+        name="label_details_list",
+        label="Label Details List",
+        add_in_detail=True,
         add_in_list=True,
     )
-    async def action_label_detail_list(self, request: Request) -> Response:
+    async def action_label_details_list(self, request: Request) -> Response:
         return await self._action_stub(request)  # pragma: no cover
 
     @action(
-        name="label_detail_confirm",
-        label="Label Detail Confirm",
-        confirmation_message="!Label Detail Confirm?!",
-        add_in_details=True,
+        name="label_details_confirm",
+        label="Label Details Confirm",
+        confirmation_message="!Label Details Confirm?!",
+        add_in_detail=True,
         add_in_list=False,
     )
-    async def action_label_detail_confirm(self, request: Request) -> Response:
+    async def action_label_details_confirm(self, request: Request) -> Response:
         return await self._action_stub(request)  # pragma: no cover
 
     @action(
         name="label_list_confirm",
         label="Label List Confirm",
         confirmation_message="!Label List Confirm?!",
-        add_in_details=False,
+        add_in_detail=False,
         add_in_list=True,
     )
     async def action_label_list_confirm(self, request: Request) -> Response:
         return await self._action_stub(request)  # pragma: no cover
 
     @action(
-        name="label_detail_list_confirm",
-        label="Label Detail List Confirm",
-        confirmation_message="!Label Detail List Confirm?!",
-        add_in_details=True,
+        name="label_details_list_confirm",
+        label="Label Details List Confirm",
+        confirmation_message="!Label Details List Confirm?!",
+        add_in_detail=True,
         add_in_list=True,
     )
-    async def action_label_detail_list_confirm(self, request: Request) -> Response:
+    async def action_label_details_list_confirm(self, request: Request) -> Response:
         return await self._action_stub(request)  # pragma: no cover
 
 
@@ -159,33 +159,33 @@ def test_model_action(client: TestClient) -> None:
 
     assert admin.views[0]._custom_actions_in_list == {
         "list": "list",
-        "detail_list": "detail_list",
-        "label_list": "Label List",
-        "label_detail_list": "Label Detail List",
-        "list_confirm": "list_confirm",
-        "detail_list_confirm": "detail_list_confirm",
-        "label_list_confirm": "Label List Confirm",
-        "label_detail_list_confirm": "Label Detail List Confirm",
+        "details-list": "details_list",
+        "label-list": "Label List",
+        "label-details-list": "Label Details List",
+        "list-confirm": "list_confirm",
+        "details-list-confirm": "details_list_confirm",
+        "label-list-confirm": "Label List Confirm",
+        "label-details-list-confirm": "Label Details List Confirm",
     }
 
     assert admin.views[0]._custom_actions_in_detail == {
-        "detail": "detail",
-        "detail_confirm": "detail_confirm",
-        "detail_list": "detail_list",
-        "detail_list_confirm": "detail_list_confirm",
-        "label_detail": "Label Detail",
-        "label_detail_confirm": "Label Detail Confirm",
-        "label_detail_list": "Label Detail List",
-        "label_detail_list_confirm": "Label Detail List Confirm",
+        "details": "details",
+        "details-confirm": "details_confirm",
+        "details-list": "details_list",
+        "details-list-confirm": "details_list_confirm",
+        "label-details": "Label Details",
+        "label-details-confirm": "Label Details Confirm",
+        "label-details-list": "Label Details List",
+        "label-details-list-confirm": "Label Details List Confirm",
     }
 
     assert admin.views[0]._custom_actions_confirmation == {
-        "detail_confirm": "!Detail Confirm?!",
-        "detail_list_confirm": "!Detail List Confirm?!",
-        "label_detail_confirm": "!Label Detail Confirm?!",
-        "label_detail_list_confirm": "!Label Detail List Confirm?!",
-        "label_list_confirm": "!Label List Confirm?!",
-        "list_confirm": "!List Confirm?!",
+        "details-confirm": "!Details Confirm?!",
+        "details-list-confirm": "!Details List Confirm?!",
+        "label-details-confirm": "!Label Details Confirm?!",
+        "label-details-list-confirm": "!Label Details List Confirm?!",
+        "label-list-confirm": "!Label List Confirm?!",
+        "list-confirm": "!List Confirm?!",
     }
 
     request = Mock(Request)
@@ -202,7 +202,7 @@ def test_model_action(client: TestClient) -> None:
         session.commit()
 
         response = client.get(
-            f"/admin/user/action/detail?pks={user1.id},{user2.id}",
+            f"/admin/user/action/details?pks={user1.id},{user2.id}",
             follow_redirects=False,
         )
         assert response.status_code == 307
@@ -210,17 +210,17 @@ def test_model_action(client: TestClient) -> None:
         assert f"User: {user2.id}" in response.headers["X-Objs"]
 
         response = client.get("/admin/user/list")
-        assert response.text.count("!Detail Confirm?!") == 0
+        assert response.text.count("!Details Confirm?!") == 0
         assert response.text.count("!List Confirm?!") == 1
-        assert response.text.count("!Detail List Confirm?!") == 1
-        assert response.text.count("!Label Detail Confirm?!") == 0
+        assert response.text.count("!Details List Confirm?!") == 1
+        assert response.text.count("!Label Details Confirm?!") == 0
         assert response.text.count("!Label List Confirm?!") == 1
-        assert response.text.count("!Label Detail List Confirm?!") == 1
+        assert response.text.count("!Label Details List Confirm?!") == 1
 
         response = client.get(f"/admin/user/details/{user1.id}")
-        assert response.text.count("!Detail Confirm?!") == 1
+        assert response.text.count("!Details Confirm?!") == 1
         assert response.text.count("!List Confirm?!") == 0
-        assert response.text.count("!Detail List Confirm?!") == 1
-        assert response.text.count("!Label Detail Confirm?!") == 1
+        assert response.text.count("!Details List Confirm?!") == 1
+        assert response.text.count("!Label Details Confirm?!") == 1
         assert response.text.count("!Label List Confirm?!") == 0
-        assert response.text.count("!Label Detail List Confirm?!") == 1
+        assert response.text.count("!Label Details List Confirm?!") == 1
