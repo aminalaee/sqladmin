@@ -1,7 +1,6 @@
 import inspect
 import io
 import logging
-import re
 from types import MethodType
 from typing import (
     Any,
@@ -731,12 +730,6 @@ def action(
         add_in_detail: Should action be invocable from the "Detail" view?
         add_in_list: Should action be invocable from the "List" view?
     """
-
-    if not re.search(r"^[A-Za-z0-9 \-_]+$", name):
-        raise ValueError(
-            "name must be non-empty and contain only allowed characters"
-            " - use `label` for more expressive names"
-        )
 
     @no_type_check
     def wrap(func):
