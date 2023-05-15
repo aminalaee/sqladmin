@@ -94,6 +94,12 @@ def slugify_class_name(name: str) -> str:
 
 
 def slugify_action_name(name: str) -> str:
+    if not re.search(r"^[A-Za-z0-9 \-_]+$", name):
+        raise ValueError(
+            "name must be non-empty and contain only allowed characters"
+            " - use `label` for more expressive names"
+        )
+
     return re.sub(r"[_ ]", "-", name).lower()
 
 
