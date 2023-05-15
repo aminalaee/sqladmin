@@ -1,6 +1,13 @@
 from datetime import timedelta
 
-from sqladmin.helpers import is_falsy_value, parse_interval, secure_filename
+import pytest
+
+from sqladmin.helpers import (
+    is_falsy_value,
+    parse_interval,
+    secure_filename,
+    slugify_action_name,
+)
 
 
 def test_secure_filename(monkeypatch):
@@ -26,3 +33,10 @@ def test_is_falsy_values():
     assert is_falsy_value("") is True
     assert is_falsy_value(0) is False
     assert is_falsy_value("example") is False
+
+
+def test_slugify_action_name():
+    assert slugify_action_name("custom action") == "custom-action"
+
+    with pytest.raises(ValueError):
+        slugify_action_name("custom action !@#$%")
