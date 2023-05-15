@@ -279,3 +279,38 @@ By default these methods do nothing.
             # Perform some other action
             ...
     ```
+
+## Custom Action
+
+To add custom action on models to the Admin interface, you can use the `action` annotation.
+
+For example:
+
+!!! example
+
+    ```python
+    from sqladmin import BaseView, action
+
+    class UserAdmin(ModelView, model=User):
+        @action(
+            name="approve_users",
+            label="Approve",
+            confirmation_message="Are you sure?",
+            add_in_detail=True,
+            add_in_list=True,
+        )
+        async def approve_users(self, request: Request):
+            pks = request.query_params.get("pks", "").split(",")
+            if pks:
+                for pk in pks:
+                    model: User = await self.get_object_for_edit(pk)
+                    ...
+
+            referer = request.headers.get("Referer")
+            if referer:
+                return RedirectResponse(referer)
+            else:
+                return RedirectResponse(request.url_for("admin:list", identity=self.identity))
+
+    admin.add_view(UserAdmin)
+    ```

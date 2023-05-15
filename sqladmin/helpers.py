@@ -93,6 +93,16 @@ def slugify_class_name(name: str) -> str:
     return re.sub("([a-z0-9])([A-Z])", r"\1-\2", dashed).lower()
 
 
+def slugify_action_name(name: str) -> str:
+    if not re.search(r"^[A-Za-z0-9 \-_]+$", name):
+        raise ValueError(
+            "name must be non-empty and contain only allowed characters"
+            " - use `label` for more expressive names"
+        )
+
+    return re.sub(r"[_ ]", "-", name).lower()
+
+
 def secure_filename(filename: str) -> str:
     """Ported from Werkzeug.
 

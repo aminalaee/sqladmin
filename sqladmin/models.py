@@ -724,6 +724,10 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
                 model_admin=self, name=name, options=options
             )
 
+        self._custom_actions_in_list: Dict[str, str] = {}
+        self._custom_actions_in_detail: Dict[str, str] = {}
+        self._custom_actions_confirmation: Dict[str, str] = {}
+
     def _run_query_sync(self, stmt: ClauseElement) -> Any:
         with self.sessionmaker(expire_on_commit=False) as session:
             result = session.execute(stmt)
@@ -738,7 +742,7 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
             return await anyio.to_thread.run_sync(self._run_query_sync, stmt)
 
     def _url_for_details(self, request: Request, obj: Any) -> Union[str, URL]:
-        pk = getattr(obj, get_primary_key(obj).name)
+        pk = self._get_pk(obj)
         return request.url_for(
             "admin:details",
             identity=slugify_class_name(obj.__class__.__name__),
@@ -746,7 +750,7 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
         )
 
     def _url_for_edit(self, request: Request, obj: Any) -> Union[str, URL]:
-        pk = getattr(obj, get_primary_key(obj).name)
+        pk = self._get_pk(obj)
         return request.url_for(
             "admin:edit",
             identity=slugify_class_name(obj.__class__.__name__),
@@ -754,7 +758,7 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
         )
 
     def _url_for_delete(self, request: Request, obj: Any) -> str:
-        pk = getattr(obj, get_primary_key(obj).name)
+        pk = self._get_pk(obj)
         query_params = urlencode({"pks": pk})
         url = request.url_for(
             "admin:delete", identity=slugify_class_name(obj.__class__.__name__)
@@ -774,6 +778,17 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
             identity=slugify_class_name(target.__class__.__name__),
             pk=pk,
         )
+
+    def _url_for_action(self, request: Request, action_name: str) -> str:
+        return str(
+            request.url_for(
+                f"admin:{self.identity}-{action_name}",
+                identity=self.identity,
+            )
+        )
+
+    def _get_pk(self, obj: Any) -> Any:
+        return getattr(obj, get_primary_key(obj).name)
 
     def _get_default_sort(self) -> List[Tuple[str, bool]]:
         if self.column_default_sort:

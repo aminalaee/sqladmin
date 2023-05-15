@@ -1,6 +1,7 @@
 import inspect
 import io
 import logging
+from types import MethodType
 from typing import (
     Any,
     Callable,
@@ -10,6 +11,7 @@ from typing import (
     Tuple,
     Type,
     Union,
+    cast,
     no_type_check,
 )
 
@@ -30,11 +32,13 @@ from starlette.templating import Jinja2Templates
 from sqladmin._types import ENGINE_TYPE
 from sqladmin.ajax import QueryAjaxModelLoader
 from sqladmin.authentication import AuthenticationBackend, login_required
+from sqladmin.helpers import slugify_action_name
 from sqladmin.models import BaseView, ModelView
 
 __all__ = [
     "Admin",
     "expose",
+    "action",
 ]
 
 logger = logging.getLogger(__name__)
@@ -117,6 +121,67 @@ class BaseAdmin:
         else:
             self.add_base_view(view)
 
+    def _find_decorated_funcs(
+        self,
+        view: Type[Union[BaseView, ModelView]],
+        view_instance: Union[BaseView, ModelView],
+        handle_fn: Callable[
+            [MethodType, Type[Union[BaseView, ModelView]], Union[BaseView, ModelView]],
+            None,
+        ],
+    ) -> None:
+        funcs = inspect.getmembers(view_instance, predicate=inspect.ismethod)
+
+        for _, func in funcs[::-1]:
+            handle_fn(func, view, view_instance)
+
+    def _handle_action_decorated_func(
+        self,
+        func: MethodType,
+        view: Type[Union[BaseView, ModelView]],
+        view_instance: Union[BaseView, ModelView],
+    ) -> None:
+        if hasattr(func, "_action"):
+            view_instance = cast(ModelView, view_instance)
+            self.admin.add_route(
+                route=func,
+                path="/{identity}/action/" + getattr(func, "_slug"),
+                methods=["GET"],
+                name=f"{view_instance.identity}-{getattr(func, '_slug')}",
+                include_in_schema=getattr(func, "_include_in_schema"),
+            )
+
+            if getattr(func, "_add_in_list"):
+                view_instance._custom_actions_in_list[getattr(func, "_slug")] = getattr(
+                    func, "_label"
+                )
+            if getattr(func, "_add_in_detail"):
+                view_instance._custom_actions_in_detail[
+                    getattr(func, "_slug")
+                ] = getattr(func, "_label")
+
+            if getattr(func, "_confirmation_message"):
+                view_instance._custom_actions_confirmation[
+                    getattr(func, "_slug")
+                ] = getattr(func, "_confirmation_message")
+
+    def _handle_expose_decorated_func(
+        self,
+        func: MethodType,
+        view: Type[Union[BaseView, ModelView]],
+        view_instance: Union[BaseView, ModelView],
+    ) -> None:
+        if hasattr(func, "_exposed"):
+            self.admin.add_route(
+                route=func,
+                path=getattr(func, "_path"),
+                methods=getattr(func, "_methods"),
+                name=getattr(func, "_identity"),
+                include_in_schema=getattr(func, "_include_in_schema"),
+            )
+
+            view.identity = getattr(func, "_identity")
+
     def add_model_view(self, view: Type[ModelView]) -> None:
         """Add ModelView to the Admin.
 
@@ -152,7 +217,14 @@ class BaseAdmin:
             )
             view.async_engine = True
 
-        self._views.append((view()))
+        view_instance = view()
+
+        self._find_decorated_funcs(
+            view, view_instance, self._handle_action_decorated_func
+        )
+
+        view.templates = self.templates
+        self._views.append((view_instance))
 
     def add_base_view(self, view: Type[BaseView]) -> None:
         """Add BaseView to the Admin.
@@ -177,19 +249,10 @@ class BaseAdmin:
         """
 
         view_instance = view()
-        funcs = inspect.getmembers(view_instance, predicate=inspect.ismethod)
 
-        for _, func in funcs[::-1]:
-            if hasattr(func, "_exposed"):
-                self.admin.add_route(
-                    route=func,
-                    path=func._path,
-                    methods=func._methods,
-                    name=func._identity,
-                    include_in_schema=func._include_in_schema,
-                )
-
-                view.identity = func._identity
+        self._find_decorated_funcs(
+            view, view_instance, self._handle_expose_decorated_func
+        )
 
         view.templates = self.templates
         self._views.append(view_instance)
@@ -635,6 +698,48 @@ def expose(
         func._methods = methods
         func._identity = identity or func.__name__
         func._include_in_schema = include_in_schema
+        return func
+
+    return wrap
+
+
+def action(
+    name: str,
+    label: Optional[str] = None,
+    confirmation_message: Optional[str] = None,
+    *,
+    include_in_schema: bool = True,
+    add_in_detail: bool = True,
+    add_in_list: bool = True,
+) -> Callable[..., Any]:
+    """Decorate a [`ModelView`][sqladmin.models.ModelView] function
+    with this to:
+
+    * expose it as a custom "action" route
+    * add a button to the admin panel to invoke the action
+
+    When invoked from the admin panel, the following query parameter(s) are passed:
+
+    * `pks`: the comma-separated list of selected object PKs - can be empty
+
+    Args:
+        name: Unique name for the action - must match `^[A-Za-z0-9 \-_]+$` regex
+        label: Human-readable text describing action
+        confirmation_message: Message to show before confirming action
+        include_in_schema: Should the endpoint be included in the schema?
+        add_in_detail: Should action be invocable from the "Detail" view?
+        add_in_list: Should action be invocable from the "List" view?
+    """
+
+    @no_type_check
+    def wrap(func):
+        func._action = True
+        func._slug = slugify_action_name(name)
+        func._label = label if label is not None else name
+        func._confirmation_message = confirmation_message
+        func._include_in_schema = include_in_schema
+        func._add_in_detail = add_in_detail
+        func._add_in_list = add_in_list
         return func
 
     return wrap
