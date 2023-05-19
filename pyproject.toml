@@ -99,7 +99,7 @@ cov = [
   "coverage report --show-missing --skip-covered --fail-under=99",
   "coverage xml",
 ]
-test = "coverage run -a --concurrency=thread,greenlet -m pytest"
+test = "coverage run -a --concurrency=thread,greenlet -m pytest {args}"
 
 [tool.hatch.envs.lint.scripts]
 check = [
