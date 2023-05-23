@@ -457,6 +457,7 @@ class ModelConverter(ModelConverterBase):
     @converts(
         "sqlalchemy.dialects.postgresql.base.UUID",
         "sqlalchemy.sql.sqltypes.UUID",
+        "sqlalchemy.sql.sqltypes.Uuid",
         "sqlalchemy_utils.types.uuid.UUIDType",
     )
     def conv_uuid(
