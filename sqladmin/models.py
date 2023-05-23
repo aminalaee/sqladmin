@@ -782,8 +782,7 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
     def _url_for_action(self, request: Request, action_name: str) -> str:
         return str(
             request.url_for(
-                f"admin:{self.identity}-{action_name}",
-                identity=self.identity,
+                f"admin:action-{self.identity}-{action_name}",
             )
         )
 
