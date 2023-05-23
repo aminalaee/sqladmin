@@ -4,6 +4,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## Version 0.11.0 - 2023-05-23
+
+### Added
+
+* Add ability to specify custom actions in [#486](https://github.com/aminalaee/sqladmin/pull/486)
+* Add `ChoiceType` in [#482](https://github.com/aminalaee/sqladmin/pull/482)
+* Add sqlalchemy_fields URLType converter in [#493](https://github.com/aminalaee/sqladmin/pull/493)
+* Upgrade fontawesome in [#481](https://github.com/aminalaee/sqladmin/pull/481)
+
+**Full Changelog**: https://github.com/aminalaee/sqladmin/compare/0.10.3...0.11.0
+
 ## Version 0.10.3 - 2023-04-21
 
 ### Fixed
