@@ -192,7 +192,7 @@ def test_model_action(client: TestClient) -> None:
     request.url_for = Mock()
 
     admin.views[0]._url_for_action(request, "test")
-    request.url_for.assert_called_with("admin:user-test", identity="user")
+    request.url_for.assert_called_with("admin:action-user-test")
 
     with Session() as session:
         user1 = User()

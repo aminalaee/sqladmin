@@ -145,9 +145,9 @@ class BaseAdmin:
             view_instance = cast(ModelView, view_instance)
             self.admin.add_route(
                 route=func,
-                path="/{identity}/action/" + getattr(func, "_slug"),
+                path=f"/{view_instance.identity}/action/" + getattr(func, "_slug"),
                 methods=["GET"],
-                name=f"{view_instance.identity}-{getattr(func, '_slug')}",
+                name=f"action-{view_instance.identity}-{getattr(func, '_slug')}",
                 include_in_schema=getattr(func, "_include_in_schema"),
             )
 
