@@ -93,7 +93,7 @@ def test_get_save_redirect_url():
     async def index(request: Request):
         obj = User(id=1)
         form_data = await request.form()
-        url = admin.get_save_redirect_url(request, form_data, UserAdmin, obj)
+        url = admin.get_save_redirect_url(request, form_data, admin.views[0], obj)
         return Response(str(url))
 
     client = TestClient(app)
