@@ -411,7 +411,7 @@ def test_export_columns_both_include_and_exclude() -> None:
             column_export_exclude_list = ["name"]
 
     assert exc.match(
-        "Cannot use column_export_list and" " column_export_exclude_list together."
+        "Cannot use column_export_list and column_export_exclude_list together."
     )
 
 
