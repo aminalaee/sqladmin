@@ -185,11 +185,11 @@ def get_primary_key(model: type) -> Column:
     return pks[0]
 
 
-def get_primary_keys(model: type) -> Tuple[Column]:
+def get_primary_keys(model: type) -> Tuple[Column, ...]:
     return tuple(inspect(model).mapper.primary_key)
 
 
-def get_object_identifier(obj: type) -> Any:
+def get_object_identifier(obj: Any) -> Any:
     """Returns a value that uniquely identifies this object."""
     primary_keys = get_primary_keys(obj)
     values = [getattr(obj, pk.name) for pk in primary_keys]
@@ -202,7 +202,7 @@ def get_object_identifier(obj: type) -> Any:
     return ";".join(str(v).replace("\\", "\\\\").replace(";", r"\;") for v in values)
 
 
-def _object_identifier_parts(id_string: str, model: type) -> Tuple[str]:
+def _object_identifier_parts(id_string: str, model: type) -> Tuple[str, ...]:
     pks = get_primary_keys(model)
     if len(pks) == 1:
         # Only one primary key so no special processing

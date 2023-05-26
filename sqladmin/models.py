@@ -42,9 +42,10 @@ from sqladmin.formatters import BASE_FORMATTERS
 from sqladmin.forms import ModelConverter, ModelConverterBase, get_model_form
 from sqladmin.helpers import (
     Writer,
-    get_column_python_type,
-    get_primary_key,
+    get_object_identifier,
+    get_primary_keys,
     map_attr_to_prop,
+    object_identifier_values,
     prettify_class_name,
     secure_filename,
     slugify_class_name,
@@ -82,7 +83,9 @@ class ModelViewMeta(type):
                 f"Class {model.__name__} is not a SQLAlchemy model."
             )
 
-        cls.pk_column = get_primary_key(model)
+        cls.pk_columns = get_primary_keys(model)
+        cls.pk_column = cls.pk_columns[0] if len(cls.pk_columns) == 1 else None
+
         cls.identity = slugify_class_name(model.__name__)
         cls.model = model
 
@@ -91,7 +94,9 @@ class ModelViewMeta(type):
         cls.icon = attrs.get("icon")
 
         cls.list_query = attrs.get("list_query", select(model))
-        cls.count_query = attrs.get("count_query", select(func.count(cls.pk_column)))
+        cls.count_query = attrs.get(
+            "count_query", select(func.count(cls.pk_columns[0]))
+        )
 
         mcls._check_conflicting_options(["column_list", "column_exclude_list"], attrs)
         mcls._check_conflicting_options(
@@ -195,7 +200,8 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
     model: ClassVar[type]
 
     # Internals
-    pk_column: ClassVar[Column]
+    pk_column: ClassVar[Optional[Column]]
+    pk_columns: ClassVar[Tuple[Column]]
     sessionmaker: ClassVar[sessionmaker]
     engine: ClassVar[ENGINE_TYPE]
     async_engine: ClassVar[bool]
@@ -742,7 +748,7 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
             return await anyio.to_thread.run_sync(self._run_query_sync, stmt)
 
     def _url_for_details(self, request: Request, obj: Any) -> Union[str, URL]:
-        pk = self._get_pk(obj)
+        pk = self.get_identifier(obj)
         return request.url_for(
             "admin:details",
             identity=slugify_class_name(obj.__class__.__name__),
@@ -750,7 +756,7 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
         )
 
     def _url_for_edit(self, request: Request, obj: Any) -> Union[str, URL]:
-        pk = self._get_pk(obj)
+        pk = self.get_identifier(obj)
         return request.url_for(
             "admin:edit",
             identity=slugify_class_name(obj.__class__.__name__),
@@ -758,7 +764,7 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
         )
 
     def _url_for_delete(self, request: Request, obj: Any) -> str:
-        pk = self._get_pk(obj)
+        pk = self.get_identifier(obj)
         query_params = urlencode({"pks": pk})
         url = request.url_for(
             "admin:delete", identity=slugify_class_name(obj.__class__.__name__)
@@ -772,11 +778,10 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
         if target is None:
             return ""
 
-        pk = getattr(target, prop.mapper.primary_key[0].name)
         return request.url_for(
             "admin:details",
             identity=slugify_class_name(target.__class__.__name__),
-            pk=pk,
+            pk=self.get_identifier(target),
         )
 
     def _url_for_action(self, request: Request, action_name: str) -> str:
@@ -786,8 +791,8 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
             )
         )
 
-    def _get_pk(self, obj: Any) -> Any:
-        return getattr(obj, get_primary_key(obj).name)
+    def get_identifier(self, obj: Any) -> Any:
+        return get_object_identifier(obj)
 
     def _get_default_sort(self) -> List[Tuple[str, bool]]:
         if self.column_default_sort:
@@ -798,7 +803,7 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
             else:
                 return [(self.column_default_sort, False)]
 
-        return [(self.pk_column.name, False)]
+        return [(pk.name, False) for pk in self.pk_columns]
 
     def _default_formatter(self, value: Any) -> Any:
         if type(value) in self.column_type_formatters:
@@ -871,8 +876,7 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
         return rows[0] if rows else None
 
     async def get_object_for_details(self, value: Any) -> Any:
-        pk_value = get_column_python_type(self.pk_column)(value)
-        stmt = select(self.model).where(self.pk_column == pk_value)
+        stmt = self._stmt_by_identifier(value)
 
         for relation in self._details_relation_attrs:
             stmt = stmt.options(joinedload(relation))
@@ -880,8 +884,7 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
         return await self._get_object_by_pk(stmt)
 
     async def get_object_for_edit(self, value: Any) -> Any:
-        pk_value = get_column_python_type(self.pk_column)(value)
-        stmt = select(self.model).where(self.pk_column == pk_value)
+        stmt = self._stmt_by_identifier(value)
 
         for relation in self._form_relation_attrs:
             stmt = stmt.options(joinedload(relation))
@@ -889,9 +892,18 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
         return await self._get_object_by_pk(stmt)
 
     async def get_object_for_delete(self, value: Any) -> Any:
-        pk_value = get_column_python_type(self.pk_column)(value)
-        stmt = select(self.model).where(self.pk_column == pk_value)
+        stmt = self._stmt_by_identifier(value)
         return await self._get_object_by_pk(stmt)
+
+    def _stmt_by_identifier(self, identifier: str) -> Select:
+        stmt = select(self.model)
+        conditions = []
+        pks = get_primary_keys(self.model)
+        values = object_identifier_values(identifier, self.model)
+        for pk, value in zip(pks, values):
+            conditions.append(pk == value)
+
+        return stmt.where(*conditions)
 
     def get_prop_value(
         self, obj: type, prop: Union[Column, ColumnProperty, RelationshipProperty]
@@ -954,7 +966,7 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
         return self._build_column_list(
             include=column_list,
             exclude=column_exclude_list,
-            defaults=[self._props[self.pk_column.key]],
+            defaults=[self._props[pk.key] for pk in self.pk_columns],
         )
 
     def get_details_columns(self) -> List[Tuple[str, MODEL_PROPERTY]]:

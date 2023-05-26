@@ -2,7 +2,7 @@ from typing import TYPE_CHECKING, Any, Dict, List
 
 from sqlalchemy import String, cast, inspect, or_, select
 
-from sqladmin.helpers import get_primary_key
+from sqladmin.helpers import get_object_identifier, get_primary_keys
 
 if TYPE_CHECKING:
     from sqladmin.models import ModelView
@@ -25,6 +25,9 @@ class QueryAjaxModelLoader:
         self.fields = options.get("fields", {})
         self.order_by = options.get("order_by")
 
+        pks = get_primary_keys(self.model)
+        self.pk = pks[0] if len(pks) == 1 else None
+
         if not self.fields:
             raise ValueError(
                 "AJAX loading requires `fields` to be specified for "
@@ -32,7 +35,6 @@ class QueryAjaxModelLoader:
             )
 
         self._cached_fields = self._process_fields()
-        self.pk = get_primary_key(self.model)
 
     def _process_fields(self) -> list:
         remote_fields = []
@@ -54,7 +56,7 @@ class QueryAjaxModelLoader:
         if not model:
             return {}
 
-        return {"id": getattr(model, self.pk.name), "text": str(model)}
+        return {"id": get_object_identifier(model), "text": str(model)}
 
     async def get_list(self, term: str, limit: int = DEFAULT_PAGE_SIZE) -> List[Any]:
         stmt = select(self.model)
