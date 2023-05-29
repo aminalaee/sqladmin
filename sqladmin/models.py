@@ -807,8 +807,11 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
 
         return value
 
-    async def count(self) -> int:
-        rows = await self._run_query(self.count_query)
+    async def count(self, stmt: Select = None) -> int:
+        if stmt is None:
+            rows = await self._run_query(self.count_query)
+        else:
+            rows = await self._run_query(stmt)
         return rows[0]
 
     async def list(
@@ -820,8 +823,6 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
         sort: str = "asc",
     ) -> Pagination:
         page_size = min(page_size or self.page_size, max(self.page_size_options))
-
-        count = await self.count()
         stmt = self.list_query.limit(page_size).offset((page - 1) * page_size)
 
         for relation in self._list_relation_attrs:
@@ -840,6 +841,9 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
 
         if search:
             stmt = self.search_query(stmt=stmt, term=search)
+            count = await self.count(select(func.count()).select_from(stmt))
+        else:
+            count = await self.count()
 
         rows = await self._run_query(stmt)
         pagination = Pagination(
