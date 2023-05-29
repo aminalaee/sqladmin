@@ -737,6 +737,8 @@ async def test_searchable_list(client: AsyncClient) -> None:
     async with LocalSession() as session:
         user = User(name="Ross")
         session.add(user)
+        user = User(name="Boss")
+        session.add(user)
         await session.commit()
 
     response = await client.get("/admin/user/list")
@@ -752,6 +754,10 @@ async def test_searchable_list(client: AsyncClient) -> None:
     response = await client.get("/admin/user/list?search=ro")
 
     assert "/admin/user/details/1" in response.text
+    assert (
+        "Showing <span>1</span> to <span>1</span> of <span>1</span> items"
+        in response.text
+    )
 
     response = await client.get("/admin/user/list?search=rose")
 

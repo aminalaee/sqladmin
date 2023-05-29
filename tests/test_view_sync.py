@@ -703,6 +703,8 @@ def test_searchable_list(client: TestClient) -> None:
     with LocalSession() as session:
         user = User(name="Ross")
         session.add(user)
+        user = User(name="Boss")
+        session.add(user)
         session.commit()
 
     response = client.get("/admin/user/list")
@@ -717,6 +719,10 @@ def test_searchable_list(client: TestClient) -> None:
 
     response = client.get("/admin/user/list?search=ro")
     assert "/admin/user/details/1" in response.text
+    assert (
+        "Showing <span>1</span> to <span>1</span> of <span>1</span> items"
+        in response.text
+    )
 
     response = client.get("/admin/user/list?search=rose")
     assert "/admin/user/details/1" not in response.text
