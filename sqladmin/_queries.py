@@ -57,8 +57,15 @@ class Query:
 
     def _set_many_to_one(self, obj: Any, relation: MODEL_PROPERTY, ident: Any) -> Any:
         values = object_identifier_values(ident, relation.entity)
-        for fk, value in zip(relation.local_columns, values):
-            setattr(obj, fk.name, value)
+        pks = get_primary_keys(relation.entity)
+
+        # ``relation.local_remote_pairs`` is ordered by the foreign keys
+        # but the values are ordered by the primary keys. This dict
+        # ensures we write the correct value to the fk fields
+        pk_value = {pk: value for pk, value in zip(pks, values)}
+
+        for fk, pk in relation.local_remote_pairs:
+            setattr(obj, fk.name, pk_value[pk])
 
         return obj
 

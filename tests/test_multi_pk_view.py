@@ -61,8 +61,10 @@ class ReviewComplaint(Base):
     __tablename__ = "review_complaints"
 
     id = Column(Integer, primary_key=True)
-    review_user_id = Column(Integer, nullable=False)
+    # FKs intentionally in oposite order of the corresponding PKs since
+    # SQLAdmin should not assume they always match in order.
     review_movie_id = Column(Integer, nullable=False)
+    review_user_id = Column(Integer, nullable=False)
     complaint = Column(String, nullable=False)
 
     review = relationship("Review", back_populates="complaints")
