@@ -71,6 +71,8 @@ class ReviewComplaint(Base):
         ForeignKeyConstraint(
             ["review_user_id", "review_movie_id"],
             ["reviews.user_id", "reviews.movie_id"],
+            ondelete="CASCADE",
+            onupdate="CASCADE",
         ),
     )
 
@@ -239,3 +241,17 @@ def test_delete_selected_multipk(client: TestClient) -> None:
     assert client.get("/admin/review/details/1;2").status_code == 404
     assert client.get("/admin/review/details/2;2").status_code == 404
     assert client.get("/admin/review/details/2;1").status_code == 200
+
+
+def test_query_one_to_many(client: TestClient) -> None:
+    base_content()
+    # Change name, reassign movie 3 review from user 3 to user 1
+    data = {"name": "Jane Doe", "movie_reviews": ["1;1", "1;2", "3;3"]}
+    response = client.post("/admin/user/edit/1", data=data)
+    assert response.status_code == 200
+
+    assert client.get("/admin/review/details/3;3").status_code == 404
+
+    details_response = client.get("/admin/user/details/1")
+    assert "<td>Jane Doe</td>" in details_response.text
+    assert "(Review by 1 for 3)" in details_response.text
