@@ -61,24 +61,6 @@ def prepare_database() -> Generator[None, None, None]:
     Base.metadata.drop_all(engine)
 
 
-def test_model_setup() -> None:
-    class UserAdmin(ModelView, model=User):
-        pass
-
-    assert UserAdmin.model == User
-    assert UserAdmin.pk_column == User.id
-
-    class AddressAdmin(ModelView, model=Address):
-        pass
-
-    assert AddressAdmin.model == Address
-
-    class ProfileAdmin(ModelView, model=Profile):
-        pass
-
-    assert ProfileAdmin.model == Profile
-
-
 def test_metadata_setup() -> None:
     class UserAdmin(ModelView, model=User):
         pass

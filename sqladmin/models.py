@@ -84,8 +84,6 @@ class ModelViewMeta(type):
             )
 
         cls.pk_columns = get_primary_keys(model)
-        cls.pk_column = cls.pk_columns[0] if len(cls.pk_columns) == 1 else None
-
         cls.identity = slugify_class_name(model.__name__)
         cls.model = model
 
@@ -200,7 +198,6 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
     model: ClassVar[type]
 
     # Internals
-    pk_column: ClassVar[Optional[Column]]
     pk_columns: ClassVar[Tuple[Column]]
     sessionmaker: ClassVar[sessionmaker]
     engine: ClassVar[ENGINE_TYPE]
@@ -947,7 +944,10 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
         """This function generalizes constructing a list of columns
         for any sequence of inclusions or exclusions.
         """
-        if include:
+
+        if include == "__all__":
+            props = self._props
+        elif include:
             props = [map_attr_to_prop(prop, self) for prop in include]
         elif exclude:
             exclude_props = {map_attr_to_prop(prop, self) for prop in exclude}
