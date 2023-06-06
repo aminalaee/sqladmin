@@ -2,12 +2,11 @@ import json
 import operator
 from typing import Any, Callable, Generator, List, Optional, Set, Tuple, Union
 
-from sqlalchemy import inspect
 from wtforms import Form, ValidationError, fields, widgets
 
 from sqladmin import widgets as sqladmin_widgets
 from sqladmin.ajax import QueryAjaxModelLoader
-from sqladmin.helpers import parse_interval
+from sqladmin.helpers import get_object_identifier, parse_interval
 
 __all__ = [
     "AjaxSelectField",
@@ -187,7 +186,7 @@ class QuerySelectField(fields.SelectFieldBase):
             primary_key = (
                 self.data
                 if isinstance(self.data, str)
-                else str(inspect(self.data).identity[0])
+                else str(get_object_identifier(self.data))
             )
         else:
             primary_key = None
@@ -276,7 +275,7 @@ class QuerySelectMultipleField(QuerySelectField):
             primary_keys = (
                 self.data
                 if all(isinstance(d, str) for d in self.data)
-                else [str(inspect(m).identity[0]) for m in self.data]
+                else [str(get_object_identifier(m)) for m in self.data]
             )
             for pk, label in self._select_data:
                 yield (pk, self.get_label(label), pk in primary_keys)

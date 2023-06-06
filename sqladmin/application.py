@@ -645,14 +645,14 @@ class Admin(BaseAdminView):
         """
 
         identity = request.path_params["identity"]
-        pk = getattr(obj, model_view.pk_column.name)
+        identifier = model_view.get_identifier(obj)
 
         if form.get("save") == "Save":
             return request.url_for("admin:list", identity=identity)
         elif form.get("save") == "Save and continue editing" or (
             form.get("save") == "Save as new" and model_view.save_as_continue
         ):
-            return request.url_for("admin:edit", identity=identity, pk=pk)
+            return request.url_for("admin:edit", identity=identity, pk=identifier)
         return request.url_for("admin:create", identity=identity)
 
     async def _handle_form_data(self, request: Request, obj: Any = None) -> FormData:

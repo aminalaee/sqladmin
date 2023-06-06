@@ -4,14 +4,15 @@ import anyio
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import Session, joinedload
-from sqlalchemy.sql.expression import Select
+from sqlalchemy.sql.expression import Select, and_, or_
 
 from sqladmin._types import MODEL_PROPERTY
 from sqladmin.helpers import (
     get_column_python_type,
     get_direction,
-    get_primary_key,
+    get_primary_keys,
     is_falsy_value,
+    object_identifier_values,
 )
 
 if TYPE_CHECKING:
@@ -24,23 +25,48 @@ class Query:
 
     def _get_to_many_stmt(self, relation: MODEL_PROPERTY, values: List[Any]) -> Select:
         target = relation.mapper.class_
-        target_pk = get_primary_key(target)
-        target_pk_type = get_column_python_type(target_pk)
-        pk_values = [target_pk_type(value) for value in values]
-        related_stmt = select(target).where(target_pk.in_(pk_values))
-        return related_stmt
+
+        target_pks = get_primary_keys(target)
+
+        if len(target_pks) == 1:
+            target_pk = target_pks[0]
+            target_pk_type = get_column_python_type(target_pk)
+            pk_values = [target_pk_type(value) for value in values]
+            return select(target).where(target_pk.in_(pk_values))
+
+        conditions = []
+        for value in values:
+            conditions.append(
+                and_(
+                    pk == value
+                    for pk, value in zip(
+                        target_pks,
+                        object_identifier_values(value, target),
+                    )
+                )
+            )
+        return select(target).where(or_(*conditions))
 
     def _get_to_one_stmt(self, relation: MODEL_PROPERTY, value: Any) -> Select:
         target = relation.mapper.class_
-        target_pk = get_primary_key(target)
-        target_pk_type = get_column_python_type(target_pk)
-        related_stmt = select(target).where(target_pk == target_pk_type(value))
+        target_pks = get_primary_keys(target)
+        target_pk_types = [get_column_python_type(pk) for pk in target_pks]
+        conditions = [pk == typ(value) for pk, typ in zip(target_pks, target_pk_types)]
+        related_stmt = select(target).where(*conditions)
         return related_stmt
 
-    def _set_many_to_one(self, obj: Any, relation: MODEL_PROPERTY, value: Any) -> Any:
-        fk = relation.local_remote_pairs[0][0]
-        fk_type = get_column_python_type(fk)
-        setattr(obj, fk.name, fk_type(value))
+    def _set_many_to_one(self, obj: Any, relation: MODEL_PROPERTY, ident: Any) -> Any:
+        values = object_identifier_values(ident, relation.entity)
+        pks = get_primary_keys(relation.entity)
+
+        # ``relation.local_remote_pairs`` is ordered by the foreign keys
+        # but the values are ordered by the primary keys. This dict
+        # ensures we write the correct value to the fk fields
+        pk_value = {pk: value for pk, value in zip(pks, values)}
+
+        for fk, pk in relation.local_remote_pairs:
+            setattr(obj, fk.name, pk_value[pk])
+
         return obj
 
     def _set_attributes_sync(self, session: Session, obj: Any, data: dict) -> Any:
@@ -105,8 +131,7 @@ class Query:
         return obj
 
     def _update_sync(self, pk: Any, data: Dict[str, Any]) -> Any:
-        pk = get_column_python_type(self.model_view.pk_column)(pk)
-        stmt = select(self.model_view.model).where(self.model_view.pk_column == pk)
+        stmt = self.model_view._stmt_by_identifier(pk)
 
         with self.model_view.sessionmaker(expire_on_commit=False) as session:
             obj = session.execute(stmt).scalars().first()
@@ -117,8 +142,7 @@ class Query:
             return obj
 
     async def _update_async(self, pk: Any, data: Dict[str, Any]) -> Any:
-        pk = get_column_python_type(self.model_view.pk_column)(pk)
-        stmt = select(self.model_view.model).where(self.model_view.pk_column == pk)
+        stmt = self.model_view._stmt_by_identifier(pk)
 
         for relation in self.model_view._relation_attrs:
             stmt = stmt.options(joinedload(relation))

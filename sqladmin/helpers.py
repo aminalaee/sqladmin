@@ -13,6 +13,7 @@ from typing import (
     Generator,
     List,
     Optional,
+    Tuple,
     TypeVar,
     Union,
 )
@@ -182,6 +183,61 @@ def get_primary_key(model: type) -> Column:
     pks = inspect(model).mapper.primary_key
     assert len(pks) == 1, "Multiple Primary Keys not supported."
     return pks[0]
+
+
+def get_primary_keys(model: type) -> Tuple[Column, ...]:
+    return tuple(inspect(model).mapper.primary_key)
+
+
+def get_object_identifier(obj: Any) -> Any:
+    """Returns a value that uniquely identifies this object."""
+    primary_keys = get_primary_keys(obj)
+    values = [getattr(obj, pk.name) for pk in primary_keys]
+
+    # Unaltered value for tables with a single primary key
+    if len(values) == 1:
+        return values[0]
+
+    # Combine into single string for multiple primary key support
+    return ";".join(str(v).replace("\\", "\\\\").replace(";", r"\;") for v in values)
+
+
+def _object_identifier_parts(id_string: str, model: type) -> Tuple[str, ...]:
+    pks = get_primary_keys(model)
+    if len(pks) == 1:
+        # Only one primary key so no special processing
+        return (id_string,)
+
+    values = []
+    escape_next = False
+    value_start = 0
+    for idx, char in enumerate(id_string):
+        if escape_next:
+            escape_next = False
+            continue
+
+        if char == ";":
+            values.append(id_string[value_start:idx])
+            value_start = idx + 1
+
+        escape_next = char == "\\"
+
+    # Add the last part that's not followed by semicolon
+    values.append(id_string[value_start:])
+
+    if len(values) != len(pks):
+        raise ValueError(f"Malformed identifier string for model {model.__name__}.")
+
+    # Undo escaping for ; and \
+    return tuple(v.replace(r"\;", ";").replace(r"\\", "\\") for v in values)
+
+
+def object_identifier_values(id_string: str, model: type) -> tuple:
+    values = []
+    pks = get_primary_keys(model)
+    for pk, part in zip(pks, _object_identifier_parts(id_string, model)):
+        values.append(get_column_python_type(pk)(part))
+    return tuple(values)
 
 
 def get_direction(prop: MODEL_PROPERTY) -> str:

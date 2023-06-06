@@ -99,7 +99,7 @@
           {% for row in pagination.rows %}
           <tr>
             <td>
-              <input type="hidden" value="{{ model_view.get_prop_value(row, model_view.pk_column) }}">
+              <input type="hidden" value="{{ model_view.get_identifier(row) }}">
               <input class="form-check-input m-0 align-middle select-box" type="checkbox" aria-label="Select item">
             </td>
             <td class="text-end">
@@ -114,7 +114,7 @@
               </a>
               {% endif %}
               {% if model_view.can_delete %}
-              <a href="#" data-name="{{ model_view.name }}" data-pk="{{ model_view.get_prop_value(row, model_view.pk_column) }}" data-url="{{ model_view._url_for_delete(request, row) }}" data-bs-toggle="modal" data-bs-target="#modal-delete" title="Delete">
+              <a href="#" data-name="{{ model_view.name }}" data-pk="{{ model_view.get_identifier(row) }}" data-url="{{ model_view._url_for_delete(request, row) }}" data-bs-toggle="modal" data-bs-target="#modal-delete" title="Delete">
                 <span class="me-1"><i class="fa-solid fa-trash"></i></span>
               </a>
               {% endif %}

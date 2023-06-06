@@ -63,7 +63,7 @@ from sqladmin.fields import (
 from sqladmin.helpers import (
     choice_type_coerce_factory,
     get_direction,
-    get_primary_key,
+    get_object_identifier,
     is_relationship,
 )
 
@@ -222,21 +222,20 @@ class ModelConverterBase:
         engine: ENGINE_TYPE,
     ) -> List[Tuple[str, Any]]:
         target_model = prop.mapper.class_
-        pk = get_primary_key(target_model)
         stmt = select(target_model)
 
         if isinstance(engine, Engine):
             with Session(engine) as session:
                 objects = await anyio.to_thread.run_sync(session.execute, stmt)
                 return [
-                    (self._get_pk_value(obj, pk), str(obj))
+                    (str(self._get_identifier_value(obj)), str(obj))
                     for obj in objects.scalars().all()
                 ]
         elif isinstance(engine, AsyncEngine):
             async with AsyncSession(engine) as session:
                 objects = await session.execute(stmt)
                 return [
-                    (self._get_pk_value(obj, pk), str(obj))
+                    (str(self._get_identifier_value(obj)), str(obj))
                     for obj in objects.scalars().all()
                 ]
 
@@ -321,8 +320,8 @@ class ModelConverterBase:
         converter = self.get_converter(prop=prop)
         return converter(model=model, prop=prop, kwargs=kwargs)
 
-    def _get_pk_value(self, o: Any, pk: Column) -> str:
-        return str(getattr(o, pk.name))
+    def _get_identifier_value(self, o: Any) -> str:
+        return str(get_object_identifier(o))
 
 
 class ModelConverter(ModelConverterBase):
