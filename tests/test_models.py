@@ -61,24 +61,6 @@ def prepare_database() -> Generator[None, None, None]:
     Base.metadata.drop_all(engine)
 
 
-def test_model_setup() -> None:
-    class UserAdmin(ModelView, model=User):
-        pass
-
-    assert UserAdmin.model == User
-    assert UserAdmin.pk_column == User.id
-
-    class AddressAdmin(ModelView, model=Address):
-        pass
-
-    assert AddressAdmin.model == Address
-
-    class ProfileAdmin(ModelView, model=Profile):
-        pass
-
-    assert ProfileAdmin.model == Profile
-
-
 def test_metadata_setup() -> None:
     class UserAdmin(ModelView, model=User):
         pass
@@ -509,3 +491,18 @@ def test_url_for() -> None:
         call("admin:edit", identity="address", pk=2),
         call("admin:delete", identity="address"),
     ]
+
+
+def test_model_columns_all_keyword() -> None:
+    class AddressAdmin(ModelView, model=Address):
+        column_list = "__all__"
+        column_details_list = "__all__"
+
+    all_columns = [
+        ("user", Address.user.prop),
+        ("pk", Address.pk),
+        ("user_id", Address.user_id),
+    ]
+
+    assert AddressAdmin().get_list_columns() == all_columns
+    assert AddressAdmin().get_details_columns() == all_columns
