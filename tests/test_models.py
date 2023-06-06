@@ -498,7 +498,6 @@ def test_model_columns_all_keyword() -> None:
         column_list = "__all__"
         column_details_list = "__all__"
 
-
     all_columns = [
         ("user", Address.user.prop),
         ("pk", Address.pk),
