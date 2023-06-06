@@ -491,3 +491,19 @@ def test_url_for() -> None:
         call("admin:edit", identity="address", pk=2),
         call("admin:delete", identity="address"),
     ]
+
+
+def test_model_columns_all_keyword() -> None:
+    class AddressAdmin(ModelView, model=Address):
+        column_list = "__all__"
+        column_details_list = "__all__"
+
+
+    all_columns = [
+        ("user", Address.user.prop),
+        ("pk", Address.pk),
+        ("user_id", Address.user_id),
+    ]
+
+    assert AddressAdmin().get_list_columns() == all_columns
+    assert AddressAdmin().get_details_columns() == all_columns

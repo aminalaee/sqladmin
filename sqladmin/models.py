@@ -25,7 +25,6 @@ from sqlalchemy.orm import (
     joinedload,
     sessionmaker,
 )
-from sqlalchemy.orm.attributes import InstrumentedAttribute
 from sqlalchemy.sql.elements import ClauseElement
 from sqlalchemy.sql.expression import Select, select
 from starlette.datastructures import URL
@@ -35,7 +34,7 @@ from starlette.templating import Jinja2Templates
 from wtforms import Field, Form
 
 from sqladmin._queries import Query
-from sqladmin._types import ENGINE_TYPE, MODEL_PROPERTY
+from sqladmin._types import ENGINE_TYPE, MODEL_ATTR, MODEL_PROPERTY
 from sqladmin.ajax import create_ajax_loader
 from sqladmin.exceptions import InvalidModelError
 from sqladmin.formatters import BASE_FORMATTERS
@@ -231,7 +230,7 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
     """
 
     # List page
-    column_list: ClassVar[Sequence[Union[str, InstrumentedAttribute]]] = []
+    column_list: ClassVar[Union[str, Sequence[MODEL_ATTR]]] = []
     """List of columns to display in `List` page.
     Columns can either be string names or SQLAlchemy columns.
 
@@ -245,7 +244,7 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
         ```
     """
 
-    column_exclude_list: ClassVar[Sequence[Union[str, InstrumentedAttribute]]] = []
+    column_exclude_list: ClassVar[Sequence[MODEL_ATTR]] = []
     """List of columns to exclude in `List` page.
     Columns can either be string names or SQLAlchemy columns.
 
@@ -256,9 +255,7 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
         ```
     """
 
-    column_formatters: ClassVar[
-        Dict[Union[str, InstrumentedAttribute], Callable[[type, Column], Any]]
-    ] = {}
+    column_formatters: ClassVar[Dict[MODEL_ATTR, Callable[[type, Column], Any]]] = {}
     """Dictionary of list view column formatters.
     Columns can either be string names or SQLAlchemy columns.
 
@@ -300,7 +297,7 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
         ```
     """
 
-    column_searchable_list: ClassVar[Sequence[Union[str, InstrumentedAttribute]]] = []
+    column_searchable_list: ClassVar[Sequence[MODEL_ATTR]] = []
     """A collection of the searchable columns.
     It is assumed that only text-only fields are searchable,
     but it is up to the model implementation to decide.
@@ -312,7 +309,7 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
         ```
     """
 
-    column_sortable_list: ClassVar[Sequence[Union[str, InstrumentedAttribute]]] = []
+    column_sortable_list: ClassVar[Sequence[MODEL_ATTR]] = []
     """Collection of the sortable columns for the list view.
 
     ???+ example
@@ -350,7 +347,7 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
     """
 
     # Details page
-    column_details_list: ClassVar[Sequence[Union[str, InstrumentedAttribute]]] = []
+    column_details_list: ClassVar[Union[str, Sequence[MODEL_ATTR]]] = []
     """List of columns to display in `Detail` page.
     Columns can either be string names or SQLAlchemy columns.
 
@@ -364,9 +361,7 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
         ```
     """
 
-    column_details_exclude_list: ClassVar[
-        Sequence[Union[str, InstrumentedAttribute]]
-    ] = []
+    column_details_exclude_list: ClassVar[Sequence[MODEL_ATTR]] = []
     """List of columns to exclude from displaying in `Detail` page.
     Columns can either be string names or SQLAlchemy columns.
 
@@ -378,7 +373,7 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
     """
 
     column_formatters_detail: ClassVar[
-        Dict[Union[str, InstrumentedAttribute], Callable[[type, Column], Any]]
+        Dict[MODEL_ATTR, Callable[[type, Column], Any]]
     ] = {}
     """Dictionary of details view column formatters.
     Columns can either be string names or SQLAlchemy columns.
@@ -435,7 +430,7 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
     """Edit view template. Default is `edit.html`."""
 
     # Export
-    column_export_list: ClassVar[List[Union[str, InstrumentedAttribute]]] = []
+    column_export_list: ClassVar[List[MODEL_ATTR]] = []
     """List of columns to include when exporting.
     Columns can either be string names or SQLAlchemy columns.
 
@@ -446,7 +441,7 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
         ```
     """
 
-    column_export_exclude_list: ClassVar[List[Union[str, InstrumentedAttribute]]] = []
+    column_export_exclude_list: ClassVar[List[MODEL_ATTR]] = []
     """List of columns to exclude when exporting.
     Columns can either be string names or SQLAlchemy columns.
 
@@ -529,7 +524,7 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
         ```
     """
 
-    form_columns: ClassVar[Sequence[Union[str, InstrumentedAttribute]]] = []
+    form_columns: ClassVar[Sequence[MODEL_ATTR]] = []
     """List of columns to include in the form.
     Columns can either be string names or SQLAlchemy columns.
 
@@ -543,7 +538,7 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
         ```
     """
 
-    form_excluded_columns: ClassVar[Sequence[Union[str, InstrumentedAttribute]]] = []
+    form_excluded_columns: ClassVar[Sequence[MODEL_ATTR]] = []
     """List of columns to exclude from the form.
     Columns can either be string names or SQLAlchemy columns.
 
@@ -606,7 +601,7 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
     """
 
     # General options
-    column_labels: ClassVar[Dict[Union[str, InstrumentedAttribute], str]] = {}
+    column_labels: ClassVar[Dict[MODEL_ATTR, str]] = {}
     """A mapping of column labels, used to map column names to new names.
     Dictionary keys can be string names or SQLAlchemy columns with string values.
 
@@ -938,8 +933,8 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
     def _build_column_list(
         self,
         defaults: List[MODEL_PROPERTY],
-        include: Optional[Sequence[Union[str, InstrumentedAttribute]]] = None,
-        exclude: Optional[Sequence[Union[str, InstrumentedAttribute]]] = None,
+        include: Optional[Union[str, Sequence[MODEL_ATTR]]] = None,
+        exclude: Optional[Sequence[MODEL_ATTR]] = None,
     ) -> List[Tuple[str, MODEL_PROPERTY]]:
         """This function generalizes constructing a list of columns
         for any sequence of inclusions or exclusions.

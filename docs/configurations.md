@@ -109,21 +109,17 @@ or list of the tuple for multiple columns.
     ```python
     class UserAdmin(ModelView, model=User):
         column_list = [User.id, User.name]
-        # column_list = ["id", "name"]
-    ```
-
-    ```python
-    class UserAdmin(ModelView, model=User):
-        column_exclude_list = [User.id]
-    ```
-
-    ```python
-    class UserAdmin(ModelView, model=User):
         column_searchable_list = [User.name]
         column_sortable_list = [User.id]
         column_formatters = {User.name: lambda m, a: m.name[:10]}
         column_default_sort = [(User.email, True), (User.name, False)]
     ```
+
+
+!!! tip
+
+    You can use the special keyword `"__all__"` in `column_list` or `column_details_list`
+    if you don't want to specify all the columns manually. For example: `column_list = "__all__"`
 
 ## Details page
 
@@ -141,15 +137,6 @@ The options available are:
     ```python
     class UserAdmin(ModelView, model=User):
         column_details_list = [User.id, User.name]
-    ```
-
-    ```python
-    class UserAdmin(ModelView, model=User):
-        column_details_exclude_list = [User.id]
-    ```
-
-    ```python
-    class UserAdmin(ModelView, model=User):
         column_formatters_detail = {User.name: lambda m, a: m.name[:10]}
     ```
 
