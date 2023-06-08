@@ -698,7 +698,7 @@ def expose(
         func._methods = methods
         func._identity = identity or func.__name__
         func._include_in_schema = include_in_schema
-        return func
+        return login_required(func)
 
     return wrap
 
@@ -740,6 +740,6 @@ def action(
         func._include_in_schema = include_in_schema
         func._add_in_detail = add_in_detail
         func._add_in_list = add_in_list
-        return func
+        return login_required(func)
 
     return wrap
