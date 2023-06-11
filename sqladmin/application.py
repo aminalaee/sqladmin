@@ -723,12 +723,12 @@ def action(
     * `pks`: the comma-separated list of selected object PKs - can be empty
 
     Args:
-        name: Unique name for the action - must match `^[A-Za-z0-9 \-_]+$` regex
+        name: Unique name for the action - should be alphanumeric, dash and underscore
         label: Human-readable text describing action
         confirmation_message: Message to show before confirming action
-        include_in_schema: Should the endpoint be included in the schema?
-        add_in_detail: Should action be invocable from the "Detail" view?
-        add_in_list: Should action be invocable from the "List" view?
+        include_in_schema: Indicating if the endpoint be included in the schema
+        add_in_detail: Indicating if action should be dispalyed on model detail page
+        add_in_list: Indicating if action should be dispalyed on model list page
     """
 
     @no_type_check

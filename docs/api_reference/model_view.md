@@ -1,6 +1,6 @@
 ::: sqladmin.models.ModelView
     handler: python
-    selection:
+    options:
       members:
         - name
         - name_plural

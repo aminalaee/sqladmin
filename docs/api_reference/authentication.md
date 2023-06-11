@@ -1,6 +1,6 @@
 ::: sqladmin.authentication.AuthenticationBackend
     handler: python
-    selection:
+    options:
       members:
         - __init__
         - authenticate
