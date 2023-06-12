@@ -269,9 +269,7 @@ By default these methods do nothing.
 
 ## Custom Action
 
-To add custom action on models to the Admin interface, you can use the `action` annotation.
-
-For example:
+To add custom action on models to the Admin, you can use the `action` decorator.
 
 !!! example
 
@@ -301,3 +299,12 @@ For example:
 
     admin.add_view(UserAdmin)
     ```
+
+
+The available options for `action` are:
+
+* `name`: A string name to be used in URL for this action.
+* `label`: A string for describing this action.
+* `add_in_list`: A boolean indicating if this action should be available in list page.
+* `add_in_detail`: A boolean indicating if this action should be available in detail page.
+* `confirmation_message`: A string message that if defined, will open a modal to ask for confirmation before calling the action method.

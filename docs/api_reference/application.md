@@ -1,12 +1,12 @@
 ::: sqladmin.application.Admin
     handler: python
-    selection:
+    options:
       members:
         - __init__
 
 ::: sqladmin.application.BaseAdmin
     handler: python
-    selection:
+    options:
       members:
         - views
         - add_view

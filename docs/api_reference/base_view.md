@@ -1,6 +1,6 @@
 ::: sqladmin.models.BaseView
     handler: python
-    selection:
+    options:
       members:
         - name
         - identity
