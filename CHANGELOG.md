@@ -4,6 +4,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## Version 0.12.0 - 2023-06-13
+
+### Added
+* Support `sqlalchemy.sql.sqltypes.Uuid` by @dexter-dopping-ekco in https://github.com/aminalaee/sqladmin/pull/501
+* Implement multi pk support by @dexter-dopping-ekco in https://github.com/aminalaee/sqladmin/pull/507
+* Support special `__all__` keyword by @aminalaee in https://github.com/aminalaee/sqladmin/pull/511
+* use @login_required for custom actions and views by @aminalaee in https://github.com/aminalaee/sqladmin/pull/513
+
+### Fixed
+* Each `ModelView` can now have actions with the same name/slug by @murrple-1 in https://github.com/aminalaee/sqladmin/pull/503
+* Fix count query in search page by @aminalaee in https://github.com/aminalaee/sqladmin/pull/506
+
+**Full Changelog**: https://github.com/aminalaee/sqladmin/compare/0.11.0...0.12.0
+
 ## Version 0.11.0 - 2023-05-23
 
 ### Added
