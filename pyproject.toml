@@ -32,6 +32,7 @@ dependencies = [
   "sqlalchemy >=1.4",
   "wtforms >=3, <4",
   "jinja2",
+  "python-multipart",
 ]
 dynamic = ["version"]
 
