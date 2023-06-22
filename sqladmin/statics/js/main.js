@@ -24,7 +24,7 @@ $(document).on('click', '#modal-delete-button', function () {
 
 // Search
 $(document).on('click', '#search-button', function () {
-  var searchTerm = $("#search-input").val();
+  var searchTerm = encodeURIComponent($("#search-input").val());
 
   newUrl = "";
   if (window.location.search && window.location.search.indexOf('search=') != -1) {
