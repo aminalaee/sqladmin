@@ -56,7 +56,7 @@ class QueryAjaxModelLoader:
         if not model:
             return {}
 
-        return {"id": get_object_identifier(model), "text": str(model)}
+        return {"id": str(get_object_identifier(model)), "text": str(model)}
 
     async def get_list(self, term: str, limit: int = DEFAULT_PAGE_SIZE) -> List[Any]:
         stmt = select(self.model)
