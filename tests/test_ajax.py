@@ -103,7 +103,7 @@ async def test_ajax_response(client: AsyncClient) -> None:
     response = await client.get("/admin/address/ajax/lookup?name=user&term=john")
 
     assert response.status_code == 200
-    assert response.json() == {"results": [{"id": 1, "text": "User 1"}]}
+    assert response.json() == {"results": [{"id": "1", "text": "User 1"}]}
 
 
 async def test_create_ajax_loader_exceptions() -> None:
@@ -139,7 +139,7 @@ async def test_edit_page_template(client: AsyncClient) -> None:
 
     response = await client.get("/admin/user/edit/1")
     assert (
-        'data-json="[{&#34;id&#34;: 1, &#34;text&#34;: &#34;Address 1&#34;}]"'
+        'data-json="[{&#34;id&#34;: &#34;1&#34;, &#34;text&#34;: &#34;Address 1&#34;}]"'
         in response.text
     )
     assert 'data-role="select2-ajax"' in response.text
@@ -147,7 +147,7 @@ async def test_edit_page_template(client: AsyncClient) -> None:
 
     response = await client.get("/admin/address/edit/1")
     assert (
-        'data-json="[{&#34;id&#34;: 1, &#34;text&#34;: &#34;User 1&#34;}]"'
+        'data-json="[{&#34;id&#34;: &#34;1&#34;, &#34;text&#34;: &#34;User 1&#34;}]"'
         in response.text
     )
     assert 'data-role="select2-ajax"' in response.text
