@@ -17,7 +17,8 @@ from sqlalchemy_utils import (
 )
 
 from sqladmin.forms import get_model_form
-from tests.common import DummyData, async_engine as engine
+from tests.common import DummyData
+from tests.common import async_engine as engine
 
 pytestmark = pytest.mark.anyio
 

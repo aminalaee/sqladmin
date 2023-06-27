@@ -17,7 +17,8 @@ from sqladmin.fields import (
     SelectField,
     TimeField,
 )
-from tests.common import DummyData, sync_engine as engine
+from tests.common import DummyData
+from tests.common import sync_engine as engine
 
 Base = declarative_base()  # type: ignore
 

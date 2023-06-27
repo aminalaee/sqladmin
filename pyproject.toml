@@ -83,7 +83,6 @@ python = ["37", "38", "39", "310", "311"]
 [tool.hatch.envs.lint]
 dependencies = [
   "black==23.1.0",
-  "isort==5.11.5",
   "mypy==1.1.1",
   "ruff==0.0.256",
   "sqlalchemy~=1.4", # MyPy issues with SQLAlchemy V2
@@ -106,12 +105,10 @@ test = "coverage run -a --concurrency=thread,greenlet -m pytest {args}"
 [tool.hatch.envs.lint.scripts]
 check = [
   "ruff .",
-  "isort --check --project=sqladmin .",
   "black --check .",
   "mypy sqladmin",
 ]
 format = [
-  "isort --project=sqladmin .",
   "black .",
   "ruff --fix .",
 ]
@@ -137,9 +134,8 @@ ignore_missing_imports = true
 show_error_codes = true
 no_implicit_optional = true
 
-[tool.isort]
-profile = "black"
-combine_as_imports = true
+[tool.ruff]
+select = ["E", "F", "I"]
 
 [tool.coverage.run]
 source_pkgs = [

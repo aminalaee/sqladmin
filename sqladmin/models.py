@@ -820,7 +820,7 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
         sort: str = "asc",
     ) -> Pagination:
         page_size = min(page_size or self.page_size, max(self.page_size_options))
-        stmt = self.list_query.limit(page_size).offset((page - 1) * page_size)
+        stmt = self.list_query
 
         for relation in self._list_relation_attrs:
             stmt = stmt.options(joinedload(relation))
@@ -842,7 +842,9 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
         else:
             count = await self.count()
 
+        stmt = stmt.limit(page_size).offset((page - 1) * page_size)
         rows = await self._run_query(stmt)
+
         pagination = Pagination(
             rows=rows,
             page=page,
