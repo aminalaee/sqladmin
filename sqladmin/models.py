@@ -841,7 +841,7 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
             count = await self.count(select(func.count()).select_from(stmt))
         else:
             count = await self.count()
-        
+
         stmt = stmt.limit(page_size).offset((page - 1) * page_size)
         rows = await self._run_query(stmt)
 

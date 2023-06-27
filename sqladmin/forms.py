@@ -4,7 +4,6 @@ The converters are from Flask-Admin project.
 import enum
 import inspect
 import sys
-from enum import Enum
 from typing import (
     Any,
     Callable,
@@ -20,7 +19,8 @@ from typing import (
 )
 
 import anyio
-from sqlalchemy import Boolean, inspect as sqlalchemy_inspect, select
+from sqlalchemy import Boolean, select
+from sqlalchemy import inspect as sqlalchemy_inspect
 from sqlalchemy.engine import Engine
 from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession
 from sqlalchemy.orm import ColumnProperty, RelationshipProperty, Session
@@ -400,7 +400,7 @@ class ModelConverter(ModelConverterBase):
         kwargs["choices"] = available_choices
         kwargs.setdefault("validators", [])
         kwargs["validators"].append(validators.AnyOf(accepted_values))
-        kwargs["coerce"] = lambda v: v.name if isinstance(v, Enum) else str(v)
+        kwargs["coerce"] = lambda v: v.name if isinstance(v, enum.Enum) else str(v)
         return SelectField(**kwargs)
 
     @converts("Integer")  # includes BigInteger and SmallInteger
