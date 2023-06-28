@@ -1,13 +1,13 @@
 from typing import Any, AsyncGenerator
 
 import pytest
+from fastapi_storages import FileSystemStorage, StorageFile
+from fastapi_storages.integrations.sqlalchemy import FileType, ImageType
 from httpx import AsyncClient
 from sqlalchemy import Column, Integer, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
-from fastapi_storages import FileSystemStorage, StorageFile
-from fastapi_storages.integrations.sqlalchemy import FileType, ImageType
 from starlette.applications import Starlette
 
 from sqladmin import Admin, ModelView
