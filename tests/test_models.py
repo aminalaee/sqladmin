@@ -1,9 +1,10 @@
+import enum
 from typing import Generator
 from unittest.mock import Mock, call, patch
 
 import pytest
 from markupsafe import Markup
-from sqlalchemy import Boolean, Column, ForeignKey, Integer, String, select
+from sqlalchemy import Boolean, Column, Enum, ForeignKey, Integer, String, select
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship, sessionmaker
@@ -23,6 +24,16 @@ LocalSession = sessionmaker(bind=engine)
 
 app = Starlette()
 admin = Admin(app=app, engine=engine)
+
+
+class Status(enum.Enum):
+    ACTIVE = "ACTIVE"
+    DEACTIVE = "DEACTIVE"
+
+
+class Role(int, enum.Enum):
+    ADMIN = 1
+    USER = 2
 
 
 class User(Base):
@@ -49,6 +60,8 @@ class Profile(Base):
 
     id = Column(Integer, primary_key=True)
     is_active = Column(Boolean)
+    role = Column(Enum(Role))
+    status = Column(Enum(Status))
     user_id = Column(Integer, ForeignKey("users.id"), unique=True)
 
     user = relationship("User", back_populates="profile")
@@ -506,3 +519,14 @@ def test_model_columns_all_keyword() -> None:
 
     assert AddressAdmin().get_list_columns() == all_columns
     assert AddressAdmin().get_details_columns() == all_columns
+
+
+def test_get_prop_value() -> None:
+    class ProfileAdmin(ModelView, model=Profile):
+        ...
+
+    profile = Profile(is_active=True, role=Role.ADMIN, status=Status.ACTIVE)
+
+    assert ProfileAdmin().get_prop_value(profile, Profile.is_active) is True
+    assert ProfileAdmin().get_prop_value(profile, Profile.role) == "ADMIN"
+    assert ProfileAdmin().get_prop_value(profile, Profile.status) == "ACTIVE"

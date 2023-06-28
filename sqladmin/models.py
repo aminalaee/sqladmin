@@ -900,19 +900,15 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
         return stmt.where(*conditions)
 
     def get_prop_value(
-        self, obj: type, prop: Union[Column, ColumnProperty, RelationshipProperty]
+        self, obj: Any, prop: Union[Column, ColumnProperty, RelationshipProperty]
     ) -> Any:
-        result = None
-
-        if isinstance(prop, Column):
-            result = getattr(obj, prop.name)
-        else:
-            result = getattr(obj, prop.key)
-            result = result.value if isinstance(result, Enum) else result
+        result = getattr(obj, prop.key, None)
+        if result and isinstance(result, Enum):
+            result = result.name
 
         return result
 
-    def get_list_value(self, obj: type, prop: MODEL_PROPERTY) -> Tuple[Any, Any]:
+    def get_list_value(self, obj: Any, prop: MODEL_PROPERTY) -> Tuple[Any, Any]:
         """Get tuple of (value, formatted_value) for the list view."""
         value = self.get_prop_value(obj, prop)
         formatted_value = self._default_formatter(value)
@@ -922,7 +918,7 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
             formatted_value = formatter(obj, prop)
         return value, formatted_value
 
-    def get_detail_value(self, obj: type, prop: MODEL_PROPERTY) -> Tuple[Any, Any]:
+    def get_detail_value(self, obj: Any, prop: MODEL_PROPERTY) -> Tuple[Any, Any]:
         """Get tuple of (value, formatted_value) for the detail view."""
         value = self.get_prop_value(obj, prop)
         formatted_value = self._default_formatter(value)
