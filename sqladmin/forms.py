@@ -482,10 +482,7 @@ class ModelConverter(ModelConverterBase):
         kwargs["validators"].append(validators.Email())
         return StringField(**kwargs)
 
-    @converts(
-        "sqlalchemy_utils.types.url.URLType",
-        "sqlalchemy_fields.types.url.URLType",
-    )
+    @converts("sqlalchemy_utils.types.url.URLType")
     def conv_url(
         self, model: type, prop: ColumnProperty, kwargs: Dict[str, Any]
     ) -> UnboundField:
@@ -557,13 +554,13 @@ class ModelConverter(ModelConverterBase):
         kwargs["coerce"] = choice_type_coerce_factory(column.type)
         return SelectField(**kwargs)
 
-    @converts("sqlalchemy_fields.types.file.FileType")
+    @converts("fastapi_storages.integrations.sqlalchemy.FileType")
     def conv_file(
         self, model: type, prop: ColumnProperty, kwargs: Dict[str, Any]
     ) -> UnboundField:
         return FileField(**kwargs)
 
-    @converts("sqlalchemy_fields.types.image.ImageType")
+    @converts("fastapi_storages.integrations.sqlalchemy.ImageType")
     def conv_image(
         self, model: type, prop: ColumnProperty, kwargs: Dict[str, Any]
     ) -> UnboundField:

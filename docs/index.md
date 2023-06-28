@@ -34,7 +34,7 @@ Main features include:
 * [Starlette](https://github.com/encode/starlette) integration
 * [FastAPI](https://github.com/tiangolo/fastapi) integration
 * [SQLModel](https://github.com/tiangolo/sqlmodel) support
-* Modern UI using [Tabler](https://github.com/tabler/tabler)
+* UI using [Tabler](https://github.com/tabler/tabler)
 
 ---
 

@@ -6,8 +6,8 @@ from sqlalchemy import Column, Integer, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
-from sqlalchemy_fields.storages import FileSystemStorage, StorageFile
-from sqlalchemy_fields.types import FileType, ImageType
+from fastapi_storages import FileSystemStorage, StorageFile
+from fastapi_storages.integrations.sqlalchemy import FileType, ImageType
 from starlette.applications import Starlette
 
 from sqladmin import Admin, ModelView
