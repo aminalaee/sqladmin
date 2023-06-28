@@ -41,8 +41,6 @@ class User(Base):
 
     id = Column(Integer, primary_key=True)
     name = Column(String)
-    role = Column(Enum(Role))
-    status = Column(Enum(Status))
 
     addresses = relationship("Address", back_populates="user")
     profile = relationship("Profile", back_populates="user", uselist=False)
@@ -62,6 +60,8 @@ class Profile(Base):
 
     id = Column(Integer, primary_key=True)
     is_active = Column(Boolean)
+    role = Column(Enum(Role))
+    status = Column(Enum(Status))
     user_id = Column(Integer, ForeignKey("users.id"), unique=True)
 
     user = relationship("User", back_populates="profile")
@@ -522,11 +522,11 @@ def test_model_columns_all_keyword() -> None:
 
 
 def test_get_prop_value() -> None:
-    class UserAdmin(ModelView, model=User):
+    class ProfileAdmin(ModelView, model=Profile):
         ...
 
-    user = User(name="batman", role=Role.ADMIN, status=Status.ACTIVE)
+    profile = Profile(is_active=True, role=Role.ADMIN, status=Status.ACTIVE)
 
-    assert UserAdmin().get_prop_value(user, User.name) == "batman"
-    assert UserAdmin().get_prop_value(user, User.role) == "ADMIN"
-    assert UserAdmin().get_prop_value(user, User.status) == "ACTIVE"
+    assert ProfileAdmin().get_prop_value(profile, Profile.is_active) is True
+    assert ProfileAdmin().get_prop_value(profile, Profile.role) == "ADMIN"
+    assert ProfileAdmin().get_prop_value(profile, Profile.status) == "ACTIVE"
