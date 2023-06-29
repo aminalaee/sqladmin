@@ -417,7 +417,7 @@ class ModelConverter(ModelConverterBase):
         kwargs.setdefault("places", None)
         return DecimalField(**kwargs)
 
-    @converts("JSON")
+    @converts("JSON", "JSONB")
     def conv_json(
         self, model: type, prop: ColumnProperty, kwargs: Dict[str, Any]
     ) -> UnboundField:
