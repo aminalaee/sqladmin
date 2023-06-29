@@ -229,14 +229,14 @@ class ModelConverterBase:
                 objects = await anyio.to_thread.run_sync(session.execute, stmt)
                 return [
                     (str(self._get_identifier_value(obj)), str(obj))
-                    for obj in objects.scalars().all()
+                    for obj in objects.scalars().unique().all()
                 ]
         elif isinstance(engine, AsyncEngine):
             async with AsyncSession(engine) as session:
                 objects = await session.execute(stmt)
                 return [
                     (str(self._get_identifier_value(obj)), str(obj))
-                    for obj in objects.scalars().all()
+                    for obj in objects.scalars().unique().all()
                 ]
 
         return []  # pragma: nocover
