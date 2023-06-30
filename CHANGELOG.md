@@ -4,6 +4,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## Version 0.13.0 - 2023-06-30
+
+### Fixed
+* Remove httpx from requirements by @agn-7 in https://github.com/aminalaee/sqladmin/pull/520
+* Fix issue when search query contains special characters by @uriyyo in https://github.com/aminalaee/sqladmin/pull/523
+* Fix Ajax UUID by @aminalaee in https://github.com/aminalaee/sqladmin/pull/525
+* Fix search pagination by @aminalaee in https://github.com/aminalaee/sqladmin/pull/528
+* Drop Python3.7 by @aminalaee in https://github.com/aminalaee/sqladmin/pull/530
+* Fix Enum in detail page by @aminalaee in https://github.com/aminalaee/sqladmin/pull/531
+* Add `unique()` to query related models by @florianabel in https://github.com/aminalaee/sqladmin/pull/535
+* Add PosrgreSQL JSONB type support by @uriyyo in https://github.com/aminalaee/sqladmin/pull/533
+
+**Full Changelog**: https://github.com/aminalaee/sqladmin/compare/0.12.0...0.13.0
+
 ## Version 0.12.0 - 2023-06-13
 
 ### Added
