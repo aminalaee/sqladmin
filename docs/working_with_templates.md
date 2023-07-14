@@ -20,5 +20,3 @@ then you need to specify the name in your ModelView classes.
         details_template = "details.html"
         list_template = "custom_list.html"
     ```
-
-## Customizing templates
