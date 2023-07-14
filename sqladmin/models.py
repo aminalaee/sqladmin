@@ -1078,16 +1078,19 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
 
     def search_query(self, stmt: Select, term: str) -> Select:
         """Specify the search query given the SQLAlchemy statement
-        and term to search for.
+        and term or terms to search for.
         It can be used for doing more complex queries like JSON objects. For example:
 
         ```py
         return stmt.filter(MyModel.name == term)
         ```
         """
-        expressions = [
-            cast(prop, String).ilike(f"%{term}%") for prop in self._search_fields
-        ]
+        terms = term.split()
+        expressions = []
+        for term in terms:
+            expressions.extend(
+                [cast(prop, String).ilike(f"%{term}%") for prop in self._search_fields]
+            )
         return stmt.filter(or_(*expressions))
 
     def get_export_name(self, export_type: str) -> str:
