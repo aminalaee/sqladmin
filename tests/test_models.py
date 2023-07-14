@@ -45,6 +45,10 @@ class User(Base):
     addresses = relationship("Address", back_populates="user")
     profile = relationship("Profile", back_populates="user", uselist=False)
 
+    @property
+    def name_with_id(self) -> str:
+        return f"{self.name} - {self.id}"
+
 
 class Address(Base):
     __tablename__ = "addresses"
@@ -424,3 +428,14 @@ def test_get_prop_value() -> None:
     assert ProfileAdmin().get_prop_value(profile, "is_active") is True
     assert ProfileAdmin().get_prop_value(profile, "role") == "ADMIN"
     assert ProfileAdmin().get_prop_value(profile, "status") == "ACTIVE"
+
+
+def test_model_property_in_columns() -> None:
+    class UserAdmin(ModelView, model=User):
+        column_list = ["id", "name", "name_with_id"]
+
+    user = User(id=1, name="batman")
+
+    assert UserAdmin().get_list_columns() == ["id", "name", "name_with_id"]
+    assert UserAdmin().get_details_columns() == ["addresses", "profile", "id", "name"]
+    assert UserAdmin().get_prop_value(user, "name_with_id") == "batman - 1"
