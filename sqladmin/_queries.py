@@ -144,7 +144,7 @@ class Query:
     async def _update_async(self, pk: Any, data: Dict[str, Any]) -> Any:
         stmt = self.model_view._stmt_by_identifier(pk)
 
-        for relation in self.model_view._relation_attrs:
+        for relation in self.model_view._relations:
             stmt = stmt.options(joinedload(relation))
 
         async with self.model_view.sessionmaker(expire_on_commit=False) as session:
