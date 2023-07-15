@@ -69,6 +69,25 @@ class BaseAdmin:
         self.title = title
         self.logo_url = logo_url
 
+        if isinstance(engine, Engine):
+            self.sessionmaker = sessionmaker(
+                bind=self.engine,
+                class_=Session,
+                autoflush=False,
+                autocommit=False,
+            )
+            self.async_engine = False
+        elif isinstance(engine, AsyncEngine):
+            self.sessionmaker = sessionmaker(
+                bind=self.engine,
+                class_=AsyncSession,
+                autoflush=False,
+                autocommit=False,
+            )
+            self.async_engine = True
+        else:
+            raise TypeError("invalid engine type")
+
         middlewares = middlewares or []
         self.authentication_backend = authentication_backend
         if authentication_backend:
@@ -197,26 +216,10 @@ class BaseAdmin:
         """
 
         # Set database engine from Admin instance
+        view.sessionmaker = self.sessionmaker
         view.engine = self.engine
+        view.async_engine = self.async_engine
         view.ajax_lookup_url = f"{self.base_url}/{view.identity}/ajax/lookup"
-
-        if isinstance(view.engine, Engine):
-            view.sessionmaker = sessionmaker(
-                bind=view.engine,
-                class_=Session,
-                autoflush=False,
-                autocommit=False,
-            )
-            view.async_engine = False
-        else:
-            view.sessionmaker = sessionmaker(
-                bind=view.engine,
-                class_=AsyncSession,
-                autoflush=False,
-                autocommit=False,
-            )
-            view.async_engine = True
-
         view_instance = view()
 
         self._find_decorated_funcs(
