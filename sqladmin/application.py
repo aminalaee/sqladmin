@@ -77,7 +77,7 @@ class BaseAdmin:
                 autocommit=False,
             )
             self.async_engine = False
-        elif isinstance(engine, AsyncEngine):
+        else:
             self.sessionmaker = sessionmaker(
                 bind=self.engine,
                 class_=AsyncSession,
@@ -85,8 +85,6 @@ class BaseAdmin:
                 autocommit=False,
             )
             self.async_engine = True
-        else:
-            raise TypeError("invalid engine type")
 
         middlewares = middlewares or []
         self.authentication_backend = authentication_backend
