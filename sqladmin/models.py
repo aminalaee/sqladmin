@@ -1012,13 +1012,15 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
                 pairs[label.key] = value
         return pairs
 
-    async def delete_model(self, obj: Any) -> None:
+    async def delete_model(self, request: Request, obj: Any) -> None:
         await Query(self).delete(obj)
 
-    async def insert_model(self, data: dict) -> Any:
+    async def insert_model(self, request: Request, data: dict) -> Any:
         return await Query(self).insert(data)
 
-    async def update_model(self, pk: Any, data: Dict[str, Any]) -> Any:
+    async def update_model(
+        self, request: Request, pk: Any, data: Dict[str, Any]
+    ) -> Any:
         return await Query(self).update(pk, data)
 
     async def on_model_delete(self, model: Any) -> None:

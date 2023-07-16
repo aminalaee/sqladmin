@@ -480,7 +480,7 @@ class Admin(BaseAdminView):
             if not model:
                 raise HTTPException(status_code=404)
 
-            await model_view.delete_model(model)
+            await model_view.delete_model(request, model)
 
         return Response(content=str(request.url_for("admin:list", identity=identity)))
 
@@ -512,7 +512,7 @@ class Admin(BaseAdminView):
             )
 
         try:
-            obj = await model_view.insert_model(form.data)
+            obj = await model_view.insert_model(request, form.data)
         except Exception as e:
             logger.exception(e)
             context["error"] = str(e)
@@ -561,10 +561,10 @@ class Admin(BaseAdminView):
 
         try:
             if model_view.save_as and form_data.get("save") == "Save as new":
-                obj = await model_view.insert_model(form.data)
+                obj = await model_view.insert_model(request, form.data)
             else:
                 obj = await model_view.update_model(
-                    pk=request.path_params["pk"], data=form.data
+                    request, pk=request.path_params["pk"], data=form.data
                 )
         except Exception as e:
             logger.exception(e)
