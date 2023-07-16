@@ -21,8 +21,9 @@ nav:
   - Cookbook:
     - Deployment with HTTPS: 'cookbook/deployment_with_https.md'
     - Optimize relationship loading: 'cookbook/optimize_relationship_loading.md'
+    - Display custom/calculated attributes: 'cookbook/display_custom_attributes.md'
+    - Using a request object: 'cookbook/using_request_object.md'
     # - Structuring larger projects: 'cookbook/structuring_larger_projects.md'
-    # - Display calculated attributes: 'cookbook/display_calculated_attributes.md''
     # - Admin home page: 'cookbook/admin_home_page.md'
   - API Reference:
     - Application: 'api_reference/application.md'
