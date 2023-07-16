@@ -258,15 +258,6 @@ class BaseAdmin:
         view.templates = self.templates
         self._views.append(view_instance)
 
-    def register_model(self, model: Type[ModelView]) -> None:  # pragma: no cover
-        import warnings
-
-        warnings.warn(
-            "Method `register_model` is deprecated please use `add_view` instead.",
-            DeprecationWarning,
-        )
-        self.add_view(model)
-
 
 class BaseAdminView(BaseAdmin):
     """

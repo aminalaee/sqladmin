@@ -1123,14 +1123,3 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
             media_type="text/csv",
             headers={"Content-Disposition": f"attachment;filename={filename}"},
         )
-
-
-class ModelAdmin(ModelView):
-    def __init__(self) -> None:  # pragma: no cover
-        import warnings
-
-        warnings.warn(
-            "The class `ModelAdmin` is deprectated, please use `ModelView instead.`",
-            DeprecationWarning,
-        )
-        super().__init__()
