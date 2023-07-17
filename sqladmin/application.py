@@ -471,7 +471,7 @@ class Admin(BaseAdminView):
             if not model:
                 raise HTTPException(status_code=404)
 
-            await model_view.delete_model(request, model)
+            await model_view.delete_model(request, pk)
 
         return Response(content=str(request.url_for("admin:list", identity=identity)))
 
