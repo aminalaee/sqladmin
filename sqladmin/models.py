@@ -883,11 +883,9 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
 
     def _stmt_by_identifier(self, identifier: str) -> Select:
         stmt = select(self.model)
-        conditions = []
         pks = get_primary_keys(self.model)
         values = object_identifier_values(identifier, self.model)
-        for pk, value in zip(pks, values):
-            conditions.append(pk == value)
+        conditions = [pk == value for (pk, value) in zip(pks, values)]
 
         return stmt.where(*conditions)
 
@@ -1012,15 +1010,13 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
                 pairs[label.key] = value
         return pairs
 
-    async def delete_model(self, request: Request, obj: Any) -> None:
-        await Query(self).delete(obj)
+    async def delete_model(self, request: Request, pk: Any) -> None:
+        await Query(self).delete(pk)
 
     async def insert_model(self, request: Request, data: dict) -> Any:
         return await Query(self).insert(data)
 
-    async def update_model(
-        self, request: Request, pk: Any, data: Dict[str, Any]
-    ) -> Any:
+    async def update_model(self, request: Request, pk: str, data: dict) -> Any:
         return await Query(self).update(pk, data)
 
     async def on_model_delete(self, model: Any) -> None:
