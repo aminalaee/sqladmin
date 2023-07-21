@@ -6,7 +6,8 @@
       <h3 class="card-title">New {{ model_view.name }}</h3>
     </div>
     <div class="card-body border-bottom py-3">
-      <form action="{{ request.url }}" method="POST" enctype="multipart/form-data">
+      {# Note, leave action empty to default to current URL (whichever that might be in the client browser) #}
+      <form action="" method="POST" enctype="multipart/form-data">
         <fieldset class="form-fieldset">
           {% for field in form %}
           <div class="mb-3 form-group row">
