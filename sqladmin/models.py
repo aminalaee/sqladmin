@@ -1,6 +1,7 @@
 import time
 from enum import Enum
 from typing import (
+    TYPE_CHECKING,
     Any,
     Callable,
     ClassVar,
@@ -48,6 +49,9 @@ from sqladmin.helpers import (
     stream_to_csv,
 )
 from sqladmin.pagination import Pagination
+
+if TYPE_CHECKING:
+    from sqladmin.application import BaseAdmin
 
 __all__ = [
     "BaseView",
@@ -154,6 +158,7 @@ class BaseView(BaseModelView):
     # Internals
     is_model: ClassVar[bool] = False
     templates: ClassVar[Jinja2Templates]
+    _admin_ref: ClassVar["BaseAdmin"]
 
     name: ClassVar[str] = ""
     """Name of the view to be displayed."""
