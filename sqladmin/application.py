@@ -94,7 +94,6 @@ class BaseAdmin:
 
         self.admin = Starlette(middleware=middlewares)
         self._views: List[Union[BaseView, ModelView]] = []
-
         self.templates = self.init_templating_engine()
 
     def init_templating_engine(self) -> Jinja2Templates:
@@ -133,6 +132,8 @@ class BaseAdmin:
         """Add ModelView or BaseView classes to Admin.
         This is a shortcut that will handle both `add_model_view` and `add_base_view`.
         """
+
+        view._admin_ref = self
         if view.is_model:
             self.add_model_view(view)  # type: ignore
         else:
