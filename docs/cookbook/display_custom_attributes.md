@@ -2,7 +2,7 @@ If you need to display a custom attribute of your model,
 or a calculated attribute or property which is not direclty from the database,
 it is possible out of the box with `SQLAdmin`.
 
-Let's consider a model example:
+Let's see an example model:
 
 ```py
 class User(Base):
