@@ -69,6 +69,23 @@ class BaseAdmin:
         self.title = title
         self.logo_url = logo_url
 
+        if isinstance(engine, Engine):
+            self.sessionmaker = sessionmaker(
+                bind=self.engine,
+                class_=Session,
+                autoflush=False,
+                autocommit=False,
+            )
+            self.async_engine = False
+        else:
+            self.sessionmaker = sessionmaker(
+                bind=self.engine,
+                class_=AsyncSession,
+                autoflush=False,
+                autocommit=False,
+            )
+            self.async_engine = True
+
         middlewares = middlewares or []
         self.authentication_backend = authentication_backend
         if authentication_backend:
@@ -77,7 +94,6 @@ class BaseAdmin:
 
         self.admin = Starlette(middleware=middlewares)
         self._views: List[Union[BaseView, ModelView]] = []
-
         self.templates = self.init_templating_engine()
 
     def init_templating_engine(self) -> Jinja2Templates:
@@ -116,6 +132,8 @@ class BaseAdmin:
         """Add ModelView or BaseView classes to Admin.
         This is a shortcut that will handle both `add_model_view` and `add_base_view`.
         """
+
+        view._admin_ref = self
         if view.is_model:
             self.add_model_view(view)  # type: ignore
         else:
@@ -197,26 +215,10 @@ class BaseAdmin:
         """
 
         # Set database engine from Admin instance
+        view.sessionmaker = self.sessionmaker
         view.engine = self.engine
+        view.async_engine = self.async_engine
         view.ajax_lookup_url = f"{self.base_url}/{view.identity}/ajax/lookup"
-
-        if isinstance(view.engine, Engine):
-            view.sessionmaker = sessionmaker(
-                bind=view.engine,
-                class_=Session,
-                autoflush=False,
-                autocommit=False,
-            )
-            view.async_engine = False
-        else:
-            view.sessionmaker = sessionmaker(
-                bind=view.engine,
-                class_=AsyncSession,
-                autoflush=False,
-                autocommit=False,
-            )
-            view.async_engine = True
-
         view_instance = view()
 
         self._find_decorated_funcs(
@@ -256,15 +258,6 @@ class BaseAdmin:
 
         view.templates = self.templates
         self._views.append(view_instance)
-
-    def register_model(self, model: Type[ModelView]) -> None:  # pragma: no cover
-        import warnings
-
-        warnings.warn(
-            "Method `register_model` is deprecated please use `add_view` instead.",
-            DeprecationWarning,
-        )
-        self.add_view(model)
 
 
 class BaseAdminView(BaseAdmin):
@@ -479,7 +472,7 @@ class Admin(BaseAdminView):
             if not model:
                 raise HTTPException(status_code=404)
 
-            await model_view.delete_model(model)
+            await model_view.delete_model(request, pk)
 
         return Response(content=str(request.url_for("admin:list", identity=identity)))
 
@@ -511,7 +504,7 @@ class Admin(BaseAdminView):
             )
 
         try:
-            obj = await model_view.insert_model(form.data)
+            obj = await model_view.insert_model(request, form.data)
         except Exception as e:
             logger.exception(e)
             context["error"] = str(e)
@@ -560,10 +553,10 @@ class Admin(BaseAdminView):
 
         try:
             if model_view.save_as and form_data.get("save") == "Save as new":
-                obj = await model_view.insert_model(form.data)
+                obj = await model_view.insert_model(request, form.data)
             else:
                 obj = await model_view.update_model(
-                    pk=request.path_params["pk"], data=form.data
+                    request, pk=request.path_params["pk"], data=form.data
                 )
         except Exception as e:
             logger.exception(e)

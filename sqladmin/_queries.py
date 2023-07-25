@@ -144,7 +144,7 @@ class Query:
     async def _update_async(self, pk: Any, data: Dict[str, Any]) -> Any:
         stmt = self.model_view._stmt_by_identifier(pk)
 
-        for relation in self.model_view._relation_attrs:
+        for relation in self.model_view._relations:
             stmt = stmt.options(joinedload(relation))
 
         async with self.model_view.sessionmaker(expire_on_commit=False) as session:
@@ -156,15 +156,25 @@ class Query:
             await self.model_view.after_model_change(data, obj, False)
             return obj
 
-    def _delete_sync(self, obj: Any) -> None:
+    def _get_delete_stmt(self, pk: str) -> Select:
+        stmt = select(self.model_view.model)
+        pks = get_primary_keys(self.model_view.model)
+        values = object_identifier_values(pk, self.model_view.model)
+        conditions = [pk == value for (pk, value) in zip(pks, values)]
+        return stmt.where(*conditions)
+
+    def _delete_sync(self, pk: str) -> None:
         with self.model_view.sessionmaker() as session:
+            obj = session.execute(self._get_delete_stmt(pk)).scalar_one_or_none()
             anyio.from_thread.run(self.model_view.on_model_delete, obj)
             session.delete(obj)
             session.commit()
             anyio.from_thread.run(self.model_view.after_model_delete, obj)
 
-    async def _delete_async(self, obj: Any) -> None:
+    async def _delete_async(self, pk: str) -> None:
         async with self.model_view.sessionmaker() as session:
+            result = await session.execute(self._get_delete_stmt(pk))
+            obj = result.scalars().first()
             await self.model_view.on_model_delete(obj)
             await session.delete(obj)
             await session.commit()

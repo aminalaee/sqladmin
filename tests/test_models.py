@@ -12,8 +12,8 @@ from starlette.applications import Starlette
 from starlette.requests import Request
 
 from sqladmin import Admin, ModelView
-from sqladmin.exceptions import InvalidColumnError, InvalidModelError
-from sqladmin.helpers import get_column_python_type, map_attr_to_prop
+from sqladmin.exceptions import InvalidModelError
+from sqladmin.helpers import get_column_python_type
 from tests.common import sync_engine as engine
 
 pytestmark = pytest.mark.anyio
@@ -44,6 +44,10 @@ class User(Base):
 
     addresses = relationship("Address", back_populates="user")
     profile = relationship("Profile", back_populates="user", uselist=False)
+
+    @property
+    def name_with_id(self) -> str:
+        return f"{self.name} - {self.id}"
 
 
 class Address(Base):
@@ -107,34 +111,21 @@ def test_column_list_default() -> None:
     class UserAdmin(ModelView, model=User):
         pass
 
-    assert UserAdmin().get_list_columns() == [("id", User.id)]
+    assert UserAdmin().get_list_columns() == ["id"]
 
 
 def test_column_list_by_model_columns() -> None:
     class UserAdmin(ModelView, model=User):
         column_list = [User.id, User.name]
 
-    assert UserAdmin.column_list == [User.id, User.name]
+    assert UserAdmin().get_list_columns() == ["id", "name"]
 
 
 def test_column_list_by_str_name() -> None:
     class AddressAdmin(ModelView, model=Address):
         column_list = ["pk", "user_id"]
 
-    assert AddressAdmin().get_list_columns() == [
-        ("pk", Address.pk),
-        ("user_id", Address.user_id),
-    ]
-
-
-def test_column_list_invalid_attribute() -> None:
-    class ExampleAdmin(ModelView, model=Address):
-        column_list = ["example"]
-
-    with pytest.raises(InvalidColumnError) as exc:
-        ExampleAdmin().get_list_columns()
-
-    assert exc.match("Model 'Address' has no attribute 'example'.")
+    assert AddressAdmin().get_list_columns() == ["pk", "user_id"]
 
 
 def test_column_list_both_include_and_exclude() -> None:
@@ -151,22 +142,14 @@ def test_column_exclude_list_by_str_name() -> None:
     class UserAdmin(ModelView, model=User):
         column_exclude_list = ["id"]
 
-    assert UserAdmin().get_list_columns() == [
-        ("addresses", User.addresses.prop),
-        ("profile", User.profile.prop),
-        ("name", User.name),
-    ]
+    assert UserAdmin().get_list_columns() == ["addresses", "profile", "name"]
 
 
 def test_column_exclude_list_by_model_column() -> None:
     class UserAdmin(ModelView, model=User):
         column_exclude_list = [User.id]
 
-    assert UserAdmin().get_list_columns() == [
-        ("addresses", User.addresses.prop),
-        ("profile", User.profile.prop),
-        ("name", User.name),
-    ]
+    assert UserAdmin().get_list_columns() == ["addresses", "profile", "name"]
 
 
 def test_column_list_formatters() -> None:
@@ -178,10 +161,10 @@ def test_column_list_formatters() -> None:
 
     user = User(id=1, name="Long Name")
 
-    assert UserAdmin().get_list_value(user, User.id.prop)[0] == 1
-    assert UserAdmin().get_list_value(user, User.id.prop)[1] == 2
-    assert UserAdmin().get_list_value(user, User.name.prop)[0] == "Long Name"
-    assert UserAdmin().get_list_value(user, User.name.prop)[1] == "L"
+    assert UserAdmin().get_list_value(user, "id")[0] == 1
+    assert UserAdmin().get_list_value(user, "id")[1] == 2
+    assert UserAdmin().get_list_value(user, "name")[0] == "Long Name"
+    assert UserAdmin().get_list_value(user, "name")[1] == "L"
 
 
 def test_column_formatters_detail() -> None:
@@ -193,10 +176,10 @@ def test_column_formatters_detail() -> None:
 
     user = User(id=1, name="Long Name")
 
-    assert UserAdmin().get_detail_value(user, User.id.prop)[0] == 1
-    assert UserAdmin().get_detail_value(user, User.id.prop)[1] == 2
-    assert UserAdmin().get_detail_value(user, User.name.prop)[0] == "Long Name"
-    assert UserAdmin().get_detail_value(user, User.name.prop)[1] == "L"
+    assert UserAdmin().get_detail_value(user, "id")[0] == 1
+    assert UserAdmin().get_detail_value(user, "id")[1] == 2
+    assert UserAdmin().get_detail_value(user, "name")[0] == "Long Name"
+    assert UserAdmin().get_detail_value(user, "name")[1] == "L"
 
 
 def test_column_formatters_default() -> None:
@@ -206,11 +189,11 @@ def test_column_formatters_default() -> None:
     user = User(id=1, name="Long Name")
     profile = Profile(user=user, is_active=True)
 
-    assert ProfileAdmin().get_list_value(profile, Profile.is_active.prop) == (
+    assert ProfileAdmin().get_list_value(profile, "is_active") == (
         True,
         Markup("<i class='fa fa-check text-success'></i>"),
     )
-    assert ProfileAdmin().get_detail_value(profile, Profile.is_active.prop) == (
+    assert ProfileAdmin().get_detail_value(profile, "is_active") == (
         True,
         Markup("<i class='fa fa-check text-success'></i>"),
     )
@@ -232,97 +215,42 @@ def test_column_details_list_default() -> None:
     class UserAdmin(ModelView, model=User):
         pass
 
-    assert UserAdmin().get_details_columns() == [
-        ("addresses", User.addresses.prop),
-        ("profile", User.profile.prop),
-        ("id", User.id),
-        ("name", User.name),
-    ]
+    assert UserAdmin().get_details_columns() == ["addresses", "profile", "id", "name"]
 
 
 def test_column_details_list_by_model_column() -> None:
     class UserAdmin(ModelView, model=User):
         column_details_list = [User.name, User.id]
 
-    assert UserAdmin().get_details_columns() == [("name", User.name), ("id", User.id)]
+    assert UserAdmin().get_details_columns() == ["name", "id"]
 
 
 def test_column_details_exclude_list_by_model_column() -> None:
     class UserAdmin(ModelView, model=User):
         column_details_exclude_list = [User.id]
 
-    assert UserAdmin().get_details_columns() == [
-        ("addresses", User.addresses.prop),
-        ("profile", User.profile.prop),
-        ("name", User.name),
-    ]
-
-
-def test_column_labels_by_string_name() -> None:
-    class UserAdmin(ModelView, model=User):
-        column_list = [User.name]
-        column_labels = {"name": "Name"}
-
-    assert UserAdmin().get_list_columns() == [("Name", User.name)]
-
-    class AddressAdmin(ModelView, model=Address):
-        column_details_list = [Address.user_id]
-        form_columns = ["user_id"]
-        column_labels = {"user_id": "User ID"}
-
-    assert AddressAdmin().get_details_columns() == [("User ID", Address.user_id)]
-    assert AddressAdmin().get_form_columns() == [("User ID", Address.user_id)]
-
-
-def test_column_labels_by_model_columns() -> None:
-    class UserAdmin(ModelView, model=User):
-        column_list = [User.name]
-        column_labels = {User.name: "Name"}
-
-    assert UserAdmin().get_list_columns() == [("Name", User.name)]
-
-    class AddressAdmin(ModelView, model=Address):
-        column_details_list = [Address.user_id]
-        column_labels = {Address.user_id: "User ID"}
-
-    assert AddressAdmin().get_details_columns() == [("User ID", Address.user_id)]
-
-
-def test_get_model_attr_by_column() -> None:
-    class UserAdmin(ModelView, model=User):
-        ...
-
-    assert map_attr_to_prop("name", UserAdmin()) == User.name
-    assert map_attr_to_prop(User.name, UserAdmin()) == User.name
+    assert UserAdmin().get_details_columns() == ["addresses", "profile", "name"]
 
 
 def test_form_columns_default() -> None:
     class UserAdmin(ModelView, model=User):
         pass
 
-    assert UserAdmin().get_form_columns() == [
-        ("addresses", User.addresses.prop),
-        ("profile", User.profile.prop),
-        ("id", User.id),
-        ("name", User.name),
-    ]
+    assert UserAdmin().get_form_columns() == ["addresses", "profile", "id", "name"]
 
 
 def test_form_columns_by_model_columns() -> None:
     class UserAdmin(ModelView, model=User):
         form_columns = [User.id, User.name]
 
-    assert UserAdmin.form_columns == [User.id, User.name]
+    assert UserAdmin().get_form_columns() == ["id", "name"]
 
 
 def test_form_columns_by_str_name() -> None:
     class AddressAdmin(ModelView, model=Address):
         form_columns = ["pk", "user_id"]
 
-    assert AddressAdmin().get_form_columns() == [
-        ("pk", Address.pk),
-        ("user_id", Address.user_id),
-    ]
+    assert AddressAdmin().get_form_columns() == ["pk", "user_id"]
 
 
 def test_form_columns_both_include_and_exclude() -> None:
@@ -339,63 +267,47 @@ def test_form_excluded_columns_by_str_name() -> None:
     class UserAdmin(ModelView, model=User):
         form_excluded_columns = ["id"]
 
-    assert UserAdmin().get_form_columns() == [
-        ("addresses", User.addresses.prop),
-        ("profile", User.profile.prop),
-        ("name", User.name),
-    ]
+    assert UserAdmin().get_form_columns() == ["addresses", "profile", "name"]
 
 
 def test_form_excluded_columns_by_model_column() -> None:
     class UserAdmin(ModelView, model=User):
         form_excluded_columns = [User.id]
 
-    assert UserAdmin().get_form_columns() == [
-        ("addresses", User.addresses.prop),
-        ("profile", User.profile.prop),
-        ("name", User.name),
-    ]
+    assert UserAdmin().get_form_columns() == ["addresses", "profile", "name"]
 
 
 def test_export_columns_default() -> None:
     class UserAdmin(ModelView, model=User):
         pass
 
-    assert UserAdmin().get_export_columns() == [
-        ("id", User.id.prop),
-    ]
+    assert UserAdmin().get_export_columns() == ["id"]
 
 
 def test_export_columns_default_to_list_columns() -> None:
     class UserAdmin(ModelView, model=User):
         column_list = [User.id, User.name]
 
-    assert UserAdmin().get_export_columns() == [
-        ("id", User.id.prop),
-        ("name", User.name.prop),
-    ]
+    assert UserAdmin().get_export_columns() == ["id", "name"]
 
     class UserAdmin2(ModelView, model=User):
         column_list = [User.id]
 
-    assert UserAdmin2().get_export_columns() == [("id", User.id)]
+    assert UserAdmin2().get_export_columns() == ["id"]
 
 
 def test_export_columns_by_model_columns() -> None:
     class UserAdmin(ModelView, model=User):
         column_export_list = [User.id, User.name]
 
-    assert UserAdmin.column_export_list == [User.id, User.name]
+    assert UserAdmin().get_export_columns() == ["id", "name"]
 
 
 def test_export_columns_by_str_name() -> None:
     class AddressAdmin(ModelView, model=Address):
         column_export_list = ["pk", "user_id"]
 
-    assert AddressAdmin().get_export_columns() == [
-        ("pk", Address.pk),
-        ("user_id", Address.user_id),
-    ]
+    assert AddressAdmin().get_export_columns() == ["pk", "user_id"]
 
 
 def test_export_columns_both_include_and_exclude() -> None:
@@ -414,22 +326,14 @@ def test_export_excluded_columns_by_str_name() -> None:
     class UserAdmin(ModelView, model=User):
         column_export_exclude_list = ["id"]
 
-    assert UserAdmin().get_export_columns() == [
-        ("addresses", User.addresses.prop),
-        ("profile", User.profile.prop),
-        ("name", User.name),
-    ]
+    assert UserAdmin().get_export_columns() == ["addresses", "profile", "name"]
 
 
 def test_export_excluded_columns_by_model_column() -> None:
     class UserAdmin(ModelView, model=User):
         column_export_exclude_list = [User.id]
 
-    assert UserAdmin().get_export_columns() == [
-        ("addresses", User.addresses.prop),
-        ("profile", User.profile.prop),
-        ("name", User.name),
-    ]
+    assert UserAdmin().get_export_columns() == ["addresses", "profile", "name"]
 
 
 @pytest.mark.skipif(engine.name != "postgresql", reason="PostgreSQL only")
@@ -511,14 +415,8 @@ def test_model_columns_all_keyword() -> None:
         column_list = "__all__"
         column_details_list = "__all__"
 
-    all_columns = [
-        ("user", Address.user.prop),
-        ("pk", Address.pk),
-        ("user_id", Address.user_id),
-    ]
-
-    assert AddressAdmin().get_list_columns() == all_columns
-    assert AddressAdmin().get_details_columns() == all_columns
+    assert AddressAdmin().get_list_columns() == ["user", "pk", "user_id"]
+    assert AddressAdmin().get_details_columns() == ["user", "pk", "user_id"]
 
 
 def test_get_prop_value() -> None:
@@ -527,6 +425,17 @@ def test_get_prop_value() -> None:
 
     profile = Profile(is_active=True, role=Role.ADMIN, status=Status.ACTIVE)
 
-    assert ProfileAdmin().get_prop_value(profile, Profile.is_active) is True
-    assert ProfileAdmin().get_prop_value(profile, Profile.role) == "ADMIN"
-    assert ProfileAdmin().get_prop_value(profile, Profile.status) == "ACTIVE"
+    assert ProfileAdmin().get_prop_value(profile, "is_active") is True
+    assert ProfileAdmin().get_prop_value(profile, "role") == "ADMIN"
+    assert ProfileAdmin().get_prop_value(profile, "status") == "ACTIVE"
+
+
+def test_model_property_in_columns() -> None:
+    class UserAdmin(ModelView, model=User):
+        column_list = ["id", "name", "name_with_id"]
+
+    user = User(id=1, name="batman")
+
+    assert UserAdmin().get_list_columns() == ["id", "name", "name_with_id"]
+    assert UserAdmin().get_details_columns() == ["addresses", "profile", "id", "name"]
+    assert UserAdmin().get_prop_value(user, "name_with_id") == "batman - 1"
