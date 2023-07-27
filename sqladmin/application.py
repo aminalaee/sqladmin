@@ -53,8 +53,8 @@ class BaseAdmin:
 
     def __init__(
         self,
-        app: Starlette,
         engine: ENGINE_TYPE,
+        app: Optional[Starlette] = None,
         base_url: str = "/admin",
         title: str = "Admin",
         logo_url: Optional[str] = None,
@@ -323,8 +323,8 @@ class Admin(BaseAdminView):
 
     def __init__(
         self,
-        app: Starlette,
         engine: ENGINE_TYPE,
+        app: Optional[Starlette] = None,
         base_url: str = "/admin",
         title: str = "Admin",
         logo_url: Optional[str] = None,
@@ -344,8 +344,8 @@ class Admin(BaseAdminView):
 
         assert isinstance(engine, (Engine, AsyncEngine))
         super().__init__(
-            app=app,
             engine=engine,
+            app=app,
             base_url=base_url,
             title=title,
             logo_url=logo_url,
@@ -403,7 +403,12 @@ class Admin(BaseAdminView):
         self.admin.router.routes = routes
         self.admin.exception_handlers = {HTTPException: http_exception}
         self.admin.debug = debug
-        self.app.mount(base_url, app=self.admin, name="admin")
+
+        if app:
+            self.init_app(app)
+
+    def init_app(self, app: Starlette) -> None:
+        app.mount(self.base_url, app=self.admin, name="admin")
 
     @login_required
     async def index(self, request: Request) -> Response:
