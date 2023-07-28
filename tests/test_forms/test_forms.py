@@ -17,8 +17,10 @@ from sqlalchemy import (
     TypeDecorator,
 )
 from sqlalchemy.dialects.postgresql import ARRAY, INET, MACADDR, UUID
+from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import ColumnProperty, composite, relationship
+from sqlalchemy.orm.session import sessionmaker
 from wtforms import BooleanField, Field, Form, IntegerField, StringField, TimeField
 from wtforms.fields.core import UnboundField
 
@@ -30,6 +32,7 @@ from tests.common import async_engine as engine
 pytestmark = pytest.mark.anyio
 
 Base = declarative_base()  # type: ignore
+session_maker = sessionmaker(bind=engine, class_=AsyncSession)
 
 
 class Status(enum.Enum):
@@ -105,7 +108,7 @@ async def prepare_database() -> AsyncGenerator[None, None]:
 
 
 async def test_model_form() -> None:
-    Form = await get_model_form(model=User, engine=engine)
+    Form = await get_model_form(model=User, session_maker=session_maker)
     form = Form()
 
     assert len(form._fields) == 15
@@ -124,28 +127,36 @@ async def test_model_form_converter_with_default() -> None:
         id = Column(Integer, primary_key=True)
         user = User()
 
-    await get_model_form(model=Point, engine=engine)
+    await get_model_form(model=Point, session_maker=session_maker)
 
 
 async def test_model_form_only() -> None:
-    Form = await get_model_form(model=User, engine=engine, only=["status"])
+    Form = await get_model_form(
+        model=User, session_maker=session_maker, only=["status"]
+    )
     assert len(Form()._fields) == 1
 
 
 async def test_model_form_exclude() -> None:
-    Form = await get_model_form(model=User, engine=engine, exclude=["status"])
+    Form = await get_model_form(
+        model=User, session_maker=session_maker, exclude=["status"]
+    )
     assert len(Form()._fields) == 14
 
 
 async def test_model_form_form_args() -> None:
     form_args = {"name": {"label": "User Name"}}
-    Form = await get_model_form(model=User, engine=engine, form_args=form_args)
+    Form = await get_model_form(
+        model=User, session_maker=session_maker, form_args=form_args
+    )
     assert Form()._fields["name"].label.text == "User Name"
 
 
 async def test_model_form_column_label() -> None:
     labels = {"name": "User Name"}
-    Form = await get_model_form(model=User, engine=engine, column_labels=labels)
+    Form = await get_model_form(
+        model=User, session_maker=session_maker, column_labels=labels
+    )
     assert Form()._fields["name"].label.text == "User Name"
 
 
@@ -155,7 +166,10 @@ async def test_model_form_column_label_precedence() -> None:
     form_args_user = {"name": {"label": "User Name (Use Me)"}}
     labels_user = {"name": "User Name (Do Not Use Me)"}
     Form = await get_model_form(
-        model=User, engine=engine, form_args=form_args_user, column_labels=labels_user
+        model=User,
+        session_maker=session_maker,
+        form_args=form_args_user,
+        column_labels=labels_user,
     )
     assert Form()._fields["name"].label.text == "User Name (Use Me)"
 
@@ -164,7 +178,7 @@ async def test_model_form_column_label_precedence() -> None:
     labels_user = {"user": "User (Use Me)"}
     Form = await get_model_form(
         model=Address,
-        engine=engine,
+        session_maker=session_maker,
         form_args=form_args_user,
         column_labels=labels_user,
     )
@@ -176,7 +190,7 @@ async def test_model_form_override() -> None:
         pass
 
     Form = await get_model_form(
-        model=User, engine=engine, form_overrides={"name": ExampleField}
+        model=User, session_maker=session_maker, form_overrides={"name": ExampleField}
     )
     assert isinstance(Form()._fields["name"], ExampleField)
     assert not isinstance(Form()._fields["email"], ExampleField)
@@ -193,7 +207,7 @@ async def test_model_form_postgresql() -> None:
         mac = Column(MACADDR)
         array = Column(ARRAY(String))
 
-    Form = await get_model_form(model=PostgresModel, engine=engine)
+    Form = await get_model_form(model=PostgresModel, session_maker=session_maker)
 
     assert len(Form()._fields) == 4
     assert isinstance(Form()._fields["array"], Select2TagsField)
@@ -223,7 +237,7 @@ async def test_form_converter_when_impl_is_callable() -> None:
         id = Column(Integer, primary_key=True)
         custom = Column(MyType)
 
-    Form = await get_model_form(model=CustomModel, engine=engine)
+    Form = await get_model_form(model=CustomModel, session_maker=session_maker)
     assert "custom" in Form()._fields
 
 
@@ -237,12 +251,14 @@ async def test_form_converter_when_impl_not_callable() -> None:
         id = Column(Integer, primary_key=True)
         custom = Column(MyType)
 
-    Form = await get_model_form(model=CustomModel, engine=engine)
+    Form = await get_model_form(model=CustomModel, session_maker=session_maker)
     assert "custom" in Form()._fields
 
 
 async def test_model_form_include_pk() -> None:
-    Form = await get_model_form(model=User, engine=engine, form_include_pk=True)
+    Form = await get_model_form(
+        model=User, session_maker=session_maker, form_include_pk=True
+    )
     assert "id" in Form()._fields
 
 
@@ -272,7 +288,7 @@ async def test_form_override_form_converter() -> None:
 
     Form = await get_model_form(
         model=MyModel,
-        engine=engine,
+        session_maker=session_maker,
         form_converter=MyModelConverter,
     )
 

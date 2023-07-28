@@ -16,7 +16,7 @@ from tests.common import async_engine as engine
 pytestmark = pytest.mark.anyio
 
 Base = declarative_base()  # type: Any
-LocalSession = sessionmaker(bind=engine, class_=AsyncSession, expire_on_commit=False)
+session_maker = sessionmaker(bind=engine, class_=AsyncSession, expire_on_commit=False)
 
 app = Starlette()
 admin = Admin(app=app, engine=engine)
@@ -56,7 +56,7 @@ admin.add_view(UserAdmin)
 
 async def _query_user() -> Any:
     stmt = select(User).limit(1)
-    async with LocalSession() as s:
+    async with session_maker() as s:
         result = await s.execute(stmt)
     return result.scalar_one()
 

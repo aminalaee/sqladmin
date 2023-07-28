@@ -27,7 +27,7 @@ from tests.common import async_engine as engine
 pytestmark = pytest.mark.anyio
 
 Base = declarative_base()  # type: Any
-LocalSession = sessionmaker(bind=engine, class_=AsyncSession, expire_on_commit=False)
+session_maker = sessionmaker(bind=engine, class_=AsyncSession, expire_on_commit=False)
 
 app = Starlette()
 admin = Admin(app=app, engine=engine)
@@ -204,7 +204,7 @@ async def test_invalid_list_page(client: AsyncClient) -> None:
 
 
 async def test_list_view_single_page(client: AsyncClient) -> None:
-    async with LocalSession() as session:
+    async with session_maker() as session:
         for _ in range(5):
             user = User(name="John Doe")
             session.add(user)
@@ -229,7 +229,7 @@ async def test_list_view_single_page(client: AsyncClient) -> None:
 
 
 async def test_list_view_with_relations(client: AsyncClient) -> None:
-    async with LocalSession() as session:
+    async with session_maker() as session:
         for _ in range(5):
             user = User(name="John Doe")
             user.addresses.append(Address())
@@ -258,7 +258,7 @@ async def test_list_view_with_relations(client: AsyncClient) -> None:
 
 
 async def test_list_view_with_formatted_relations(client: AsyncClient) -> None:
-    async with LocalSession() as session:
+    async with session_maker() as session:
         for _ in range(5):
             user = User(name="John Doe")
             user.addresses_formattable.append(AddressFormattable())
@@ -276,7 +276,7 @@ async def test_list_view_with_formatted_relations(client: AsyncClient) -> None:
 
 
 async def test_list_view_multi_page(client: AsyncClient) -> None:
-    async with LocalSession() as session:
+    async with session_maker() as session:
         for _ in range(45):
             user = User(name="John Doe")
             session.add(user)
@@ -317,7 +317,7 @@ async def test_list_view_multi_page(client: AsyncClient) -> None:
 
 
 async def test_list_page_permission_actions(client: AsyncClient) -> None:
-    async with LocalSession() as session:
+    async with session_maker() as session:
         for _ in range(10):
             user = User(name="John Doe")
             session.add(user)
@@ -355,7 +355,7 @@ async def test_not_found_detail_page(client: AsyncClient) -> None:
 
 
 async def test_detail_page(client: AsyncClient) -> None:
-    async with LocalSession() as session:
+    async with session_maker() as session:
         user = User(name="Amin Alaee")
         session.add(user)
         await session.flush()
@@ -405,7 +405,7 @@ async def test_detail_page(client: AsyncClient) -> None:
 
 
 async def test_column_labels(client: AsyncClient) -> None:
-    async with LocalSession() as session:
+    async with session_maker() as session:
         user = User(name="Foo")
         session.add(user)
         await session.commit()
@@ -433,21 +433,21 @@ async def test_delete_endpoint_not_found_response(client: AsyncClient) -> None:
     assert response.status_code == 404
 
     stmt = select(func.count(User.id))
-    async with LocalSession() as s:
+    async with session_maker() as s:
         result = await s.execute(stmt)
 
     assert result.scalar_one() == 0
 
 
 async def test_delete_endpoint(client: AsyncClient) -> None:
-    async with LocalSession() as session:
+    async with session_maker() as session:
         user = User(name="Bar")
         session.add(user)
         await session.commit()
 
     stmt = select(func.count(User.id))
 
-    async with LocalSession() as s:
+    async with session_maker() as s:
         result = await s.execute(stmt)
     assert result.scalar_one() == 1
 
@@ -455,7 +455,7 @@ async def test_delete_endpoint(client: AsyncClient) -> None:
 
     assert response.status_code == 200
 
-    async with LocalSession() as s:
+    async with session_maker() as s:
         result = await s.execute(stmt)
     assert result.scalar_one() == 0
 
@@ -498,7 +498,7 @@ async def test_create_endpoint_post_form(client: AsyncClient) -> None:
     response = await client.post("/admin/user/create", data=data)
 
     stmt = select(func.count(User.id))
-    async with LocalSession() as s:
+    async with session_maker() as s:
         result = await s.execute(stmt)
     assert result.scalar_one() == 1
 
@@ -508,7 +508,7 @@ async def test_create_endpoint_post_form(client: AsyncClient) -> None:
         .options(selectinload(User.addresses))
         .options(selectinload(User.profile))
     )
-    async with LocalSession() as s:
+    async with session_maker() as s:
         result = await s.execute(stmt)
     user = result.scalar_one()
     assert user.name == "SQLAlchemy"
@@ -520,12 +520,12 @@ async def test_create_endpoint_post_form(client: AsyncClient) -> None:
     response = await client.post("/admin/address/create", data=data)
 
     stmt = select(func.count(Address.id))
-    async with LocalSession() as s:
+    async with session_maker() as s:
         result = await s.execute(stmt)
     assert result.scalar_one() == 1
 
     stmt = select(Address).limit(1).options(selectinload(Address.user))
-    async with LocalSession() as s:
+    async with session_maker() as s:
         result = await s.execute(stmt)
     address = result.scalar_one()
     assert address.user.id == user.id
@@ -535,12 +535,12 @@ async def test_create_endpoint_post_form(client: AsyncClient) -> None:
     response = await client.post("/admin/profile/create", data=data)
 
     stmt = select(func.count(Profile.id))
-    async with LocalSession() as s:
+    async with session_maker() as s:
         result = await s.execute(stmt)
     assert result.scalar_one() == 1
 
     stmt = select(Profile).limit(1).options(selectinload(Profile.user))
-    async with LocalSession() as s:
+    async with session_maker() as s:
         result = await s.execute(stmt)
     profile = result.scalar_one()
     assert profile.user.id == user.id
@@ -553,7 +553,7 @@ async def test_create_endpoint_post_form(client: AsyncClient) -> None:
     response = await client.post("/admin/user/create", data=data)
 
     stmt = select(func.count(User.id))
-    async with LocalSession() as s:
+    async with session_maker() as s:
         result = await s.execute(stmt)
     assert result.scalar_one() == 2
 
@@ -564,7 +564,7 @@ async def test_create_endpoint_post_form(client: AsyncClient) -> None:
         .options(selectinload(User.addresses))
         .options(selectinload(User.profile))
     )
-    async with LocalSession() as s:
+    async with session_maker() as s:
         result = await s.execute(stmt)
     user = result.scalar_one()
     assert user.name == "SQLAdmin"
@@ -615,7 +615,7 @@ async def test_not_found_edit_page(client: AsyncClient) -> None:
 
 
 async def test_update_get_page(client: AsyncClient) -> None:
-    async with LocalSession() as session:
+    async with session_maker() as session:
         user = User(name="Joe", meta_data={"A": "B"})
         session.add(user)
         await session.flush()
@@ -654,7 +654,7 @@ async def test_update_get_page(client: AsyncClient) -> None:
 
 
 async def test_update_submit_form(client: AsyncClient) -> None:
-    async with LocalSession() as session:
+    async with session_maker() as session:
         user = User(name="Joe")
         session.add(user)
         await session.flush()
@@ -676,7 +676,7 @@ async def test_update_submit_form(client: AsyncClient) -> None:
         .options(selectinload(User.addresses))
         .options(selectinload(User.profile))
     )
-    async with LocalSession() as s:
+    async with session_maker() as s:
         result = await s.execute(stmt)
     user = result.scalar_one()
     assert user.name == "Jack"
@@ -688,13 +688,13 @@ async def test_update_submit_form(client: AsyncClient) -> None:
     response = await client.post("/admin/user/edit/1", data=data)
 
     stmt = select(Address).filter(Address.id == 1).limit(1)
-    async with LocalSession() as s:
+    async with session_maker() as s:
         result = await s.execute(stmt)
     address = result.scalar_one()
     assert address.user_id == 1
 
     stmt = select(Profile).limit(1)
-    async with LocalSession() as s:
+    async with session_maker() as s:
         result = await s.execute(stmt)
     profile = result.scalar_one()
     assert profile.user_id == 1
@@ -708,7 +708,7 @@ async def test_update_submit_form(client: AsyncClient) -> None:
     response = await client.post("/admin/address/edit/1", data=data)
 
     stmt = select(Address).filter(Address.id == 1).limit(1)
-    async with LocalSession() as s:
+    async with session_maker() as s:
         result = await s.execute(stmt)
     address = result.scalar_one()
     assert address.user_id == 1
@@ -727,14 +727,14 @@ async def test_update_submit_form(client: AsyncClient) -> None:
     response = await client.post("/admin/user/edit/1", data=data)
 
     stmt = select(Address).limit(1)
-    async with LocalSession() as s:
+    async with session_maker() as s:
         result = await s.execute(stmt)
     for address in result:
         assert address[0].user_id == 1
 
 
 async def test_searchable_list(client: AsyncClient) -> None:
-    async with LocalSession() as session:
+    async with session_maker() as session:
         user = User(name="Ross")
         session.add(user)
         user = User(name="Boss")
@@ -765,7 +765,7 @@ async def test_searchable_list(client: AsyncClient) -> None:
 
 
 async def test_sortable_list(client: AsyncClient) -> None:
-    async with LocalSession() as session:
+    async with session_maker() as session:
         user = User(name="Lisa")
         session.add(user)
         await session.commit()
@@ -780,7 +780,7 @@ async def test_sortable_list(client: AsyncClient) -> None:
 
 
 async def test_export_csv(client: AsyncClient) -> None:
-    async with LocalSession() as session:
+    async with session_maker() as session:
         user = User(name="Daniel", status="ACTIVE")
         session.add(user)
         await session.commit()
@@ -793,7 +793,7 @@ async def test_export_csv_row_count(client: AsyncClient) -> None:
     def row_count(resp) -> int:
         return resp.text.count("\r\n") - 1
 
-    async with LocalSession() as session:
+    async with session_maker() as session:
         for _ in range(20):
             user = User(name="Raymond")
             session.add(user)

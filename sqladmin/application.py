@@ -17,8 +17,8 @@ from typing import (
 
 from jinja2 import ChoiceLoader, FileSystemLoader, PackageLoader
 from sqlalchemy.engine import Engine
-from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession
-from sqlalchemy.orm import Session, sessionmaker
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm.session import Session, sessionmaker
 from starlette.applications import Starlette
 from starlette.datastructures import URL, FormData, UploadFile
 from starlette.exceptions import HTTPException
@@ -54,7 +54,8 @@ class BaseAdmin:
     def __init__(
         self,
         app: Starlette,
-        engine: ENGINE_TYPE,
+        engine: Optional[ENGINE_TYPE] = None,
+        session_maker: Optional[sessionmaker] = None,
         base_url: str = "/admin",
         title: str = "Admin",
         logo_url: Optional[str] = None,
@@ -69,22 +70,15 @@ class BaseAdmin:
         self.title = title
         self.logo_url = logo_url
 
-        if isinstance(engine, Engine):
-            self.sessionmaker = sessionmaker(
-                bind=self.engine,
-                class_=Session,
-                autoflush=False,
-                autocommit=False,
-            )
-            self.async_engine = False
+        if session_maker:
+            self.session_maker = session_maker
+        elif isinstance(engine, Engine):
+            self.session_maker = sessionmaker(bind=self.engine, class_=Session)
         else:
-            self.sessionmaker = sessionmaker(
-                bind=self.engine,
-                class_=AsyncSession,
-                autoflush=False,
-                autocommit=False,
-            )
-            self.async_engine = True
+            self.session_maker = sessionmaker(bind=self.engine, class_=AsyncSession)
+
+        self.session_maker.configure(autoflush=False, autocommit=False)
+        self.is_async = self.session_maker.class_.__name__ == "AsyncSession"
 
         middlewares = middlewares or []
         self.authentication_backend = authentication_backend
@@ -215,9 +209,8 @@ class BaseAdmin:
         """
 
         # Set database engine from Admin instance
-        view.sessionmaker = self.sessionmaker
-        view.engine = self.engine
-        view.async_engine = self.async_engine
+        view.session_maker = self.session_maker
+        view.is_async = self.is_async
         view.ajax_lookup_url = f"{self.base_url}/{view.identity}/ajax/lookup"
         view_instance = view()
 
@@ -324,7 +317,8 @@ class Admin(BaseAdminView):
     def __init__(
         self,
         app: Starlette,
-        engine: ENGINE_TYPE,
+        engine: Optional[ENGINE_TYPE] = None,
+        session_maker: Optional[sessionmaker] = None,
         base_url: str = "/admin",
         title: str = "Admin",
         logo_url: Optional[str] = None,
@@ -337,15 +331,16 @@ class Admin(BaseAdminView):
         Args:
             app: Starlette or FastAPI application.
             engine: SQLAlchemy engine instance.
+            session_maker: SQLAlchemy sessionmaker instance.
             base_url: Base URL for Admin interface.
             title: Admin title.
             logo_url: URL of logo to be displayed instead of title.
         """
 
-        assert isinstance(engine, (Engine, AsyncEngine))
         super().__init__(
             app=app,
             engine=engine,
+            session_maker=session_maker,
             base_url=base_url,
             title=title,
             logo_url=logo_url,

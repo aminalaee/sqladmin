@@ -21,9 +21,8 @@ from typing import (
 import anyio
 from sqlalchemy import Boolean, select
 from sqlalchemy import inspect as sqlalchemy_inspect
-from sqlalchemy.engine import Engine
-from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession
-from sqlalchemy.orm import ColumnProperty, RelationshipProperty, Session
+from sqlalchemy.orm import ColumnProperty, RelationshipProperty
+from sqlalchemy.orm.session import sessionmaker
 from sqlalchemy.sql.schema import Column
 from wtforms import (
     BooleanField,
@@ -37,7 +36,7 @@ from wtforms import (
 )
 from wtforms.fields.core import UnboundField
 
-from sqladmin._types import ENGINE_TYPE, MODEL_PROPERTY
+from sqladmin._types import MODEL_PROPERTY
 from sqladmin._validators import (
     ColorValidator,
     CurrencyValidator,
@@ -124,7 +123,7 @@ class ModelConverterBase:
     async def _prepare_kwargs(
         self,
         prop: MODEL_PROPERTY,
-        engine: ENGINE_TYPE,
+        session_maker: sessionmaker,
         field_args: Dict[str, Any],
         field_widget_args: Dict[str, Any],
         form_include_pk: bool,
@@ -152,7 +151,7 @@ class ModelConverterBase:
             )
         else:
             kwargs = await self._prepare_relationship(
-                prop=prop, engine=engine, kwargs=kwargs, loader=loader
+                prop=prop, session_maker=session_maker, kwargs=kwargs, loader=loader
             )
 
         return kwargs
@@ -201,7 +200,7 @@ class ModelConverterBase:
         self,
         prop: RelationshipProperty,
         kwargs: dict,
-        engine: ENGINE_TYPE,
+        session_maker: sessionmaker,
         loader: Optional[QueryAjaxModelLoader] = None,
     ) -> dict:
         nullable = True
@@ -212,34 +211,34 @@ class ModelConverterBase:
         kwargs["allow_blank"] = nullable
 
         if not loader:
-            kwargs.setdefault("data", await self._prepare_select_options(prop, engine))
+            kwargs.setdefault(
+                "data", await self._prepare_select_options(prop, session_maker)
+            )
 
         return kwargs
 
     async def _prepare_select_options(
         self,
         prop: RelationshipProperty,
-        engine: ENGINE_TYPE,
+        session_maker: sessionmaker,
     ) -> List[Tuple[str, Any]]:
         target_model = prop.mapper.class_
         stmt = select(target_model)
 
-        if isinstance(engine, Engine):
-            with Session(engine) as session:
+        if session_maker.class_.__name__ == "Session":
+            with session_maker() as session:
                 objects = await anyio.to_thread.run_sync(session.execute, stmt)
                 return [
                     (str(self._get_identifier_value(obj)), str(obj))
                     for obj in objects.scalars().unique().all()
                 ]
-        elif isinstance(engine, AsyncEngine):
-            async with AsyncSession(engine) as session:
+        else:
+            async with session_maker() as session:
                 objects = await session.execute(stmt)
                 return [
                     (str(self._get_identifier_value(obj)), str(obj))
                     for obj in objects.scalars().unique().all()
                 ]
-
-        return []  # pragma: nocover
 
     def get_converter(self, prop: MODEL_PROPERTY) -> ConverterCallable:
         if isinstance(prop, RelationshipProperty):
@@ -279,7 +278,7 @@ class ModelConverterBase:
         self,
         model: type,
         prop: MODEL_PROPERTY,
-        engine: ENGINE_TYPE,
+        session_maker: sessionmaker,
         field_args: Dict[str, Any],
         field_widget_args: Dict[str, Any],
         form_include_pk: bool,
@@ -290,7 +289,7 @@ class ModelConverterBase:
         loader = form_ajax_refs.get(prop.key)
         kwargs = await self._prepare_kwargs(
             prop=prop,
-            engine=engine,
+            session_maker=session_maker,
             field_args=field_args,
             field_widget_args=field_widget_args,
             label=label,
@@ -588,7 +587,7 @@ class ModelConverter(ModelConverterBase):
 
 async def get_model_form(
     model: type,
-    engine: ENGINE_TYPE,
+    session_maker: sessionmaker,
     only: Optional[Sequence[str]] = None,
     exclude: Optional[Sequence[str]] = None,
     column_labels: Optional[Dict[str, str]] = None,
@@ -625,7 +624,7 @@ async def get_model_form(
         field = await converter.convert(
             model=model,
             prop=attr,
-            engine=engine,
+            session_maker=session_maker,
             field_args=field_args,
             field_widget_args=field_widget_args,
             label=label,

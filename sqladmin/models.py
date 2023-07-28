@@ -20,10 +20,8 @@ from urllib.parse import urlencode
 import anyio
 from sqlalchemy import Column, String, asc, cast, desc, func, inspect, or_
 from sqlalchemy.exc import NoInspectionAvailable
-from sqlalchemy.orm import (
-    joinedload,
-    sessionmaker,
-)
+from sqlalchemy.orm import joinedload
+from sqlalchemy.orm.session import sessionmaker
 from sqlalchemy.sql.elements import ClauseElement
 from sqlalchemy.sql.expression import Select, select
 from starlette.datastructures import URL
@@ -33,7 +31,7 @@ from starlette.templating import Jinja2Templates
 from wtforms import Field, Form
 
 from sqladmin._queries import Query
-from sqladmin._types import ENGINE_TYPE, MODEL_ATTR
+from sqladmin._types import MODEL_ATTR
 from sqladmin.ajax import create_ajax_loader
 from sqladmin.exceptions import InvalidModelError
 from sqladmin.formatters import BASE_FORMATTERS
@@ -200,9 +198,8 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
 
     # Internals
     pk_columns: ClassVar[Tuple[Column]]
-    sessionmaker: ClassVar[sessionmaker]
-    engine: ClassVar[ENGINE_TYPE]
-    async_engine: ClassVar[bool]
+    session_maker: ClassVar[sessionmaker]
+    is_async: ClassVar[bool] = False
     is_model: ClassVar[bool] = True
     ajax_lookup_url: ClassVar[str] = ""
 
@@ -724,13 +721,13 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
         self._custom_actions_confirmation: Dict[str, str] = {}
 
     def _run_query_sync(self, stmt: ClauseElement) -> Any:
-        with self.sessionmaker(expire_on_commit=False) as session:
+        with self.session_maker(expire_on_commit=False) as session:
             result = session.execute(stmt)
             return result.scalars().unique().all()
 
     async def _run_query(self, stmt: ClauseElement) -> Any:
-        if self.async_engine:
-            async with self.sessionmaker(expire_on_commit=False) as session:
+        if self.is_async:
+            async with self.session_maker(expire_on_commit=False) as session:
                 result = await session.execute(stmt)
                 return result.scalars().unique().all()
         else:
@@ -1039,7 +1036,7 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
             return self.form
         return await get_model_form(
             model=self.model,
-            engine=self.engine,
+            session_maker=self.session_maker,
             only=self._form_prop_names,
             column_labels=self._column_labels,
             form_args=self.form_args,

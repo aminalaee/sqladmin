@@ -8,10 +8,13 @@ try:
 except ImportError:
     pytest.skip("SQLModel support for SQLAlchemy v2.", allow_module_level=True)
 
+from sqlalchemy.orm.session import sessionmaker
+
 from sqladmin.forms import get_model_form
 from tests.common import sync_engine as engine
 
 pytestmark = pytest.mark.anyio
+session_maker = sessionmaker(bind=engine)
 
 
 class Team(SQLModel, table=True):
