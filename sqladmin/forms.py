@@ -63,6 +63,7 @@ from sqladmin.helpers import (
     choice_type_coerce_factory,
     get_direction,
     get_object_identifier,
+    is_async_session_maker,
     is_relationship,
 )
 
@@ -225,16 +226,16 @@ class ModelConverterBase:
         target_model = prop.mapper.class_
         stmt = select(target_model)
 
-        if session_maker.class_.__name__ == "Session":
-            with session_maker() as session:
-                objects = await anyio.to_thread.run_sync(session.execute, stmt)
+        if is_async_session_maker(session_maker):
+            async with session_maker() as session:
+                objects = await session.execute(stmt)
                 return [
                     (str(self._get_identifier_value(obj)), str(obj))
                     for obj in objects.scalars().unique().all()
                 ]
         else:
-            async with session_maker() as session:
-                objects = await session.execute(stmt)
+            with session_maker() as session:
+                objects = await anyio.to_thread.run_sync(session.execute, stmt)
                 return [
                     (str(self._get_identifier_value(obj)), str(obj))
                     for obj in objects.scalars().unique().all()

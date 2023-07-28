@@ -32,7 +32,7 @@ from starlette.templating import Jinja2Templates
 from sqladmin._types import ENGINE_TYPE
 from sqladmin.ajax import QueryAjaxModelLoader
 from sqladmin.authentication import AuthenticationBackend, login_required
-from sqladmin.helpers import slugify_action_name
+from sqladmin.helpers import is_async_session_maker, slugify_action_name
 from sqladmin.models import BaseView, ModelView
 
 __all__ = [
@@ -78,7 +78,7 @@ class BaseAdmin:
             self.session_maker = sessionmaker(bind=self.engine, class_=AsyncSession)
 
         self.session_maker.configure(autoflush=False, autocommit=False)
-        self.is_async = self.session_maker.class_.__name__ == "AsyncSession"
+        self.is_async = is_async_session_maker(self.session_maker)
 
         middlewares = middlewares or []
         self.authentication_backend = authentication_backend

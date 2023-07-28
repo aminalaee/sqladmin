@@ -22,7 +22,7 @@ Base = declarative_base()  # type: ignore
 session_maker = sessionmaker(bind=engine)
 
 app = Starlette()
-admin = Admin(app=app, engine=engine)
+admin = Admin(app=app, session_maker=session_maker)
 
 
 class Status(enum.Enum):
