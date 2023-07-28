@@ -14,6 +14,7 @@ from sqladmin.forms import get_model_form
 from tests.common import sync_engine as engine
 
 pytestmark = pytest.mark.anyio
+
 session_maker = sessionmaker(bind=engine)
 
 
@@ -44,12 +45,12 @@ def prepare_database() -> AsyncGenerator[None, None]:
 
 
 async def test_model_form_converter() -> None:
-    hero_form = await get_model_form(model=Hero, engine=engine)
+    hero_form = await get_model_form(model=Hero, session_maker=session_maker)
 
     assert "age" in hero_form()._fields
     assert "team" in hero_form()._fields
 
-    team_form = await get_model_form(model=Team, engine=engine)
+    team_form = await get_model_form(model=Team, session_maker=session_maker)
 
     assert "headquarters" in team_form()._fields
     assert "heroes" in team_form()._fields
