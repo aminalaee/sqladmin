@@ -11,7 +11,7 @@ from sqladmin import Admin, ModelView
 from tests.common import sync_engine as engine
 
 Base = declarative_base()  # type: Any
-LocalSession = sessionmaker(bind=engine)
+session_maker = sessionmaker(bind=engine)
 
 app = Starlette()
 admin = Admin(app=app, engine=engine)
@@ -132,7 +132,7 @@ admin.add_view(ReviewComplaintAdmin)
 
 
 def base_content():
-    with LocalSession() as session:
+    with session_maker() as session:
         session.add(Movie(id=1, name="Python"))
         session.add(Movie(id=2, name="Cobra"))
         session.add(Movie(id=3, name="Cobra 2"))

@@ -15,7 +15,7 @@ from tests.common import async_engine as engine
 pytestmark = pytest.mark.anyio
 
 Base = declarative_base()  # type: Any
-LocalSession = sessionmaker(bind=engine, class_=AsyncSession, expire_on_commit=False)
+session_maker = sessionmaker(bind=engine, class_=AsyncSession, expire_on_commit=False)
 
 app = Starlette()
 admin = Admin(app=app, engine=engine)
@@ -96,7 +96,7 @@ async def test_ajax_lookup_invalid_query_params(client: AsyncClient) -> None:
 
 async def test_ajax_response(client: AsyncClient) -> None:
     user = User(name="John Snow")
-    async with LocalSession() as s:
+    async with session_maker() as s:
         s.add(user)
         await s.commit()
 
@@ -129,7 +129,7 @@ async def test_create_page_template(client: AsyncClient) -> None:
 
 async def test_edit_page_template(client: AsyncClient) -> None:
     user = User(name="John Snow")
-    async with LocalSession() as s:
+    async with session_maker() as s:
         s.add(user)
         await s.flush()
 
@@ -168,7 +168,7 @@ async def test_create_and_edit_forms(client: AsyncClient) -> None:
     response = await client.post("/admin/address/edit/1", data=data)
     assert response.status_code == 302
 
-    async with LocalSession() as s:
+    async with session_maker() as s:
         stmt = select(User).options(selectinload(User.addresses))
         result = await s.execute(stmt)
 
@@ -179,7 +179,7 @@ async def test_create_and_edit_forms(client: AsyncClient) -> None:
     response = await client.post("/admin/user/edit/1", data=data)
     assert response.status_code == 302
 
-    async with LocalSession() as s:
+    async with session_maker() as s:
         stmt = select(User).options(selectinload(User.addresses))
         result = await s.execute(stmt)
 
@@ -190,7 +190,7 @@ async def test_create_and_edit_forms(client: AsyncClient) -> None:
     response = await client.post("/admin/user/edit/1", data=data)
     assert response.status_code == 302
 
-    async with LocalSession() as s:
+    async with session_maker() as s:
         stmt = select(User).options(selectinload(User.addresses))
         result = await s.execute(stmt)
 

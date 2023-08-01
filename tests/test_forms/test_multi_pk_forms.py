@@ -2,8 +2,10 @@ from typing import AsyncGenerator
 
 import pytest
 from sqlalchemy import Column, DateTime, ForeignKey, Integer, String
+from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship
+from sqlalchemy.orm.session import sessionmaker
 
 from sqladmin.forms import get_model_form
 from tests.common import async_engine as engine
@@ -11,6 +13,7 @@ from tests.common import async_engine as engine
 pytestmark = pytest.mark.anyio
 
 Base = declarative_base()  # type: ignore
+session_maker = sessionmaker(bind=engine, class_=AsyncSession)
 
 
 class Service(Base):
@@ -55,12 +58,14 @@ async def prepare_database() -> AsyncGenerator[None, None]:
 
 
 async def test_multipk_form():
-    Form = await get_model_form(model=Subscription, engine=engine)
+    Form = await get_model_form(model=Subscription, session_maker=session_maker)
     assert len(Form()._fields) == 4
 
 
 async def test_model_form_include_pks():
-    Form = await get_model_form(model=Subscription, engine=engine, form_include_pk=True)
+    Form = await get_model_form(
+        model=Subscription, session_maker=session_maker, form_include_pk=True
+    )
     assert len(Form()._fields) == 6
     assert "service_id" in Form()._fields
     assert "customer_id" in Form()._fields

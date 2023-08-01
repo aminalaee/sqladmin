@@ -2,7 +2,9 @@ import enum
 
 import pytest
 from sqlalchemy import Column, Integer
+from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm.session import sessionmaker
 from sqlalchemy_utils import (
     ArrowType,
     ChoiceType,
@@ -23,6 +25,7 @@ from tests.common import async_engine as engine
 pytestmark = pytest.mark.anyio
 
 Base = declarative_base()  # type: ignore
+session_maker = sessionmaker(bind=engine, class_=AsyncSession)
 
 
 class RoleEnum(enum.Enum):
@@ -50,7 +53,7 @@ async def test_model_form_sqlalchemy_utils(choices) -> None:
         color = Column(ColorType)
         role = Column(ChoiceType(choices))
 
-    Form = await get_model_form(model=SQLAlchemyUtilsModel, engine=engine)
+    Form = await get_model_form(model=SQLAlchemyUtilsModel, session_maker=session_maker)
     data = DummyData(
         currency="IR",
         timezone=["Iran/Tehran"],

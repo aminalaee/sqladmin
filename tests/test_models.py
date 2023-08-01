@@ -19,11 +19,10 @@ from tests.common import sync_engine as engine
 pytestmark = pytest.mark.anyio
 
 Base = declarative_base()  # type: ignore
-
-LocalSession = sessionmaker(bind=engine)
+session_maker = sessionmaker(bind=engine)
 
 app = Starlette()
-admin = Admin(app=app, engine=engine)
+admin = Admin(app=app, session_maker=session_maker)
 
 
 class Status(enum.Enum):
@@ -369,7 +368,7 @@ def test_model_default_sort() -> None:
 
 
 async def test_get_model_objects_uses_list_query() -> None:
-    session = LocalSession()
+    session = session_maker()
     batman = User(name="batman")
     session.add(batman)
     session.commit()
@@ -378,7 +377,7 @@ async def test_get_model_objects_uses_list_query() -> None:
 
     class UserAdmin(ModelView, model=User):
         async_engine = False
-        sessionmaker = LocalSession
+        session_maker = session_maker
 
     view = UserAdmin()
 

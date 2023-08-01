@@ -23,7 +23,7 @@ from sqladmin import Admin, ModelView
 from tests.common import sync_engine as engine
 
 Base = declarative_base()  # type: Any
-LocalSession = sessionmaker(bind=engine)
+session_maker = sessionmaker(bind=engine)
 
 app = Starlette()
 admin = Admin(app=app, engine=engine)
@@ -196,7 +196,7 @@ def test_invalid_list_page(client: TestClient) -> None:
 
 
 def test_list_view_single_page(client: TestClient) -> None:
-    with LocalSession() as session:
+    with session_maker() as session:
         for _ in range(5):
             user = User(name="John Doe")
             session.add(user)
@@ -221,7 +221,7 @@ def test_list_view_single_page(client: TestClient) -> None:
 
 
 def test_list_view_with_relationships(client: TestClient) -> None:
-    with LocalSession() as session:
+    with session_maker() as session:
         for _ in range(5):
             user = User(name="John Doe")
             user.addresses.append(Address())
@@ -245,7 +245,7 @@ def test_list_view_with_relationships(client: TestClient) -> None:
 
 
 def test_list_view_with_formatted_relationships(client: TestClient) -> None:
-    with LocalSession() as session:
+    with session_maker() as session:
         for _ in range(5):
             user = User(name="John Doe")
             user.addresses_formattable.append(AddressFormattable())
@@ -263,7 +263,7 @@ def test_list_view_with_formatted_relationships(client: TestClient) -> None:
 
 
 def test_list_view_multi_page(client: TestClient) -> None:
-    with LocalSession() as session:
+    with session_maker() as session:
         for _ in range(45):
             user = User(name="John Doe")
             session.add(user)
@@ -304,7 +304,7 @@ def test_list_view_multi_page(client: TestClient) -> None:
 
 
 def test_list_page_permission_actions(client: TestClient) -> None:
-    with LocalSession() as session:
+    with session_maker() as session:
         for _ in range(10):
             user = User(name="John Doe")
             session.add(user)
@@ -342,7 +342,7 @@ def test_not_found_detail_page(client: TestClient) -> None:
 
 
 def test_detail_page(client: TestClient) -> None:
-    with LocalSession() as session:
+    with session_maker() as session:
         user = User(name="Amin Alaee")
         session.add(user)
         session.flush()
@@ -392,7 +392,7 @@ def test_detail_page(client: TestClient) -> None:
 
 
 def test_column_labels(client: TestClient) -> None:
-    with LocalSession() as session:
+    with session_maker() as session:
         user = User(name="Foo")
         session.add(user)
         session.commit()
@@ -419,24 +419,24 @@ def test_delete_endpoint_not_found_response(client: TestClient) -> None:
 
     assert response.status_code == 404
 
-    with LocalSession() as s:
+    with session_maker() as s:
         assert s.query(User).count() == 0
 
 
 def test_delete_endpoint(client: TestClient) -> None:
-    with LocalSession() as session:
+    with session_maker() as session:
         user = User(name="Bar")
         session.add(user)
         session.commit()
 
-    with LocalSession() as s:
+    with session_maker() as s:
         assert s.query(User).count() == 1
 
     response = client.delete("/admin/user/delete?pks=1")
 
     assert response.status_code == 200
 
-    with LocalSession() as s:
+    with session_maker() as s:
         assert s.query(User).count() == 0
 
 
@@ -475,7 +475,7 @@ def test_create_endpoint_post_form(client: TestClient) -> None:
     response = client.post("/admin/user/create", data=data)
 
     stmt = select(func.count(User.id))
-    with LocalSession() as s:
+    with session_maker() as s:
         assert s.execute(stmt).scalar_one() == 1
 
     stmt = (
@@ -484,7 +484,7 @@ def test_create_endpoint_post_form(client: TestClient) -> None:
         .options(selectinload(User.addresses))
         .options(selectinload(User.profile))
     )
-    with LocalSession() as s:
+    with session_maker() as s:
         user = s.execute(stmt).scalar_one()
     assert user.name == "SQLAlchemy"
     assert user.email == "amin"
@@ -495,11 +495,11 @@ def test_create_endpoint_post_form(client: TestClient) -> None:
     response = client.post("/admin/address/create", data=data)
 
     stmt = select(func.count(Address.id))
-    with LocalSession() as s:
+    with session_maker() as s:
         assert s.execute(stmt).scalar_one() == 1
 
     stmt = select(Address).limit(1).options(selectinload(Address.user))
-    with LocalSession() as s:
+    with session_maker() as s:
         address = s.execute(stmt).scalar_one()
     assert address.user.id == user.id
     assert address.user_id == user.id
@@ -508,11 +508,11 @@ def test_create_endpoint_post_form(client: TestClient) -> None:
     response = client.post("/admin/profile/create", data=data)
 
     stmt = select(func.count(Profile.id))
-    with LocalSession() as s:
+    with session_maker() as s:
         assert s.execute(stmt).scalar_one() == 1
 
     stmt = select(Profile).limit(1).options(selectinload(Profile.user))
-    with LocalSession() as s:
+    with session_maker() as s:
         profile = s.execute(stmt).scalar_one()
     assert profile.user.id == user.id
     assert profile.user_id == user.id
@@ -525,7 +525,7 @@ def test_create_endpoint_post_form(client: TestClient) -> None:
     response = client.post("/admin/user/create", data=data)
 
     stmt = select(func.count(User.id))
-    with LocalSession() as s:
+    with session_maker() as s:
         assert s.execute(stmt).scalar_one() == 2
 
     stmt = (
@@ -535,7 +535,7 @@ def test_create_endpoint_post_form(client: TestClient) -> None:
         .options(selectinload(User.addresses))
         .options(selectinload(User.profile))
     )
-    with LocalSession() as s:
+    with session_maker() as s:
         user = s.execute(stmt).scalar_one()
     assert user.name == "SQLAdmin"
     assert user.addresses[0].id == address.id
@@ -585,7 +585,7 @@ def test_not_found_edit_page(client: TestClient) -> None:
 
 
 def test_update_get_page(client: TestClient) -> None:
-    with LocalSession() as session:
+    with session_maker() as session:
         user = User(name="Joe", meta_data={"A": "B"})
         session.add(user)
         session.flush()
@@ -624,7 +624,7 @@ def test_update_get_page(client: TestClient) -> None:
 
 
 def test_update_submit_form(client: TestClient) -> None:
-    with LocalSession() as session:
+    with session_maker() as session:
         user = User(name="Joe")
         session.add(user)
         session.flush()
@@ -646,7 +646,7 @@ def test_update_submit_form(client: TestClient) -> None:
         .options(selectinload(User.addresses))
         .options(selectinload(User.profile))
     )
-    with LocalSession() as s:
+    with session_maker() as s:
         user = s.execute(stmt).scalar_one()
     assert user.name == "Jack"
     assert user.addresses == []
@@ -657,12 +657,12 @@ def test_update_submit_form(client: TestClient) -> None:
     response = client.post("/admin/user/edit/1", data=data)
 
     stmt = select(Address).filter(Address.id == 1).limit(1)
-    with LocalSession() as s:
+    with session_maker() as s:
         address = s.execute(stmt).scalar_one()
     assert address.user_id == 1
 
     stmt = select(Profile).limit(1)
-    with LocalSession() as s:
+    with session_maker() as s:
         profile = s.execute(stmt).scalar_one()
     assert profile.user_id == 1
 
@@ -675,7 +675,7 @@ def test_update_submit_form(client: TestClient) -> None:
     response = client.post("/admin/address/edit/1", data=data)
 
     stmt = select(Address).filter(Address.id == 1).limit(1)
-    with LocalSession() as s:
+    with session_maker() as s:
         address = s.execute(stmt).scalar_one()
     assert address.user_id == 1
 
@@ -693,14 +693,14 @@ def test_update_submit_form(client: TestClient) -> None:
     response = client.post("/admin/user/edit/1", data=data)
 
     stmt = select(Address).limit(2)
-    with LocalSession() as s:
+    with session_maker() as s:
         result = s.execute(stmt).all()
     for address in result:
         assert address[0].user_id == 1
 
 
 def test_searchable_list(client: TestClient) -> None:
-    with LocalSession() as session:
+    with session_maker() as session:
         user = User(name="Ross")
         session.add(user)
         user = User(name="Boss")
@@ -729,7 +729,7 @@ def test_searchable_list(client: TestClient) -> None:
 
 
 def test_sortable_list(client: TestClient) -> None:
-    with LocalSession() as session:
+    with session_maker() as session:
         user = User(name="Lisa")
         session.add(user)
         session.commit()
@@ -744,7 +744,7 @@ def test_sortable_list(client: TestClient) -> None:
 
 
 def test_export_csv(client: TestClient) -> None:
-    with LocalSession() as session:
+    with session_maker() as session:
         user = User(name="Daniel", status="ACTIVE")
         session.add(user)
         session.commit()
@@ -757,7 +757,7 @@ def test_export_csv_row_count(client: TestClient) -> None:
     def row_count(resp) -> int:
         return resp.text.count("\r\n") - 1
 
-    with LocalSession() as session:
+    with session_maker() as session:
         for _ in range(20):
             user = User(name="Raymond")
             session.add(user)
