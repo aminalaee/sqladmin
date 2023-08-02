@@ -4,6 +4,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## Version 0.14.0 - 2023-08-02
+
+### Added
+* Pass request to model view methods by @rossmacarthur in https://github.com/aminalaee/sqladmin/pull/547
+* Set `sessionmaker` on `BaseAdmin` by @rossmacarthur in https://github.com/aminalaee/sqladmin/pull/542
+* Allow custom properties by @aminalaee in https://github.com/aminalaee/sqladmin/pull/544
+* Change signature of delete_model by @aminalaee in https://github.com/aminalaee/sqladmin/pull/550
+* Support SQLAlchemy sessionmaker in Admin by @aminalaee in https://github.com/aminalaee/sqladmin/pull/565
+
+### Fixed
+* Fix `expose` and `action` Auth backend not called by @aminalaee in https://github.com/aminalaee/sqladmin/pull/561
+
+**Full Changelog**: https://github.com/aminalaee/sqladmin/compare/0.13.0...0.14.0
+
 ## Version 0.13.0 - 2023-06-30
 
 ### Fixed
