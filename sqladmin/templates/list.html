@@ -79,18 +79,18 @@
             <th class="w-1"><input class="form-check-input m-0 align-middle" type="checkbox" aria-label="Select all" id="select-all"></th>
             <th class="w-1"></th>
             {% for name in model_view._list_prop_names %}
-            {% set name = model_view._column_labels.get(name, name) %}
+            {% set label = model_view._column_labels.get(name, name) %}
             <th>
               {% if name in model_view._sort_fields %}
               {% if request.query_params.get("sortBy") == name and request.query_params.get("sort") == "asc" %}
-              <a href="{{ request.url.include_query_params(sort='desc') }}"><i class="fa-solid fa-arrow-down"></i> {{ name }}</a>
+              <a href="{{ request.url.include_query_params(sort='desc') }}"><i class="fa-solid fa-arrow-down"></i> {{ label }}</a>
               {% elif request.query_params.get("sortBy") == name and request.query_params.get("sort") == "desc" %}
-              <a href="{{ request.url.include_query_params(sort='asc') }}"><i class="fa-solid fa-arrow-up"></i> {{ name }}</a>
+              <a href="{{ request.url.include_query_params(sort='asc') }}"><i class="fa-solid fa-arrow-up"></i> {{ label }}</a>
               {% else %}
-              <a href="{{ request.url.include_query_params(sortBy=name, sort='asc') }}">{{ name }}</a>
+              <a href="{{ request.url.include_query_params(sortBy=name, sort='asc') }}">{{ label }}</a>
               {% endif %}
               {% else %}
-              {{ name }}
+              {{ label }}
               {% endif %}
             </th>
             {% endfor %}
