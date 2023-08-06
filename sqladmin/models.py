@@ -20,7 +20,7 @@ from urllib.parse import urlencode
 import anyio
 from sqlalchemy import Column, String, asc, cast, desc, func, inspect, or_
 from sqlalchemy.exc import NoInspectionAvailable
-from sqlalchemy.orm import joinedload
+from sqlalchemy.orm import joinedload, contains_eager, ColumnProperty, InstrumentedAttribute
 from sqlalchemy.orm.session import sessionmaker
 from sqlalchemy.sql.elements import ClauseElement
 from sqlalchemy.sql.expression import Select, select
@@ -306,6 +306,35 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
         class UserAdmin(ModelView, model=User):
             column_searchable_list = [User.name]
         ```
+    """
+
+    relation_column_searchable_list: ClassVar[List[Union[
+        InstrumentedAttribute, Tuple[InstrumentedAttribute, str]]]] = []
+    """A collection of searchable columns for relationships
+    It is assumed that only text-only fields are searchable,
+    but it is up to the model implementation to decide.
+    
+    To specify all relationship columns, simply pass the 
+    relation attribute
+
+    ???+ example
+        ```python
+        class UserAdmin(ModelView, model=User):
+            relation_column_searchable_list = [User.address]
+        ```
+        
+    To specify individual relationship columns, you can pass a list
+    of tuples specifying both relationship attribute and 
+    column name
+
+    ???+ example
+        ```python
+        class UserAdmin(ModelView, model=User):
+            relation_column_searchable_list = [
+                (User.address, "street_name"), (User.address, "city")
+            ]
+        ```
+
     """
 
     column_sortable_list: ClassVar[Sequence[MODEL_ATTR]] = []
@@ -701,10 +730,8 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
 
         self._export_prop_names = self.get_export_columns()
 
-        self._search_fields = [
-            getattr(self.model, attr) if isinstance(attr, str) else attr
-            for attr in self.column_searchable_list
-        ]
+        self._search_fields = self.get_search_fields()
+
         self._sort_fields = [
             attr if isinstance(attr, str) else attr.key
             for attr in self.column_sortable_list
@@ -817,7 +844,8 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
         stmt = self.list_query
 
         for relation in self._list_relations:
-            stmt = stmt.options(joinedload(relation))
+            stmt = stmt.join(relation)
+            stmt = stmt.options(contains_eager(relation))
 
         if sort_by:
             sort_fields = [(sort_by, sort == "desc")]
@@ -986,6 +1014,48 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
             exclude=excluded_columns,
             defaults=self._list_prop_names,
         )
+
+    def get_search_fields(self) -> List[Union[ColumnProperty, InstrumentedAttribute]]:
+        """Get list of fields to search."""
+
+        search_fields = [
+            getattr(self.model, attr) if isinstance(attr, str) else attr
+            for attr in self.column_searchable_list
+        ]
+
+        # Add relationship search fields
+        for relationship in self._relations:
+            relation_searchable_list, relation_column_searchable_list = (
+                self._get_search_field_item_lists(relationship))
+
+            relation_search_fields = [
+                column for column in relationship.entity._props.values()
+                if isinstance(column, ColumnProperty) and (
+                    relationship.key in relation_searchable_list or
+                    column.key in relation_column_searchable_list
+                )
+            ]
+
+            search_fields.extend(relation_search_fields)
+
+        return search_fields
+
+    def _get_search_field_item_lists(self, relation: InstrumentedAttribute) -> (
+            List[InstrumentedAttribute], List[str]):
+        """Get list of fields on relationship to search and list of searchable relations."""
+        relation_searchable_list: List[InstrumentedAttribute] = []
+        relation_column_searchable_list: List[str] = []
+
+        if len(self.relation_column_searchable_list) > 0:
+            for item in self.relation_column_searchable_list:
+
+                if isinstance(item, InstrumentedAttribute) and item.key == relation.key:
+                    relation_searchable_list.append(item.key)
+                if isinstance(item, tuple):
+                    relation, column_name = item
+                    relation_column_searchable_list.append(column_name)
+
+        return  relation_searchable_list, relation_column_searchable_list
 
     async def on_model_change(self, data: dict, model: Any, is_created: bool) -> None:
         """Perform some actions before a model is created or updated.
