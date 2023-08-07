@@ -80,8 +80,11 @@
             <th class="w-1"></th>
             {% for name in model_view._list_prop_names %}
             {% set label = model_view._column_labels.get(name, name) %}
+            {% if name in model_view._relation_sort_fields.keys() %}
+            {% set name = model_view._relation_sort_fields.get(name) %}
+            {% endif %}
             <th>
-              {% if name in model_view._sort_fields %}
+              {% if name in model_view._sort_fields or name in model_view._relation_sort_fields.values() %}
               {% if request.query_params.get("sortBy") == name and request.query_params.get("sort") == "asc" %}
               <a href="{{ request.url.include_query_params(sort='desc') }}"><i class="fa-solid fa-arrow-down"></i> {{ label }}</a>
               {% elif request.query_params.get("sortBy") == name and request.query_params.get("sort") == "desc" %}
