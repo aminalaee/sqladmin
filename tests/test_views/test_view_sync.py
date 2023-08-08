@@ -147,6 +147,7 @@ class UserAdmin(ModelView, model=User):
         (User.addresses, "city"),
     ]
     column_sortable_list = [User.id]
+    relation_column_sortable_list = {User.addresses: "street"}
     column_export_list = [User.name, User.status]
     column_formatters = {
         User.addresses_formattable: lambda m, a: [
@@ -780,6 +781,34 @@ def test_sortable_list(client: TestClient) -> None:
     response = client.get("/admin/user/list?sortBy=id&sort=desc")
 
     assert "http://testserver/admin/user/list?sortBy=id&amp;sort=asc" in response.text
+
+
+def test_sortable_relation_list(client: TestClient) -> None:
+    with session_maker() as session:
+        user = User(name="Lisa")
+        user.addresses.append(
+            Address(
+                street="Street", house_number="12a", postal_code="54321", city="Town"
+            )
+        )
+        session.add(user)
+        session.commit()
+
+    sort_column = UserAdmin.relation_column_sortable_list.get(User.addresses)
+
+    response = client.get(f"/admin/user/list?sortBy={sort_column}&sort=asc")
+
+    assert (
+        f"http://testserver/admin/user/list?sortBy={sort_column}&amp;sort=desc"
+        in response.text
+    )
+
+    response = client.get(f"/admin/user/list?sortBy={sort_column}&sort=desc")
+
+    assert (
+        f"http://testserver/admin/user/list?sortBy={sort_column}&amp;sort=asc"
+        in response.text
+    )
 
 
 def test_export_csv(client: TestClient) -> None:
