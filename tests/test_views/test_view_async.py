@@ -16,8 +16,7 @@ from sqlalchemy import (
     select,
 )
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import relationship, selectinload, sessionmaker
+from sqlalchemy.orm import declarative_base, relationship, selectinload, sessionmaker
 from starlette.applications import Starlette
 from starlette.requests import Request
 
@@ -65,6 +64,11 @@ class Address(Base):
 
     id = Column(Integer, primary_key=True)
     user_id = Column(Integer, ForeignKey("users.id"))
+    street = Column(String, nullable=True)
+    house_number = Column(String, nullable=True)
+    postal_code = Column(Integer, nullable=True)
+    city = Column(String, nullable=True)
+    country = Column(String, nullable=True)
 
     user = relationship("User", back_populates="addresses")
 
@@ -144,6 +148,7 @@ class UserAdmin(ModelView, model=User):
     ]
     column_labels = {User.email: "Email"}
     column_searchable_list = [User.name]
+    relation_column_searchable_list = [User.addresses]
     column_sortable_list = [User.id]
     column_export_list = [User.name, User.status]
     column_formatters = {
@@ -762,6 +767,35 @@ async def test_searchable_list(client: AsyncClient) -> None:
     response = await client.get("/admin/user/list?search=rose")
 
     assert "/admin/user/details/1" not in response.text
+
+
+async def test_searchable_relation_in_list(client: AsyncClient) -> None:
+    async with session_maker() as session:
+        user1 = User(name="Ross")
+        user1.addresses.append(
+            Address(
+                street="Street", house_number="12a", postal_code="54321", city="Town"
+            )
+        )
+        session.add(user1)
+
+        user2 = User(name="Boss")
+        user2.addresses.append(
+            Address(
+                street="Avenue", house_number="45a", postal_code="12345", city="City"
+            )
+        )
+        session.add(user2)
+        await session.commit()
+
+    searchData = [("Avenue", "2"), ("12a", "1"), ("45a", "2"), ("Town", "1")]
+
+    for search_value, expected_user_id in searchData:
+        unexpected_user_id = "1" if expected_user_id == "2" else "2"
+        response = await client.get(f"/admin/user/list?search={search_value}")
+
+        assert f"/admin/user/details/{expected_user_id}" in response.text
+        assert f"/admin/user/details/{unexpected_user_id}" not in response.text
 
 
 async def test_sortable_list(client: AsyncClient) -> None:

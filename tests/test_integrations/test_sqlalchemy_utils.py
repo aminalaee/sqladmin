@@ -3,7 +3,7 @@ import enum
 import pytest
 from sqlalchemy import Column, Integer
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm import declarative_base
 from sqlalchemy.orm.session import sessionmaker
 from sqlalchemy_utils import (
     ArrowType,
