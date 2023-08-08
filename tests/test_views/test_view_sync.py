@@ -743,17 +743,13 @@ def test_searchable_relation_in_list(client: TestClient) -> None:
     with session_maker() as session:
         user1 = User(name="Ross")
         user1.addresses.append(
-            Address(
-                street="Street", house_number="12a", postal_code="54321", city="Town"
-            )
+            Address(street="Street", house_number="12a", postal_code=54321, city="Town")
         )
         session.add(user1)
 
         user2 = User(name="Boss")
         user2.addresses.append(
-            Address(
-                street="Avenue", house_number="45a", postal_code="12345", city="City"
-            )
+            Address(street="Avenue", house_number="45a", postal_code=12345, city="City")
         )
         session.add(user2)
         session.commit()
@@ -787,9 +783,7 @@ def test_sortable_relation_list(client: TestClient) -> None:
     with session_maker() as session:
         user = User(name="Lisa")
         user.addresses.append(
-            Address(
-                street="Street", house_number="12a", postal_code="54321", city="Town"
-            )
+            Address(street="Street", house_number="12a", postal_code=54321, city="Town")
         )
         session.add(user)
         session.commit()
