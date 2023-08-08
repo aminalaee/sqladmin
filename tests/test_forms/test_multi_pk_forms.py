@@ -3,8 +3,7 @@ from typing import AsyncGenerator
 import pytest
 from sqlalchemy import Column, DateTime, ForeignKey, Integer, String
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import relationship
+from sqlalchemy.orm import declarative_base, relationship
 from sqlalchemy.orm.session import sessionmaker
 
 from sqladmin.forms import get_model_form

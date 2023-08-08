@@ -18,8 +18,7 @@ from sqlalchemy import (
 )
 from sqlalchemy.dialects.postgresql import ARRAY, INET, MACADDR, UUID
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import ColumnProperty, composite, relationship
+from sqlalchemy.orm import ColumnProperty, composite, declarative_base, relationship
 from sqlalchemy.orm.session import sessionmaker
 from wtforms import BooleanField, Field, Form, IntegerField, StringField, TimeField
 from wtforms.fields.core import UnboundField

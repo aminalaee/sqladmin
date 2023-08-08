@@ -3,7 +3,7 @@ from typing import Any
 
 import pytest
 from sqlalchemy import Column, ForeignKey, Integer, String
-from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm import declarative_base
 
 from sqladmin.helpers import (
     get_object_identifier,
