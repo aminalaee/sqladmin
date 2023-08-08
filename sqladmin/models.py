@@ -1052,13 +1052,13 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
 
     def _get_search_field_item_lists(
         self, relation: InstrumentedAttribute
-    ) -> Tuple[List[InstrumentedAttribute], List[str]]:
+    ) -> Tuple[List[str], List[InstrumentedAttribute]]:
         """
         Get list of fields on relationship to search and l
         ist of searchable relations.
         """
-        relation_searchable_list: List[InstrumentedAttribute] = []
-        relation_column_searchable_list: List[str] = []
+        relation_searchable_list: List[str] = []
+        relation_column_searchable_list: List[InstrumentedAttribute] = []
 
         if len(self.relation_column_searchable_list) > 0:
             for item in self.relation_column_searchable_list:
