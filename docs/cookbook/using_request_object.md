@@ -32,7 +32,7 @@ This can be done by overriding the `insert_model` method:
 ```python
 class PostAdmin(ModelView, model=Post):
     async def insert_model(self, request, data):
-        data["user_id"] = request.user.id
+        data["author_id"] = request.user.id
         return await super().insert_model(request, data)
 ```
 
