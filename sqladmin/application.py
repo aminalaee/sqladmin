@@ -531,6 +531,7 @@ class Admin(BaseAdminView):
         Form = await model_view.scaffold_form()
         context = {
             "request": request,
+            "obj": model,
             "model_view": model_view,
             "form": Form(obj=model),
         }
