@@ -24,9 +24,10 @@ class CustomBackend(AuthenticationBackend):
         request.session.clear()
         return True
 
-    async def authenticate(self, request: Request) -> RedirectResponse:
-        if "token" not in request.session:
+    async def authenticate(self, request: Request) -> bool:
+        if "token" in request.session:
             return RedirectResponse(request.url_for("admin:login"), status_code=302)
+        return False
 
 
 app = Starlette()
