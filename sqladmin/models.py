@@ -1,3 +1,4 @@
+import shlex
 import time
 from enum import Enum
 from typing import (
@@ -831,7 +832,7 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
                 stmt = stmt.order_by(asc(sort_field))
 
         if search:
-            stmt = self.search_query(stmt=stmt, term=search)
+            stmt = self.search_query(stmt=stmt, terms=search)
             count = await self.count(select(func.count()).select_from(stmt))
         else:
             count = await self.count()
@@ -1067,19 +1068,23 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
         ]
         return ", ".join(field_names)
 
-    def search_query(self, stmt: Select, term: str) -> Select:
+    def search_query(self, stmt: Select, terms: str) -> Select:
         """Specify the search query given the SQLAlchemy statement
         and term to search for.
+        Space separated search terms are combined with OR operation. To search
+        for a string (i.e. and operation), use quotes.
         It can be used for doing more complex queries like JSON objects. For example:
 
         ```py
         return stmt.filter(MyModel.name == term)
         ```
         """
+        expressions: List = []
 
-        expressions = [
-            cast(prop, String).ilike(f"%{term}%") for prop in self._search_fields
-        ]
+        for term in shlex.split(terms):
+            expressions.extend(
+                cast(prop, String).ilike(f"%{term}%") for prop in self._search_fields
+            )
         return stmt.filter(or_(*expressions))
 
     def get_export_name(self, export_type: str) -> str:

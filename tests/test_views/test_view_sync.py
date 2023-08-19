@@ -705,6 +705,10 @@ def test_searchable_list(client: TestClient) -> None:
         session.add(user)
         user = User(name="Boss")
         session.add(user)
+        user = User(name="John Doe")
+        session.add(user)
+        user = User(name="John")
+        session.add(user)
         session.commit()
 
     response = client.get("/admin/user/list")
@@ -726,6 +730,31 @@ def test_searchable_list(client: TestClient) -> None:
 
     response = client.get("/admin/user/list?search=rose")
     assert "/admin/user/details/1" not in response.text
+
+    response = client.get("/admin/user/list?search=ross boss")
+    assert "/admin/user/details/1" in response.text
+    assert "/admin/user/details/2" in response.text
+    assert "/admin/user/details/3" not in response.text
+    assert (
+        "Showing <span>1</span> to <span>2</span> of <span>2</span> items"
+        in response.text
+    )
+
+    response = client.get('/admin/user/list?search="John"')
+    assert "/admin/user/details/3" in response.text
+    assert "/admin/user/details/4" in response.text
+    assert (
+        "Showing <span>1</span> to <span>2</span> of <span>2</span> items"
+        in response.text
+    )
+
+    response = client.get('/admin/user/list?search="john Doe"')
+    assert "/admin/user/details/3" in response.text
+    assert "/admin/user/details/4" not in response.text
+    assert (
+        "Showing <span>1</span> to <span>1</span> of <span>1</span> items"
+        in response.text
+    )
 
 
 def test_sortable_list(client: TestClient) -> None:
