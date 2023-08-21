@@ -1,22 +1,27 @@
-There are different approaches when it comes to working with templates in SQLAdmin.
-You can simply replace a template file and implement it yourself,
-or you could customize parts of the template without implementing the whole page.
+The template uses `Jinja2` template engine and by default looks for a `templates` directory in your project.
 
-## Replacing templates
+If your `templates` directory has the default template files like `list.html` or `create.html` then they wiill be used.
+Otherwise you can create custom templates and use them.
 
-You can create a directory called `templates` in your project
-and create relevant template files in it.
+## Customizing templates
 
-If you name your files the same way SQLAdmin does, for example `list.html` or `details.html`
-then you don't have to do anything else. They will be picked up by SQLAdmin automatically.
+As the first step you should create a `templates` directory in you project.
 
-But if you name the files something else,
-then you need to specify the name in your ModelView classes.
+Since `Jinja2` is modular, you can override your specific template file and do your changes.
+For example you can create a `custom_details.html` file which overrides the `details.html` from
+SQLAdmin and in the `content` block it adds custom HTML tags:
 
 !!! example
 
-    ```python
+    ```html name="custom_details.html"
+    {% extends "details.html" %}
+    {% block content %}
+        {{ super() }}
+        <p>Custom HTML</p>
+    {% endblock %}
+    ```
+
+    ```python name="admin.py"
     class UserAdmin(ModelView, model=User):
-        details_template = "details.html"
-        list_template = "custom_list.html"
+        details_template = "custom_details.html"
     ```
