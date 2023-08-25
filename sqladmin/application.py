@@ -461,8 +461,8 @@ class Admin(BaseAdminView):
         identity = request.path_params["identity"]
         model_view = self._find_model_view(identity)
 
-        pks = request.query_params.get("pks", "")
-        pks = pks.split(",") if pks else []
+        params = request.query_params.get("pks", "")
+        pks = params.split(",") if params else []
         for pk in pks:
             model = await model_view.get_object_for_delete(pk)
             if not model:
