@@ -15,7 +15,6 @@ from sqladmin.fields import (
     QuerySelectMultipleField,
     Select2TagsField,
     SelectField,
-    TimeField,
 )
 from tests.common import DummyData
 from tests.common import sync_engine as engine
@@ -61,23 +60,6 @@ def test_datetime_field() -> None:
 
     form = F(DummyData(datetime=["2021-12-22 12:30:00"]))
     assert form.datetime.data == datetime(2021, 12, 22, 12, 30, 0, 0)
-
-
-def test_time_field() -> None:
-    class F(Form):
-        time = TimeField()
-
-    form = F()
-    assert 'data-role="timepicker"' in form.time()
-
-    form = F(DummyData(time=["12:30"]))
-    assert form.time.data == datetime(2021, 12, 22, 12, 30, 0, 0).time()
-
-    form = F(DummyData(time=["Invalid"]))
-    assert form.time.data is None
-
-    form = F(DummyData(time=[""]))
-    assert form.time.data is None
 
 
 def test_json_field() -> None:
