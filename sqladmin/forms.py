@@ -32,6 +32,7 @@ from wtforms import (
     IntegerField,
     StringField,
     TextAreaField,
+    TimeField,
     validators,
 )
 from wtforms.fields.core import UnboundField
@@ -57,7 +58,6 @@ from sqladmin.fields import (
     QuerySelectMultipleField,
     Select2TagsField,
     SelectField,
-    TimeField,
 )
 from sqladmin.helpers import (
     choice_type_coerce_factory,

@@ -19,7 +19,6 @@ __all__ = [
     "QuerySelectMultipleField",
     "SelectField",
     "Select2TagsField",
-    "TimeField",
 ]
 
 
@@ -37,14 +36,6 @@ class DateTimeField(fields.DateTimeField):
     """
 
     widget = sqladmin_widgets.DateTimePickerWidget()
-
-
-class TimeField(fields.TimeField):
-    """
-    A text field which stores a `datetime.time` object.
-    """
-
-    widget = sqladmin_widgets.TimePickerWidget()
 
 
 class IntervalField(fields.StringField):

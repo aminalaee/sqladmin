@@ -10,7 +10,6 @@ __all__ = [
     "DatePickerWidget",
     "DateTimePickerWidget",
     "Select2TagsWidget",
-    "TimePickerWidget",
 ]
 
 
@@ -31,16 +30,6 @@ class DateTimePickerWidget(widgets.TextInput):
 
     def __call__(self, field: Field, **kwargs: Any) -> str:
         kwargs.setdefault("data-role", "datetimepicker")
-        return super().__call__(field, **kwargs)
-
-
-class TimePickerWidget(widgets.TextInput):
-    """
-    Time picker widget.
-    """
-
-    def __call__(self, field: Field, **kwargs: Any) -> str:
-        kwargs.setdefault("data-role", "timepicker")
         return super().__call__(field, **kwargs)
 
 
