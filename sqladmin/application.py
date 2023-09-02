@@ -334,7 +334,7 @@ class Admin(BaseAdminView):
         self,
         app: Starlette,
         engine: Optional[ENGINE_TYPE] = None,
-        session_maker: Optional[sessionmaker, async_sessionmaker] = None,
+        session_maker: Optional[Union[sessionmaker, async_sessionmaker]] = None,
         base_url: str = "/admin",
         title: str = "Admin",
         logo_url: Optional[str] = None,
