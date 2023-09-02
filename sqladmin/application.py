@@ -19,7 +19,7 @@ from jinja2 import ChoiceLoader, FileSystemLoader, PackageLoader
 from sqlalchemy.engine import Engine
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm.session import Session, sessionmaker
-from sqlalchemy.ext.asyncio import async_sessionmaker
+from sqlalchemy.ext.asyncio import async_session_maker
 from starlette.applications import Starlette
 from starlette.datastructures import URL, FormData, UploadFile
 from starlette.exceptions import HTTPException
@@ -334,7 +334,7 @@ class Admin(BaseAdminView):
         self,
         app: Starlette,
         engine: Optional[ENGINE_TYPE] = None,
-        session_maker: Optional[Union[sessionmaker, async_sessionmaker]] = None,
+        session_maker: Optional[Union[sessionmaker, async_session_maker]] = None,
         base_url: str = "/admin",
         title: str = "Admin",
         logo_url: Optional[str] = None,
@@ -470,8 +470,9 @@ class Admin(BaseAdminView):
         identity = request.path_params["identity"]
         model_view = self._find_model_view(identity)
 
-        pks = request.query_params.get("pks", "")
-        for pk in pks.split(","):
+        params = request.query_params.get("pks", "")
+        pks = params.split(",") if params else []
+        for pk in pks:
             model = await model_view.get_object_for_delete(pk)
             if not model:
                 raise HTTPException(status_code=404)
@@ -540,6 +541,7 @@ class Admin(BaseAdminView):
         Form = await model_view.scaffold_form()
         context = {
             "request": request,
+            "obj": model,
             "model_view": model_view,
             "form": Form(obj=model),
         }
@@ -601,11 +603,11 @@ class Admin(BaseAdminView):
             return self.templates.TemplateResponse("login.html", context)
 
         ok = await self.authentication_backend.login(request)
-        # if not ok:
-        #     context["error"] = "Invalid credentials."
-        #     return self.templates.TemplateResponse(
-        #         "login.html", context, status_code=400
-        #     )
+        if not ok:
+            context["error"] = "Invalid credentials."
+            return self.templates.TemplateResponse(
+                "login.html", context, status_code=400
+            )
 
         return RedirectResponse(request.url_for("admin:index"), status_code=302)
 
