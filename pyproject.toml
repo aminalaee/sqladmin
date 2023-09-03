@@ -6,7 +6,7 @@ build-backend = "hatchling.build"
 name = "sqladmin"
 description = 'SQLAlchemy admin for FastAPI and Starlette'
 readme = "README.md"
-requires-python = ">=3.7"
+requires-python = ">=3.8"
 license = "BSD-3-Clause"
 keywords = ["sqlalchemy", "fastapi", "starlette", "admin"]
 authors = [
@@ -27,7 +27,6 @@ classifiers = [
 ]
 dependencies = [
   "starlette",
-  "typing_extensions>=4.0;python_version < '3.8'",
   "sqlalchemy >=1.4",
   "wtforms >=3, <4",
   "jinja2",
@@ -84,7 +83,6 @@ dependencies = [
   "black==23.1.0",
   "mypy==1.1.1",
   "ruff==0.0.256",
-  "sqlalchemy~=1.4", # MyPy issues with SQLAlchemy V2
 ]
 
 [tool.hatch.envs.default]
@@ -131,7 +129,6 @@ matrix.sqlalchemy.dependencies = [
 disallow_untyped_defs = true
 ignore_missing_imports = true
 show_error_codes = true
-no_implicit_optional = true
 
 [tool.ruff]
 select = ["E", "F", "I"]
