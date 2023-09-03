@@ -17,9 +17,8 @@ from typing import (
 
 from jinja2 import ChoiceLoader, FileSystemLoader, PackageLoader
 from sqlalchemy.engine import Engine
-from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.ext.asyncio import AsyncSession, async_session_maker
 from sqlalchemy.orm.session import Session, sessionmaker
-from sqlalchemy.ext.asyncio import async_session_maker
 from starlette.applications import Starlette
 from starlette.datastructures import URL, FormData, UploadFile
 from starlette.exceptions import HTTPException
