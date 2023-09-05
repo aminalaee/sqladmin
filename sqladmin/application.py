@@ -420,7 +420,9 @@ class Admin(BaseAdminView):
         sort_by = request.query_params.get("sortBy", None)
         sort = request.query_params.get("sort", "asc")
 
-        pagination = await model_view.list(page, page_size, search, sort_by, sort)
+        pagination = await model_view.list(
+            request, page, page_size, search, sort_by, sort
+        )
         pagination.add_pagination_urls(request.url)
 
         context = {
@@ -580,7 +582,9 @@ class Admin(BaseAdminView):
         export_type = request.path_params["export_type"]
 
         model_view = self._find_model_view(identity)
-        rows = await model_view.get_model_objects(limit=model_view.export_max_rows)
+        rows = await model_view.get_model_objects(
+            request=request, limit=model_view.export_max_rows
+        )
         return model_view.export_data(rows, export_type=export_type)
 
     async def login(self, request: Request) -> Response:

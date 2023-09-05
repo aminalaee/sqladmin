@@ -100,8 +100,8 @@ The options available are:
 * `column_sortable_list`: List of columns or column names to be sortable in the list page.
 * `column_default_sort`: Default sorting if no sorting is applied, tuple of (column, is_descending)
 or list of the tuple for multiple columns.
-* `list_query`: A SQLAlchemy `select` expression to use for model list page.
-* `count_query`: A SQLAlchemy `select` expression to use for model count.
+* `list_query`: A method with the signature of `(request) -> stmt` which can customize the list query.
+* `count_query`: A method with the signature of `(request) -> stmt` which can customize the count query.
 * `search_query`: A method with the signature of `(stmt, term) -> stmt` which can customize the search query.
 
 !!! example

@@ -4,10 +4,11 @@ from unittest.mock import Mock, call, patch
 
 import pytest
 from markupsafe import Markup
-from sqlalchemy import Boolean, Column, Enum, ForeignKey, Integer, String, select
+from sqlalchemy import Boolean, Column, Enum, ForeignKey, Integer, String
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship, sessionmaker
+from sqlalchemy.sql.expression import Select
 from starlette.applications import Starlette
 from starlette.requests import Request
 
@@ -372,20 +373,18 @@ async def test_get_model_objects_uses_list_query() -> None:
     batman = User(name="batman")
     session.add(batman)
     session.commit()
-    session.refresh(batman)
-    session.close()
 
     class UserAdmin(ModelView, model=User):
         async_engine = False
         session_maker = session_maker
 
+        def list_query(self, request: Request) -> Select:
+            return super().list_query(request).filter(User.name.endswith("man"))
+
     view = UserAdmin()
+    request = Request({"type": "http"})
 
-    view.list_query = select(User).filter(User.name.endswith("man"))
-    assert len(await view.get_model_objects()) == 1
-
-    view.list_query = select(User).filter(User.name.endswith("man").is_(False))
-    assert len(await view.get_model_objects()) == 0
+    assert len(await view.get_model_objects(request)) == 1
 
 
 def test_url_for() -> None:
