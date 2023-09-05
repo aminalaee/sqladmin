@@ -50,6 +50,7 @@ Main features include:
 
 ```shell
 $ pip install sqladmin
+$ pip install sqladmin[full]
 ```
 
 ---
