@@ -3,7 +3,6 @@ import inspect
 from typing import Any, Callable, Union
 
 from starlette.middleware import Middleware
-from starlette.middleware.sessions import SessionMiddleware
 from starlette.requests import Request
 from starlette.responses import RedirectResponse, Response
 
@@ -15,6 +14,8 @@ class AuthenticationBackend:
     """
 
     def __init__(self, secret_key: str) -> None:
+        from starlette.middleware.sessions import SessionMiddleware
+
         self.middlewares = [
             Middleware(SessionMiddleware, secret_key=secret_key),
         ]
