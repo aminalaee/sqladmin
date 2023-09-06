@@ -771,18 +771,15 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
         rows = await self._run_query(stmt)
         return rows[0]
 
-    async def list(
-        self,
-        request: Request,
-        page: int,
-        page_size: int,
-        search: Optional[str] = None,
-        sort_by: Optional[str] = None,
-        sort: str = "asc",
-    ) -> Pagination:
+    async def list(self, request: Request) -> Pagination:
+        page = int(request.query_params.get("page", 1))
+        page_size = int(request.query_params.get("pageSize", 0))
         page_size = min(page_size or self.page_size, max(self.page_size_options))
-        stmt = self.list_query(request)
+        search = request.query_params.get("search", None)
+        sort_by = request.query_params.get("sortBy", None)
+        sort = request.query_params.get("sort", "asc")
 
+        stmt = self.list_query(request)
         for relation in self._list_relations:
             stmt = stmt.options(joinedload(relation))
 

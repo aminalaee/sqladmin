@@ -413,16 +413,7 @@ class Admin(BaseAdminView):
         await self._list(request)
 
         model_view = self._find_model_view(request.path_params["identity"])
-
-        page = int(request.query_params.get("page", 1))
-        page_size = int(request.query_params.get("pageSize", 0))
-        search = request.query_params.get("search", None)
-        sort_by = request.query_params.get("sortBy", None)
-        sort = request.query_params.get("sort", "asc")
-
-        pagination = await model_view.list(
-            request, page, page_size, search, sort_by, sort
-        )
+        pagination = await model_view.list(request)
         pagination.add_pagination_urls(request.url)
 
         context = {
