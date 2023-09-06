@@ -32,7 +32,11 @@ from starlette.templating import Jinja2Templates
 from sqladmin._types import ENGINE_TYPE
 from sqladmin.ajax import QueryAjaxModelLoader
 from sqladmin.authentication import AuthenticationBackend, login_required
-from sqladmin.helpers import is_async_session_maker, slugify_action_name
+from sqladmin.helpers import (
+    get_object_identifier,
+    is_async_session_maker,
+    slugify_action_name,
+)
 from sqladmin.models import BaseView, ModelView
 
 __all__ = [
@@ -102,6 +106,7 @@ class BaseAdmin:
         templates.env.globals["zip"] = zip
         templates.env.globals["admin"] = self
         templates.env.globals["is_list"] = lambda x: isinstance(x, list)
+        templates.env.globals["get_object_identifier"] = get_object_identifier
 
         return templates
 
@@ -630,7 +635,7 @@ class Admin(BaseAdminView):
         """
 
         identity = request.path_params["identity"]
-        identifier = model_view.get_identifier(obj)
+        identifier = get_object_identifier(obj)
 
         if form.get("save") == "Save":
             return request.url_for("admin:list", identity=identity)

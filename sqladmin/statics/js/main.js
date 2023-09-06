@@ -59,7 +59,7 @@ $(document).on('keyup', '#search-input', function (e) {
   // Make a new timeout set to go off in 1000ms (1 second)
   timeout = setTimeout(function () {
     $('#search-button').click();
-  }, 1000);  
+  }, 1000);
 });
 
 // Date picker
@@ -121,16 +121,9 @@ $("#action-delete").click(function () {
     }
   });
 
-  $.ajax({
-    url: $(this).attr('data-url') + '?pks=' + pks.join(","),
-    method: 'DELETE',
-    success: function (result) {
-      window.location.href = result;
-    },
-    error: function (request, status, error) {
-      alert(request.responseText);
-    }
-  });
+  $('#action-delete').data("pk", pks);
+  $('#action-delete').data("url", $(this).data('url') + '?pks=' + pks.join(","));
+  $('#modal-delete').modal('show');
 });
 
 $("[id^='action-custom-']").click(function () {

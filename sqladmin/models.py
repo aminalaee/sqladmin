@@ -701,7 +701,7 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
             return await anyio.to_thread.run_sync(self._run_query_sync, stmt)
 
     def _url_for_details(self, request: Request, obj: Any) -> Union[str, URL]:
-        pk = self.get_identifier(obj)
+        pk = get_object_identifier(obj)
         return request.url_for(
             "admin:details",
             identity=slugify_class_name(obj.__class__.__name__),
@@ -709,7 +709,7 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
         )
 
     def _url_for_edit(self, request: Request, obj: Any) -> Union[str, URL]:
-        pk = self.get_identifier(obj)
+        pk = get_object_identifier(obj)
         return request.url_for(
             "admin:edit",
             identity=slugify_class_name(obj.__class__.__name__),
@@ -717,7 +717,7 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
         )
 
     def _url_for_delete(self, request: Request, obj: Any) -> str:
-        pk = self.get_identifier(obj)
+        pk = get_object_identifier(obj)
         query_params = urlencode({"pks": pk})
         url = request.url_for(
             "admin:delete", identity=slugify_class_name(obj.__class__.__name__)
@@ -734,7 +734,7 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
         return request.url_for(
             "admin:details",
             identity=slugify_class_name(target.__class__.__name__),
-            pk=self.get_identifier(target),
+            pk=get_object_identifier(target),
         )
 
     def _url_for_action(self, request: Request, action_name: str) -> str:
@@ -743,9 +743,6 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
                 f"admin:action-{self.identity}-{action_name}",
             )
         )
-
-    def get_identifier(self, obj: Any) -> Any:
-        return get_object_identifier(obj)
 
     def _get_default_sort(self) -> List[Tuple[str, bool]]:
         if self.column_default_sort:
