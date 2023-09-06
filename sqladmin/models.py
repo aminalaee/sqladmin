@@ -89,11 +89,6 @@ class ModelViewMeta(type):
         cls.name_plural = attrs.get("name_plural", f"{cls.name}s")
         cls.icon = attrs.get("icon")
 
-        cls.list_query = attrs.get("list_query", select(model))
-        cls.count_query = attrs.get(
-            "count_query", select(func.count(cls.pk_columns[0]))
-        )
-
         mcls._check_conflicting_options(["column_list", "column_exclude_list"], attrs)
         mcls._check_conflicting_options(
             ["form_columns", "form_excluded_columns"], attrs
@@ -629,34 +624,6 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
         ```
     """
 
-    list_query: ClassVar[Select] = select()
-    """
-    The SQLAlchemy select expression used for the list page which can be customized.
-    By default it will select all objects without any filters.
-
-    ???+ example
-        ```python
-        from sqlalchemy import select
-
-        class UserAdmin(ModelView, model=User):
-            list_query = select(User).filter(User.active == True)
-        ```
-    """
-
-    count_query: ClassVar[Select] = select()
-    """
-    The SQLAlchemy select expression used for the count query which can be customized.
-    By default it will select all objects without any filters.
-
-    ???+ example
-        ```python
-        from sqlalchemy import select
-
-        class UserAdmin(ModelView, model=User):
-            count_query = select(func.count(User.id))
-        ```
-    """
-
     def __init__(self) -> None:
         self._mapper = inspect(self.model)
         self._prop_names = [attr.key for attr in self._mapper.attrs]
@@ -798,24 +765,21 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
 
         return value
 
-    async def count(self, stmt: Optional[Select] = None) -> int:
+    async def count(self, request: Request, stmt: Optional[Select] = None) -> int:
         if stmt is None:
-            rows = await self._run_query(self.count_query)
-        else:
-            rows = await self._run_query(stmt)
+            stmt = self.count_query(request)
+        rows = await self._run_query(stmt)
         return rows[0]
 
-    async def list(
-        self,
-        page: int,
-        page_size: int,
-        search: Optional[str] = None,
-        sort_by: Optional[str] = None,
-        sort: str = "asc",
-    ) -> Pagination:
+    async def list(self, request: Request) -> Pagination:
+        page = int(request.query_params.get("page", 1))
+        page_size = int(request.query_params.get("pageSize", 0))
         page_size = min(page_size or self.page_size, max(self.page_size_options))
-        stmt = self.list_query
+        search = request.query_params.get("search", None)
+        sort_by = request.query_params.get("sortBy", None)
+        sort = request.query_params.get("sort", "asc")
 
+        stmt = self.list_query(request)
         for relation in self._list_relations:
             stmt = stmt.options(joinedload(relation))
 
@@ -832,9 +796,9 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
 
         if search:
             stmt = self.search_query(stmt=stmt, term=search)
-            count = await self.count(select(func.count()).select_from(stmt))
+            count = await self.count(request, select(func.count()).select_from(stmt))
         else:
-            count = await self.count()
+            count = await self.count(request)
 
         stmt = stmt.limit(page_size).offset((page - 1) * page_size)
         rows = await self._run_query(stmt)
@@ -848,10 +812,12 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
 
         return pagination
 
-    async def get_model_objects(self, limit: Union[int, None] = 0) -> List[Any]:
+    async def get_model_objects(
+        self, request: Request, limit: Union[int, None] = 0
+    ) -> List[Any]:
         # For unlimited rows this should pass None
         limit = None if limit == 0 else limit
-        stmt = self.list_query.limit(limit=limit)
+        stmt = self.list_query(request).limit(limit)
 
         for relation in self._list_relations:
             stmt = stmt.options(joinedload(relation))
@@ -1081,6 +1047,23 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
             cast(prop, String).ilike(f"%{term}%") for prop in self._search_fields
         ]
         return stmt.filter(or_(*expressions))
+
+    def list_query(self, request: Request) -> Select:
+        """
+        The SQLAlchemy select expression used for the list page which can be customized.
+        By default it will select all objects without any filters.
+        """
+
+        return select(self.model)
+
+    def count_query(self, request: Request) -> Select:
+        """
+        The SQLAlchemy select expression used for the count query
+        which can be customized.
+        By default it will select all objects without any filters.
+        """
+
+        return select(func.count(self.pk_columns[0]))
 
     def get_export_name(self, export_type: str) -> str:
         """The file name when exporting."""
