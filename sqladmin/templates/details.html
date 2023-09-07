@@ -7,7 +7,7 @@
         {% for pk in model_view.pk_columns -%}
           {{ pk.name }}
           {%- if not loop.last %};{% endif -%}
-        {% endfor %}: {{ model_view.get_identifier(model) }}</h3>
+        {% endfor %}: {{ get_object_identifier(model) }}</h3>
     </div>
     <div class="card-body border-bottom py-3">
       <div class="table-responsive">
@@ -51,7 +51,7 @@
           </div>
           {% if model_view.can_delete %}
           <div class="col-md-1">
-            <a href="#" data-name="{{ model_view.name }}" data-pk="{{ model_view.get_identifier(model) }}" data-url="{{ model_view._url_for_delete(request, model) }}" data-bs-toggle="modal" data-bs-target="#modal-delete" class="btn btn-danger">
+            <a href="#" data-name="{{ model_view.name }}" data-pk="{{ get_object_identifier(model) }}" data-url="{{ model_view._url_for_delete(request, model) }}" data-bs-toggle="modal" data-bs-target="#modal-delete" class="btn btn-danger">
               Delete
             </a>
           </div>
@@ -70,7 +70,7 @@
               {{ label }}
             </a>
             {% else %}
-            <a href="{{ model_view._url_for_action(request, custom_action) }}?pks={{ model_view.get_identifier(model) }}" class="btn btn-secondary">
+            <a href="{{ model_view._url_for_action(request, custom_action) }}?pks={{ get_object_identifier(model) }}" class="btn btn-secondary">
               {{ label }}
             </a>
             {% endif %}
@@ -87,7 +87,7 @@
 
 {% for custom_action in model_view._custom_actions_in_detail %}
 {% if custom_action in model_view._custom_actions_confirmation %}
-{% with confirmation_message = model_view._custom_actions_confirmation[custom_action], custom_action=custom_action, url=model_view._url_for_action(request, custom_action) + '?pks=' + (model_view.get_identifier(model) | string) %}
+{% with confirmation_message = model_view._custom_actions_confirmation[custom_action], custom_action=custom_action, url=model_view._url_for_action(request, custom_action) + '?pks=' + (get_object_identifier(model) | string) %}
 {% include 'modals/details_action_confirmation.html' %}
 {% endwith %}
 {% endif %}
