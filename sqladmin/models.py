@@ -87,7 +87,6 @@ class ModelViewMeta(type):
 
         cls.name = attrs.get("name", prettify_class_name(cls.model.__name__))
         cls.name_plural = attrs.get("name_plural", f"{cls.name}s")
-        cls.icon = attrs.get("icon")
 
         mcls._check_conflicting_options(["column_list", "column_exclude_list"], attrs)
         mcls._check_conflicting_options(
@@ -169,10 +168,13 @@ class BaseView(BaseModelView):
     should be included in the schema.
     """
 
-    icon: ClassVar[str]
+    icon: ClassVar[str] = ""
     """Display icon for ModelAdmin in the sidebar.
     Currently only supports FontAwesome icons.
     """
+
+    category: ClassVar[str] = ""
+    """Category name to group views together."""
 
 
 class ModelView(BaseView, metaclass=ModelViewMeta):

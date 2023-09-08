@@ -1,41 +1,25 @@
 {% extends "base.html" %}
+{% from '_macros.html' import display_menu %}
 {% block body %}
 <div class="wrapper">
-  <aside class="navbar navbar-vertical navbar-expand-md navbar-dark">
+  <aside class="navbar navbar-expand-lg navbar-vertical navbar-expand-md navbar-dark">
     <div class="container-fluid">
       <h1 class="navbar-brand navbar-brand-autodark">
         <a href="{{ url_for('admin:index') }}">
-        {% if admin.logo_url %}
-        <img src="{{ admin.logo_url }}" width="64" height="64" alt="Admin" class="navbar-brand-image"/>
-        {% else %}
-        <h3>{{ admin.title }}</h3>
-        {% endif %}
+          {% if admin.logo_url %}
+          <img src="{{ admin.logo_url }}" width="64" height="64" alt="Admin" class="navbar-brand-image" />
+          {% else %}
+          <h3>{{ admin.title }}</h3>
+          {% endif %}
         </a>
       </h1>
       <nav class="navbar navbar-expand-sm" id="navbar-menu">
-        <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+        <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarSupportedContent"
+          aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
           <span class="navbar-toggler-icon"></span>
         </button>
-
         <div class="collapse navbar-collapse" id="navbarSupportedContent">
-          <ul class="navbar-nav pt-lg-3">
-            {% for view in admin.views %}
-            {% if view.is_visible(request) and view.is_accessible(request) %}
-            <li class="nav-item">
-              {% if view.is_model %}
-              <a class="nav-link {% if view.identity == request.path_params['identity'] %}active{% endif %}" href="{{ url_for('admin:list', identity=view.identity) }}">
-              {% else %}
-              <a class="nav-link {% if view.identity == request.path_params['identity'] %}active{% endif %}" href="{{ url_for('admin:%s' | format(view.identity)) }}">
-              {% endif %}
-              <span class="nav-link-icon d-md-none d-lg-inline-block">
-              {% if view.icon %} <i class="{{ view.icon }}"></i> {% endif %}
-              </span>
-              <span class="nav-link-title">{{ view.name_plural or view.name }}</span>
-              </a>
-            </li>
-            {% endif %}
-            {% endfor %}
-          </ul>
+        {{ display_menu(admin._menu, request) }}
         </div>
       </nav>
       {% if admin.authentication_backend %}
