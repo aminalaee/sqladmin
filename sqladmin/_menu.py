@@ -36,7 +36,7 @@ class ItemMenu:
 
     @property
     def type_(self) -> str:
-        return self.__class__.__name__.lower()
+        return self.__class__.__name__
 
 
 class CategoryMenu(ItemMenu):
@@ -44,10 +44,6 @@ class CategoryMenu(ItemMenu):
         return any(
             c.is_active(request) and c.is_accessible(request) for c in self.children
         )
-
-    @property
-    def display_name(self) -> str:
-        return self.name
 
     @property
     def type_(self) -> str:

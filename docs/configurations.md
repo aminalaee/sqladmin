@@ -76,7 +76,7 @@ The metadata for the model. The options are:
 * `name`: Display name for this model. Default value is the class name.
 * `name_plural`: Display plural name for this model. Default value is class name + `s`.
 * `icon`: Icon to be displayed for this model in the admin. Only FontAwesome names are supported.
-* `category`: Category name to display group a couple of `ModelView` classes together.
+* `category`: Category name to display group of `ModelView` classes together in dropdown.
 
 !!! example
 
