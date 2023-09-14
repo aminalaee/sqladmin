@@ -29,6 +29,7 @@ from starlette.routing import Mount, Route
 from starlette.staticfiles import StaticFiles
 from starlette.templating import Jinja2Templates
 
+from sqladmin._menu import CategoryMenu, Menu, ViewMenu
 from sqladmin._types import ENGINE_TYPE
 from sqladmin.ajax import QueryAjaxModelLoader
 from sqladmin.authentication import AuthenticationBackend, login_required
@@ -91,8 +92,9 @@ class BaseAdmin:
             middlewares.extend(authentication_backend.middlewares)
 
         self.admin = Starlette(middleware=middlewares)
-        self._views: List[Union[BaseView, ModelView]] = []
         self.templates = self.init_templating_engine()
+        self._views: List[Union[BaseView, ModelView]] = []
+        self._menu = Menu()
 
     def init_templating_engine(self) -> Jinja2Templates:
         templates = Jinja2Templates("templates")
@@ -217,14 +219,14 @@ class BaseAdmin:
         view.session_maker = self.session_maker
         view.is_async = self.is_async
         view.ajax_lookup_url = f"{self.base_url}/{view.identity}/ajax/lookup"
+        view.templates = self.templates
         view_instance = view()
 
         self._find_decorated_funcs(
             view, view_instance, self._handle_action_decorated_func
         )
-
-        view.templates = self.templates
-        self._views.append((view_instance))
+        self._views.append(view_instance)
+        self._build_menu(view_instance)
 
     def add_base_view(self, view: Type[BaseView]) -> None:
         """Add BaseView to the Admin.
@@ -248,14 +250,22 @@ class BaseAdmin:
             ```
         """
 
+        view.templates = self.templates
         view_instance = view()
 
         self._find_decorated_funcs(
             view, view_instance, self._handle_expose_decorated_func
         )
-
-        view.templates = self.templates
         self._views.append(view_instance)
+        self._build_menu(view_instance)
+
+    def _build_menu(self, view: Union[ModelView, BaseView]) -> None:
+        if view.category:
+            menu = CategoryMenu(name=view.category)
+            menu.add_child(ViewMenu(view=view, name=view.name, icon=view.icon))
+            self._menu.add(menu)
+        else:
+            self._menu.add(ViewMenu(view=view, icon=view.icon, name=view.name))
 
 
 class BaseAdminView(BaseAdmin):

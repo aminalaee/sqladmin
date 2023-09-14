@@ -5,6 +5,7 @@
         - name
         - name_plural
         - icon
+        - category
         - column_labels
         - can_create
         - can_edit

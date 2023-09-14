@@ -109,3 +109,15 @@ def test_get_save_redirect_url():
 
     response = client.post("/user", data={"save": "Save and add another"})
     assert response.text == "http://testserver/admin/user/create"
+
+
+def test_build_category_menu():
+    app = Starlette()
+    admin = Admin(app=app, engine=engine)
+
+    class UserAdmin(ModelView, model=User):
+        category = "Accounts"
+
+    admin.add_view(UserAdmin)
+
+    admin._menu.items.pop().name = "Accounts"
