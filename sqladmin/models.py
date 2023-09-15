@@ -49,6 +49,8 @@ from sqladmin.helpers import (
 from sqladmin.pagination import Pagination
 
 if TYPE_CHECKING:
+    from sqlalchemy.ext.asyncio import async_sessionmaker
+
     from sqladmin.application import BaseAdmin
 
 __all__ = [
@@ -195,7 +197,7 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
 
     # Internals
     pk_columns: ClassVar[Tuple[Column]]
-    session_maker: ClassVar[sessionmaker]
+    session_maker: ClassVar[Union[sessionmaker, "async_sessionmaker"]]
     is_async: ClassVar[bool] = False
     is_model: ClassVar[bool] = True
     ajax_lookup_url: ClassVar[str] = ""

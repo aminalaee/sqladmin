@@ -3,6 +3,7 @@ import io
 import logging
 from types import MethodType
 from typing import (
+    TYPE_CHECKING,
     Any,
     Callable,
     List,
@@ -39,6 +40,9 @@ from sqladmin.helpers import (
     slugify_action_name,
 )
 from sqladmin.models import BaseView, ModelView
+
+if TYPE_CHECKING:
+    from sqlalchemy.ext.asyncio import async_sessionmaker
 
 __all__ = [
     "Admin",
@@ -333,7 +337,7 @@ class Admin(BaseAdminView):
         self,
         app: Starlette,
         engine: Optional[ENGINE_TYPE] = None,
-        session_maker: Optional[sessionmaker] = None,
+        session_maker: Optional[Union[sessionmaker, "async_sessionmaker"]] = None,
         base_url: str = "/admin",
         title: str = "Admin",
         logo_url: Optional[str] = None,
