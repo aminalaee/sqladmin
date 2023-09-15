@@ -27,7 +27,7 @@ This is fine for small projects, but if you more than a few hundred records in y
 it will be very slow and inefficient.
 Practically for each request to the Edit page, all records of `Child` table will be loaded.
 
-In order to solve this you can use Form options available in [configuration](./../../configurations#form-options).
+In order to solve this you can use Form options available in [configuration](./../configurations.md#form-options).
 
 You have a few options to improve this:
 
