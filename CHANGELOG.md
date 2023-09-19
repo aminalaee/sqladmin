@@ -23,6 +23,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * Fix typing of Admin session_maker by @sheldygg in https://github.com/aminalaee/sqladmin/pull/604
 * Fix broken link in doc by @YannickLeRoux in https://github.com/aminalaee/sqladmin/pull/620
 
+**Full Changelog**: https://github.com/aminalaee/sqladmin/compare/0.14.1...0.15.0
+
 ## Version 0.14.1 - 2023-08-08
 
 ### Fixed
