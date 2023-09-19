@@ -4,6 +4,25 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## Version 0.15.0 - 2023-09-19
+
+### Breaking Changes
+* Update AuthenticationBackend signature by @aminalaee in https://github.com/aminalaee/sqladmin/pull/581
+* Change signature of `list_query` and `count_query` by @aminalaee in https://github.com/aminalaee/sqladmin/pull/610
+
+### Added
+* Search in list when typing by @anton-petrov in https://github.com/aminalaee/sqladmin/pull/592
+* Add `category` config by @aminalaee in https://github.com/aminalaee/sqladmin/pull/616
+* Switch to HTML time input for Time field by @aminalaee in https://github.com/aminalaee/sqladmin/pull/595
+* Add modal confirmation for bulk delete by @aminalaee in https://github.com/aminalaee/sqladmin/pull/612
+
+### Fixed
+* Fix 'itsdangerous' import error when not using Authentication Backend by @GriceTurrble in https://github.com/aminalaee/sqladmin/pull/597
+* Fix docs: Cookbook, Using a request object by @s1beria21 in https://github.com/aminalaee/sqladmin/pull/575
+* Fix delete error no rows selected by @aminalaee in https://github.com/aminalaee/sqladmin/pull/591
+* Fix typing of Admin session_maker by @sheldygg in https://github.com/aminalaee/sqladmin/pull/604
+* Fix broken link in doc by @YannickLeRoux in https://github.com/aminalaee/sqladmin/pull/620
+
 ## Version 0.14.1 - 2023-08-08
 
 ### Fixed
