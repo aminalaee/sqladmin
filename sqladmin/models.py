@@ -943,20 +943,6 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
             defaults=self._list_prop_names,
         )
 
-    def _get_sort_fields(self, request: Request) -> List[Tuple[str, bool]]:
-        """Gets the fields to sort.
-        If there are no fields, returns the default sort fields.
-        """
-        sort_by = request.query_params.get("sortBy", None)
-        sort = request.query_params.get("sort", "asc")
-
-        if sort_by:
-            sort_fields = [(sort_by, sort == "desc")]
-        else:
-            sort_fields = self._get_default_sort()
-
-        return sort_fields
-
     async def on_model_change(self, data: dict, model: Any, is_created: bool) -> None:
         """Perform some actions before a model is created or updated.
         By default does nothing.
@@ -1075,8 +1061,13 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
         and that can be customized.
         By default, sorting takes place by default fields.
         """
+        sort_by = request.query_params.get("sortBy", None)
+        sort = request.query_params.get("sort", "asc")
 
-        sort_fields = self._get_sort_fields(request)
+        if sort_by:
+            sort_fields = [(sort_by, sort == "desc")]
+        else:
+            sort_fields = self._get_default_sort()
 
         for sort_field, is_desc in sort_fields:
             if is_desc:
