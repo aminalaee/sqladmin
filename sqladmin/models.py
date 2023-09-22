@@ -777,23 +777,12 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
         page_size = int(request.query_params.get("pageSize", 0))
         page_size = min(page_size or self.page_size, max(self.page_size_options))
         search = request.query_params.get("search", None)
-        sort_by = request.query_params.get("sortBy", None)
-        sort = request.query_params.get("sort", "asc")
 
         stmt = self.list_query(request)
         for relation in self._list_relations:
             stmt = stmt.options(joinedload(relation))
 
-        if sort_by:
-            sort_fields = [(sort_by, sort == "desc")]
-        else:
-            sort_fields = self._get_default_sort()
-
-        for sort_field, is_desc in sort_fields:
-            if is_desc:
-                stmt = stmt.order_by(desc(sort_field))
-            else:
-                stmt = stmt.order_by(asc(sort_field))
+        stmt = self.sort_query(stmt, request)
 
         if search:
             stmt = self.search_query(stmt=stmt, term=search)
@@ -1065,6 +1054,30 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
         """
 
         return select(func.count(self.pk_columns[0]))
+
+    def sort_query(self, stmt: Select, request: Request) -> Select:
+        """
+        A method that is called every time the fields are sorted
+        and that can be customized.
+        By default, sorting takes place by default fields.
+
+        The 'sortBy' and 'sort' query parameters are available in this request context.
+        """
+        sort_by = request.query_params.get("sortBy", None)
+        sort = request.query_params.get("sort", "asc")
+
+        if sort_by:
+            sort_fields = [(sort_by, sort == "desc")]
+        else:
+            sort_fields = self._get_default_sort()
+
+        for sort_field, is_desc in sort_fields:
+            if is_desc:
+                stmt = stmt.order_by(desc(sort_field))
+            else:
+                stmt = stmt.order_by(asc(sort_field))
+
+        return stmt
 
     def get_export_name(self, export_type: str) -> str:
         """The file name when exporting."""
