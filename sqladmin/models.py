@@ -1060,6 +1060,8 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
         A method that is called every time the fields are sorted
         and that can be customized.
         By default, sorting takes place by default fields.
+
+        The 'sortBy' and 'sort' query parameters are available in this request context.
         """
         sort_by = request.query_params.get("sortBy", None)
         sort = request.query_params.get("sort", "asc")
