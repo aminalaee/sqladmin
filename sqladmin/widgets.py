@@ -65,6 +65,7 @@ class Select2TagsWidget(widgets.Select):
     def __call__(self, field: Field, **kwargs: Any) -> str:
         kwargs.setdefault("data-role", "select2-tags")
         kwargs.setdefault("data-json", json.dumps(field.data))
+        kwargs.setdefault("multiple", "multiple")
         return super().__call__(field, **kwargs)
 
 
