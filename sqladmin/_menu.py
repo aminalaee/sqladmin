@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING, Optional, List, Union
+from typing import TYPE_CHECKING, List, Optional, Union
 
 from starlette.datastructures import URL
 from starlette.requests import Request
