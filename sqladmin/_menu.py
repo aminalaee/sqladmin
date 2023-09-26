@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING, Optional, Set, Union
+from typing import TYPE_CHECKING, List, Optional, Union
 
 from starlette.datastructures import URL
 from starlette.requests import Request
@@ -12,11 +12,11 @@ class ItemMenu:
         self.name = name
         self.icon = icon
         self.parent: Optional["ItemMenu"] = None
-        self.children: Set["ItemMenu"] = set()
+        self.children: List["ItemMenu"] = []
 
     def add_child(self, item: "ItemMenu") -> None:
         item.parent = self
-        self.children.add(item)
+        self.children.append(item)
 
     def is_visible(self, request: Request) -> bool:
         return True
@@ -85,11 +85,12 @@ class ViewMenu(ItemMenu):
 
 class Menu:
     def __init__(self) -> None:
-        self.items: Set[ItemMenu] = set()
+        self.items: List[ItemMenu] = []
 
     def add(self, item: ItemMenu) -> None:
+        # Only works for one-level menu
         for root in self.items:
             if root.name == item.name:
-                root.children.update(item.children)
+                root.children.append(*item.children)
                 return
-        self.items.add(item)
+        self.items.append(item)
