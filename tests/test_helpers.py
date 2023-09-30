@@ -85,8 +85,8 @@ def test_single_pk_id_values():
     assert object_identifier_values("C:\\Files\\", Family) == ("C:\\Files\\",)
     assert object_identifier_values(r"1;2\;3", Family) == (r"1;2\;3",)
 
-    assert object_identifier_values(str(0), Profile) == (0,)
-    assert object_identifier_values(str(3217), Profile) == (3217,)
+    assert object_identifier_values("0", Profile) == ("0",)
+    assert object_identifier_values("3217", Profile) == ("3217",)
 
 
 def test_multi_pk_identifier():
@@ -103,11 +103,11 @@ def test_multi_pk_id_values():
     def id_values(ident):
         return object_identifier_values(ident, Person)
 
-    assert id_values("Johnson;7;A") == ("Johnson", 7, "A")
-    assert id_values(r"C:\\Files\\;404;F") == ("C:\\Files\\", 404, "F")
-    assert id_values(r"1\;2\\\;3;201;S") == (r"1;2\;3", 201, "S")
-    assert id_values("Doe;3;\\\\") == ("Doe", 3, "\\")
-    assert id_values(";1;") == ("", 1, "")
+    assert id_values("Johnson;7;A") == ("Johnson", "7", "A")
+    assert id_values(r"C:\\Files\\;404;F") == ("C:\\Files\\", "404", "F")
+    assert id_values(r"1\;2\\\;3;201;S") == (r"1;2\;3", "201", "S")
+    assert id_values("Doe;3;\\\\") == ("Doe", "3", "\\")
+    assert id_values(";1;") == ("", "1", "")
 
 
 def test_catch_malformed_id():

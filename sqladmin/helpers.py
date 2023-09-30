@@ -230,8 +230,8 @@ def _object_identifier_parts(id_string: str, model: type) -> Tuple[str, ...]:
 def object_identifier_values(id_string: str, model: type) -> tuple:
     values = []
     pks = get_primary_keys(model)
-    for pk, part in zip(pks, _object_identifier_parts(id_string, model)):
-        values.append(get_column_python_type(pk)(part))
+    for _, part in zip(pks, _object_identifier_parts(id_string, model)):
+        values.append(str(part))
     return tuple(values)
 
 
