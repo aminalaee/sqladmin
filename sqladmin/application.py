@@ -15,6 +15,7 @@ from typing import (
     cast,
     no_type_check,
 )
+from urllib.parse import urljoin
 
 from jinja2 import ChoiceLoader, FileSystemLoader, PackageLoader
 from sqlalchemy.engine import Engine
@@ -222,7 +223,9 @@ class BaseAdmin:
         # Set database engine from Admin instance
         view.session_maker = self.session_maker
         view.is_async = self.is_async
-        view.ajax_lookup_url = f"{self.base_url}/{view.identity}/ajax/lookup"
+        view.ajax_lookup_url = urljoin(
+            self.base_url + "/", f"{view.identity}/ajax/lookup"
+        )
         view.templates = self.templates
         view_instance = view()
 
