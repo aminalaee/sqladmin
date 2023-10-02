@@ -4,6 +4,21 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## Version 0.15.1 - 2023-10-02
+
+### Fixed
+* Avoid populating Select2 input with existing option by @Toshakins in https://github.com/aminalaee/sqladmin/pull/626
+* Fix ItemMenu sort issue by @aminalaee in https://github.com/aminalaee/sqladmin/pull/631
+
+### Added
+* Add customized sort query signature (#624) by @YarLikviD in https://github.com/aminalaee/sqladmin/pull/625
+
+## New Contributors
+* @Toshakins made their first contribution in https://github.com/aminalaee/sqladmin/pull/626
+* @YarLikviD made their first contribution in https://github.com/aminalaee/sqladmin/pull/625
+
+**Full Changelog**: https://github.com/aminalaee/sqladmin/compare/0.15.0...0.15.1
+
 ## Version 0.15.0 - 2023-09-19
 
 ### Breaking Changes
