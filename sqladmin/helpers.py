@@ -179,7 +179,7 @@ def get_primary_key(model: type) -> Column:
     return pks[0]
 
 
-def get_primary_keys(model: type) -> Tuple[Column, ...]:
+def get_primary_keys(model: Any) -> Tuple[Column, ...]:
     return tuple(inspect(model).mapper.primary_key)
 
 
@@ -226,7 +226,7 @@ def _object_identifier_parts(id_string: str, model: type) -> Tuple[str, ...]:
     return tuple(v.replace(r"\;", ";").replace(r"\\", "\\") for v in values)
 
 
-def object_identifier_values(id_string: str, model: type) -> tuple:
+def object_identifier_values(id_string: str, model: Any) -> tuple:
     values = []
     pks = get_primary_keys(model)
     for pk, part in zip(pks, _object_identifier_parts(id_string, model)):
