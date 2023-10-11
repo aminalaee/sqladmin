@@ -58,7 +58,7 @@ admin = Admin(app=..., authentication_backend=authentication_backend، ...)
     from sqladmin import Admin, ModelView
     from sqladmin.authentication import AuthenticationBackend
     from sqlalchemy import Column, Integer, String, create_engine
-    from sqlalchemy.ext.declarative import declarative_base
+    from sqlalchemy.orm import declarative_base
     from starlette.applications import Starlette
     from starlette.requests import Request
     from starlette.responses import RedirectResponse

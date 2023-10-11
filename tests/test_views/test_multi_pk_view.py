@@ -2,8 +2,7 @@ from typing import Any, Generator
 
 import pytest
 from sqlalchemy import Column, ForeignKey, ForeignKeyConstraint, Integer, String
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import relationship, sessionmaker
+from sqlalchemy.orm import declarative_base, relationship, sessionmaker
 from starlette.applications import Starlette
 from starlette.testclient import TestClient
 

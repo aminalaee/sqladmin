@@ -18,8 +18,7 @@ from typing import (
 
 from sqlalchemy import Column, inspect
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import RelationshipProperty
-from sqlalchemy.orm.session import sessionmaker
+from sqlalchemy.orm import RelationshipProperty, sessionmaker
 
 from sqladmin._types import MODEL_PROPERTY
 
