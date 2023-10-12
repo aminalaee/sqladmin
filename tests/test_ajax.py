@@ -4,8 +4,7 @@ import pytest
 from httpx import AsyncClient
 from sqlalchemy import Column, ForeignKey, Integer, String, select
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import relationship, selectinload, sessionmaker
+from sqlalchemy.orm import declarative_base, relationship, selectinload, sessionmaker
 from starlette.applications import Starlette
 
 from sqladmin import Admin, ModelView

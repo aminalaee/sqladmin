@@ -20,7 +20,7 @@ from urllib.parse import urljoin
 from jinja2 import ChoiceLoader, FileSystemLoader, PackageLoader
 from sqlalchemy.engine import Engine
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm.session import Session, sessionmaker
+from sqlalchemy.orm import Session, sessionmaker
 from starlette.applications import Starlette
 from starlette.datastructures import URL, FormData, UploadFile
 from starlette.exceptions import HTTPException

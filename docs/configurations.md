@@ -7,7 +7,7 @@ Let's say you've defined your SQLAlchemy models like this:
 
 ```python
 from sqlalchemy import Column, Integer, String, create_engine
-from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm import declarative_base
 
 
 Base = declarative_base()
