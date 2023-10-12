@@ -1,6 +1,6 @@
 import json
 import operator
-from typing import Any, Callable, Generator, List, Optional, Set, Tuple, Union
+from typing import Any, Callable, Dict, Generator, List, Optional, Set, Tuple, Union
 
 from wtforms import Form, ValidationError, fields, widgets
 
@@ -69,20 +69,21 @@ class SelectField(fields.SelectField):
         self.allow_blank = allow_blank
         self.blank_text = blank_text or " "
 
-    def iter_choices(self) -> Generator[Tuple[str, str, bool], None, None]:
+    def iter_choices(self) -> Generator[Tuple[str, str, bool, Dict], None, None]:
         choices = self.choices or []
 
         if self.allow_blank:
-            yield ("__None", self.blank_text, self.data is None)
+            yield ("__None", self.blank_text, self.data is None, {})
 
         for choice in choices:
             if isinstance(choice, tuple):
-                yield (choice[0], choice[1], self.coerce(choice[0]) == self.data)
+                yield (choice[0], choice[1], self.coerce(choice[0]) == self.data, {})
             else:
                 yield (
                     choice.value,
                     choice.name,
                     self.coerce(choice.value) == self.data,
+                    {},
                 )
 
     def process_formdata(self, valuelist: List[str]) -> None:
@@ -169,9 +170,9 @@ class QuerySelectField(fields.SelectFieldBase):
         self._data = data
         self._formdata = None
 
-    def iter_choices(self) -> Generator[Tuple[str, str, bool], None, None]:
+    def iter_choices(self) -> Generator[Tuple[str, str, bool, Dict], None, None]:
         if self.allow_blank:
-            yield ("__None", self.blank_text, self.data is None)
+            yield ("__None", self.blank_text, self.data is None, {})
 
         if self.data:
             primary_key = (
@@ -183,7 +184,7 @@ class QuerySelectField(fields.SelectFieldBase):
             primary_key = None
 
         for pk, label in self._select_data:
-            yield (pk, self.get_label(label), str(pk) == primary_key)
+            yield (pk, self.get_label(label), str(pk) == primary_key, {})
 
     def process_formdata(self, valuelist: List[str]) -> None:
         if valuelist:
@@ -261,7 +262,7 @@ class QuerySelectMultipleField(QuerySelectField):
         self._data = data
         self._formdata = None
 
-    def iter_choices(self) -> Generator[Tuple[str, Any, bool], None, None]:
+    def iter_choices(self) -> Generator[Tuple[str, Any, bool, Dict], None, None]:
         if self.data is not None:
             primary_keys = (
                 self.data
@@ -269,7 +270,7 @@ class QuerySelectMultipleField(QuerySelectField):
                 else [str(get_object_identifier(m)) for m in self.data]
             )
             for pk, label in self._select_data:
-                yield (pk, self.get_label(label), pk in primary_keys)
+                yield (pk, self.get_label(label), pk in primary_keys, {})
 
     def process_formdata(self, valuelist: List[str]) -> None:
         self._formdata = list(set(valuelist))
