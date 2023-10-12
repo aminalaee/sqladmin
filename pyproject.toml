@@ -28,7 +28,7 @@ classifiers = [
 dependencies = [
   "starlette",
   "sqlalchemy >=1.4",
-  "wtforms >=3, <4",
+  "wtforms >=3, <3.1.0",
   "jinja2",
   "python-multipart",
 ]
