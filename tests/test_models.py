@@ -6,8 +6,7 @@ import pytest
 from markupsafe import Markup
 from sqlalchemy import Boolean, Column, Enum, ForeignKey, Integer, String
 from sqlalchemy.dialects.postgresql import UUID
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import relationship, sessionmaker
+from sqlalchemy.orm import declarative_base, relationship, sessionmaker
 from sqlalchemy.sql.expression import Select
 from starlette.applications import Starlette
 from starlette.requests import Request

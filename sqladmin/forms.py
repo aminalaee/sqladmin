@@ -21,8 +21,7 @@ from typing import (
 import anyio
 from sqlalchemy import Boolean, select
 from sqlalchemy import inspect as sqlalchemy_inspect
-from sqlalchemy.orm import ColumnProperty, RelationshipProperty
-from sqlalchemy.orm.session import sessionmaker
+from sqlalchemy.orm import ColumnProperty, RelationshipProperty, sessionmaker
 from sqlalchemy.sql.schema import Column
 from wtforms import (
     BooleanField,

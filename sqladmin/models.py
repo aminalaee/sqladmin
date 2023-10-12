@@ -20,8 +20,7 @@ from urllib.parse import urlencode
 import anyio
 from sqlalchemy import Column, String, asc, cast, desc, func, inspect, or_
 from sqlalchemy.exc import NoInspectionAvailable
-from sqlalchemy.orm import joinedload
-from sqlalchemy.orm.session import sessionmaker
+from sqlalchemy.orm import joinedload, sessionmaker
 from sqlalchemy.sql.elements import ClauseElement
 from sqlalchemy.sql.expression import Select, select
 from starlette.datastructures import URL

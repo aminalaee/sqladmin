@@ -16,8 +16,7 @@ from sqlalchemy import (
     select,
 )
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import relationship, selectinload, sessionmaker
+from sqlalchemy.orm import declarative_base, relationship, selectinload, sessionmaker
 from starlette.applications import Starlette
 from starlette.requests import Request
 
