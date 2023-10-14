@@ -33,6 +33,7 @@ Main features include:
 * [SQLAlchemy](https://github.com/sqlalchemy/sqlalchemy) sync/async engines
 * [Starlette](https://github.com/encode/starlette) integration
 * [FastAPI](https://github.com/tiangolo/fastapi) integration
+* [WTForms](https://github.com/wtforms/wtforms) form building
 * [SQLModel](https://github.com/tiangolo/sqlmodel) support
 * UI using [Tabler](https://github.com/tabler/tabler)
 
