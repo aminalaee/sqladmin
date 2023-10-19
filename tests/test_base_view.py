@@ -20,16 +20,12 @@ class CustomAdmin(BaseView):
     icon = "fa fa-test"
 
     @expose("/custom", methods=["GET"])
-    def custom(self, request: Request):
-        return self.templates.TemplateResponse(
-            "custom.html", context={"request": request}
-        )
+    async def custom(self, request: Request):
+        return await self.templates.TemplateResponse(request, "custom.html")
 
     @expose("/custom/report")
-    def custom_report(self, request: Request):
-        return self.templates.TemplateResponse(
-            "custom.html", context={"request": request}
-        )
+    async def custom_report(self, request: Request):
+        return await self.templates.TemplateResponse(request, "custom.html")
 
 
 @pytest.fixture

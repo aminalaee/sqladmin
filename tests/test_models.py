@@ -151,7 +151,7 @@ def test_column_exclude_list_by_model_column() -> None:
     assert UserAdmin().get_list_columns() == ["addresses", "profile", "name"]
 
 
-def test_column_list_formatters() -> None:
+async def test_column_list_formatters() -> None:
     class UserAdmin(ModelView, model=User):
         column_formatters = {
             "id": lambda *args: 2,
@@ -160,13 +160,11 @@ def test_column_list_formatters() -> None:
 
     user = User(id=1, name="Long Name")
 
-    assert UserAdmin().get_list_value(user, "id")[0] == 1
-    assert UserAdmin().get_list_value(user, "id")[1] == 2
-    assert UserAdmin().get_list_value(user, "name")[0] == "Long Name"
-    assert UserAdmin().get_list_value(user, "name")[1] == "L"
+    assert await UserAdmin().get_list_value(user, "id") == (1, 2)
+    assert await UserAdmin().get_list_value(user, "name") == ("Long Name", "L")
 
 
-def test_column_formatters_detail() -> None:
+async def test_column_formatters_detail() -> None:
     class UserAdmin(ModelView, model=User):
         column_formatters_detail = {
             "id": lambda *args: 2,
@@ -175,24 +173,22 @@ def test_column_formatters_detail() -> None:
 
     user = User(id=1, name="Long Name")
 
-    assert UserAdmin().get_detail_value(user, "id")[0] == 1
-    assert UserAdmin().get_detail_value(user, "id")[1] == 2
-    assert UserAdmin().get_detail_value(user, "name")[0] == "Long Name"
-    assert UserAdmin().get_detail_value(user, "name")[1] == "L"
+    assert await UserAdmin().get_detail_value(user, "id") == (1, 2)
+    assert await UserAdmin().get_detail_value(user, "name") == ("Long Name", "L")
 
 
-def test_column_formatters_default() -> None:
+async def test_column_formatters_default() -> None:
     class ProfileAdmin(ModelView, model=Profile):
         ...
 
     user = User(id=1, name="Long Name")
     profile = Profile(user=user, is_active=True)
 
-    assert ProfileAdmin().get_list_value(profile, "is_active") == (
+    assert await ProfileAdmin().get_list_value(profile, "is_active") == (
         True,
         Markup("<i class='fa fa-check text-success'></i>"),
     )
-    assert ProfileAdmin().get_detail_value(profile, "is_active") == (
+    assert await ProfileAdmin().get_detail_value(profile, "is_active") == (
         True,
         Markup("<i class='fa fa-check text-success'></i>"),
     )
@@ -416,18 +412,18 @@ def test_model_columns_all_keyword() -> None:
     assert AddressAdmin().get_details_columns() == ["user", "pk", "user_id"]
 
 
-def test_get_prop_value() -> None:
+async def test_get_prop_value() -> None:
     class ProfileAdmin(ModelView, model=Profile):
         ...
 
     profile = Profile(is_active=True, role=Role.ADMIN, status=Status.ACTIVE)
 
-    assert ProfileAdmin().get_prop_value(profile, "is_active") is True
-    assert ProfileAdmin().get_prop_value(profile, "role") == "ADMIN"
-    assert ProfileAdmin().get_prop_value(profile, "status") == "ACTIVE"
+    assert await ProfileAdmin().get_prop_value(profile, "is_active") is True
+    assert await ProfileAdmin().get_prop_value(profile, "role") == "ADMIN"
+    assert await ProfileAdmin().get_prop_value(profile, "status") == "ACTIVE"
 
 
-def test_model_property_in_columns() -> None:
+async def test_model_property_in_columns() -> None:
     class UserAdmin(ModelView, model=User):
         column_list = ["id", "name", "name_with_id"]
 
@@ -435,4 +431,4 @@ def test_model_property_in_columns() -> None:
 
     assert UserAdmin().get_list_columns() == ["id", "name", "name_with_id"]
     assert UserAdmin().get_details_columns() == ["addresses", "profile", "id", "name"]
-    assert UserAdmin().get_prop_value(user, "name_with_id") == "batman - 1"
+    assert await UserAdmin().get_prop_value(user, "name_with_id") == "batman - 1"

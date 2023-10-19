@@ -14,11 +14,8 @@ To add custom views to the Admin interface, you can use the `BaseView` included 
         icon = "fa-chart-line"
 
         @expose("/report", methods=["GET"])
-        def report_page(self, request):
-            return self.templates.TemplateResponse(
-                "report.html",
-                context={"request": request},
-            )
+        async def report_page(self, request):
+            return await self.templates.TemplateResponse(request, "report.html")
 
     admin.add_view(ReportView)
     ```
@@ -77,9 +74,10 @@ The example above was very basic and you probably want to access database and SQ
                 result = await session.execute(stmt)
                 users_count = result.scalar_one()
 
-            return self.templates.TemplateResponse(
+            return await self.templates.TemplateResponse(
+                request,
                 "report.html",
-                context={"request": request, "users_count": users_count},
+                context={"users_count": users_count},
             )
 
 
