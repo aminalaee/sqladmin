@@ -153,7 +153,7 @@ class UserAdmin(ModelView, model=User):
 
 
 class AddressAdmin(ModelView, model=Address):
-    column_list = ["id", "user_id", "user"]
+    column_list = ["id", "user_id", "user", "user.profile.id"]
     name_plural = "Addresses"
     export_max_rows = 3
 
