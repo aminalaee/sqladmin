@@ -672,7 +672,7 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
         self._export_prop_names = self.get_export_columns()
 
         self._search_fields = [
-            getattr(self.model, attr) if isinstance(attr, str) else attr
+            attr if isinstance(attr, str) else attr.key
             for attr in self.column_searchable_list
         ]
         self._sort_fields = [
@@ -1010,8 +1010,7 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
         """
 
         field_names = [
-            self._column_labels.get(field.key, field.key)
-            for field in self._search_fields
+            self._column_labels.get(field, field) for field in self._search_fields
         ]
         return ", ".join(field_names)
 
@@ -1025,9 +1024,17 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
         ```
         """
 
-        expressions = [
-            cast(prop, String).ilike(f"%{term}%") for prop in self._search_fields
-        ]
+        expressions = []
+        for field in self._search_fields:
+            model = self.model
+            parts = field.split(".")
+            for part in parts[:-1]:
+                model = getattr(model, part).mapper.class_
+                stmt = stmt.join(model)
+
+            field = getattr(model, parts[-1])
+            expressions.append(cast(field, String).ilike(f"%{term}%"))
+
         return stmt.filter(or_(*expressions))
 
     def list_query(self, request: Request) -> Select:

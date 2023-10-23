@@ -431,8 +431,15 @@ def test_sort_query() -> None:
     stmt = AddressAdmin().sort_query(query, request)
     assert "ORDER BY users.name DESC" in str(stmt)
 
-    request = Request(
-        {"type": "http", "query_string": b"sortBy=user.profile.role&sort=desc"}
-    )
+    request = Request({"type": "http", "query_string": b"sortBy=user.profile.role"})
     stmt = AddressAdmin().sort_query(query, request)
-    assert "ORDER BY profiles.role DESC" in str(stmt)
+    assert "ORDER BY profiles.role ASC" in str(stmt)
+
+
+def test_search_query() -> None:
+    class AddressAdmin(ModelView, model=Address):
+        column_searchable_list = ["user.name", "user.profile.role"]
+
+    stmt = AddressAdmin().search_query(select(Address), "example")
+    assert "lower(CAST(users.name AS VARCHAR))" in str(stmt)
+    assert "lower(CAST(profiles.role AS VARCHAR))" in str(stmt)
