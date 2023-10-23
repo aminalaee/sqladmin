@@ -29,7 +29,6 @@ from starlette.requests import Request
 from starlette.responses import JSONResponse, RedirectResponse, Response
 from starlette.routing import Mount, Route
 from starlette.staticfiles import StaticFiles
-from starlette.templating import Jinja2Templates
 
 from sqladmin._menu import CategoryMenu, Menu, ViewMenu
 from sqladmin._types import ENGINE_TYPE
@@ -41,6 +40,7 @@ from sqladmin.helpers import (
     slugify_action_name,
 )
 from sqladmin.models import BaseView, ModelView
+from sqladmin.templating import Jinja2Templates
 
 if TYPE_CHECKING:
     from sqlalchemy.ext.asyncio import async_sessionmaker
@@ -247,11 +247,8 @@ class BaseAdmin:
                 icon = "fa-solid fa-chart-line"
 
                 @expose("/custom", methods=["GET"])
-                def test_page(self, request: Request):
-                    return self.templates.TemplateResponse(
-                        "custom.html",
-                        context={"request": request},
-                    )
+                async def test_page(self, request: Request):
+                    return await self.templates.TemplateResponse(request, "custom.html")
 
             admin.add_base_view(CustomAdmin)
             ```
@@ -373,16 +370,15 @@ class Admin(BaseAdminView):
 
         statics = StaticFiles(packages=["sqladmin"])
 
-        def http_exception(request: Request, exc: Exception) -> Response:
-            assert isinstance(exc, HTTPException)
-            context = {
-                "request": request,
-                "status_code": exc.status_code,
-                "message": exc.detail,
-            }
-            return self.templates.TemplateResponse(
-                "error.html", context, status_code=exc.status_code
-            )
+        # def http_exception(request: Request, exc: Exception) -> Response:
+        #     assert isinstance(exc, HTTPException)
+        #     context = {
+        #         "status_code": exc.status_code,
+        #         "message": exc.detail,
+        #     }
+        #     return self.templates.TemplateResponse(
+        #         request, "error.html", context, status_code=exc.status_code
+        #     )
 
         routes = [
             Mount("/statics", app=statics, name="statics"),
@@ -418,7 +414,7 @@ class Admin(BaseAdminView):
         ]
 
         self.admin.router.routes = routes
-        self.admin.exception_handlers = {HTTPException: http_exception}
+        # self.admin.exception_handlers = {HTTPException: http_exception}
         self.admin.debug = debug
         self.app.mount(base_url, app=self.admin, name="admin")
 
@@ -426,7 +422,7 @@ class Admin(BaseAdminView):
     async def index(self, request: Request) -> Response:
         """Index route which can be overridden to create dashboards."""
 
-        return self.templates.TemplateResponse("index.html", {"request": request})
+        return await self.templates.TemplateResponse(request, "index.html")
 
     @login_required
     async def list(self, request: Request) -> Response:
@@ -438,13 +434,10 @@ class Admin(BaseAdminView):
         pagination = await model_view.list(request)
         pagination.add_pagination_urls(request.url)
 
-        context = {
-            "request": request,
-            "model_view": model_view,
-            "pagination": pagination,
-        }
-
-        return self.templates.TemplateResponse(model_view.list_template, context)
+        context = {"model_view": model_view, "pagination": pagination}
+        return await self.templates.TemplateResponse(
+            request, model_view.list_template, context
+        )
 
     @login_required
     async def details(self, request: Request) -> Response:
@@ -459,13 +452,14 @@ class Admin(BaseAdminView):
             raise HTTPException(status_code=404)
 
         context = {
-            "request": request,
             "model_view": model_view,
             "model": model,
             "title": model_view.name,
         }
 
-        return self.templates.TemplateResponse(model_view.details_template, context)
+        return await self.templates.TemplateResponse(
+            request, model_view.details_template, context
+        )
 
     @login_required
     async def delete(self, request: Request) -> Response:
@@ -501,17 +495,18 @@ class Admin(BaseAdminView):
         form = Form(form_data)
 
         context = {
-            "request": request,
             "model_view": model_view,
             "form": form,
         }
 
         if request.method == "GET":
-            return self.templates.TemplateResponse(model_view.create_template, context)
+            return await self.templates.TemplateResponse(
+                request, model_view.create_template, context
+            )
 
         if not form.validate():
-            return self.templates.TemplateResponse(
-                model_view.create_template, context, status_code=400
+            return await self.templates.TemplateResponse(
+                request, model_view.create_template, context, status_code=400
             )
 
         try:
@@ -519,8 +514,8 @@ class Admin(BaseAdminView):
         except Exception as e:
             logger.exception(e)
             context["error"] = str(e)
-            return self.templates.TemplateResponse(
-                model_view.create_template, context, status_code=400
+            return await self.templates.TemplateResponse(
+                request, model_view.create_template, context, status_code=400
             )
 
         url = self.get_save_redirect_url(
@@ -546,21 +541,22 @@ class Admin(BaseAdminView):
 
         Form = await model_view.scaffold_form()
         context = {
-            "request": request,
             "obj": model,
             "model_view": model_view,
             "form": Form(obj=model),
         }
 
         if request.method == "GET":
-            return self.templates.TemplateResponse(model_view.edit_template, context)
+            return await self.templates.TemplateResponse(
+                request, model_view.edit_template, context
+            )
 
         form_data = await self._handle_form_data(request, model)
         form = Form(form_data)
         if not form.validate():
             context["form"] = form
-            return self.templates.TemplateResponse(
-                model_view.edit_template, context, status_code=400
+            return await self.templates.TemplateResponse(
+                request, model_view.edit_template, context, status_code=400
             )
 
         try:
@@ -573,8 +569,8 @@ class Admin(BaseAdminView):
         except Exception as e:
             logger.exception(e)
             context["error"] = str(e)
-            return self.templates.TemplateResponse(
-                model_view.edit_template, context, status_code=400
+            return await self.templates.TemplateResponse(
+                request, model_view.edit_template, context, status_code=400
             )
 
         url = self.get_save_redirect_url(
@@ -598,21 +594,20 @@ class Admin(BaseAdminView):
         rows = await model_view.get_model_objects(
             request=request, limit=model_view.export_max_rows
         )
-        return model_view.export_data(rows, export_type=export_type)
+        return await model_view.export_data(rows, export_type=export_type)
 
     async def login(self, request: Request) -> Response:
         assert self.authentication_backend is not None
 
-        context = {"request": request, "error": ""}
-
+        context = {}
         if request.method == "GET":
-            return self.templates.TemplateResponse("login.html", context)
+            return await self.templates.TemplateResponse(request, "login.html")
 
         ok = await self.authentication_backend.login(request)
         if not ok:
             context["error"] = "Invalid credentials."
-            return self.templates.TemplateResponse(
-                "login.html", context, status_code=400
+            return await self.templates.TemplateResponse(
+                request, "login.html", context, status_code=400
             )
 
         return RedirectResponse(request.url_for("admin:index"), status_code=302)

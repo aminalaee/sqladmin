@@ -3,10 +3,10 @@ from enum import Enum
 from typing import (
     TYPE_CHECKING,
     Any,
+    AsyncGenerator,
     Callable,
     ClassVar,
     Dict,
-    Generator,
     List,
     Optional,
     Sequence,
@@ -26,7 +26,6 @@ from sqlalchemy.sql.expression import Select, select
 from starlette.datastructures import URL
 from starlette.requests import Request
 from starlette.responses import StreamingResponse
-from starlette.templating import Jinja2Templates
 from wtforms import Field, Form
 
 from sqladmin._queries import Query
@@ -45,7 +44,10 @@ from sqladmin.helpers import (
     slugify_class_name,
     stream_to_csv,
 )
+
+# stream_to_csv,
 from sqladmin.pagination import Pagination
+from sqladmin.templating import Jinja2Templates
 
 if TYPE_CHECKING:
     from sqlalchemy.ext.asyncio import async_sessionmaker
@@ -138,11 +140,8 @@ class BaseView(BaseModelView):
             icon = "fa-solid fa-chart-line"
 
             @expose("/custom", methods=["GET"])
-            def test_page(self, request: Request):
-                return self.templates.TemplateResponse(
-                    "custom.html",
-                    context={"request": request},
-                )
+            async def test_page(self, request: Request):
+                return await self.templates.TemplateResponse(request, "custom.html")
 
         admin.add_base_view(CustomAdmin)
         ```
@@ -846,17 +845,17 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
 
         return stmt.where(*conditions)
 
-    def get_prop_value(self, obj: Any, prop: str) -> Any:
+    async def get_prop_value(self, obj: Any, prop: str) -> Any:
         result = getattr(obj, prop, None)
         if result and isinstance(result, Enum):
             result = result.name
 
         return result
 
-    def get_list_value(self, obj: Any, prop: str) -> Tuple[Any, Any]:
+    async def get_list_value(self, obj: Any, prop: str) -> Tuple[Any, Any]:
         """Get tuple of (value, formatted_value) for the list view."""
 
-        value = self.get_prop_value(obj, prop)
+        value = await self.get_prop_value(obj, prop)
         formatted_value = self._default_formatter(value)
 
         formatter = self._list_formatters.get(prop)
@@ -864,10 +863,10 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
             formatted_value = formatter(obj, prop)
         return value, formatted_value
 
-    def get_detail_value(self, obj: Any, prop: str) -> Tuple[Any, Any]:
+    async def get_detail_value(self, obj: Any, prop: str) -> Tuple[Any, Any]:
         """Get tuple of (value, formatted_value) for the detail view."""
 
-        value = self.get_prop_value(obj, prop)
+        value = await self.get_prop_value(obj, prop)
         formatted_value = self._default_formatter(value)
 
         formatter = self._detail_formatters.get(prop)
@@ -1083,27 +1082,26 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
 
         return f"{self.name}_{time.strftime('%Y-%m-%d_%H-%M-%S')}.{export_type}"
 
-    def export_data(
+    async def export_data(
         self,
         data: List[Any],
         export_type: str = "csv",
     ) -> StreamingResponse:
         if export_type == "csv":
-            return self._export_csv(data)
-        else:
-            raise NotImplementedError("Only export_type='csv' is implemented.")
+            return await self._export_csv(data)
+        raise NotImplementedError("Only export_type='csv' is implemented.")
 
-    def _export_csv(
+    async def _export_csv(
         self,
         data: List[Any],
     ) -> StreamingResponse:
-        def generate(writer: Writer) -> Generator[Any, None, None]:
+        async def generate(writer: Writer) -> AsyncGenerator[Any, None]:
             # Append the column titles at the beginning
             yield writer.writerow(self._export_prop_names)
 
             for row in data:
                 vals = [
-                    str(self.get_prop_value(row, name))
+                    str(await self.get_prop_value(row, name))
                     for name in self._export_prop_names
                 ]
                 yield writer.writerow(vals)
