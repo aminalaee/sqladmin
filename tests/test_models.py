@@ -1,6 +1,5 @@
 import enum
 from typing import Generator
-from unittest.mock import Mock, call, patch
 
 import pytest
 from markupsafe import Markup
@@ -382,27 +381,6 @@ async def test_get_model_objects_uses_list_query() -> None:
     assert len(await view.get_model_objects(request)) == 1
 
 
-def test_url_for() -> None:
-    class UserAdmin(ModelView, model=User):
-        ...
-
-    view = UserAdmin()
-    request = Request({"type": "http"})
-    user = User(id=1)
-    address = Address(pk=2, user=user)
-
-    with patch("starlette.requests.Request.url_for", Mock()) as mock:
-        view._url_for_details(request, user)
-        view._url_for_edit(request, address)
-        view._url_for_delete(request, address)
-
-    assert mock.call_args_list == [
-        call("admin:details", identity="user", pk=1),
-        call("admin:edit", identity="address", pk=2),
-        call("admin:delete", identity="address"),
-    ]
-
-
 def test_model_columns_all_keyword() -> None:
     class AddressAdmin(ModelView, model=Address):
         column_list = "__all__"
@@ -414,13 +392,21 @@ def test_model_columns_all_keyword() -> None:
 
 async def test_get_prop_value() -> None:
     class ProfileAdmin(ModelView, model=Profile):
-        ...
+        session_maker = session_maker
 
-    profile = Profile(is_active=True, role=Role.ADMIN, status=Status.ACTIVE)
+    with session_maker() as session:
+        user = User(name="admin")
+        address = Address(user=user)
+        profile = Profile(
+            is_active=True, role=Role.ADMIN, status=Status.ACTIVE, user=user
+        )
+        session.add_all([user, address, profile])
+        session.commit()
 
     assert await ProfileAdmin().get_prop_value(profile, "is_active") is True
     assert await ProfileAdmin().get_prop_value(profile, "role") == "ADMIN"
     assert await ProfileAdmin().get_prop_value(profile, "status") == "ACTIVE"
+    assert await ProfileAdmin().get_prop_value(profile, "user.name") == "admin"
 
 
 async def test_model_property_in_columns() -> None:

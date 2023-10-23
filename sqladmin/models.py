@@ -21,6 +21,7 @@ import anyio
 from sqlalchemy import Column, String, asc, cast, desc, func, inspect, or_
 from sqlalchemy.exc import NoInspectionAvailable
 from sqlalchemy.orm import joinedload, sessionmaker
+from sqlalchemy.orm.exc import DetachedInstanceError
 from sqlalchemy.sql.elements import ClauseElement
 from sqlalchemy.sql.expression import Select, select
 from starlette.datastructures import URL
@@ -702,22 +703,6 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
         else:
             return await anyio.to_thread.run_sync(self._run_query_sync, stmt)
 
-    def _url_for_details(self, request: Request, obj: Any) -> Union[str, URL]:
-        pk = get_object_identifier(obj)
-        return request.url_for(
-            "admin:details",
-            identity=slugify_class_name(obj.__class__.__name__),
-            pk=pk,
-        )
-
-    def _url_for_edit(self, request: Request, obj: Any) -> Union[str, URL]:
-        pk = get_object_identifier(obj)
-        return request.url_for(
-            "admin:edit",
-            identity=slugify_class_name(obj.__class__.__name__),
-            pk=pk,
-        )
-
     def _url_for_delete(self, request: Request, obj: Any) -> str:
         pk = get_object_identifier(obj)
         query_params = urlencode({"pks": pk})
@@ -726,24 +711,20 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
         )
         return str(url) + "?" + query_params
 
-    def _url_for_details_with_prop(
-        self, request: Request, obj: Any, prop: str
-    ) -> Union[str, URL]:
-        target = getattr(obj, prop)
+    def _url_for_details_with_prop(self, request: Request, obj: Any, prop: str) -> URL:
+        target = getattr(obj, prop, None)
         if target is None:
-            return ""
-
-        return request.url_for(
-            "admin:details",
-            identity=slugify_class_name(target.__class__.__name__),
-            pk=get_object_identifier(target),
-        )
+            return URL()
+        return self._build_url_for("admin:details", request, target)
 
     def _url_for_action(self, request: Request, action_name: str) -> str:
-        return str(
-            request.url_for(
-                f"admin:action-{self.identity}-{action_name}",
-            )
+        return str(request.url_for(f"admin:action-{self.identity}-{action_name}"))
+
+    def _build_url_for(self, name: str, request: Request, obj: Any) -> URL:
+        return request.url_for(
+            name,
+            identity=slugify_class_name(obj.__class__.__name__),
+            pk=get_object_identifier(obj),
         )
 
     def _get_default_sort(self) -> List[Tuple[str, bool]]:
@@ -846,32 +827,45 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
         return stmt.where(*conditions)
 
     async def get_prop_value(self, obj: Any, prop: str) -> Any:
-        result = getattr(obj, prop, None)
-        if result and isinstance(result, Enum):
-            result = result.name
+        for part in prop.split("."):
+            try:
+                obj = getattr(obj, part, None)
+            except DetachedInstanceError:
+                obj = await self._lazyload_prop(obj, part)
 
-        return result
+        if obj and isinstance(obj, Enum):
+            obj = obj.name
+
+        return obj
+
+    async def _lazyload_prop(self, obj: Any, prop: str) -> Any:
+        if self.is_async:
+            async with self.session_maker() as session:
+                session.add(obj)
+                return await session.run_sync(lambda sess: getattr(obj, prop))
+        else:
+            with self.session_maker() as session:
+                session.add(obj)
+                return await anyio.to_thread.run_sync(lambda: getattr(obj, prop))
 
     async def get_list_value(self, obj: Any, prop: str) -> Tuple[Any, Any]:
         """Get tuple of (value, formatted_value) for the list view."""
 
         value = await self.get_prop_value(obj, prop)
-        formatted_value = self._default_formatter(value)
-
         formatter = self._list_formatters.get(prop)
-        if formatter:
-            formatted_value = formatter(obj, prop)
+        formatted_value = (
+            formatter(obj, prop) if formatter else self._default_formatter(value)
+        )
         return value, formatted_value
 
     async def get_detail_value(self, obj: Any, prop: str) -> Tuple[Any, Any]:
         """Get tuple of (value, formatted_value) for the detail view."""
 
         value = await self.get_prop_value(obj, prop)
-        formatted_value = self._default_formatter(value)
-
         formatter = self._detail_formatters.get(prop)
-        if formatter:
-            formatted_value = formatter(obj, prop)
+        formatted_value = (
+            formatter(obj, prop) if formatter else self._default_formatter(value)
+        )
         return value, formatted_value
 
     def _build_column_list(

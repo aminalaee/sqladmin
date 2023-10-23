@@ -105,12 +105,12 @@
             </td>
             <td class="text-end">
               {% if model_view.can_view_details %}
-              <a href="{{ model_view._url_for_details(request, row) }}" data-bs-toggle="tooltip" data-bs-placement="top" title="View">
+              <a href="{{ model_view._build_url_for('admin:details', request, row) }}" data-bs-toggle="tooltip" data-bs-placement="top" title="View">
                 <span class="me-1"><i class="fa-solid fa-eye"></i></span>
               </a>
               {% endif %}
               {% if model_view.can_edit %}
-              <a href="{{ model_view._url_for_edit(request, row) }}" data-bs-toggle="tooltip" data-bs-placement="top" title="Edit">
+              <a href="{{ model_view._build_url_for('admin:edit', request, row) }}" data-bs-toggle="tooltip" data-bs-placement="top" title="Edit">
                 <span class="me-1"><i class="fa-solid fa-pen-to-square"></i></span>
               </a>
               {% endif %}
@@ -126,7 +126,7 @@
             {% if is_list( value ) %}
             <td>
             {% for elem, formatted_elem in zip(value, formatted_value) %}
-            <a href="{{ model_view._url_for_details(request, elem) }}">({{ formatted_elem }})</a>
+            <a href="{{ model_view._build_url_for('admin:details', request, elem) }}">({{ formatted_elem }})</a>
             {% endfor %}
             </td>
             {% else %}

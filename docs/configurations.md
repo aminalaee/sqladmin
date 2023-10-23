@@ -110,7 +110,7 @@ or list of the tuple for multiple columns.
 
     ```python
     class UserAdmin(ModelView, model=User):
-        column_list = [User.id, User.name]
+        column_list = [User.id, User.name, "user.address.zip_code"]
         column_searchable_list = [User.name]
         column_sortable_list = [User.id]
         column_formatters = {User.name: lambda m, a: m.name[:10]}
@@ -138,9 +138,15 @@ The options available are:
 
     ```python
     class UserAdmin(ModelView, model=User):
-        column_details_list = [User.id, User.name]
+        column_details_list = [User.id, User.name, "user.address.zip_code"]
         column_formatters_detail = {User.name: lambda m, a: m.name[:10]}
     ```
+
+!!! tip
+
+    You can show related model's attributes by using a string value. For example
+    "user.address.zip_code" will load the relationship but it will trigger extra queries for each
+    relationship loading.
 
 ## Pagination options
 
