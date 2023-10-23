@@ -1064,10 +1064,17 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
             sort_fields = self._get_default_sort()
 
         for sort_field, is_desc in sort_fields:
+            model = self.model
+
+            parts = sort_field.split(".")
+            for part in parts[:-1]:
+                model = getattr(model, part).mapper.class_
+                stmt = stmt.join(model)
+
             if is_desc:
-                stmt = stmt.order_by(desc(sort_field))
+                stmt = stmt.order_by(desc(getattr(model, parts[-1])))
             else:
-                stmt = stmt.order_by(asc(sort_field))
+                stmt = stmt.order_by(asc(getattr(model, parts[-1])))
 
         return stmt
 

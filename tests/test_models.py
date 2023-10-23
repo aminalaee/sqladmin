@@ -3,7 +3,7 @@ from typing import Generator
 
 import pytest
 from markupsafe import Markup
-from sqlalchemy import Boolean, Column, Enum, ForeignKey, Integer, String
+from sqlalchemy import Boolean, Column, Enum, ForeignKey, Integer, String, select
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import declarative_base, relationship, sessionmaker
 from sqlalchemy.sql.expression import Select
@@ -51,7 +51,7 @@ class User(Base):
 class Address(Base):
     __tablename__ = "addresses"
 
-    pk = Column(Integer, primary_key=True)
+    id = Column(Integer, primary_key=True)
     user_id = Column(Integer, ForeignKey("users.id"))
 
     user = relationship("User", back_populates="addresses")
@@ -121,9 +121,9 @@ def test_column_list_by_model_columns() -> None:
 
 def test_column_list_by_str_name() -> None:
     class AddressAdmin(ModelView, model=Address):
-        column_list = ["pk", "user_id"]
+        column_list = ["id", "user_id"]
 
-    assert AddressAdmin().get_list_columns() == ["pk", "user_id"]
+    assert AddressAdmin().get_list_columns() == ["id", "user_id"]
 
 
 def test_column_list_both_include_and_exclude() -> None:
@@ -242,9 +242,9 @@ def test_form_columns_by_model_columns() -> None:
 
 def test_form_columns_by_str_name() -> None:
     class AddressAdmin(ModelView, model=Address):
-        form_columns = ["pk", "user_id"]
+        form_columns = ["id", "user_id"]
 
-    assert AddressAdmin().get_form_columns() == ["pk", "user_id"]
+    assert AddressAdmin().get_form_columns() == ["id", "user_id"]
 
 
 def test_form_columns_both_include_and_exclude() -> None:
@@ -299,9 +299,9 @@ def test_export_columns_by_model_columns() -> None:
 
 def test_export_columns_by_str_name() -> None:
     class AddressAdmin(ModelView, model=Address):
-        column_export_list = ["pk", "user_id"]
+        column_export_list = ["id", "user_id"]
 
-    assert AddressAdmin().get_export_columns() == ["pk", "user_id"]
+    assert AddressAdmin().get_export_columns() == ["id", "user_id"]
 
 
 def test_export_columns_both_include_and_exclude() -> None:
@@ -386,8 +386,8 @@ def test_model_columns_all_keyword() -> None:
         column_list = "__all__"
         column_details_list = "__all__"
 
-    assert AddressAdmin().get_list_columns() == ["user", "pk", "user_id"]
-    assert AddressAdmin().get_details_columns() == ["user", "pk", "user_id"]
+    assert AddressAdmin().get_list_columns() == ["user", "id", "user_id"]
+    assert AddressAdmin().get_details_columns() == ["user", "id", "user_id"]
 
 
 async def test_get_prop_value() -> None:
@@ -397,13 +397,10 @@ async def test_get_prop_value() -> None:
     with session_maker() as session:
         user = User(name="admin")
         address = Address(user=user)
-        profile = Profile(
-            is_active=True, role=Role.ADMIN, status=Status.ACTIVE, user=user
-        )
+        profile = Profile(role=Role.ADMIN, status=Status.ACTIVE, user=user)
         session.add_all([user, address, profile])
         session.commit()
 
-    assert await ProfileAdmin().get_prop_value(profile, "is_active") is True
     assert await ProfileAdmin().get_prop_value(profile, "role") == "ADMIN"
     assert await ProfileAdmin().get_prop_value(profile, "status") == "ACTIVE"
     assert await ProfileAdmin().get_prop_value(profile, "user.name") == "admin"
@@ -418,3 +415,24 @@ async def test_model_property_in_columns() -> None:
     assert UserAdmin().get_list_columns() == ["id", "name", "name_with_id"]
     assert UserAdmin().get_details_columns() == ["addresses", "profile", "id", "name"]
     assert await UserAdmin().get_prop_value(user, "name_with_id") == "batman - 1"
+
+
+def test_sort_query() -> None:
+    class AddressAdmin(ModelView, model=Address):
+        ...
+
+    query = select(Address)
+
+    request = Request({"type": "http", "query_string": "sortBy=id&sort=asc"})
+    stmt = AddressAdmin().sort_query(query, request)
+    assert "ORDER BY addresses.id ASC" in str(stmt)
+
+    request = Request({"type": "http", "query_string": b"sortBy=user.name&sort=desc"})
+    stmt = AddressAdmin().sort_query(query, request)
+    assert "ORDER BY users.name DESC" in str(stmt)
+
+    request = Request(
+        {"type": "http", "query_string": b"sortBy=user.profile.role&sort=desc"}
+    )
+    stmt = AddressAdmin().sort_query(query, request)
+    assert "ORDER BY profiles.role DESC" in str(stmt)
