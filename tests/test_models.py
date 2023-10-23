@@ -431,6 +431,8 @@ def test_sort_query() -> None:
     stmt = AddressAdmin().sort_query(query, request)
     assert "ORDER BY users.name DESC" in str(stmt)
 
-    request = Request({"type": "http", "query_string": b"sortBy=user.profile.role&sort=desc"})
+    request = Request(
+        {"type": "http", "query_string": b"sortBy=user.profile.role&sort=desc"}
+    )
     stmt = AddressAdmin().sort_query(query, request)
     assert "ORDER BY profiles.role DESC" in str(stmt)

@@ -1070,7 +1070,7 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
             for part in parts[:-1]:
                 model = getattr(model, part).mapper.class_
                 stmt = stmt.join(model)
-            
+
             if is_desc:
                 stmt = stmt.order_by(desc(getattr(model, parts[-1])))
             else:
