@@ -397,13 +397,10 @@ async def test_get_prop_value() -> None:
     with session_maker() as session:
         user = User(name="admin")
         address = Address(user=user)
-        profile = Profile(
-            is_active=True, role=Role.ADMIN, status=Status.ACTIVE, user=user
-        )
+        profile = Profile(role=Role.ADMIN, status=Status.ACTIVE, user=user)
         session.add_all([user, address, profile])
         session.commit()
 
-    assert await ProfileAdmin().get_prop_value(profile, "is_active") is True
     assert await ProfileAdmin().get_prop_value(profile, "role") == "ADMIN"
     assert await ProfileAdmin().get_prop_value(profile, "status") == "ACTIVE"
     assert await ProfileAdmin().get_prop_value(profile, "user.name") == "admin"
