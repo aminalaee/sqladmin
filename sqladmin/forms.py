@@ -98,7 +98,13 @@ T_CC = TypeVar("T_CC", bound=ConverterCallable)
 # To circumvent the issue, we maintain a list of reserved attribute names that
 # sqlmodel will silently rename between when converting a sqladmin mapped column
 # into its associated wtform form field (and inversely).
-WTFORMS_RESERVED_ATTRIBUTES_MAPPING = {"data": "data_"}
+WTFORMS_RESERVED_ATTRIBUTES_MAPPING = {
+    "data": "data_",
+    "errors": "errors_",
+    "process": "process_",
+    "validate": "validate_",
+    "populate_obj": "populate_obj_",
+}
 WTFORMS_RESERVED_ATTRIBUTES_REVERSED_MAPPING = {
     v: k for k, v in WTFORMS_RESERVED_ATTRIBUTES_MAPPING.items()
 }
