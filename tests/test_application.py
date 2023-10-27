@@ -14,6 +14,12 @@ from tests.common import sync_engine as engine
 Base = declarative_base()  # type: ignore
 
 
+class DataModel(Base):
+    __tablename__ = "datamodel"
+    id = Column(Integer, primary_key=True)
+    data = Column(String)
+
+
 class User(Base):
     __tablename__ = "users"
 
@@ -121,3 +127,31 @@ def test_build_category_menu():
     admin.add_view(UserAdmin)
 
     admin._menu.items.pop().name = "Accounts"
+
+
+def test_compute_replacement_data_for_reserved_attributes() -> None:
+    app = Starlette()
+    admin = Admin(app=app, engine=engine)
+
+    class DataModelAdmin(ModelView, model=DataModel):
+        ...
+
+    datamodel = DataModel(id=1, data="abcdef")
+    admin.add_view(DataModelAdmin)
+    assert admin._compute_replacement_data_for_reserved_attributes(datamodel) == {
+        "data_": "abcdef"
+    }
+
+
+def test_restore_reserved_attribute_names() -> None:
+    app = Starlette()
+    admin = Admin(app=app, engine=engine)
+
+    class DataModelAdmin(ModelView, model=DataModel):
+        ...
+
+    datamodel = DataModel(id=1, data="abcdef")
+    admin.add_view(DataModelAdmin)
+    assert admin._restore_reserved_attribute_names({"data_": "abcdef"}, datamodel) == {
+        "data": "abcdef"
+    }

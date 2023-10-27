@@ -298,3 +298,20 @@ async def test_form_override_form_converter() -> None:
 
     assert isinstance(Form()._fields["email"], EmailField)
     assert isinstance(Form()._fields["number"], IntegerField)
+
+
+async def test_model_field_clashing_with_wtforms_reserved_attribute() -> None:
+    class DataModel(Base):
+        __tablename__ = "model_with_wtforms_reserved_attribute"
+        id = Column(Integer, primary_key=True)
+        data = Column(String)
+
+    Form = await get_model_form(
+        model=DataModel,
+        session_maker=session_maker,
+    )
+    form = Form(obj=DataModel(id=1, data="abcdef"))
+    assert Form.data_.field_class == StringField
+    assert Form.data_.name == "data"
+    assert isinstance(form.data, dict)
+    assert isinstance(Form.data, property)
