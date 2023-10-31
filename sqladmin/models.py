@@ -935,13 +935,13 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
             defaults=self._list_prop_names,
         )
 
-    async def on_model_change(self, data: dict, model: Any, is_created: bool) -> None:
+    async def on_model_change(self, data: dict, model: Any, is_created: bool, request: Request) -> None:
         """Perform some actions before a model is created or updated.
         By default does nothing.
         """
 
     async def after_model_change(
-        self, data: dict, model: Any, is_created: bool
+        self, data: dict, model: Any, is_created: bool, request: Request
     ) -> None:
         """Perform some actions after a model was created
         or updated and committed to the database.
@@ -961,20 +961,20 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
         return pairs
 
     async def delete_model(self, request: Request, pk: Any) -> None:
-        await Query(self).delete(pk)
+        await Query(self).delete(pk, request)
 
     async def insert_model(self, request: Request, data: dict) -> Any:
-        return await Query(self).insert(data)
+        return await Query(self).insert(data, request)
 
     async def update_model(self, request: Request, pk: str, data: dict) -> Any:
-        return await Query(self).update(pk, data)
+        return await Query(self).update(pk, data, request)
 
-    async def on_model_delete(self, model: Any) -> None:
+    async def on_model_delete(self, model: Any, request: Request) -> None:
         """Perform some actions before a model is deleted.
         By default does nothing.
         """
 
-    async def after_model_delete(self, model: Any) -> None:
+    async def after_model_delete(self, model: Any, request: Request) -> None:
         """Perform some actions after a model is deleted.
         By default do nothing.
         """

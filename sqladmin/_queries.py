@@ -5,6 +5,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import Session, joinedload
 from sqlalchemy.sql.expression import Select, and_, or_
+from fastapi import Request
 
 from sqladmin._types import MODEL_PROPERTY
 from sqladmin.helpers import (
@@ -130,18 +131,18 @@ class Query:
                 setattr(obj, key, value)
         return obj
 
-    def _update_sync(self, pk: Any, data: Dict[str, Any]) -> Any:
+    def _update_sync(self, pk: Any, data: Dict[str, Any], request: Request) -> Any:
         stmt = self.model_view._stmt_by_identifier(pk)
 
         with self.model_view.session_maker(expire_on_commit=False) as session:
             obj = session.execute(stmt).scalars().first()
-            anyio.from_thread.run(self.model_view.on_model_change, data, obj, False)
+            anyio.from_thread.run(self.model_view.on_model_change, data, obj, False, request)
             obj = self._set_attributes_sync(session, obj, data)
             session.commit()
-            anyio.from_thread.run(self.model_view.after_model_change, data, obj, False)
+            anyio.from_thread.run(self.model_view.after_model_change, data, obj, False, request)
             return obj
 
-    async def _update_async(self, pk: Any, data: Dict[str, Any]) -> Any:
+    async def _update_async(self, pk: Any, data: Dict[str, Any], request: Request) -> Any:
         stmt = self.model_view._stmt_by_identifier(pk)
 
         for relation in self.model_view._form_relations:
@@ -150,10 +151,10 @@ class Query:
         async with self.model_view.session_maker(expire_on_commit=False) as session:
             result = await session.execute(stmt)
             obj = result.scalars().first()
-            await self.model_view.on_model_change(data, obj, False)
+            await self.model_view.on_model_change(data, obj, False, request)
             obj = await self._set_attributes_async(session, obj, data)
             await session.commit()
-            await self.model_view.after_model_change(data, obj, False)
+            await self.model_view.after_model_change(data, obj, False, request)
             return obj
 
     def _get_delete_stmt(self, pk: str) -> Select:
@@ -163,59 +164,59 @@ class Query:
         conditions = [pk == value for (pk, value) in zip(pks, values)]
         return stmt.where(*conditions)
 
-    def _delete_sync(self, pk: str) -> None:
+    def _delete_sync(self, pk: str, request: Request) -> None:
         with self.model_view.session_maker() as session:
             obj = session.execute(self._get_delete_stmt(pk)).scalar_one_or_none()
-            anyio.from_thread.run(self.model_view.on_model_delete, obj)
+            anyio.from_thread.run(self.model_view.on_model_delete, obj, request)
             session.delete(obj)
             session.commit()
-            anyio.from_thread.run(self.model_view.after_model_delete, obj)
+            anyio.from_thread.run(self.model_view.after_model_delete, obj, request)
 
-    async def _delete_async(self, pk: str) -> None:
+    async def _delete_async(self, pk: str, request: Request) -> None:
         async with self.model_view.session_maker() as session:
             result = await session.execute(self._get_delete_stmt(pk))
             obj = result.scalars().first()
-            await self.model_view.on_model_delete(obj)
+            await self.model_view.on_model_delete(obj, request)
             await session.delete(obj)
             await session.commit()
-            await self.model_view.after_model_delete(obj)
+            await self.model_view.after_model_delete(obj, request)
 
-    def _insert_sync(self, data: Dict[str, Any]) -> Any:
+    def _insert_sync(self, data: Dict[str, Any], request: Request) -> Any:
         obj = self.model_view.model()
 
         with self.model_view.session_maker(expire_on_commit=False) as session:
-            anyio.from_thread.run(self.model_view.on_model_change, data, obj, True)
+            anyio.from_thread.run(self.model_view.on_model_change, data, obj, True, request)
             obj = self._set_attributes_sync(session, obj, data)
             session.add(obj)
             session.commit()
-            anyio.from_thread.run(self.model_view.after_model_change, data, obj, True)
+            anyio.from_thread.run(self.model_view.after_model_change, data, obj, True, request)
             return obj
 
-    async def _insert_async(self, data: Dict[str, Any]) -> Any:
+    async def _insert_async(self, data: Dict[str, Any], request: Request) -> Any:
         obj = self.model_view.model()
 
         async with self.model_view.session_maker(expire_on_commit=False) as session:
-            await self.model_view.on_model_change(data, obj, True)
+            await self.model_view.on_model_change(data, obj, True, request)
             obj = await self._set_attributes_async(session, obj, data)
             session.add(obj)
             await session.commit()
-            await self.model_view.after_model_change(data, obj, True)
+            await self.model_view.after_model_change(data, obj, True, request)
             return obj
 
-    async def delete(self, obj: Any) -> None:
+    async def delete(self, obj: Any, request: Request) -> None:
         if self.model_view.is_async:
-            await self._delete_async(obj)
+            await self._delete_async(obj, request)
         else:
-            await anyio.to_thread.run_sync(self._delete_sync, obj)
+            await anyio.to_thread.run_sync(self._delete_sync, obj, request)
 
-    async def insert(self, data: dict) -> Any:
+    async def insert(self, data: dict, request: Request) -> Any:
         if self.model_view.is_async:
-            return await self._insert_async(data)
+            return await self._insert_async(data, request)
         else:
-            return await anyio.to_thread.run_sync(self._insert_sync, data)
+            return await anyio.to_thread.run_sync(self._insert_sync, data, request)
 
-    async def update(self, pk: Any, data: dict) -> Any:
+    async def update(self, pk: Any, data: dict, request: Request) -> Any:
         if self.model_view.is_async:
-            return await self._update_async(pk, data)
+            return await self._update_async(pk, data, request)
         else:
-            return await anyio.to_thread.run_sync(self._update_sync, pk, data)
+            return await anyio.to_thread.run_sync(self._update_sync, pk, data, request)
