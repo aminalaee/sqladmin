@@ -5,7 +5,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import Session, joinedload
 from sqlalchemy.sql.expression import Select, and_, or_
-from fastapi import Request
+from starlette.requests import Request
 
 from sqladmin._types import MODEL_PROPERTY
 from sqladmin.helpers import (
