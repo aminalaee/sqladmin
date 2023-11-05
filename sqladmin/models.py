@@ -935,7 +935,9 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
             defaults=self._list_prop_names,
         )
 
-    async def on_model_change(self, data: dict, model: Any, is_created: bool, request: Request) -> None:
+    async def on_model_change(
+        self, data: dict, model: Any, is_created: bool, request: Request
+    ) -> None:
         """Perform some actions before a model is created or updated.
         By default does nothing.
         """

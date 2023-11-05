@@ -136,13 +136,19 @@ class Query:
 
         with self.model_view.session_maker(expire_on_commit=False) as session:
             obj = session.execute(stmt).scalars().first()
-            anyio.from_thread.run(self.model_view.on_model_change, data, obj, False, request)
+            anyio.from_thread.run(
+                self.model_view.on_model_change, data, obj, False, request
+            )
             obj = self._set_attributes_sync(session, obj, data)
             session.commit()
-            anyio.from_thread.run(self.model_view.after_model_change, data, obj, False, request)
+            anyio.from_thread.run(
+                self.model_view.after_model_change, data, obj, False, request
+            )
             return obj
 
-    async def _update_async(self, pk: Any, data: Dict[str, Any], request: Request) -> Any:
+    async def _update_async(
+        self, pk: Any, data: Dict[str, Any], request: Request
+    ) -> Any:
         stmt = self.model_view._stmt_by_identifier(pk)
 
         for relation in self.model_view._form_relations:
@@ -185,11 +191,15 @@ class Query:
         obj = self.model_view.model()
 
         with self.model_view.session_maker(expire_on_commit=False) as session:
-            anyio.from_thread.run(self.model_view.on_model_change, data, obj, True, request)
+            anyio.from_thread.run(
+                self.model_view.on_model_change, data, obj, True, request
+            )
             obj = self._set_attributes_sync(session, obj, data)
             session.add(obj)
             session.commit()
-            anyio.from_thread.run(self.model_view.after_model_change, data, obj, True, request)
+            anyio.from_thread.run(
+                self.model_view.after_model_change, data, obj, True, request
+            )
             return obj
 
     async def _insert_async(self, data: Dict[str, Any], request: Request) -> Any:
