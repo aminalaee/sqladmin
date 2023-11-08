@@ -138,9 +138,7 @@ def test_compute_replacement_data_for_reserved_attributes() -> None:
 
     datamodel = DataModel(id=1, data="abcdef")
     admin.add_view(DataModelAdmin)
-    assert admin._compute_replacement_data_for_reserved_attributes(datamodel) == {
-        "data_": "abcdef"
-    }
+    assert admin._prepare_form_data(datamodel) == {"data_": "abcdef"}
 
 
 def test_restore_reserved_attribute_names() -> None:
@@ -152,6 +150,6 @@ def test_restore_reserved_attribute_names() -> None:
 
     datamodel = DataModel(id=1, data="abcdef")
     admin.add_view(DataModelAdmin)
-    assert admin._restore_reserved_attribute_names({"data_": "abcdef"}, datamodel) == {
+    assert admin._denormalize_form_data({"data_": "abcdef"}, datamodel) == {
         "data": "abcdef"
     }

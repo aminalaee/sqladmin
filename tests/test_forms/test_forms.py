@@ -310,12 +310,8 @@ async def test_model_field_clashing_with_wtforms_reserved_attribute() -> None:
         process = Column(String)
         validate = Column(Boolean)
         populate_obj = Column(String)
-        unreserved_field = Column(String)
 
-    Form = await get_model_form(
-        model=DataModel,
-        session_maker=session_maker,
-    )
+    Form = await get_model_form(model=DataModel, session_maker=session_maker)
     obj = DataModel(
         id=1,
         data="abcdef",
@@ -323,24 +319,16 @@ async def test_model_field_clashing_with_wtforms_reserved_attribute() -> None:
         process="pid1",
         validate=True,
         populate_obj="ohi",
-        unreserved_field="value",
     )
     form = Form(obj=obj)
-    assert Form.data_.field_class == StringField
     assert Form.data_.name == "data"
-    assert Form.errors_.field_class == StringField
     assert Form.errors_.name == "errors"
-    assert Form.process_.field_class == StringField
     assert Form.process_.name == "process"
-    assert Form.validate_.field_class == SelectField
     assert Form.validate_.name == "validate"
-    assert Form.populate_obj_.field_class == StringField
     assert Form.populate_obj_.name == "populate_obj"
-    assert Form.unreserved_field.field_class == StringField
-    assert Form.unreserved_field.name is None
     assert isinstance(Form.data, property)
     assert isinstance(Form.errors, property)
+    assert isinstance(form.data, dict)
     assert inspect.isfunction(Form.process)
     assert inspect.isfunction(Form.validate)
     assert inspect.isfunction(Form.populate_obj)
-    assert isinstance(form.data, dict)

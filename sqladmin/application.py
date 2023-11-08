@@ -34,10 +34,7 @@ from sqladmin._menu import CategoryMenu, Menu, ViewMenu
 from sqladmin._types import ENGINE_TYPE
 from sqladmin.ajax import QueryAjaxModelLoader
 from sqladmin.authentication import AuthenticationBackend, login_required
-from sqladmin.forms import (
-    WTFORMS_RESERVED_ATTRIBUTES_MAPPING,
-    WTFORMS_RESERVED_ATTRIBUTES_REVERSED_MAPPING,
-)
+from sqladmin.forms import WTFORMS_ATTRS, WTFORMS_ATTRS_REVERSED
 from sqladmin.helpers import (
     get_object_identifier,
     is_async_session_maker,
@@ -513,10 +510,7 @@ class Admin(BaseAdminView):
                 request, model_view.create_template, context, status_code=400
             )
 
-        # we restore the original name of fields colliding with WTForms reserved attrs
-        form_data_dict = self._restore_reserved_attribute_names(
-            form.data, model_view.model
-        )
+        form_data_dict = self._denormalize_form_data(form.data, model_view.model)
         try:
             obj = await model_view.insert_model(request, form_data_dict)
         except Exception as e:
@@ -548,11 +542,10 @@ class Admin(BaseAdminView):
             raise HTTPException(status_code=404)
 
         Form = await model_view.scaffold_form()
-        replacement_data = self._compute_replacement_data_for_reserved_attributes(model)
         context = {
             "obj": model,
             "model_view": model_view,
-            "form": Form(obj=model, data=replacement_data),
+            "form": Form(obj=model, data=self._prepare_form_data(model)),
         }
 
         if request.method == "GET":
@@ -568,7 +561,7 @@ class Admin(BaseAdminView):
                 request, model_view.edit_template, context, status_code=400
             )
 
-        form_data_dict = self._restore_reserved_attribute_names(form.data, model)
+        form_data_dict = self._denormalize_form_data(form.data, model)
         try:
             if model_view.save_as and form_data.get("save") == "Save as new":
                 obj = await model_view.insert_model(request, form_data_dict)
@@ -693,38 +686,24 @@ class Admin(BaseAdminView):
                 form_data.append((key, value))
         return FormData(form_data)
 
-    def _compute_replacement_data_for_reserved_attributes(self, obj: Any) -> dict:
-        """Handle fields which name collide with WTForms reserved Form attribute names.
+    def _prepare_form_data(self, obj: Any) -> dict:
+        form_data = {}
+        for field_name in WTFORMS_ATTRS:
+            if value := getattr(obj, field_name, None):
+                form_data[field_name + "_"] = value
+        return form_data
 
-        Return a mapping of replacement name -> original value, that will be passed to
-        the ModelView associated Form.
-
-        """
-        replacement_data = {}
-        for (
-            reserved_field_name,
-            replacement_name,
-        ) in WTFORMS_RESERVED_ATTRIBUTES_MAPPING.items():
-            if model_attr := getattr(obj, reserved_field_name, None):
-                replacement_data[replacement_name] = model_attr
-        return replacement_data
-
-    def _restore_reserved_attribute_names(self, form_data: dict, obj: Any) -> dict:
-        """Restore the original names of fields clashing with reserved WTForms attrs"""
-        consolidated_form_data = form_data.copy()
-        for (
-            replacement_name,
-            reserved_field_name,
-        ) in WTFORMS_RESERVED_ATTRIBUTES_REVERSED_MAPPING.items():
+    def _denormalize_form_data(self, form_data: dict, obj: Any) -> dict:
+        data = form_data.copy()
+        for field_name in WTFORMS_ATTRS_REVERSED:
+            reserved_field_name = field_name[:-1]
             if (
-                replacement_name in consolidated_form_data
-                and not getattr(obj, replacement_name, None)
+                field_name in data
+                and not getattr(obj, field_name, None)
                 and getattr(obj, reserved_field_name, None)
             ):
-                consolidated_form_data[
-                    reserved_field_name
-                ] = consolidated_form_data.pop(replacement_name)
-        return consolidated_form_data
+                data[reserved_field_name] = data.pop(field_name)
+        return data
 
 
 def expose(

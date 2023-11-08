@@ -92,22 +92,9 @@ class ConverterCallable(Protocol):
 
 T_CC = TypeVar("T_CC", bound=ConverterCallable)
 
-# If the model has a mapped column named e.g. 'data', this will utltimately
-# shadow the wtforms.Form.data attribute, thus causing issues
-# (see https://github.com/aminalaee/sqladmin/issues/656).
-# To circumvent the issue, we maintain a list of reserved attribute names that
-# sqlmodel will silently rename between when converting a sqladmin mapped column
-# into its associated wtform form field (and inversely).
-WTFORMS_RESERVED_ATTRIBUTES_MAPPING = {
-    "data": "data_",
-    "errors": "errors_",
-    "process": "process_",
-    "validate": "validate_",
-    "populate_obj": "populate_obj_",
-}
-WTFORMS_RESERVED_ATTRIBUTES_REVERSED_MAPPING = {
-    v: k for k, v in WTFORMS_RESERVED_ATTRIBUTES_MAPPING.items()
-}
+_WTFORMS_PRIVATE_ATTRS = {"data", "errors", "process", "validate", "populate_obj"}
+WTFORMS_ATTRS = {key: key + "_" for key in _WTFORMS_PRIVATE_ATTRS}
+WTFORMS_ATTRS_REVERSED = {v: k for k, v in WTFORMS_ATTRS.items()}
 
 
 @no_type_check
@@ -635,17 +622,7 @@ async def get_model_form(
     field_dict = {}
     for name, attr in attributes:
         field_args = form_args.get(name, {})
-
-        # if the model has a mapped column with a name matching one of the
-        # wtforms reserved names, we silently replace it in the destination Form.
-        # However, we pass a 'name' attribute to the FormField with the original
-        # column name, so that the user does not see the replacement name in the
-        # admin web UI.
-        if name in WTFORMS_RESERVED_ATTRIBUTES_MAPPING:
-            field_dict_key = WTFORMS_RESERVED_ATTRIBUTES_MAPPING[name]
-            field_args["name"] = name
-        else:
-            field_dict_key = name
+        field_args["name"] = name
 
         field_widget_args = form_widget_args.get(name, {})
         label = column_labels.get(name, None)
@@ -662,6 +639,7 @@ async def get_model_form(
             form_ajax_refs=form_ajax_refs,
         )
         if field is not None:
+            field_dict_key = WTFORMS_ATTRS.get(name, name)
             field_dict[field_dict_key] = field
 
     return type(type_name, (form_class,), field_dict)
