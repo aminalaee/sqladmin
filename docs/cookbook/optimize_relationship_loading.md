@@ -39,9 +39,9 @@ you can use `form_ajax_refs` to load `Child` objects with an AJAX call:
 ```py
 class ParentAdmin(ModelView, model=Parent):
     form_ajax_refs = {
-        "child": {
+        "children": {
             "fields": ("id",),
-            "order_by": ("id",),
+            "order_by": "id",
         }
     }
 ```
