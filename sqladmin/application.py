@@ -510,7 +510,7 @@ class Admin(BaseAdminView):
                 request, model_view.create_template, context, status_code=400
             )
 
-        form_data_dict = self._denormalize_form_data(form.data, model_view.model)
+        form_data_dict = self._denormalize_wtform_data(form.data, model_view.model)
         try:
             obj = await model_view.insert_model(request, form_data_dict)
         except Exception as e:
@@ -545,7 +545,7 @@ class Admin(BaseAdminView):
         context = {
             "obj": model,
             "model_view": model_view,
-            "form": Form(obj=model, data=self._prepare_form_data(model)),
+            "form": Form(obj=model, data=self._normalize_wtform_data(model)),
         }
 
         if request.method == "GET":
@@ -561,7 +561,7 @@ class Admin(BaseAdminView):
                 request, model_view.edit_template, context, status_code=400
             )
 
-        form_data_dict = self._denormalize_form_data(form.data, model)
+        form_data_dict = self._denormalize_wtform_data(form.data, model)
         try:
             if model_view.save_as and form_data.get("save") == "Save as new":
                 obj = await model_view.insert_model(request, form_data_dict)
@@ -686,14 +686,14 @@ class Admin(BaseAdminView):
                 form_data.append((key, value))
         return FormData(form_data)
 
-    def _prepare_form_data(self, obj: Any) -> dict:
+    def _normalize_wtform_data(self, obj: Any) -> dict:
         form_data = {}
         for field_name in WTFORMS_ATTRS:
             if value := getattr(obj, field_name, None):
                 form_data[field_name + "_"] = value
         return form_data
 
-    def _denormalize_form_data(self, form_data: dict, obj: Any) -> dict:
+    def _denormalize_wtform_data(self, form_data: dict, obj: Any) -> dict:
         data = form_data.copy()
         for field_name in WTFORMS_ATTRS_REVERSED:
             reserved_field_name = field_name[:-1]
