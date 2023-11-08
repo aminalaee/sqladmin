@@ -385,7 +385,7 @@ class Admin(BaseAdminView):
             Mount("/statics", app=statics, name="statics"),
             Route("/", endpoint=self.index, name="index"),
             Route("/{identity}/list", endpoint=self.list, name="list"),
-            Route("/{identity}/details/{pk}", endpoint=self.details, name="details"),
+            Route("/{identity}/details/{pk:path}", endpoint=self.details, name="details"),
             Route(
                 "/{identity}/delete",
                 endpoint=self.delete,
@@ -399,7 +399,7 @@ class Admin(BaseAdminView):
                 methods=["GET", "POST"],
             ),
             Route(
-                "/{identity}/edit/{pk}",
+                "/{identity}/edit/{pk:path}",
                 endpoint=self.edit,
                 name="edit",
                 methods=["GET", "POST"],

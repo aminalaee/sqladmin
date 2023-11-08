@@ -174,12 +174,6 @@ def stream_to_csv(
     return callback(writer)  # type: ignore
 
 
-def get_primary_key(model: type) -> Column:
-    pks = inspect(model).mapper.primary_key
-    assert len(pks) == 1, "Multiple Primary Keys not supported."
-    return pks[0]
-
-
 def get_primary_keys(model: Any) -> Tuple[Column, ...]:
     return tuple(inspect(model).mapper.primary_key)
 
