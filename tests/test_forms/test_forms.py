@@ -1,4 +1,5 @@
 import enum
+import inspect
 from typing import Any, AsyncGenerator, Dict, Tuple
 
 import pytest
@@ -298,3 +299,36 @@ async def test_form_override_form_converter() -> None:
 
     assert isinstance(Form()._fields["email"], EmailField)
     assert isinstance(Form()._fields["number"], IntegerField)
+
+
+async def test_model_field_clashing_with_wtforms_reserved_attribute() -> None:
+    class DataModel(Base):
+        __tablename__ = "model_with_wtforms_reserved_attribute"
+        id = Column(Integer, primary_key=True)
+        data = Column(String)
+        errors = Column(String)
+        process = Column(String)
+        validate = Column(Boolean)
+        populate_obj = Column(String)
+
+    Form = await get_model_form(model=DataModel, session_maker=session_maker)
+    obj = DataModel(
+        id=1,
+        data="abcdef",
+        errors="boom",
+        process="pid1",
+        validate=True,
+        populate_obj="ohi",
+    )
+    form = Form(obj=obj)
+    assert Form.data_.name == "data"
+    assert Form.errors_.name == "errors"
+    assert Form.process_.name == "process"
+    assert Form.validate_.name == "validate"
+    assert Form.populate_obj_.name == "populate_obj"
+    assert isinstance(Form.data, property)
+    assert isinstance(Form.errors, property)
+    assert isinstance(form.data, dict)
+    assert inspect.isfunction(Form.process)
+    assert inspect.isfunction(Form.validate)
+    assert inspect.isfunction(Form.populate_obj)

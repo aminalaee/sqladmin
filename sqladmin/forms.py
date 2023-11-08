@@ -92,6 +92,10 @@ class ConverterCallable(Protocol):
 
 T_CC = TypeVar("T_CC", bound=ConverterCallable)
 
+_WTFORMS_PRIVATE_ATTRS = {"data", "errors", "process", "validate", "populate_obj"}
+WTFORMS_ATTRS = {key: key + "_" for key in _WTFORMS_PRIVATE_ATTRS}
+WTFORMS_ATTRS_REVERSED = {v: k for k, v in WTFORMS_ATTRS.items()}
+
 
 @no_type_check
 def converts(*args: str) -> Callable[[T_CC], T_CC]:
@@ -618,6 +622,8 @@ async def get_model_form(
     field_dict = {}
     for name, attr in attributes:
         field_args = form_args.get(name, {})
+        field_args["name"] = name
+
         field_widget_args = form_widget_args.get(name, {})
         label = column_labels.get(name, None)
         override = form_overrides.get(name, None)
@@ -633,6 +639,7 @@ async def get_model_form(
             form_ajax_refs=form_ajax_refs,
         )
         if field is not None:
-            field_dict[name] = field
+            field_dict_key = WTFORMS_ATTRS.get(name, name)
+            field_dict[field_dict_key] = field
 
     return type(type_name, (form_class,), field_dict)

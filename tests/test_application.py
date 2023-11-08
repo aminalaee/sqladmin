@@ -14,6 +14,12 @@ from tests.common import sync_engine as engine
 Base = declarative_base()  # type: ignore
 
 
+class DataModel(Base):
+    __tablename__ = "datamodel"
+    id = Column(Integer, primary_key=True)
+    data = Column(String)
+
+
 class User(Base):
     __tablename__ = "users"
 
@@ -121,3 +127,29 @@ def test_build_category_menu():
     admin.add_view(UserAdmin)
 
     admin._menu.items.pop().name = "Accounts"
+
+
+def test_normalize_wtform_fields() -> None:
+    app = Starlette()
+    admin = Admin(app=app, engine=engine)
+
+    class DataModelAdmin(ModelView, model=DataModel):
+        ...
+
+    datamodel = DataModel(id=1, data="abcdef")
+    admin.add_view(DataModelAdmin)
+    assert admin._normalize_wtform_data(datamodel) == {"data_": "abcdef"}
+
+
+def test_denormalize_wtform_fields() -> None:
+    app = Starlette()
+    admin = Admin(app=app, engine=engine)
+
+    class DataModelAdmin(ModelView, model=DataModel):
+        ...
+
+    datamodel = DataModel(id=1, data="abcdef")
+    admin.add_view(DataModelAdmin)
+    assert admin._denormalize_wtform_data({"data_": "abcdef"}, datamodel) == {
+        "data": "abcdef"
+    }

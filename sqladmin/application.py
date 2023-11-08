@@ -34,6 +34,7 @@ from sqladmin._menu import CategoryMenu, Menu, ViewMenu
 from sqladmin._types import ENGINE_TYPE
 from sqladmin.ajax import QueryAjaxModelLoader
 from sqladmin.authentication import AuthenticationBackend, login_required
+from sqladmin.forms import WTFORMS_ATTRS, WTFORMS_ATTRS_REVERSED
 from sqladmin.helpers import (
     get_object_identifier,
     is_async_session_maker,
@@ -509,8 +510,9 @@ class Admin(BaseAdminView):
                 request, model_view.create_template, context, status_code=400
             )
 
+        form_data_dict = self._denormalize_wtform_data(form.data, model_view.model)
         try:
-            obj = await model_view.insert_model(request, form.data)
+            obj = await model_view.insert_model(request, form_data_dict)
         except Exception as e:
             logger.exception(e)
             context["error"] = str(e)
@@ -543,7 +545,7 @@ class Admin(BaseAdminView):
         context = {
             "obj": model,
             "model_view": model_view,
-            "form": Form(obj=model),
+            "form": Form(obj=model, data=self._normalize_wtform_data(model)),
         }
 
         if request.method == "GET":
@@ -559,12 +561,13 @@ class Admin(BaseAdminView):
                 request, model_view.edit_template, context, status_code=400
             )
 
+        form_data_dict = self._denormalize_wtform_data(form.data, model)
         try:
             if model_view.save_as and form_data.get("save") == "Save as new":
-                obj = await model_view.insert_model(request, form.data)
+                obj = await model_view.insert_model(request, form_data_dict)
             else:
                 obj = await model_view.update_model(
-                    request, pk=request.path_params["pk"], data=form.data
+                    request, pk=request.path_params["pk"], data=form_data_dict
                 )
         except Exception as e:
             logger.exception(e)
@@ -659,7 +662,7 @@ class Admin(BaseAdminView):
 
     async def _handle_form_data(self, request: Request, obj: Any = None) -> FormData:
         """
-        Handle form data and modify in case of UplaodFile.
+        Handle form data and modify in case of UploadFile.
         This is needed since in edit page
         there's no way to show current file of object.
         """
@@ -682,6 +685,25 @@ class Admin(BaseAdminView):
             else:
                 form_data.append((key, value))
         return FormData(form_data)
+
+    def _normalize_wtform_data(self, obj: Any) -> dict:
+        form_data = {}
+        for field_name in WTFORMS_ATTRS:
+            if value := getattr(obj, field_name, None):
+                form_data[field_name + "_"] = value
+        return form_data
+
+    def _denormalize_wtform_data(self, form_data: dict, obj: Any) -> dict:
+        data = form_data.copy()
+        for field_name in WTFORMS_ATTRS_REVERSED:
+            reserved_field_name = field_name[:-1]
+            if (
+                field_name in data
+                and not getattr(obj, field_name, None)
+                and getattr(obj, reserved_field_name, None)
+            ):
+                data[reserved_field_name] = data.pop(field_name)
+        return data
 
 
 def expose(
