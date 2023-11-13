@@ -225,11 +225,9 @@ def object_identifier_values(id_string: str, model: Any) -> tuple:
     values = []
     pks = get_primary_keys(model)
     for pk, part in zip(pks, _object_identifier_parts(id_string, model)):
-        python_type = get_column_python_type(pk)
-        if python_type is bool and part == "False":
-            values.append(False)
-        else:
-            values.append(python_type(part))
+        type_ = get_column_python_type(pk)
+        value = False if type_ is bool and part == "False" else type_(part)
+        values.append(value)
     return tuple(values)
 
 
