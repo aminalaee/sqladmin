@@ -4,6 +4,23 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## Version 0.16.0 - 2023-11-14
+
+### Added
+* Switch to async templates by @aminalaee in https://github.com/aminalaee/sqladmin/pull/652
+* Allow using related model fields in list/details page by @aminalaee in https://github.com/aminalaee/sqladmin/pull/653
+* Allow sort by related model field by @aminalaee in https://github.com/aminalaee/sqladmin/pull/654
+* Add search by related model field by @aminalaee in https://github.com/aminalaee/sqladmin/pull/655
+* Expose request to model events by @holdmybeer1min in https://github.com/aminalaee/sqladmin/pull/660
+
+### Fixed
+* Allow model columns to bear the same name as reserved wtforms.BaseForm attributes by @brouberol in https://github.com/aminalaee/sqladmin/pull/658
+* Change pk converter in routes by @aminalaee in https://github.com/aminalaee/sqladmin/pull/666
+* Fix multiple PK model containing boolean values by @ncarvajalc in https://github.com/aminalaee/sqladmin/pull/670
+* Fix brand icon is not showing by @WiraDKP in https://github.com/aminalaee/sqladmin/pull/665
+
+**Full Changelog**: https://github.com/aminalaee/sqladmin/compare/0.15.2...0.16.0
+
 ## Version 0.15.1 - 2023-10-02
 
 ### Fixed
