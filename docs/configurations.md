@@ -266,11 +266,11 @@ By default these methods do nothing.
 
     ```python
     class UserAdmin(ModelView, model=User):
-        async def on_model_change(self, data, model, is_created):
+        async def on_model_change(self, data, model, is_created, request):
             # Perform some other action
             ...
 
-        async def on_model_delete(self, model):
+        async def on_model_delete(self, model, request):
             # Perform some other action
             ...
     ```
