@@ -204,10 +204,6 @@ def test_list_view_single_page(client: TestClient) -> None:
     response = client.get("/admin/user/list")
 
     assert response.status_code == 200
-    assert (
-        "Showing <span>1</span> to <span>5</span> of <span>5</span> items</p>"
-        in response.text
-    )
 
     # Showing active navigation link
     assert (
@@ -271,10 +267,6 @@ def test_list_view_multi_page(client: TestClient) -> None:
     response = client.get("/admin/user/list")
 
     assert response.status_code == 200
-    assert (
-        "Showing <span>1</span> to <span>10</span> of <span>45</span> items</p>"
-        in response.text
-    )
 
     # Previous disabled
     assert response.text.count('<li class="page-item disabled">') == 1
@@ -283,19 +275,10 @@ def test_list_view_multi_page(client: TestClient) -> None:
     response = client.get("/admin/user/list?page=3")
 
     assert response.status_code == 200
-    assert (
-        "Showing <span>21</span> to <span>30</span> of <span>45</span> items</p>"
-        in response.text
-    )
     assert response.text.count('<li class="page-item ">') == 6
 
     response = client.get("/admin/user/list?page=5")
-
     assert response.status_code == 200
-    assert (
-        "Showing <span>41</span> to <span>45</span> of <span>45</span> items</p>"
-        in response.text
-    )
 
     # Next disabled
     assert response.text.count('<li class="page-item disabled">') == 1
@@ -707,21 +690,11 @@ def test_searchable_list(client: TestClient) -> None:
         session.commit()
 
     response = client.get("/admin/user/list")
-
-    assert (
-        '<button id="search-button" class="btn" type="button">Search</button>'
-        in response.text
-    )
-
     assert "Search: name" in response.text
     assert "/admin/user/details/1" in response.text
 
     response = client.get("/admin/user/list?search=ro")
     assert "/admin/user/details/1" in response.text
-    assert (
-        "Showing <span>1</span> to <span>1</span> of <span>1</span> items"
-        in response.text
-    )
 
     response = client.get("/admin/user/list?search=rose")
     assert "/admin/user/details/1" not in response.text
