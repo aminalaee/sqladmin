@@ -1,7 +1,8 @@
 {% macro menu_category(menu, request) %}
 {% if menu.is_visible(request) and menu.is_accessible(request) %}
 <li class="nav-item dropdown">
-  <a class="nav-link dropdown-toggle {% if menu.is_active(request) %}active{% endif %}" data-bs-toggle="dropdown" href="#">
+  <a class="nav-link dropdown-toggle {% if menu.is_active(request) %}active{% endif %}" data-bs-toggle="dropdown"
+    href="#">
     <span class="nav-link-icon d-md-none d-lg-inline-block">
       {% if menu.icon %}<i class="{{ menu.icon }}"></i>{% endif %}
     </span>
@@ -11,7 +12,8 @@
     <div class="dropdown-menu-columns">
       <div class="dropdown-menu-column">
         {% for sub_menu in menu.children %}
-        <a class="nav-link ps-lg-3 {% if sub_menu.is_active(request) %}active{% endif %}" href="{{ sub_menu.url(request) }}">
+        <a class="nav-link ps-lg-3 {% if sub_menu.is_active(request) %}active{% endif %}"
+          href="{{ sub_menu.url(request) }}">
           <span class="nav-link-icon d-md-none d-lg-inline-block">
             {% if sub_menu.icon %}<i class="{{ sub_menu.icon }}"></i>{% endif %}
           </span>
@@ -40,12 +42,12 @@
 
 {% macro display_menu(menu, request) %}
 <div class="navbar-nav">
-{% for item in menu.items %}
-{% if item.type_ == "View" %}
-{{ menu_item(item, request) }}
-{% elif item.type_ == "Category" %}
-{{ menu_category(item, request) }}
-{% endif %}
-{% endfor %}
+  {% for item in menu.items %}
+  {% if item.type_ == "View" %}
+  {{ menu_item(item, request) }}
+  {% elif item.type_ == "Category" %}
+  {{ menu_category(item, request) }}
+  {% endif %}
+  {% endfor %}
 </div>
 {% endmacro %}
