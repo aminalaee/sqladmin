@@ -5,8 +5,8 @@
     <div class="card-header">
       <h3 class="card-title">
         {% for pk in model_view.pk_columns -%}
-          {{ pk.name }}
-          {%- if not loop.last %};{% endif -%}
+        {{ pk.name }}
+        {%- if not loop.last %};{% endif -%}
         {% endfor %}: {{ get_object_identifier(model) }}</h3>
     </div>
     <div class="card-body border-bottom py-3">
@@ -27,12 +27,13 @@
               {% if name in model_view._relation_names %}
               {% if is_list( value ) %}
               <td>
-              {% for elem, formatted_elem in zip(value, formatted_value) %}
-              <a href="{{ model_view._build_url_for('admin:details', request, elem) }}">({{ formatted_elem }})</a>
-              {% endfor %}
+                {% for elem, formatted_elem in zip(value, formatted_value) %}
+                <a href="{{ model_view._build_url_for('admin:details', request, elem) }}">({{ formatted_elem }})</a>
+                {% endfor %}
               </td>
               {% else %}
-              <td><a href="{{ model_view._url_for_details_with_prop(request, model, name) }}">{{ formatted_value }}</a></td>
+              <td><a href="{{ model_view._url_for_details_with_prop(request, model, name) }}">{{ formatted_value }}</a>
+              </td>
               {% endif %}
               {% else %}
               <td>{{ formatted_value }}</td>
@@ -51,7 +52,9 @@
           </div>
           {% if model_view.can_delete %}
           <div class="col-md-1">
-            <a href="#" data-name="{{ model_view.name }}" data-pk="{{ get_object_identifier(model) }}" data-url="{{ model_view._url_for_delete(request, model) }}" data-bs-toggle="modal" data-bs-target="#modal-delete" class="btn btn-danger">
+            <a href="#" data-name="{{ model_view.name }}" data-pk="{{ get_object_identifier(model) }}"
+              data-url="{{ model_view._url_for_delete(request, model) }}" data-bs-toggle="modal"
+              data-bs-target="#modal-delete" class="btn btn-danger">
               Delete
             </a>
           </div>
@@ -66,11 +69,13 @@
           {% for custom_action,label in model_view._custom_actions_in_detail.items() %}
           <div class="col-md-1">
             {% if custom_action in model_view._custom_actions_confirmation %}
-            <a href="#" class="btn btn-secondary" data-bs-toggle="modal" data-bs-target="#modal-confirmation-{{ custom_action }}">
+            <a href="#" class="btn btn-secondary" data-bs-toggle="modal"
+              data-bs-target="#modal-confirmation-{{ custom_action }}">
               {{ label }}
             </a>
             {% else %}
-            <a href="{{ model_view._url_for_action(request, custom_action) }}?pks={{ get_object_identifier(model) }}" class="btn btn-secondary">
+            <a href="{{ model_view._url_for_action(request, custom_action) }}?pks={{ get_object_identifier(model) }}"
+              class="btn btn-secondary">
               {{ label }}
             </a>
             {% endif %}
@@ -87,7 +92,8 @@
 
 {% for custom_action in model_view._custom_actions_in_detail %}
 {% if custom_action in model_view._custom_actions_confirmation %}
-{% with confirmation_message = model_view._custom_actions_confirmation[custom_action], custom_action=custom_action, url=model_view._url_for_action(request, custom_action) + '?pks=' + (get_object_identifier(model) | string) %}
+{% with confirmation_message = model_view._custom_actions_confirmation[custom_action], custom_action=custom_action,
+url=model_view._url_for_action(request, custom_action) + '?pks=' + (get_object_identifier(model) | string) %}
 {% include 'modals/details_action_confirmation.html' %}
 {% endwith %}
 {% endif %}

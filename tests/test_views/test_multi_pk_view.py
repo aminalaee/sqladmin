@@ -231,7 +231,7 @@ def test_edit_by_multipk(client: TestClient) -> None:
 def test_detail_view_with_multipk_relation(client: TestClient) -> None:
     base_content()
     response = client.get("/admin/review-complaint/details/1")
-    assert ">Review by 1 for 1</a></td>" in response.text
+    assert "Review by 1 for 1" in response.text
 
 
 def test_delete_selected_multipk(client: TestClient) -> None:
