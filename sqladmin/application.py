@@ -5,6 +5,7 @@ from types import MethodType
 from typing import (
     TYPE_CHECKING,
     Any,
+    Awaitable,
     Callable,
     List,
     Optional,
@@ -14,7 +15,6 @@ from typing import (
     Union,
     cast,
     no_type_check,
-    Awaitable,
 )
 from urllib.parse import urljoin
 
