@@ -374,7 +374,7 @@ class Admin(BaseAdminView):
 
         async def http_exception(
             request: Request, exc: Exception
-        ) -> Awaitable[Response]:
+        ) -> Union[Response, Awaitable[Response]]:
             assert isinstance(exc, HTTPException)
             context = {
                 "status_code": exc.status_code,
