@@ -42,7 +42,7 @@ class ItemMenu:
 class CategoryMenu(ItemMenu):
     def is_active(self, request: Request) -> bool:
         return any(
-            c.is_active(request) and c.is_accessible(request) for c in self.children
+            c.is_visible(request) and c.is_accessible(request) for c in self.children
         )
 
     @property
