@@ -27,7 +27,12 @@ from starlette.datastructures import URL, FormData, UploadFile
 from starlette.exceptions import HTTPException
 from starlette.middleware import Middleware
 from starlette.requests import Request
-from starlette.responses import JSONResponse, RedirectResponse, Response, FileResponse
+from starlette.responses import (
+    JSONResponse,
+    RedirectResponse,
+    Response,
+    FileResponse,
+)
 from starlette.routing import Mount, Route
 from starlette.staticfiles import StaticFiles
 
@@ -419,7 +424,12 @@ class Admin(BaseAdminView):
             ),
             Route("/login", endpoint=self.login, name="login", methods=["GET", "POST"]),
             Route("/logout", endpoint=self.logout, name="logout", methods=["GET"]),
-            Route("/{identity}/download/{file_path:path}", endpoint=self.download, name="download", methods=["GET"]),
+            Route(
+                "/{identity}/download/{file_path:path}",
+                endpoint=self.download,
+                name="download",
+                methods=["GET"]
+            ),
         ]
 
         self.admin.router.routes = routes
