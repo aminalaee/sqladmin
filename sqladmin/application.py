@@ -28,10 +28,10 @@ from starlette.exceptions import HTTPException
 from starlette.middleware import Middleware
 from starlette.requests import Request
 from starlette.responses import (
+    FileResponse,
     JSONResponse,
     RedirectResponse,
     Response,
-    FileResponse,
 )
 from starlette.routing import Mount, Route
 from starlette.staticfiles import StaticFiles
@@ -42,11 +42,11 @@ from sqladmin.ajax import QueryAjaxModelLoader
 from sqladmin.authentication import AuthenticationBackend, login_required
 from sqladmin.forms import WTFORMS_ATTRS, WTFORMS_ATTRS_REVERSED
 from sqladmin.helpers import (
+    get_filename_from_path,
     get_object_identifier,
     is_async_session_maker,
     slugify_action_name,
     value_is_filepath,
-    get_filename_from_path,
 )
 from sqladmin.models import BaseView, ModelView
 from sqladmin.templating import Jinja2Templates
