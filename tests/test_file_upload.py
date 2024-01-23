@@ -116,3 +116,35 @@ async def test_create_form_update(client: AsyncClient) -> None:
 
     user = await _query_user()
     assert user.file is None
+
+
+async def test_detail_view(client: AsyncClient) -> None:
+    files = {"file": ("upload.txt", b"abc")}
+    response = await client.post("/admin/user/create", files=files)
+
+    user = await _query_user()
+
+    assert response.status_code == 302
+    assert isinstance(user.file, StorageFile) is True
+    assert user.file.name == "upload.txt"
+    assert user.file.path == ".uploads/upload.txt"
+    assert user.file.open().read() == b"abc"
+
+    response = client.get("/admin/user/1")
+    assert f'<td><a href="{response.url}">{user.file.name}</a></td>' in response.text
+
+
+async def test_list_view(client: AsyncClient) -> None:
+    files = {"file": ("upload.txt", b"abc")}
+    response = await client.post("/admin/user/create", files=files)
+
+    user = await _query_user()
+
+    assert response.status_code == 302
+    assert isinstance(user.file, StorageFile) is True
+    assert user.file.name == "upload.txt"
+    assert user.file.path == ".uploads/upload.txt"
+    assert user.file.open().read() == b"abc"
+
+    response = client.get("/admin/user/list")
+    assert f'<td><a href="{response.url}">{user.file.name}</a></td>' in response.text
