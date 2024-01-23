@@ -425,7 +425,7 @@ class Admin(BaseAdminView):
             Route("/login", endpoint=self.login, name="login", methods=["GET", "POST"]),
             Route("/logout", endpoint=self.logout, name="logout", methods=["GET"]),
             Route(
-                "/{identity}/download/{file_path:path}",
+                "/download/{file_path:path}",
                 endpoint=self.download,
                 name="download",
                 methods=["GET"],

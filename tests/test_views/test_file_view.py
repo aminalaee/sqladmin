@@ -1,13 +1,15 @@
+import io
 from typing import Any, AsyncGenerator
 
 import pytest
 from fastapi_storages import FileSystemStorage, StorageFile
-from fastapi_storages.integrations.sqlalchemy import FileType, ImageType
+from fastapi_storages.integrations.sqlalchemy import FileType
 from httpx import AsyncClient
 from sqlalchemy import Column, Integer, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import declarative_base, sessionmaker
 from starlette.applications import Starlette
+from starlette.datastructures import UploadFile
 
 from sqladmin import Admin, ModelView
 from tests.common import async_engine as engine
@@ -20,13 +22,14 @@ session_maker = sessionmaker(bind=engine, class_=AsyncSession, expire_on_commit=
 app = Starlette()
 admin = Admin(app=app, engine=engine)
 
+storage = FileSystemStorage(path=".uploads")
+
 
 class User(Base):
     __tablename__ = "users"
 
     id = Column(Integer, primary_key=True)
     file = Column(FileType(FileSystemStorage(".uploads")))
-    image = Column(ImageType(FileSystemStorage(".uploads")))
 
 
 @pytest.fixture
@@ -47,7 +50,7 @@ async def client(prepare_database: Any) -> AsyncGenerator[AsyncClient, None]:
 
 
 class UserAdmin(ModelView, model=User):
-    ...
+    column_list = [User.id, User.file]
 
 
 admin.add_view(UserAdmin)
@@ -60,59 +63,45 @@ async def _query_user() -> Any:
     return result.scalar_one()
 
 
-async def test_create_form_fields(client: AsyncClient) -> None:
-    response = await client.get("/admin/user/create")
+async def test_detail_view(client: AsyncClient) -> None:
+    async with session_maker() as session:
+        user = User(file=UploadFile(filename="upload.txt", file=io.BytesIO(b"abc")))
+        session.add(user)
+        await session.commit()
 
-    assert response.status_code == 200
-    assert (
-        '<input class="form-control" id="file" name="file" type="file">'
-        in response.text
-    )
-    assert '<input class="form-check-input" type="checkbox"' in response.text
-    assert (
-        '<label class="form-check-label" for="file_checkbox">Clear</label>'
-        in response.text
-    )
-
-
-async def test_create_form_post(client: AsyncClient) -> None:
-    files = {"file": ("upload.txt", b"abc")}
-    response = await client.post("/admin/user/create", files=files)
+    response = await client.get("/admin/user/details/1")
 
     user = await _query_user()
 
-    assert response.status_code == 302
+    assert response.status_code == 200
     assert isinstance(user.file, StorageFile) is True
     assert user.file.name == "upload.txt"
     assert user.file.path == ".uploads/upload.txt"
     assert user.file.open().read() == b"abc"
 
-
-async def test_create_form_update(client: AsyncClient) -> None:
-    files = {"file": ("upload.txt", b"abc")}
-    response = await client.post("/admin/user/create", files=files)
-
-    user = await _query_user()
-
-    files = {"file": ("new_upload.txt", b"abc")}
-    response = await client.post("/admin/user/edit/1", files=files)
-
-    user = await _query_user()
-    assert response.status_code == 302
-    assert user.file.name == "new_upload.txt"
-    assert user.file.path == ".uploads/new_upload.txt"
-
-    files = {"file": ("empty.txt", b"")}
-    response = await client.post("/admin/user/edit/1", files=files)
-
-    user = await _query_user()
-    assert user.file.name == "new_upload.txt"
-    assert user.file.path == ".uploads/new_upload.txt"
-
-    files = {"file": ("new_upload.txt", b"abc")}
-    response = await client.post(
-        "/admin/user/edit/1", files=files, data={"file_checkbox": True}
+    assert (
+            f'<td><a href="http://testserver/admin/download/{user.file.path}">{user.file.name}</a></td>'
+            in response.text
     )
 
+
+async def test_list_view(client: AsyncClient) -> None:
+    async with session_maker() as session:
+        for i in range(10):
+            user = User(file=UploadFile(filename="upload.txt", file=io.BytesIO(b"abc")))
+            session.add(user)
+        await session.commit()
+
+    response = await client.get("/admin/user/list")
+
     user = await _query_user()
-    assert user.file is None
+
+    assert response.status_code == 200
+    assert isinstance(user.file, StorageFile) is True
+    assert user.file.name == "upload.txt"
+    assert user.file.path == ".uploads/upload.txt"
+    assert user.file.open().read() == b"abc"
+
+    assert response.text.count(
+        f'<td><a href="http://testserver/admin/download/{user.file.path}">{user.file.name}</a></td>'
+    ) == 10

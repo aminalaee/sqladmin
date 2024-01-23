@@ -820,7 +820,7 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
 
     async def _get_download_link(self, request: Request, value: str) -> Any:
         return request.url_for(
-            "admin:download", identity=self.identity, file_path=value
+            "admin:download", file_path=value
         )
 
     def _stmt_by_identifier(self, identifier: str) -> Select:
