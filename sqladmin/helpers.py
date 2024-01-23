@@ -169,7 +169,7 @@ class _PseudoBuffer:
 
 
 def stream_to_csv(
-    callback: Callable[[Writer], AsyncGenerator[T, None]]
+    callback: Callable[[Writer], AsyncGenerator[T, None]],
 ) -> Generator[T, None, None]:
     """Function that takes a callable (that yields from a CSV Writer), and
     provides it a writer that streams the output directly instead of

@@ -428,7 +428,7 @@ class Admin(BaseAdminView):
                 "/{identity}/download/{file_path:path}",
                 endpoint=self.download,
                 name="download",
-                methods=["GET"]
+                methods=["GET"],
             ),
         ]
 
