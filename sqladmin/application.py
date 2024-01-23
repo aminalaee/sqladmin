@@ -1,6 +1,7 @@
 import inspect
 import io
 import logging
+from pathlib import Path
 from types import MethodType
 from typing import (
     TYPE_CHECKING,
@@ -26,7 +27,12 @@ from starlette.datastructures import URL, FormData, UploadFile
 from starlette.exceptions import HTTPException
 from starlette.middleware import Middleware
 from starlette.requests import Request
-from starlette.responses import JSONResponse, RedirectResponse, Response
+from starlette.responses import (
+    FileResponse,
+    JSONResponse,
+    RedirectResponse,
+    Response,
+)
 from starlette.routing import Mount, Route
 from starlette.staticfiles import StaticFiles
 
@@ -36,9 +42,11 @@ from sqladmin.ajax import QueryAjaxModelLoader
 from sqladmin.authentication import AuthenticationBackend, login_required
 from sqladmin.forms import WTFORMS_ATTRS, WTFORMS_ATTRS_REVERSED
 from sqladmin.helpers import (
+    get_filename_from_path,
     get_object_identifier,
     is_async_session_maker,
     slugify_action_name,
+    value_is_filepath,
 )
 from sqladmin.models import BaseView, ModelView
 from sqladmin.templating import Jinja2Templates
@@ -115,6 +123,8 @@ class BaseAdmin:
         templates.env.globals["admin"] = self
         templates.env.globals["is_list"] = lambda x: isinstance(x, list)
         templates.env.globals["get_object_identifier"] = get_object_identifier
+        templates.env.globals["value_is_filepath"] = value_is_filepath
+        templates.env.globals["get_filename_from_path"] = get_filename_from_path
 
         return templates
 
@@ -414,6 +424,12 @@ class Admin(BaseAdminView):
             ),
             Route("/login", endpoint=self.login, name="login", methods=["GET", "POST"]),
             Route("/logout", endpoint=self.logout, name="logout", methods=["GET"]),
+            Route(
+                "/download/{file_path:path}",
+                endpoint=self.download,
+                name="download",
+                methods=["GET"],
+            ),
         ]
 
         self.admin.router.routes = routes
@@ -622,6 +638,15 @@ class Admin(BaseAdminView):
 
         await self.authentication_backend.logout(request)
         return RedirectResponse(request.url_for("admin:index"), status_code=302)
+
+    async def download(self, request: Request) -> Response:
+        """Download file endpoint."""
+
+        request_path = Path(request.path_params["file_path"])
+        if not request_path.is_file():
+            raise HTTPException(status_code=404)
+
+        return FileResponse(request_path, filename=request_path.name)
 
     async def ajax_lookup(self, request: Request) -> Response:
         """Ajax lookup route."""
