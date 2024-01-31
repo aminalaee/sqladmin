@@ -49,9 +49,16 @@ Main features include:
 
 ## Installation
 
+Install using `pip`:
+
 ```shell
 $ pip install sqladmin
-$ pip install sqladmin[full]
+```
+
+This will install the full version of sqladmin with optional dependencies:
+
+```shell
+$ pip install "sqladmin[full]"
 ```
 
 ---
