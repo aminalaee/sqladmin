@@ -55,7 +55,7 @@ Install using `pip`:
 $ pip install sqladmin
 ```
 
-This will install the full version of sqladmin with extra dependencies for security:
+This will install the full version of sqladmin with optional dependencies:
 
 ```shell
 $ pip install "sqladmin[full]"
