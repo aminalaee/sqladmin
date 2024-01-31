@@ -5,6 +5,7 @@ from types import MethodType
 from typing import (
     TYPE_CHECKING,
     Any,
+    Awaitable,
     Callable,
     List,
     Optional,
@@ -371,15 +372,17 @@ class Admin(BaseAdminView):
 
         statics = StaticFiles(packages=["sqladmin"])
 
-        # def http_exception(request: Request, exc: Exception) -> Response:
-        #     assert isinstance(exc, HTTPException)
-        #     context = {
-        #         "status_code": exc.status_code,
-        #         "message": exc.detail,
-        #     }
-        #     return self.templates.TemplateResponse(
-        #         request, "error.html", context, status_code=exc.status_code
-        #     )
+        async def http_exception(
+            request: Request, exc: Exception
+        ) -> Union[Response, Awaitable[Response]]:
+            assert isinstance(exc, HTTPException)
+            context = {
+                "status_code": exc.status_code,
+                "message": exc.detail,
+            }
+            return await self.templates.TemplateResponse(
+                request, "error.html", context, status_code=exc.status_code
+            )
 
         routes = [
             Mount("/statics", app=statics, name="statics"),
@@ -417,7 +420,7 @@ class Admin(BaseAdminView):
         ]
 
         self.admin.router.routes = routes
-        # self.admin.exception_handlers = {HTTPException: http_exception}
+        self.admin.exception_handlers = {HTTPException: http_exception}
         self.admin.debug = debug
         self.app.mount(base_url, app=self.admin, name="admin")
 
