@@ -86,7 +86,7 @@ python = ["38", "39", "310", "311", "3.12"]
 
 [tool.hatch.envs.lint]
 dependencies = [
-  "mypy==1.6.1",
+  "mypy==1.8.0",
   "ruff==0.1.5",
   "sqlalchemy~=1.4", # MyPy issues with SQLAlchemy V2
 ]
