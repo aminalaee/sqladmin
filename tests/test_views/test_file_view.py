@@ -120,3 +120,32 @@ async def test_list_view(client: AsyncClient) -> None:
     count_a_download = len(pattern_a_download.findall(response.text))
 
     assert count_span == count_a_read == count_a_download == 10
+
+
+async def test_file_download(client: AsyncClient) -> None:
+    async with session_maker() as session:
+        for i in range(10):
+            user = User(file=UploadFile(filename="upload.txt", file=io.BytesIO(b"abc")))
+            session.add(user)
+        await session.commit()
+
+    response = await client.get("/admin/user/1/file/download/")
+
+    assert response.status_code == 200
+
+    with open('.uploads/download.txt', "wb") as local_file:
+        local_file.write(response.content)
+
+    assert open(f'.uploads/download.txt', "rb").read() == b"abc"
+
+
+async def test_file_read(client: AsyncClient) -> None:
+    async with session_maker() as session:
+        for i in range(10):
+            user = User(file=UploadFile(filename="upload.txt", file=io.BytesIO(b"abc")))
+            session.add(user)
+        await session.commit()
+
+    response = await client.get("/admin/user/1/file/read/")
+    assert response.status_code == 200
+    assert response.text == "abc"
