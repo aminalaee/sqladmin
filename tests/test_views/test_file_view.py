@@ -1,4 +1,5 @@
 import io
+import re
 from typing import Any, AsyncGenerator
 
 import pytest
@@ -80,9 +81,11 @@ async def test_detail_view(client: AsyncClient) -> None:
     assert user.file.open().read() == b"abc"
 
     assert (
-        f'<td><a href="http://testserver/admin/download/{user.file.path}">{user.file.name}</a></td>'
+        '<span class="me-1"><i class="fa-solid fa-download"></i></span>'
         in response.text
     )
+    assert '<a href="http://testserver/admin/user/1/file/read/">' in response.text
+    assert '<a href="http://testserver/admin/user/1/file/download/">' in response.text
 
 
 async def test_list_view(client: AsyncClient) -> None:
@@ -102,9 +105,18 @@ async def test_list_view(client: AsyncClient) -> None:
     assert user.file.path == ".uploads/upload.txt"
     assert user.file.open().read() == b"abc"
 
-    assert (
-        response.text.count(
-            f'<td><a href="http://testserver/admin/download/{user.file.path}">{user.file.name}</a></td>'
-        )
-        == 10
+    pattern_span = re.compile(
+        r'<span class="me-1"><i class="fa-solid fa-download"></i></span>'
     )
+    pattern_a_read = re.compile(
+        r'<a href="http://testserver/admin/user/\d+/file/read/">'
+    )
+    pattern_a_download = re.compile(
+        r'<a href="http://testserver/admin/user/\d+/file/download/">'
+    )
+
+    count_span = len(pattern_span.findall(response.text))
+    count_a_read = len(pattern_a_read.findall(response.text))
+    count_a_download = len(pattern_a_download.findall(response.text))
+
+    assert count_span == count_a_read == count_a_download == 10
