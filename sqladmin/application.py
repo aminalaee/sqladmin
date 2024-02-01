@@ -320,6 +320,21 @@ class BaseAdminView(BaseAdmin):
         if request.path_params["export_type"] not in model_view.export_types:
             raise HTTPException(status_code=404)
 
+    async def _get_file(self, request: Request) -> Path:
+        """Get file path"""
+
+        identity = request.path_params["identity"]
+        identifier = request.path_params["pk"]
+        column_name = request.path_params["column_name"]
+
+        model_view = self._find_model_view(identity)
+        file_path = await model_view.get_object_filepath(identifier, column_name)
+
+        request_path = Path(file_path)
+        if not request_path.is_file():
+            raise HTTPException(status_code=404)
+        return request_path
+
 
 class Admin(BaseAdminView):
     """Main entrypoint to admin interface.
@@ -425,9 +440,15 @@ class Admin(BaseAdminView):
             Route("/login", endpoint=self.login, name="login", methods=["GET", "POST"]),
             Route("/logout", endpoint=self.logout, name="logout", methods=["GET"]),
             Route(
-                "/download/{file_path:path}",
-                endpoint=self.download,
-                name="download",
+                "/{identity}/{pk:path}/{column_name}/download/",
+                endpoint=self.download_file,
+                name="file_download",
+                methods=["GET"],
+            ),
+            Route(
+                "/{identity}/{pk:path}/{column_name}/read/",
+                endpoint=self.reed_file,
+                name="file_read",
                 methods=["GET"],
             ),
         ]
@@ -503,7 +524,6 @@ class Admin(BaseAdminView):
     @login_required
     async def create(self, request: Request) -> Response:
         """Create model endpoint."""
-
         await self._create(request)
 
         identity = request.path_params["identity"]
@@ -639,14 +659,17 @@ class Admin(BaseAdminView):
         await self.authentication_backend.logout(request)
         return RedirectResponse(request.url_for("admin:index"), status_code=302)
 
-    async def download(self, request: Request) -> Response:
+    async def download_file(self, request: Request) -> Response:
         """Download file endpoint."""
-
-        request_path = Path(request.path_params["file_path"])
-        if not request_path.is_file():
-            raise HTTPException(status_code=404)
-
+        request_path = await self._get_file(request)
         return FileResponse(request_path, filename=request_path.name)
+
+    async def reed_file(self, request: Request) -> Response:
+        """Read file endpoint."""
+        request_path = await self._get_file(request)
+        return FileResponse(
+            request_path, filename=request_path.name, content_disposition_type="inline"
+        )
 
     async def ajax_lookup(self, request: Request) -> Response:
         """Ajax lookup route."""

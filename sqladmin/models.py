@@ -818,8 +818,31 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
         stmt = self._stmt_by_identifier(value)
         return await self._get_object_by_pk(stmt)
 
-    async def _get_download_link(self, request: Request, value: str) -> Any:
-        return request.url_for("admin:download", file_path=value)
+    async def get_object_filepath(self, identifier: int, column_name: str) -> Any:
+        stmt = self._stmt_by_identifier(identifier)
+        obj = await self._get_object_by_pk(stmt)
+        column_value = getattr(obj, column_name)
+        return column_value
+
+    async def _get_file_download_link(
+        self, request: Request, obj: Any, pk: int, column_name: str
+    ) -> Any:
+        return request.url_for(
+            "admin:file_download",
+            identity=slugify_class_name(obj.__class__.__name__),
+            pk=pk,
+            column_name=column_name,
+        )
+
+    async def _get_file_link(
+        self, request: Request, obj: Any, pk: int, column_name: str
+    ) -> Any:
+        return request.url_for(
+            "admin:file_read",
+            identity=slugify_class_name(obj.__class__.__name__),
+            pk=pk,
+            column_name=column_name,
+        )
 
     def _stmt_by_identifier(self, identifier: str) -> Select:
         stmt = select(self.model)
