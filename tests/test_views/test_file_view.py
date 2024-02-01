@@ -136,7 +136,7 @@ async def test_file_download(client: AsyncClient) -> None:
     with open('.uploads/download.txt', "wb") as local_file:
         local_file.write(response.content)
 
-    assert open(f'.uploads/download.txt', "rb").read() == b"abc"
+    assert open('.uploads/download.txt', "rb").read() == b"abc"
 
 
 async def test_file_read(client: AsyncClient) -> None:
