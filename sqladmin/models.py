@@ -818,7 +818,7 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
         stmt = self._stmt_by_identifier(value)
         return await self._get_object_by_pk(stmt)
 
-    async def get_object_filepath(self, identifier: int, column_name: str) -> Any:
+    async def get_object_filepath(self, identifier: str, column_name: str) -> Any:
         stmt = self._stmt_by_identifier(identifier)
         obj = await self._get_object_by_pk(stmt)
         column_value = getattr(obj, column_name)
