@@ -25,3 +25,81 @@ SQLAdmin and in the `content` block it adds custom HTML tags:
     class UserAdmin(ModelView, model=User):
         details_template = "custom_details.html"
     ```
+
+## Customizing Jinja2 environment
+
+You can add custom environment options to use it on your custom templates. First set up a project:
+
+```python
+from sqladmin import Admin
+from starlette.applications import Starlette
+
+
+app = Starlette()
+admin = Admin(app, engine)
+```
+
+Then you can add your environment options:
+
+### Adding filters
+
+```python
+def datetime_format(value, format="%H:%M %d-%m-%y"):
+    return value.strftime(format)
+
+admin.templates.env.filters["datetime_format"] = datetime_format
+```
+
+Usage in templates:
+
+```
+{{ article.pub_date|datetimeformat }}
+{{ article.pub_date|datetimeformat("%B %Y") }}
+```
+
+### Adding tests
+
+```python
+import math
+
+def is_prime(n):
+    if n == 2:
+        return True
+
+    for i in range(2, int(math.ceil(math.sqrt(n))) + 1):
+        if n % i == 0:
+            return False
+
+    return True
+
+admin.templates.env.tests["prime"] = is_prime
+```
+
+Usage in templates:
+
+```
+{% if value is prime %}
+    {{ value }} is a prime number
+{% else %}
+    {{ value }} is not a prime number
+{% endif %}
+```
+
+# Adding globals
+
+```python
+def value_is_filepath(value: Any) -> bool:
+    return isinstance(value, str) and os.path.isfile(value)
+    
+admin.templates.env.globals["value_is_filepath"] = value_is_filepath
+```
+
+Usage in templates:
+
+```
+{% if value_is_filepath(value) %}
+    {{ value }} is file path
+{% else %}
+    {{ value }} is not file path
+{% endif %}
+```
