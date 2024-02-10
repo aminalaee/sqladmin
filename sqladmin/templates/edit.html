@@ -8,6 +8,11 @@
     <div class="card-body border-bottom py-3">
       <form action="{{ model_view._build_url_for('admin:edit', request, obj) }}" method="POST"
         enctype="multipart/form-data">
+        <div class="row">
+          {% if error %}
+          <div class="alert alert-danger" role="alert">{{ error }}</div>
+          {% endif %}
+        </div>
         <fieldset class="form-fieldset">
           {% for field in form %}
           <div class="mb-3 form-group row">
@@ -26,9 +31,6 @@
           {% endfor %}
         </fieldset>
         <div class="row">
-          {% if error %}
-          <div class="alert alert-danger" role="alert">{{ error }}</div>
-          {% endif %}
           <div class="col-md-2">
             <a href="{{ url_for('admin:list', identity=model_view.identity) }}" class="btn">
               Cancel
