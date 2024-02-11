@@ -8,10 +8,6 @@ from starlette.responses import Response
 from starlette.routing import Router
 
 
-async def _dummy_method(*args, **kwargs) -> Response:
-    return Response("okay")
-
-
 @pytest.fixture()
 def templates_path() -> Path:
     return Path(__file__).parent.parent.parent / "sqladmin" / "templates"
@@ -37,7 +33,12 @@ def macros_content(templates_path: Path) -> str:
 @pytest.fixture()
 def request_without_access() -> Request:
     router = Router()
-    router.add_route("/{identity}/list", _dummy_method, ["GET"], name="admin:list")
+    router.add_route(
+        "/{identity}/list",
+        lambda request: Response("okay"),
+        ["GET"],
+        name="admin:list",
+    )
 
     return Request(
         {
