@@ -19,7 +19,17 @@ class UserAdmin(ModelView, model=User):
     ...
 
 
-request = Request({"type": "http"})
+class InvisibleUserAdmin(ModelView, model=User):
+    def is_visible(self, request: Request) -> bool:
+        return False
+
+
+class InaccessibleUserAdmin(ModelView, model=User):
+    def is_accessible(self, request: Request) -> bool:
+        return False
+
+
+REQUEST = Request({"type": "http"})
 
 
 def test_item_menu():
@@ -28,18 +38,48 @@ def test_item_menu():
     item_menu.add_child(child_menu)
 
     assert item_menu.display_name == "item"
-    assert item_menu.url(request) == "#"
-    assert item_menu.is_visible(request) is True
-    assert item_menu.is_accessible(request) is True
-    assert item_menu.is_active(request) is False
+    assert item_menu.url(REQUEST) == "#"
+    assert item_menu.is_visible(REQUEST) is True
+    assert item_menu.is_accessible(REQUEST) is True
+    assert item_menu.is_active(REQUEST) is False
     assert item_menu.type_ == "ItemMenu"
 
 
 def test_category_menu():
     item_menu = CategoryMenu(name="category")
 
-    assert item_menu.is_active(request) is False
+    assert item_menu.is_active(REQUEST) is False
     assert item_menu.type_ == "Category"
+
+
+def test_invisible_category_menu():
+    category_menu = CategoryMenu(name="category")
+    first_child = ViewMenu(view=InvisibleUserAdmin(), name="view1")
+    category_menu.add_child(first_child)
+
+    assert first_child.is_visible(REQUEST) is False
+    assert category_menu.is_visible(REQUEST) is False
+
+    second_child = ViewMenu(view=UserAdmin(), name="view2")
+    category_menu.add_child(second_child)
+
+    assert second_child.is_visible(REQUEST) is True
+    assert category_menu.is_visible(REQUEST) is True
+
+
+def test_inaccessible_category_menu():
+    category_menu = CategoryMenu(name="category")
+    first_child = ViewMenu(view=InaccessibleUserAdmin(), name="view1")
+    category_menu.add_child(first_child)
+
+    assert first_child.is_accessible(REQUEST) is False
+    assert category_menu.is_accessible(REQUEST) is False
+
+    second_child = ViewMenu(view=UserAdmin(), name="view2")
+    category_menu.add_child(second_child)
+
+    assert second_child.is_accessible(REQUEST) is True
+    assert category_menu.is_accessible(REQUEST) is True
 
 
 def test_view_menu():
@@ -47,9 +87,9 @@ def test_view_menu():
 
     assert item_menu.display_name == "Users"
     assert item_menu.type_ == "View"
-    assert item_menu.is_visible(request) is True
-    assert item_menu.is_accessible(request) is True
-    assert item_menu.is_active(request) is False
+    assert item_menu.is_visible(REQUEST) is True
+    assert item_menu.is_accessible(REQUEST) is True
+    assert item_menu.is_active(REQUEST) is False
 
 
 def test_menu():

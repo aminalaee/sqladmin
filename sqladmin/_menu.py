@@ -45,6 +45,12 @@ class CategoryMenu(ItemMenu):
             c.is_active(request) and c.is_accessible(request) for c in self.children
         )
 
+    def is_visible(self, request: Request) -> bool:
+        return any(c.is_visible(request) for c in self.children)
+
+    def is_accessible(self, request: Request) -> bool:
+        return any(c.is_accessible(request) for c in self.children)
+
     @property
     def type_(self) -> str:
         return "Category"
