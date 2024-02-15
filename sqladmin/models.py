@@ -731,7 +731,7 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
     def _get_default_sort(self) -> List[Tuple[str, bool]]:
         if self.column_default_sort:
             if isinstance(self.column_default_sort, list):
-                return [pair for pair in self.column_default_sort]
+                return self.column_default_sort
             if isinstance(self.column_default_sort, tuple):
                 return [self.column_default_sort]
             else:
