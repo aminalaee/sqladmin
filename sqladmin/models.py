@@ -316,7 +316,7 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
         ```
     """
 
-    column_default_sort: ClassVar[Union[str, Tuple[str, bool], list]] = []
+    column_default_sort: ClassVar[Union[MODEL_ATTR, Tuple[MODEL_ATTR, bool], list]] = []
     """Default sort column if no sorting is applied.
 
     ???+ example
@@ -672,12 +672,10 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
         self._export_prop_names = self.get_export_columns()
 
         self._search_fields = [
-            attr if isinstance(attr, str) else attr.key
-            for attr in self.column_searchable_list
+            self._get_prop_name(attr) for attr in self.column_searchable_list
         ]
         self._sort_fields = [
-            attr if isinstance(attr, str) else attr.key
-            for attr in self.column_sortable_list
+            self._get_prop_name(attr) for attr in self.column_sortable_list
         ]
 
         self._form_ajax_refs = {}
@@ -727,10 +725,13 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
             pk=get_object_identifier(obj),
         )
 
+    def _get_prop_name(self, prop: MODEL_ATTR) -> str:
+        return prop if isinstance(prop, str) else prop.key
+
     def _get_default_sort(self) -> List[Tuple[str, bool]]:
         if self.column_default_sort:
             if isinstance(self.column_default_sort, list):
-                return self.column_default_sort
+                return [pair for pair in self.column_default_sort]
             if isinstance(self.column_default_sort, tuple):
                 return [self.column_default_sort]
             else:
@@ -881,9 +882,9 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
         if include == "__all__":
             return self._prop_names
         elif include:
-            return [item if isinstance(item, str) else item.key for item in include]
+            return [self._get_prop_name(item) for item in include]
         elif exclude:
-            exclude = [item if isinstance(item, str) else item.key for item in exclude]
+            exclude = [self._get_prop_name(item) for item in exclude]
             return [prop for prop in self._prop_names if prop not in exclude]
         return defaults
 
@@ -956,10 +957,7 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
     ) -> Dict[str, Any]:
         pairs = {}
         for label, value in pair.items():
-            if isinstance(label, str):
-                pairs[label] = value
-            else:
-                pairs[label.key] = value
+            pairs[self._get_prop_name(label)] = value
         return pairs
 
     async def delete_model(self, request: Request, pk: Any) -> None:
@@ -1075,7 +1073,7 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
         for sort_field, is_desc in sort_fields:
             model = self.model
 
-            parts = sort_field.split(".")
+            parts = self._get_prop_name(sort_field).split(".")
             for part in parts[:-1]:
                 model = getattr(model, part).mapper.class_
                 stmt = stmt.join(model)
