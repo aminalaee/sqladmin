@@ -1,5 +1,5 @@
 {% macro menu_category(menu, request) %}
-{% if menu.is_visible(request) and menu.is_accessible(request) %}
+{% if menu.is_active(request) %}
 <li class="nav-item dropdown">
   <a class="nav-link dropdown-toggle {% if menu.is_active(request) %}active{% endif %}" data-bs-toggle="dropdown"
     href="#">
@@ -12,6 +12,7 @@
     <div class="dropdown-menu-columns">
       <div class="dropdown-menu-column">
         {% for sub_menu in menu.children %}
+        {% if sub_menu.is_visible(request) and sub_menu.is_accessible(request) %}
         <a class="nav-link ps-lg-3 {% if sub_menu.is_active(request) %}active{% endif %}"
           href="{{ sub_menu.url(request) }}">
           <span class="nav-link-icon d-md-none d-lg-inline-block">
@@ -19,6 +20,7 @@
           </span>
           <span class="nav-link-title">{{ sub_menu.display_name }}</span>
         </a>
+        {% endif %}
         {% endfor %}
       </div>
     </div>
