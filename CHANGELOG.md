@@ -4,6 +4,23 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## Version 0.16.1 - 2024-02-20
+
+### Fixed
+
+* Re-add http_exception handler to Admin class in https://github.com/aminalaee/sqladmin/pull/694
+* Move non-field-specific errors to top of edit and create forms in https://github.com/aminalaee/sqladmin/pull/707
+* Fix sort by model attribute in https://github.com/aminalaee/sqladmin/pull/713
+* Fix Category not respecting is_visible and is_accessible in https://github.com/aminalaee/sqladmin/pull/698
+
+## New Contributors
+* @kostyaten made their first contribution in https://github.com/aminalaee/sqladmin/pull/677
+* @EnotShow made their first contribution in https://github.com/aminalaee/sqladmin/pull/703
+* @jonocodes made their first contribution in https://github.com/aminalaee/sqladmin/pull/707
+* @Neverfan1 made their first contribution in https://github.com/aminalaee/sqladmin/pull/698
+
+**Full Changelog**: https://github.com/aminalaee/sqladmin/compare/0.16.0...0.16.1
+
 ## Version 0.16.0 - 2023-11-14
 
 ### Added
