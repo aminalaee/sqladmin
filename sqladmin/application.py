@@ -686,7 +686,7 @@ class Admin(BaseAdminView):
                 form_data.append((key, UploadFile(io.BytesIO(b""))))
             elif empty_upload and obj and getattr(obj, key):
                 f = getattr(obj, key)  # In case of update, imitate UploadFile
-                if isinstance(f, dict):  # this is a hotfix just for my situation, not a production-ready solution
+                if not isinstance(f, UploadFile):
                     form_data.append((key, f))
                     continue
                 form_data.append((key, UploadFile(filename=f.name, file=f.open())))
