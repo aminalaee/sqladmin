@@ -26,6 +26,9 @@
               {% for error in field.errors %}
               <div class="invalid-feedback">{{ error }}</div>
               {% endfor %}
+              {% if field.description %}
+              <small class="text-muted">{{ field.description }}</small>
+              {% endif %}
             </div>
           </div>
           {% endfor %}
