@@ -13,7 +13,7 @@ SQLAdmin and in the `content` block it adds custom HTML tags:
 
 !!! example
 
-    ```html name="custom_details.html"
+    ```html title="custom_details.html"
     {% extends "details.html" %}
     {% block content %}
         {{ super() }}
@@ -21,7 +21,7 @@ SQLAdmin and in the `content` block it adds custom HTML tags:
     {% endblock %}
     ```
 
-    ```python name="admin.py"
+    ```python title="admin.py"
     class UserAdmin(ModelView, model=User):
         details_template = "custom_details.html"
     ```
