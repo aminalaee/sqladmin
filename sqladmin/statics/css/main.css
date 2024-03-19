@@ -1,3 +1,11 @@
 .table thead th {
     text-transform: none;
 }
+
+.select2-multiple {
+    width: 100% !important;
+}
+
+.select2-container--default .select2-selection--multiple .select2-selection__rendered li {
+    text-wrap: wrap;
+}
