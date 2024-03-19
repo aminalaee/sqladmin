@@ -150,3 +150,8 @@ $(':input[data-role="select2-tags"]').each(function () {
     $(this).append(option).trigger('change');
   }
 });
+
+// Select2 multiple
+$(document).ready(function() {
+    $('.select2-multiple').select2();
+});
