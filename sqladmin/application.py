@@ -686,9 +686,10 @@ class Admin(BaseAdminView):
                 form_data.append((key, UploadFile(io.BytesIO(b""))))
             elif empty_upload and obj and getattr(obj, key):
                 f = getattr(obj, key)  # In case of update, imitate UploadFile
-                form_data.append((key, UploadFile(filename=f.name, file=f.open())))
+                form_data.append((key, f))
             else:
                 form_data.append((key, value))
+
         return FormData(form_data)
 
     def _normalize_wtform_data(self, obj: Any) -> dict:
