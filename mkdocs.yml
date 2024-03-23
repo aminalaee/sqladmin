@@ -3,34 +3,35 @@ site_description: Flexible admin dashboard for SQLAlchemy.
 site_url: https://aminalaee.dev/sqladmin
 
 theme:
-  name: 'material'
+  name: "material"
   palette:
-      primary: white
+    primary: white
+  features:
+    - content.code.copy
 
 repo_name: aminalaee/sqladmin
 repo_url: https://github.com/aminalaee/sqladmin
 edit_uri: ""
 
 nav:
-  - Introduction: 'index.md'
-  - Configurations: 'configurations.md'
-  - Authentication: 'authentication.md'
-  - Working with Templates: 'working_with_templates.md'
-  - Working with Custom Views: 'writing_custom_views.md'
-  - Working with Files and Images: 'working_with_files.md'
+  - Introduction: "index.md"
+  - Configurations: "configurations.md"
+  - Authentication: "authentication.md"
+  - Working with Templates: "working_with_templates.md"
+  - Working with Custom Views: "writing_custom_views.md"
+  - Working with Files and Images: "working_with_files.md"
   - Cookbook:
-    - Deployment with HTTPS: 'cookbook/deployment_with_https.md'
-    - Optimize relationship loading: 'cookbook/optimize_relationship_loading.md'
-    - Display custom attributes: 'cookbook/display_custom_attributes.md'
-    - Using a request object: 'cookbook/using_request_object.md'
-    - Multiple databases: 'cookbook/multiple_databases.md'
-    # - Structuring larger projects: 'cookbook/structuring_larger_projects.md'
-    # - Admin home page: 'cookbook/admin_home_page.md'
+      - Deployment with HTTPS: "cookbook/deployment_with_https.md"
+      - Optimize relationship loading: "cookbook/optimize_relationship_loading.md"
+      - Display custom attributes: "cookbook/display_custom_attributes.md"
+      - Using a request object: "cookbook/using_request_object.md"
+      - Multiple databases: "cookbook/multiple_databases.md"
+      - Using rich text editor: "cookbook/using_wysiwyg.md"
   - API Reference:
-    - Application: 'api_reference/application.md'
-    - ModelView: 'api_reference/model_view.md'
-    - BaseView: 'api_reference/base_view.md'
-    - Authentication: 'api_reference/authentication.md'
+      - Application: "api_reference/application.md"
+      - ModelView: "api_reference/model_view.md"
+      - BaseView: "api_reference/base_view.md"
+      - Authentication: "api_reference/authentication.md"
 
 markdown_extensions:
   - markdown.extensions.codehilite:
