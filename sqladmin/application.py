@@ -542,7 +542,7 @@ class Admin(BaseAdminView):
         identity = request.path_params["identity"]
         model_view = self._find_model_view(identity)
 
-        model = await model_view.get_object_for_edit(request.path_params["pk"])
+        model = await model_view.get_object_for_edit(request)
         if not model:
             raise HTTPException(status_code=404)
 

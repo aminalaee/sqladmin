@@ -807,11 +807,12 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
 
         return await self._get_object_by_pk(stmt)
 
-    async def get_object_for_edit(self, value: Any) -> Any:
-        stmt = self._stmt_by_identifier(value)
+    async def get_object_for_edit(self, request: Request) -> Any:
+        stmt = self.form_query(request)
 
-        for relation in self._form_relations:
-            stmt = stmt.options(joinedload(relation))
+        if type(self).form_query == ModelView.form_query:
+            for relation in self._form_relations:
+                stmt = stmt.options(joinedload(relation))
 
         return await self._get_object_by_pk(stmt)
 
@@ -1044,6 +1045,15 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
         """
 
         return select(self.model)
+
+    def form_query(self, request: Request) -> Select:
+        """
+        The SQLAlchemy select expression used for the form page which can be customized.
+        By default it will select all objects without any filters.
+        """
+
+        identifier = request.path_params["pk"]
+        return self._stmt_by_identifier(identifier)
 
     def count_query(self, request: Request) -> Select:
         """
