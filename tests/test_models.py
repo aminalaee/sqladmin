@@ -382,7 +382,7 @@ async def test_get_model_objects_uses_list_query() -> None:
     assert len(await view.get_model_objects(request)) == 1
 
 
-async def test_form_query() -> None:
+async def test_edit_form_query() -> None:
     session = session_maker()
     batman = User(name="batman")
     batcave = Address(user=batman, name="bat cave")
@@ -396,7 +396,7 @@ async def test_form_query() -> None:
         async_engine = False
         session_maker = session_maker
 
-        def form_query(self, request: Request) -> Select:
+        def edit_form_query(self, request: Request) -> Select:
             return (
                 select(self.model)
                 .join(Address)
