@@ -811,6 +811,7 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
         stmt = self.form_query(request)
 
         if type(self).form_query == ModelView.form_query:
+            # If form_query fn hasn't been overridden, add all relationships
             for relation in self._form_relations:
                 stmt = stmt.options(joinedload(relation))
 
