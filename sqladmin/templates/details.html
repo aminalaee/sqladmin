@@ -36,7 +36,18 @@
               </td>
               {% endif %}
               {% else %}
+              {% if value_is_filepath(value) %}
+              <td>
+                <a href="{{ model_view._get_file_link(request, model, get_object_identifier(model), name) }}">
+                    {{ get_filename_from_path(value) }}
+                </a>
+                <a href="{{ model_view._get_file_download_link(request, model, get_object_identifier(model), name) }}">
+                    <span class="me-1"><i class="fa-solid fa-download"></i></span>
+                </a>
+              </td>
+              {% else %}
               <td>{{ formatted_value }}</td>
+              {% endif %}
               {% endif %}
             </tr>
             {% endfor %}

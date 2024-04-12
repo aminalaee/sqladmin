@@ -132,6 +132,16 @@ def secure_filename(filename: str) -> str:
     return filename
 
 
+def value_is_filepath(value: Any) -> bool:
+    """Check if a value is a filepath."""
+    return isinstance(value, str) and os.path.isfile(value)
+
+
+def get_filename_from_path(path: str) -> str:
+    """Get filename from path."""
+    return os.path.basename(path)
+
+
 class Writer(ABC):
     """https://docs.python.org/3/library/csv.html#writer-objects"""
 

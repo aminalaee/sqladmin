@@ -1,6 +1,7 @@
 import inspect
 import io
 import logging
+from pathlib import Path
 from types import MethodType
 from typing import (
     TYPE_CHECKING,
@@ -27,7 +28,12 @@ from starlette.datastructures import URL, FormData, UploadFile
 from starlette.exceptions import HTTPException
 from starlette.middleware import Middleware
 from starlette.requests import Request
-from starlette.responses import JSONResponse, RedirectResponse, Response
+from starlette.responses import (
+    FileResponse,
+    JSONResponse,
+    RedirectResponse,
+    Response,
+)
 from starlette.routing import Mount, Route
 from starlette.staticfiles import StaticFiles
 
@@ -37,9 +43,11 @@ from sqladmin.ajax import QueryAjaxModelLoader
 from sqladmin.authentication import AuthenticationBackend, login_required
 from sqladmin.forms import WTFORMS_ATTRS, WTFORMS_ATTRS_REVERSED
 from sqladmin.helpers import (
+    get_filename_from_path,
     get_object_identifier,
     is_async_session_maker,
     slugify_action_name,
+    value_is_filepath,
 )
 from sqladmin.models import BaseView, ModelView
 from sqladmin.templating import Jinja2Templates
@@ -116,6 +124,8 @@ class BaseAdmin:
         templates.env.globals["admin"] = self
         templates.env.globals["is_list"] = lambda x: isinstance(x, list)
         templates.env.globals["get_object_identifier"] = get_object_identifier
+        templates.env.globals["value_is_filepath"] = value_is_filepath
+        templates.env.globals["get_filename_from_path"] = get_filename_from_path
 
         return templates
 
@@ -311,6 +321,21 @@ class BaseAdminView(BaseAdmin):
         if request.path_params["export_type"] not in model_view.export_types:
             raise HTTPException(status_code=404)
 
+    async def _get_file(self, request: Request) -> Path:
+        """Get file path"""
+
+        identity = request.path_params["identity"]
+        identifier = request.path_params["pk"]
+        column_name = request.path_params["column_name"]
+
+        model_view = self._find_model_view(identity)
+        file_path = await model_view.get_object_filepath(identifier, column_name)
+
+        request_path = Path(file_path)
+        if not request_path.is_file():
+            raise HTTPException(status_code=404)
+        return request_path
+
 
 class Admin(BaseAdminView):
     """Main entrypoint to admin interface.
@@ -417,6 +442,18 @@ class Admin(BaseAdminView):
             ),
             Route("/login", endpoint=self.login, name="login", methods=["GET", "POST"]),
             Route("/logout", endpoint=self.logout, name="logout", methods=["GET"]),
+            Route(
+                "/{identity}/{pk:path}/{column_name}/download/",
+                endpoint=self.download_file,
+                name="file_download",
+                methods=["GET"],
+            ),
+            Route(
+                "/{identity}/{pk:path}/{column_name}/read/",
+                endpoint=self.reed_file,
+                name="file_read",
+                methods=["GET"],
+            ),
         ]
 
         self.admin.router.routes = routes
@@ -490,7 +527,6 @@ class Admin(BaseAdminView):
     @login_required
     async def create(self, request: Request) -> Response:
         """Create model endpoint."""
-
         await self._create(request)
 
         identity = request.path_params["identity"]
@@ -625,6 +661,18 @@ class Admin(BaseAdminView):
 
         await self.authentication_backend.logout(request)
         return RedirectResponse(request.url_for("admin:index"), status_code=302)
+
+    async def download_file(self, request: Request) -> Response:
+        """Download file endpoint."""
+        request_path = await self._get_file(request)
+        return FileResponse(request_path, filename=request_path.name)
+
+    async def reed_file(self, request: Request) -> Response:
+        """Read file endpoint."""
+        request_path = await self._get_file(request)
+        return FileResponse(
+            request_path, filename=request_path.name, content_disposition_type="inline"
+        )
 
     async def ajax_lookup(self, request: Request) -> Response:
         """Ajax lookup route."""
