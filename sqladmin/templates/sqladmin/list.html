@@ -1,4 +1,4 @@
-{% extends "layout.html" %}
+{% extends "sqladmin/layout.html" %}
 {% block content %}
 <div class="col-12">
   <div class="card">
@@ -207,14 +207,14 @@
     </div>
   </div>
   {% if model_view.can_delete %}
-  {% include 'modals/delete.html' %}
+  {% include 'sqladmin/modals/delete.html' %}
   {% endif %}
 
   {% for custom_action in model_view._custom_actions_in_list %}
   {% if custom_action in model_view._custom_actions_confirmation %}
   {% with confirmation_message = model_view._custom_actions_confirmation[custom_action], custom_action=custom_action,
   url=model_view._url_for_action(request, custom_action) %}
-  {% include 'modals/list_action_confirmation.html' %}
+  {% include 'sqladmin/modals/list_action_confirmation.html' %}
   {% endwith %}
   {% endif %}
   {% endfor %}

@@ -414,17 +414,17 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
     """
 
     # Templates
-    list_template: ClassVar[str] = "list.html"
-    """List view template. Default is `list.html`."""
+    list_template: ClassVar[str] = "sqladmin/list.html"
+    """List view template. Default is `sqladmin/list.html`."""
 
-    create_template: ClassVar[str] = "create.html"
-    """Create view template. Default is `create.html`."""
+    create_template: ClassVar[str] = "sqladmin/create.html"
+    """Create view template. Default is `sqladmin/create.html`."""
 
-    details_template: ClassVar[str] = "details.html"
-    """Details view template. Default is `details.html`."""
+    details_template: ClassVar[str] = "sqladmin/details.html"
+    """Details view template. Default is `sqladmin/details.html`."""
 
-    edit_template: ClassVar[str] = "edit.html"
-    """Edit view template. Default is `edit.html`."""
+    edit_template: ClassVar[str] = "sqladmin/edit.html"
+    """Edit view template. Default is `sqladmin/edit.html`."""
 
     # Export
     column_export_list: ClassVar[List[MODEL_ATTR]] = []

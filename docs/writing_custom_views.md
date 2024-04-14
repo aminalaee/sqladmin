@@ -89,7 +89,7 @@ Next we update the `report.html` file in the `templates` directory with the foll
 
 !!! example
     ```html
-    {% extends "layout.html" %}
+    {% extends "sqladmin/layout.html" %}
     {% block content %}
     <div class="col-12">
     <div class="card">

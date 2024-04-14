@@ -12,7 +12,7 @@ class Post(Base):
 - First create a `templates` directory in your project.
 - Then add a file `custom_edit.html` there with the following content:
 ```html title="custom_edit.html"
-{% extends "edit.html" %}
+{% extends "sqladmin/edit.html" %}
 {% block tail %}
 <script src="https://cdn.ckeditor.com/ckeditor5/39.0.1/classic/ckeditor.js"></script>
 <script>

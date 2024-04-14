@@ -1,12 +1,12 @@
-{% extends "layout.html" %}
+{% extends "sqladmin/layout.html" %}
 {% block content %}
 <div class="col-12">
   <div class="card">
     <div class="card-header">
-      <h3 class="card-title">New {{ model_view.name }}</h3>
+      <h3 class="card-title">Edit {{ model_view.name }}</h3>
     </div>
     <div class="card-body border-bottom py-3">
-      <form action="{{ url_for('admin:create', identity=model_view.identity) }}" method="POST"
+      <form action="{{ model_view._build_url_for('admin:edit', request, obj) }}" method="POST"
         enctype="multipart/form-data">
         <div class="row">
           {% if error %}
@@ -43,7 +43,13 @@
             <div class="btn-group flex-wrap" data-toggle="buttons">
               <input type="submit" name="save" value="Save" class="btn">
               <input type="submit" name="save" value="Save and continue editing" class="btn">
-              <input type="submit" name="save" value="Save and add another" class="btn">
+              {% if model_view.can_create %}
+                {% if model_view.save_as %}
+                <input type="submit" name="save" value="Save as new" class="btn">
+                {% else %}
+                <input type="submit" name="save" value="Save and add another" class="btn">
+                {% endif %}
+              {% endif %}
             </div>
           </div>
         </div>

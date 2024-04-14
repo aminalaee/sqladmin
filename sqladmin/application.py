@@ -381,7 +381,7 @@ class Admin(BaseAdminView):
                 "message": exc.detail,
             }
             return await self.templates.TemplateResponse(
-                request, "error.html", context, status_code=exc.status_code
+                request, "sqladmin/error.html", context, status_code=exc.status_code
             )
 
         routes = [
@@ -428,7 +428,7 @@ class Admin(BaseAdminView):
     async def index(self, request: Request) -> Response:
         """Index route which can be overridden to create dashboards."""
 
-        return await self.templates.TemplateResponse(request, "index.html")
+        return await self.templates.TemplateResponse(request, "sqladmin/index.html")
 
     @login_required
     async def list(self, request: Request) -> Response:
@@ -609,13 +609,13 @@ class Admin(BaseAdminView):
 
         context = {}
         if request.method == "GET":
-            return await self.templates.TemplateResponse(request, "login.html")
+            return await self.templates.TemplateResponse(request, "sqladmin/login.html")
 
         ok = await self.authentication_backend.login(request)
         if not ok:
             context["error"] = "Invalid credentials."
             return await self.templates.TemplateResponse(
-                request, "login.html", context, status_code=400
+                request, "sqladmin/login.html", context, status_code=400
             )
 
         return RedirectResponse(request.url_for("admin:index"), status_code=302)
