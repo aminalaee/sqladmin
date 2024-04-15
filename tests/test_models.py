@@ -384,7 +384,7 @@ async def test_get_model_objects_uses_list_query() -> None:
 
 async def test_edit_form_query() -> None:
     session = session_maker()
-    batman = User(name="batman")
+    batman = User(id=123, name="batman")
     batcave = Address(user=batman, name="bat cave")
     wayne_manor = Address(user=batman, name="wayne manor")
     session.add(batman)
@@ -405,8 +405,13 @@ async def test_edit_form_query() -> None:
             )
 
     view = UserAdmin()
-    request = Request({"type": "http", "path_params": {"pk": batman.id}})
-    user_obj = await view.get_object_for_edit(request)
+
+    class RequestObject(object):
+        pass
+
+    request_object = RequestObject()
+    request_object.path_params = {"pk": 123}
+    user_obj = await view.get_object_for_edit(request_object)
 
     assert len(user_obj.addresses) == 1
 
