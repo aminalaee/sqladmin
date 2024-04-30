@@ -688,6 +688,8 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
         self._custom_actions_in_detail: Dict[str, str] = {}
         self._custom_actions_confirmation: Dict[str, str] = {}
 
+        self.page_size_ = self.page_size
+
     def _run_query_sync(self, stmt: ClauseElement) -> Any:
         with self.session_maker(expire_on_commit=False) as session:
             result = session.execute(stmt)
@@ -746,6 +748,12 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
 
         return value
 
+    def get_query_param(self, request: Request, key: str, default: int) -> int:
+        try:
+            return int(request.query_params.get(key, default))
+        except ValueError:
+            return default
+
     async def count(self, request: Request, stmt: Optional[Select] = None) -> int:
         if stmt is None:
             stmt = self.count_query(request)
@@ -753,10 +761,15 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
         return rows[0]
 
     async def list(self, request: Request) -> Pagination:
-        page = int(request.query_params.get("page", 1))
-        page_size = int(request.query_params.get("pageSize", 0))
-        page_size = min(page_size or self.page_size, max(self.page_size_options))
+        page = max(1, self.get_query_param(request, "page", 1))
+        page_size = self.get_query_param(request, "pageSize", 0)
+        page_size = min(
+            max(0, page_size) or self.page_size, max(self.page_size_options)
+        )
         search = request.query_params.get("search", None)
+
+        # display page_size on list.html
+        self.page_size_ = page_size
 
         stmt = self.list_query(request)
         for relation in self._list_relations:
