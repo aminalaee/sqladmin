@@ -688,7 +688,6 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
         self._custom_actions_in_detail: Dict[str, str] = {}
         self._custom_actions_confirmation: Dict[str, str] = {}
 
-
     def _run_query_sync(self, stmt: ClauseElement) -> Any:
         with self.session_maker(expire_on_commit=False) as session:
             result = session.execute(stmt)
@@ -747,10 +746,10 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
 
         return value
 
-    def validate_page_number(self, page_number: str|None, default: int) -> int:
+    def validate_page_number(self, page_number: str | None, default: int) -> int:
         if page_number is None:
             return default
-        
+
         try:
             return int(page_number)
         except ValueError:
