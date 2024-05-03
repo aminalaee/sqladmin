@@ -746,7 +746,7 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
 
         return value
 
-    def validate_page_number(self, page_number: str | None, default: int) -> int:
+    def validate_page_number(self, page_number: Union[str, None], default: int) -> int:
         if page_number is None:
             return default
 
