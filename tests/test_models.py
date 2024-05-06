@@ -5,7 +5,7 @@ import pytest
 from markupsafe import Markup
 from sqlalchemy import Boolean, Column, Enum, ForeignKey, Integer, String, select
 from sqlalchemy.dialects.postgresql import UUID
-from sqlalchemy.orm import declarative_base, relationship, sessionmaker
+from sqlalchemy.orm import contains_eager, declarative_base, relationship, sessionmaker
 from sqlalchemy.sql.expression import Select
 from starlette.applications import Starlette
 from starlette.requests import Request
@@ -52,6 +52,7 @@ class Address(Base):
     __tablename__ = "addresses"
 
     id = Column(Integer, primary_key=True)
+    name = Column(String)
     user_id = Column(Integer, ForeignKey("users.id"))
 
     user = relationship("User", back_populates="addresses")
@@ -381,13 +382,47 @@ async def test_get_model_objects_uses_list_query() -> None:
     assert len(await view.get_model_objects(request)) == 1
 
 
+async def test_edit_form_query() -> None:
+    session = session_maker()
+    batman = User(id=123, name="batman")
+    batcave = Address(user=batman, name="bat cave")
+    wayne_manor = Address(user=batman, name="wayne manor")
+    session.add(batman)
+    session.add(batcave)
+    session.add(wayne_manor)
+    session.commit()
+
+    class UserAdmin(ModelView, model=User):
+        async_engine = False
+        session_maker = session_maker
+
+        def edit_form_query(self, request: Request) -> Select:
+            return (
+                select(self.model)
+                .join(Address)
+                .options(contains_eager(User.addresses))
+                .filter(Address.name == "bat cave")
+            )
+
+    view = UserAdmin()
+
+    class RequestObject(object):
+        pass
+
+    request_object = RequestObject()
+    request_object.path_params = {"pk": 123}
+    user_obj = await view.get_object_for_edit(request_object)
+
+    assert len(user_obj.addresses) == 1
+
+
 def test_model_columns_all_keyword() -> None:
     class AddressAdmin(ModelView, model=Address):
         column_list = "__all__"
         column_details_list = "__all__"
 
-    assert AddressAdmin().get_list_columns() == ["user", "id", "user_id"]
-    assert AddressAdmin().get_details_columns() == ["user", "id", "user_id"]
+    assert AddressAdmin().get_list_columns() == ["user", "id", "name", "user_id"]
+    assert AddressAdmin().get_details_columns() == ["user", "id", "name", "user_id"]
 
 
 async def test_get_prop_value() -> None:

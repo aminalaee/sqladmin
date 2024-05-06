@@ -35,8 +35,14 @@ class UserAdmin(ModelView, model=User):
         pks = request.query_params.get("pks", "")
 
         obj_strs: List[str] = []
+
+        class RequestObject(object):
+            pass
+
         for pk in pks.split(","):
-            obj = await self.get_object_for_edit(pk)
+            request_object = RequestObject()
+            request_object.path_params = {"pk": pk}
+            obj = await self.get_object_for_edit(request_object)
 
             obj_strs.append(repr(obj))
 

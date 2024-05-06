@@ -150,11 +150,12 @@ async def test_model_form_exclude() -> None:
 
 
 async def test_model_form_form_args() -> None:
-    form_args = {"name": {"label": "User Name"}}
+    form_args = {"name": {"label": "User Name"}, "number": {"default": 100}}
     Form = await get_model_form(
         model=User, session_maker=session_maker, form_args=form_args
     )
     assert Form()._fields["name"].label.text == "User Name"
+    assert Form()._fields["number"].default == 100
 
 
 async def test_model_form_column_label() -> None:
