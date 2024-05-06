@@ -25,6 +25,7 @@ from sqlalchemy.orm.exc import DetachedInstanceError
 from sqlalchemy.sql.elements import ClauseElement
 from sqlalchemy.sql.expression import Select, select
 from starlette.datastructures import URL
+from starlette.exceptions import HTTPException
 from starlette.requests import Request
 from starlette.responses import StreamingResponse
 from wtforms import Field, Form
@@ -746,14 +747,16 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
 
         return value
 
-    def validate_page_number(self, page_number: Union[str, None], default: int) -> int:
-        if page_number is None:
+    def validate_page_number(self, number: Union[str, None], default: int) -> int:
+        if not number:
             return default
 
         try:
-            return int(page_number)
+            return int(number)
         except ValueError:
-            return default
+            raise HTTPException(
+                status_code=400, detail="Invalid page or pageSize parameter"
+            )
 
     async def count(self, request: Request, stmt: Optional[Select] = None) -> int:
         if stmt is None:
@@ -762,11 +765,9 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
         return rows[0]
 
     async def list(self, request: Request) -> Pagination:
-        page = max(1, self.validate_page_number(request.query_params.get("page"), 1))
+        page = self.validate_page_number(request.query_params.get("page"), 1)
         page_size = self.validate_page_number(request.query_params.get("pageSize"), 0)
-        page_size = min(
-            max(0, page_size) or self.page_size, max(self.page_size_options)
-        )
+        page_size = min(page_size or self.page_size, max(self.page_size_options))
         search = request.query_params.get("search", None)
 
         stmt = self.list_query(request)
@@ -818,12 +819,8 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
 
         return await self._get_object_by_pk(stmt)
 
-    async def get_object_for_edit(self, value: Any) -> Any:
-        stmt = self._stmt_by_identifier(value)
-
-        for relation in self._form_relations:
-            stmt = stmt.options(joinedload(relation))
-
+    async def get_object_for_edit(self, request: Request) -> Any:
+        stmt = self.edit_form_query(request)
         return await self._get_object_by_pk(stmt)
 
     async def get_object_for_delete(self, value: Any) -> Any:
@@ -1055,6 +1052,18 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
         """
 
         return select(self.model)
+
+    def edit_form_query(self, request: Request) -> Select:
+        """
+        The SQLAlchemy select expression used for the edit form page which can be
+        customized. By default it will select the object by primary key(s) without any
+        additional filters.
+        """
+
+        stmt = self._stmt_by_identifier(request.path_params["pk"])
+        for relation in self._form_relations:
+            stmt = stmt.options(joinedload(relation))
+        return stmt
 
     def count_query(self, request: Request) -> Select:
         """
