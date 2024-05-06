@@ -809,12 +809,6 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
 
     async def get_object_for_edit(self, request: Request) -> Any:
         stmt = self.edit_form_query(request)
-
-        if type(self).edit_form_query == ModelView.edit_form_query:
-            # If edit_form_query fn hasn't been overridden, add all relationships
-            for relation in self._form_relations:
-                stmt = stmt.options(joinedload(relation))
-
         return await self._get_object_by_pk(stmt)
 
     async def get_object_for_delete(self, value: Any) -> Any:
@@ -1054,8 +1048,10 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
         additional filters.
         """
 
-        identifier = request.path_params["pk"]
-        return self._stmt_by_identifier(identifier)
+        stmt = self._stmt_by_identifier(request.path_params["pk"])
+        for relation in self._form_relations:
+            stmt = stmt.options(joinedload(relation))
+        return stmt
 
     def count_query(self, request: Request) -> Select:
         """
