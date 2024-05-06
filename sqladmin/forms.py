@@ -169,7 +169,7 @@ class ModelConverterBase:
         if (column.primary_key or column.foreign_keys) and not form_include_pk:
             return None
 
-        default = getattr(column, "default", None)
+        default = getattr(column, "default", None) or kwargs.get("default")
 
         if default is not None:
             # Only actually change default if it has an attribute named
