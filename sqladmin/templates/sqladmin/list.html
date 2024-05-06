@@ -194,7 +194,7 @@
         Show
         <a href="#" class="btn btn-sm btn-light dropdown-toggle" data-toggle="dropdown" aria-haspopup="true"
           aria-expanded="false">
-          {{ model_view.validate_page_number((request.query_params.get("pageSize") or model_view.page_size),model_view.page_size)  }} / Page
+          {{ request.query_params.get("pageSize") or model_view.page_size }} / Page
         </a>
         <div class="dropdown-menu">
           {% for page_size_option in model_view.page_size_options %}
