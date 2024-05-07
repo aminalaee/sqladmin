@@ -1,3 +1,6 @@
+from typing import Generator
+
+import pytest
 from sqlalchemy import Column, Integer, String
 from sqlalchemy.orm import declarative_base
 from starlette.applications import Starlette
@@ -25,6 +28,13 @@ class User(Base):
 
     id = Column(Integer, primary_key=True)
     name = Column(String(32), default="SQLAdmin")
+
+
+@pytest.fixture(autouse=True)
+def prepare_database() -> Generator[None, None, None]:
+    Base.metadata.create_all(engine)
+    yield
+    Base.metadata.drop_all(engine)
 
 
 def test_application_title() -> None:
@@ -153,3 +163,21 @@ def test_denormalize_wtform_fields() -> None:
     assert admin._denormalize_wtform_data({"data_": "abcdef"}, datamodel) == {
         "data": "abcdef"
     }
+
+
+def test_validate_page_and_page_size():
+    app = Starlette()
+    admin = Admin(app=app, engine=engine)
+
+    class UserAdmin(ModelView, model=User):
+        ...
+
+    admin.add_view(UserAdmin)
+
+    client = TestClient(app)
+
+    response = client.get("/admin/user/list?page=10000")
+    assert response.status_code == 400
+
+    response = client.get("/admin/user/list?page=aaaa")
+    assert response.status_code == 400
