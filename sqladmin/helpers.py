@@ -248,7 +248,7 @@ def get_column_python_type(column: Column) -> type:
                 return column.type.impl.python_type
             except NotImplementedError:
                 ...
-        return str   
+        return str
 
 
 def is_relationship(prop: MODEL_PROPERTY) -> bool:
