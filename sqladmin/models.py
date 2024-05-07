@@ -87,7 +87,7 @@ class ModelViewMeta(type):
             )
 
         cls.pk_columns = get_primary_keys(model)
-        cls.identity = slugify_class_name(model.__name__)
+        cls.identity = kwargs.get("identity", slugify_class_name(model.__name__))
         cls.model = model
 
         cls.name = attrs.get("name", prettify_class_name(cls.model.__name__))
