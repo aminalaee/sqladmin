@@ -495,7 +495,8 @@ class Admin(BaseAdminView):
 
         referer_url = URL(request.headers.get("referer", ""))
         referer_params = MultiDict(parse_qsl(referer_url.query))
-        url = URL(str(request.url_for("admin:list", identity=identity))).include_query_params(**referer_params)
+        url = URL(str(request.url_for("admin:list", identity=identity)))
+        url = url.include_query_params(**referer_params)
         return Response(content=str(url))
 
     @login_required
