@@ -4,6 +4,34 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## Version 0.17.0 - 2024-05-13
+
+### Added
+
+* Add field description to Create/Edit templates by @ngaranko in https://github.com/aminalaee/sqladmin/pull/722
+* Add edit_form_query method by @lukeclimen in https://github.com/aminalaee/sqladmin/pull/745
+* Validate page and pageSize query parameters by @BhuwanPandey in https://github.com/aminalaee/sqladmin/pull/752
+
+### Fixed
+
+* Hide save and add another button from edit.html if can_create is False by @MaximZemskov in https://github.com/aminalaee/sqladmin/pull/742
+* Fix list page sort symbol by @aminalaee in https://github.com/aminalaee/sqladmin/pull/744
+* Move template files from `templates` to `templates/sqladmin` by @hasansezertasan in https://github.com/aminalaee/sqladmin/pull/748
+* Fix `form_args` default by @aminalaee in https://github.com/aminalaee/sqladmin/pull/756
+* Fix getting column python type by @aminalaee in https://github.com/aminalaee/sqladmin/pull/757
+* Fix File and Image fields checkbox and input by @aminalaee in https://github.com/aminalaee/sqladmin/pull/761
+* Switch relationship loading to selectionload by @aminalaee in https://github.com/aminalaee/sqladmin/pull/758
+* Fix DELETE call query params by @aminalaee in https://github.com/aminalaee/sqladmin/pull/763
+
+## New Contributors
+* @ngaranko made their first contribution in https://github.com/aminalaee/sqladmin/pull/722
+* @MaximZemskov made their first contribution in https://github.com/aminalaee/sqladmin/pull/742
+* @hasansezertasan made their first contribution in https://github.com/aminalaee/sqladmin/pull/748
+* @lukeclimen made their first contribution in https://github.com/aminalaee/sqladmin/pull/745
+* @BhuwanPandey made their first contribution in https://github.com/aminalaee/sqladmin/pull/752
+
+**Full Changelog**: https://github.com/aminalaee/sqladmin/compare/0.16.1...0.17.0
+
 ## Version 0.16.1 - 2024-02-20
 
 ### Fixed
