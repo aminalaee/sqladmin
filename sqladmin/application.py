@@ -16,14 +16,14 @@ from typing import (
     cast,
     no_type_check,
 )
-from urllib.parse import urljoin
+from urllib.parse import parse_qsl, urljoin
 
 from jinja2 import ChoiceLoader, FileSystemLoader, PackageLoader
 from sqlalchemy.engine import Engine
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import Session, sessionmaker
 from starlette.applications import Starlette
-from starlette.datastructures import URL, FormData, UploadFile
+from starlette.datastructures import URL, FormData, MultiDict, UploadFile
 from starlette.exceptions import HTTPException
 from starlette.middleware import Middleware
 from starlette.requests import Request
@@ -493,7 +493,10 @@ class Admin(BaseAdminView):
 
             await model_view.delete_model(request, pk)
 
-        return Response(content=str(request.url_for("admin:list", identity=identity)))
+        referer_url = URL(request.headers.get("referer", ""))
+        referer_params = MultiDict(parse_qsl(referer_url.query))
+        url = URL(str(request.url_for("admin:list", identity=identity))).include_query_params(**referer_params)
+        return Response(content=str(url))
 
     @login_required
     async def create(self, request: Request) -> Response:
