@@ -1,9 +1,26 @@
 The template uses `Jinja2` template engine and by default looks for a `templates` directory in your project.
 
-If your `templates` directory has the default template files like `sqladmin/list.html` or `sqladmin/create.html` then they will be used.
-Otherwise you can create custom templates and use them.
+## Customizing default templates
 
-## Customizing templates
+If you need to change one of the existing default templates in sqladmin such that it affects multiple pages, you can do so by copying the existing template from `templates/sqladmin` into your `templates/sqladmin` directory. It will then be used instead of the one in the package. For example if there is some Javascript you want to run on every page you may want to do it in layout.html like so:
+
+!!! example
+
+    ```html title="myproject/templates/sqladmin/layout.html"
+    ...
+    </div>
+    </div>
+    {% endblock %}
+
+    {% block tail %}
+    <script type="text/javascript">
+        console.log('hello world');
+    </script>
+    {% endblock %}
+
+    ```
+
+## Customizing specific templates
 
 As the first step you should create a `templates` directory in you project.
 
@@ -90,7 +107,7 @@ Usage in templates:
 ```python
 def value_is_filepath(value: Any) -> bool:
     return isinstance(value, str) and os.path.isfile(value)
-    
+
 admin.templates.env.globals["value_is_filepath"] = value_is_filepath
 ```
 
