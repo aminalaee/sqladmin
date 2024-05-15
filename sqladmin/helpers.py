@@ -17,6 +17,7 @@ from typing import (
     TypeVar,
 )
 
+from starlette.requests import Request
 from sqlalchemy import Column, inspect
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import RelationshipProperty, sessionmaker
@@ -24,6 +25,13 @@ from sqlalchemy.orm import RelationshipProperty, sessionmaker
 from sqladmin._types import MODEL_PROPERTY
 
 T = TypeVar("T")
+
+
+class AlertTypeEnum(enum.Enum):
+    success = "success"
+    info = "info"
+    warning = "warning"
+    danger = "danger"
 
 
 _filename_ascii_strip_re = re.compile(r"[^A-Za-z0-9_.-]")
@@ -309,3 +317,14 @@ def choice_type_coerce_factory(type_: Any) -> Callable[[Any], Any]:
 
 def is_async_session_maker(session_maker: sessionmaker) -> bool:
     return AsyncSession in session_maker.class_.__mro__
+
+
+def flash(request: Request, message: str, alert_type: AlertTypeEnum) -> None:
+    if "_messages" not in request.session:
+        request.session["_messages"] = []
+
+    request.session["_messages"].append({"message": message, "alert_type": alert_type.value})
+
+
+def get_flashed_messages(request: Request):
+    return request.session.pop("_messages") if "_messages" in request.session else []

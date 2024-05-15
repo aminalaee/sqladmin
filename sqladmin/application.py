@@ -37,6 +37,9 @@ from sqladmin.ajax import QueryAjaxModelLoader
 from sqladmin.authentication import AuthenticationBackend, login_required
 from sqladmin.forms import WTFORMS_ATTRS, WTFORMS_ATTRS_REVERSED
 from sqladmin.helpers import (
+    AlertTypeEnum,
+    flash,
+    get_flashed_messages,
     get_object_identifier,
     is_async_session_maker,
     slugify_action_name,
@@ -116,6 +119,7 @@ class BaseAdmin:
         templates.env.globals["admin"] = self
         templates.env.globals["is_list"] = lambda x: isinstance(x, list)
         templates.env.globals["get_object_identifier"] = get_object_identifier
+        templates.env.globals['get_flashed_messages'] = get_flashed_messages
 
         return templates
 
@@ -493,6 +497,8 @@ class Admin(BaseAdminView):
 
             await model_view.delete_model(request, pk)
 
+        flash(request, f"{model_view.name} deleted", AlertTypeEnum.info)
+
         referer_url = URL(request.headers.get("referer", ""))
         referer_params = MultiDict(parse_qsl(referer_url.query))
         url = URL(str(request.url_for("admin:list", identity=identity)))
@@ -530,6 +536,7 @@ class Admin(BaseAdminView):
         form_data_dict = self._denormalize_wtform_data(form.data, model_view.model)
         try:
             obj = await model_view.insert_model(request, form_data_dict)
+            flash(request, f"{model_view.name} created", AlertTypeEnum.success)
         except Exception as e:
             logger.exception(e)
             context["error"] = str(e)
@@ -582,10 +589,12 @@ class Admin(BaseAdminView):
         try:
             if model_view.save_as and form_data.get("save") == "Save as new":
                 obj = await model_view.insert_model(request, form_data_dict)
+                flash(request, f"{model_view.name} created", AlertTypeEnum.success)
             else:
                 obj = await model_view.update_model(
                     request, pk=request.path_params["pk"], data=form_data_dict
                 )
+                flash(request, f"{model_view.name} updated", AlertTypeEnum.success)
         except Exception as e:
             logger.exception(e)
             context["error"] = str(e)

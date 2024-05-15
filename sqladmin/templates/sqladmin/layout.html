@@ -41,6 +41,12 @@
           </div>
         </div>
         {% endblock %}
+        {% for message in get_flashed_messages(request) %}
+          <div class="alert alert-important alert-{{ message.alert_type }} alert-dismissible" role="alert">
+            <div class="d-flex">{{ message.message }}</div>
+            <a class="btn-close btn-close-white" data-bs-dismiss="alert" aria-label="close"></a>
+          </div>
+        {% endfor %}
       </div>
     </div>
     <div class="page-body flex-grow-1">

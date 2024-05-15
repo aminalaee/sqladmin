@@ -1,4 +1,5 @@
 from datetime import timedelta
+from starlette.requests import Request
 from typing import Any
 
 import pytest
@@ -6,6 +7,9 @@ from sqlalchemy import Column, ForeignKey, Integer, String
 from sqlalchemy.orm import declarative_base
 
 from sqladmin.helpers import (
+    AlertTypeEnum,
+    flash,
+    get_flashed_messages,
     get_object_identifier,
     is_falsy_value,
     object_identifier_values,
@@ -117,3 +121,20 @@ def test_catch_malformed_id():
 
     test_case("Missing;1")
     test_case("Johnson;7;A;Extra")
+
+
+def test_flash_messages():
+
+    # TODO: probably need to make sure SessionMiddleware is set?
+
+    request = Request({"type": "http"})
+
+    flash(request, "message 1", AlertTypeEnum.info)
+    flash(request, "message 2", AlertTypeEnum.danger)
+
+    messages = get_flashed_messages(request)
+    assert messages == [{"message": "message 1", "alert_type": "info"},
+                        {"message": "message 2", "alert_type": "danger"}]
+
+    messages = get_flashed_messages(request)
+    assert messages == []
