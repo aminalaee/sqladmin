@@ -82,18 +82,7 @@
 {% endfor %}
 {% endif %}
 
-{% if form_opts and form_opts.form_rules %}
-{% for r in form_opts.form_rules %}
-{{ r(form, form_opts=form_opts) }}
-{% endfor %}
-{% else %}
 {% for f in form if f.widget.input_type != 'hidden' %}
-{% if form_opts %}
-{% set kwargs = form_opts.widget_args.get(f.short_name, {}) %}
-{% else %}
-{% set kwargs = {} %}
-{% endif %}
 {{ render_field(f, kwargs) }}
 {% endfor %}
-{% endif %}
 {% endmacro %}

@@ -150,6 +150,8 @@ class UserAdmin(ModelView, model=User):
         User.profile_formattable: lambda m, a: f"Formatted {m.profile_formattable}",
     }
     save_as = True
+    form_create_rules = ["name", "email", "addresses", "profile", "birthdate", "status"]
+    form_edit_rules = ["name", "email", "addresses", "profile", "birthdate"]
 
 
 class AddressAdmin(ModelView, model=Address):
@@ -442,6 +444,7 @@ def test_create_endpoint_get_form(client: TestClient) -> None:
         '<input class="form-control" id="email" name="email" type="text" value="">'
         in response.text
     )
+    assert '<select class="form-control" id="status" name="status">' in response.text
 
 
 def test_create_endpoint_post_form(client: TestClient) -> None:
@@ -590,6 +593,9 @@ def test_update_get_page(client: TestClient) -> None:
     assert '<option selected value="1">Profile 1</option>' in response.text
     assert (
         'id="name" maxlength="16" name="name" type="text" value="Joe">' in response.text
+    )
+    assert (
+        '<select class="form-control" id="status" name="status">' not in response.text
     )
 
     response = client.get("/admin/address/edit/1")

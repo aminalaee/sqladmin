@@ -8,9 +8,13 @@ from typing import (
     AsyncGenerator,
     Callable,
     ClassVar,
+    Dict,
+    List,
     Optional,
     Sequence,
+    Tuple,
     Type,
+    Union,
     no_type_check,
 )
 from urllib.parse import urlencode
@@ -45,8 +49,9 @@ from sqladmin.helpers import (
     slugify_class_name,
     stream_to_csv,
 )
+
+# stream_to_csv,
 from sqladmin.pagination import Pagination
-from sqladmin.rules import BaseRule, RuleSet
 from sqladmin.templating import Jinja2Templates
 
 if TYPE_CHECKING:
@@ -105,7 +110,7 @@ class ModelViewMeta(type):
         return cls
 
     @classmethod
-    def _check_conflicting_options(mcls, keys: list[str], attrs: dict) -> None:
+    def _check_conflicting_options(mcls, keys: List[str], attrs: dict) -> None:
         if all(k in attrs for k in keys):
             raise AssertionError(f"Cannot use {' and '.join(keys)} together.")
 
@@ -158,7 +163,7 @@ class BaseView(BaseModelView):
     identity: ClassVar[str] = ""
     """Same as name but it will be used for URL of the endpoints."""
 
-    methods: ClassVar[list[str]] = ["GET"]
+    methods: ClassVar[List[str]] = ["GET"]
     """List of method names for the endpoint.
     By default it's set to `["GET"]` only.
     """
@@ -194,8 +199,8 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
     model: ClassVar[type]
 
     # Internals
-    pk_columns: ClassVar[tuple[Column]]
-    session_maker: ClassVar["sessionmaker | async_sessionmaker"]
+    pk_columns: ClassVar[Tuple[Column]]
+    session_maker: ClassVar[Union[sessionmaker, "async_sessionmaker"]]
     is_async: ClassVar[bool] = False
     is_model: ClassVar[bool] = True
     ajax_lookup_url: ClassVar[str] = ""
@@ -226,7 +231,7 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
     """
 
     # List page
-    column_list: ClassVar[str | Sequence[MODEL_ATTR]] = []
+    column_list: ClassVar[Union[str, Sequence[MODEL_ATTR]]] = []
     """List of columns to display in `List` page.
     Columns can either be string names or SQLAlchemy columns.
 
@@ -251,7 +256,7 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
         ```
     """
 
-    column_formatters: ClassVar[dict[MODEL_ATTR, Callable[[type, Column], Any]]] = {}
+    column_formatters: ClassVar[Dict[MODEL_ATTR, Callable[[type, Column], Any]]] = {}
     """Dictionary of list view column formatters.
     Columns can either be string names or SQLAlchemy columns.
 
@@ -315,7 +320,7 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
         ```
     """
 
-    column_default_sort: ClassVar[MODEL_ATTR | tuple[MODEL_ATTR, bool] | list] = []
+    column_default_sort: ClassVar[Union[MODEL_ATTR, Tuple[MODEL_ATTR, bool], list]] = []
     """Default sort column if no sorting is applied.
 
     ???+ example
@@ -343,7 +348,7 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
     """
 
     # Details page
-    column_details_list: ClassVar[str | Sequence[MODEL_ATTR]] = []
+    column_details_list: ClassVar[Union[str, Sequence[MODEL_ATTR]]] = []
     """List of columns to display in `Detail` page.
     Columns can either be string names or SQLAlchemy columns.
 
@@ -369,7 +374,7 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
     """
 
     column_formatters_detail: ClassVar[
-        dict[MODEL_ATTR, Callable[[type, Column], Any]]
+        Dict[MODEL_ATTR, Callable[[type, Column], Any]]
     ] = {}
     """Dictionary of details view column formatters.
     Columns can either be string names or SQLAlchemy columns.
@@ -426,7 +431,7 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
     """Edit view template. Default is `sqladmin/edit.html`."""
 
     # Export
-    column_export_list: ClassVar[list[MODEL_ATTR]] = []
+    column_export_list: ClassVar[List[MODEL_ATTR]] = []
     """List of columns to include when exporting.
     Columns can either be string names or SQLAlchemy columns.
 
@@ -437,7 +442,7 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
         ```
     """
 
-    column_export_exclude_list: ClassVar[list[MODEL_ATTR]] = []
+    column_export_exclude_list: ClassVar[List[MODEL_ATTR]] = []
     """List of columns to exclude when exporting.
     Columns can either be string names or SQLAlchemy columns.
 
@@ -448,7 +453,7 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
         ```
     """
 
-    export_types: ClassVar[list[str]] = ["csv"]
+    export_types: ClassVar[List[str]] = ["csv"]
     """A list of available export filetypes.
     Currently only `csv` is supported.
     """
@@ -490,7 +495,7 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
         ```
     """
 
-    form_args: ClassVar[dict[str, dict[str, Any]]] = {}
+    form_args: ClassVar[Dict[str, Dict[str, Any]]] = {}
     """Dictionary of form field arguments.
     Refer to WTForms documentation for list of possible options.
 
@@ -505,7 +510,7 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
         ```
     """
 
-    form_widget_args: ClassVar[dict[str, dict[str, Any]]] = {}
+    form_widget_args: ClassVar[Dict[str, Dict[str, Any]]] = {}
     """Dictionary of form widget rendering arguments.
     Use this to customize how widget is rendered without using custom template.
 
@@ -545,7 +550,7 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
         ```
     """
 
-    form_overrides: ClassVar[dict[str, Type[Field]]] = {}
+    form_overrides: ClassVar[Dict[str, Type[Field]]] = {}
     """Dictionary of form column overrides.
 
     ???+ example
@@ -565,7 +570,7 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
         ```
     """
 
-    form_ajax_refs: ClassVar[dict[str, dict]] = {}
+    form_ajax_refs: ClassVar[Dict[str, dict]] = {}
     """Use Ajax for foreign key model loading.
     Should contain dictionary, where key is field name and
     value is a dictionary which configures Ajax lookups.
@@ -596,13 +601,11 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
         ```
     """
 
-    form_rules: ClassVar[list[BaseRule | RuleSet | str]] = []
+    form_rules: ClassVar[list[str]] = []
     """List of rendering rules for model creation and edit form.
-
     This property changes default form rendering behavior and to rearrange
     order of rendered fields, add some text between fields, group them, etc.
     If not set, will use default Flask-Admin form rendering logic.
-
     ???+ example
         ```python
         class UserAdmin(ModelAdmin, model=User):
@@ -612,14 +615,14 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
             ]
     """
 
-    form_create_rules: ClassVar[list[BaseRule | RuleSet | str]] = []
+    form_create_rules: ClassVar[list[str]] = []
     """Customized rules for the create form. Cannot be specified with `form_rules`."""
 
-    form_edit_rules: ClassVar[list[BaseRule | RuleSet | str]] = []
+    form_edit_rules: ClassVar[list[str]] = []
     """Customized rules for the edit form. Cannot be specified with `form_rules`."""
 
     # General options
-    column_labels: ClassVar[dict[MODEL_ATTR, str]] = {}
+    column_labels: ClassVar[Dict[MODEL_ATTR, str]] = {}
     """A mapping of column labels, used to map column names to new names.
     Dictionary keys can be string names or SQLAlchemy columns with string values.
 
@@ -630,7 +633,7 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
         ```
     """
 
-    column_type_formatters: ClassVar[dict[Type, Callable]] = BASE_FORMATTERS
+    column_type_formatters: ClassVar[Dict[Type, Callable]] = BASE_FORMATTERS
     """Dictionary of value type formatters to be used in the list view.
 
     By default, two types are formatted:
@@ -707,9 +710,9 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
 
         self._refresh_form_rules_cache()
 
-        self._custom_actions_in_list: dict[str, str] = {}
-        self._custom_actions_in_detail: dict[str, str] = {}
-        self._custom_actions_confirmation: dict[str, str] = {}
+        self._custom_actions_in_list: Dict[str, str] = {}
+        self._custom_actions_in_detail: Dict[str, str] = {}
+        self._custom_actions_confirmation: Dict[str, str] = {}
 
     def _run_query_sync(self, stmt: ClauseElement) -> Any:
         with self.session_maker(expire_on_commit=False) as session:
@@ -751,7 +754,7 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
     def _get_prop_name(self, prop: MODEL_ATTR) -> str:
         return prop if isinstance(prop, str) else prop.key
 
-    def _get_default_sort(self) -> list[tuple[str, bool]]:
+    def _get_default_sort(self) -> List[Tuple[str, bool]]:
         if self.column_default_sort:
             if isinstance(self.column_default_sort, list):
                 return self.column_default_sort
@@ -769,7 +772,7 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
 
         return value
 
-    def validate_page_number(self, number: str | None, default: int) -> int:
+    def validate_page_number(self, number: Union[str, None], default: int) -> int:
         if not number:
             return default
 
@@ -786,7 +789,7 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
         rows = await self._run_query(stmt)
         return rows[0]
 
-    async def paginate(self, request: Request) -> Pagination:
+    async def list(self, request: Request) -> Pagination:
         page = self.validate_page_number(request.query_params.get("page"), 1)
         page_size = self.validate_page_number(request.query_params.get("pageSize"), 0)
         page_size = min(page_size or self.page_size, max(self.page_size_options))
@@ -817,8 +820,8 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
         return pagination
 
     async def get_model_objects(
-        self, request: Request, limit: int | None = 0
-    ) -> list[Any]:
+        self, request: Request, limit: Union[int, None] = 0
+    ) -> List[Any]:
         # For unlimited rows this should pass None
         limit = None if limit == 0 else limit
         stmt = self.list_query(request).limit(limit)
@@ -879,7 +882,7 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
                 session.add(obj)
                 return await anyio.to_thread.run_sync(lambda: getattr(obj, prop))
 
-    async def get_list_value(self, obj: Any, prop: str) -> tuple[Any, Any]:
+    async def get_list_value(self, obj: Any, prop: str) -> Tuple[Any, Any]:
         """Get tuple of (value, formatted_value) for the list view."""
 
         value = await self.get_prop_value(obj, prop)
@@ -889,7 +892,7 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
         )
         return value, formatted_value
 
-    async def get_detail_value(self, obj: Any, prop: str) -> tuple[Any, Any]:
+    async def get_detail_value(self, obj: Any, prop: str) -> Tuple[Any, Any]:
         """Get tuple of (value, formatted_value) for the detail view."""
 
         value = await self.get_prop_value(obj, prop)
@@ -901,10 +904,10 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
 
     def _build_column_list(
         self,
-        defaults: list[str],
-        include: Optional[str | Sequence[MODEL_ATTR]] = None,
-        exclude: Optional[str | Sequence[MODEL_ATTR]] = None,
-    ) -> list[str]:
+        defaults: List[str],
+        include: Optional[Union[str, Sequence[MODEL_ATTR]]] = None,
+        exclude: Optional[Union[str, Sequence[MODEL_ATTR]]] = None,
+    ) -> List[str]:
         """This function generalizes constructing a list of columns
         for any sequence of inclusions or exclusions.
         """
@@ -918,7 +921,7 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
             return [prop for prop in self._prop_names if prop not in exclude]
         return defaults
 
-    def get_list_columns(self) -> list[str]:
+    def get_list_columns(self) -> List[str]:
         """Get list of properties to display in List page."""
 
         column_list = getattr(self, "column_list", None)
@@ -930,7 +933,7 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
             defaults=[pk.name for pk in self.pk_columns],
         )
 
-    def get_details_columns(self) -> list[str]:
+    def get_details_columns(self) -> List[str]:
         """Get list of properties to display in Detail page."""
 
         column_details_list = getattr(self, "column_details_list", None)
@@ -942,7 +945,7 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
             defaults=self._prop_names,
         )
 
-    def get_form_columns(self) -> list[str]:
+    def get_form_columns(self) -> List[str]:
         """Get list of properties to display in the form."""
 
         form_columns = getattr(self, "form_columns", None)
@@ -954,7 +957,7 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
             defaults=self._prop_names,
         )
 
-    def get_export_columns(self) -> list[str]:
+    def get_export_columns(self) -> List[str]:
         """Get list of properties to export."""
 
         columns = getattr(self, "column_export_list", None)
@@ -983,8 +986,8 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
 
     def _build_column_pairs(
         self,
-        pair: dict[Any, Any],
-    ) -> dict[str, Any]:
+        pair: Dict[Any, Any],
+    ) -> Dict[str, Any]:
         pairs = {}
         for label, value in pair.items():
             pairs[self._get_prop_name(label)] = value
@@ -1009,14 +1012,9 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
         By default do nothing.
         """
 
-    async def get_form(self) -> type[Form]:
-        """Get form class. Override to implement customized behavior."""
+    async def scaffold_form(self) -> Type[Form]:
         if self.form is not None:
             return self.form
-
-        return await self.scaffold_form()
-
-    async def scaffold_form(self) -> Type[Form]:
         return await get_model_form(
             model=self.model,
             session_maker=self.session_maker,
@@ -1139,7 +1137,7 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
 
     async def export_data(
         self,
-        data: list[Any],
+        data: List[Any],
         export_type: str = "csv",
     ) -> StreamingResponse:
         if export_type == "csv":
@@ -1148,7 +1146,7 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
 
     async def _export_csv(
         self,
-        data: list[Any],
+        data: List[Any],
     ) -> StreamingResponse:
         async def generate(writer: Writer) -> AsyncGenerator[Any, None]:
             # Append the column titles at the beginning
@@ -1173,20 +1171,13 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
 
     def _refresh_form_rules_cache(self) -> None:
         if self.form_rules:
-            form_rules = RuleSet(self, self.form_rules)
-            self._form_create_rules: RuleSet | None = form_rules
-            self._form_edit_rules: RuleSet | None = form_rules
+            self._form_create_rules = self.form_rules
+            self._form_edit_rules = self.form_rules
         else:
-            self._form_create_rules = (
-                RuleSet(self, self.form_create_rules)
-                if self.form_create_rules
-                else None
-            )
-            self._form_edit_rules = (
-                RuleSet(self, self.form_edit_rules) if self.form_edit_rules else None
-            )
+            self._form_create_rules = self.form_create_rules
+            self._form_edit_rules = self.form_edit_rules
 
-    def _validate_form_class(self, ruleset: RuleSet, form_class: Type[Form]) -> None:
+    def _validate_form_class(self, ruleset: List[Any], form_class: Type[Form]) -> None:
         form_fields = []
         for name, obj in form_class.__dict__.items():
             if isinstance(obj, UnboundField):
@@ -1194,9 +1185,8 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
 
         missing_fields = []
         if ruleset:
-            visible_fields = ruleset.visible_fields
             for field_name in form_fields:
-                if field_name not in visible_fields:
+                if field_name not in ruleset:
                     missing_fields.append(field_name)
 
         for field_name in missing_fields:
