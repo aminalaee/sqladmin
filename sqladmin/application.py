@@ -30,18 +30,21 @@ from starlette.requests import Request
 from starlette.responses import JSONResponse, RedirectResponse, Response
 from starlette.routing import Mount, Route
 from starlette.staticfiles import StaticFiles
+from wtforms import Form
+from wtforms.fields.core import UnboundField
 
 from sqladmin._menu import CategoryMenu, Menu, ViewMenu
 from sqladmin._types import ENGINE_TYPE
 from sqladmin.ajax import QueryAjaxModelLoader
 from sqladmin.authentication import AuthenticationBackend, login_required
-from sqladmin.forms import WTFORMS_ATTRS, WTFORMS_ATTRS_REVERSED
+from sqladmin.forms import WTFORMS_ATTRS, WTFORMS_ATTRS_REVERSED, FormOpts
 from sqladmin.helpers import (
     get_object_identifier,
     is_async_session_maker,
     slugify_action_name,
 )
 from sqladmin.models import BaseView, ModelView
+from sqladmin.rules import RuleSet
 from sqladmin.templating import Jinja2Templates
 
 if TYPE_CHECKING:
@@ -437,7 +440,7 @@ class Admin(BaseAdminView):
         await self._list(request)
 
         model_view = self._find_model_view(request.path_params["identity"])
-        pagination = await model_view.list(request)
+        pagination = await model_view.paginate(request)
         pagination.add_pagination_urls(request.url)
 
         if (
@@ -508,13 +511,19 @@ class Admin(BaseAdminView):
         identity = request.path_params["identity"]
         model_view = self._find_model_view(identity)
 
-        Form = await model_view.scaffold_form()
+        Form = await model_view.get_form()
+        self._validate_form_class(model_view._form_create_rules, Form)
         form_data = await self._handle_form_data(request)
         form = Form(form_data)
+        form_opts = FormOpts(
+            widget_args=model_view.form_widget_args,
+            form_rules=model_view._form_create_rules,
+        )
 
         context = {
             "model_view": model_view,
             "form": form,
+            "form_opts": form_opts,
         }
 
         if request.method == "GET":
@@ -559,10 +568,17 @@ class Admin(BaseAdminView):
             raise HTTPException(status_code=404)
 
         Form = await model_view.scaffold_form()
+        self._validate_form_class(model_view._form_edit_rules, Form)
+        form_opts = FormOpts(
+            widget_args=model_view.form_widget_args,
+            form_rules=model_view._form_edit_rules,
+        )
+
         context = {
             "obj": model,
             "model_view": model_view,
             "form": Form(obj=model, data=self._normalize_wtform_data(model)),
+            "form_opts": form_opts,
         }
 
         if request.method == "GET":
@@ -721,6 +737,24 @@ class Admin(BaseAdminView):
             ):
                 data[reserved_field_name] = data.pop(field_name)
         return data
+
+    def _validate_form_class(
+        self, ruleset: RuleSet | None, form_class: type[Form]
+    ) -> None:
+        form_fields = []
+        for name, obj in form_class.__dict__.items():
+            if isinstance(obj, UnboundField):
+                form_fields.append(name)
+
+        missing_fields = []
+        if ruleset:
+            visible_fields = ruleset.visible_fields
+            for field_name in form_fields:
+                if field_name not in visible_fields:
+                    missing_fields.append(field_name)
+
+        for field_name in missing_fields:
+            delattr(form_class, field_name)
 
 
 def expose(
