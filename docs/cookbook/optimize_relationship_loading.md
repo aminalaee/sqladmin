@@ -72,8 +72,7 @@ class ParentAdmin(ModelView, model=Parent):
     def edit_form_query(self, request: Request) -> Select:
         parent_id = request.path_params["pk"]
         return (
-            super()
-            .edit_form_query(request)
+            self._stmt_by_identifier(parent_id)
             .join(Child)
             .options(contains_eager(Parent.children))
             .filter(Child.parent_id == parent_id)
