@@ -1,4 +1,7 @@
+from __future__ import annotations
+
 import time
+import warnings
 from enum import Enum
 from typing import (
     TYPE_CHECKING,
@@ -29,6 +32,7 @@ from starlette.exceptions import HTTPException
 from starlette.requests import Request
 from starlette.responses import StreamingResponse
 from wtforms import Field, Form
+from wtforms.fields.core import UnboundField
 
 from sqladmin._queries import Query
 from sqladmin._types import MODEL_ATTR
@@ -598,6 +602,28 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
         ```
     """
 
+    form_rules: ClassVar[list[str]] = []
+    """List of rendering rules for model creation and edit form.
+    This property changes default form rendering behavior and to rearrange
+    order of rendered fields, add some text between fields, group them, etc.
+    If not set, will use default Flask-Admin form rendering logic.
+
+    ???+ example
+        ```python
+        class UserAdmin(ModelAdmin, model=User):
+            form_rules = [
+                "first_name",
+                "last_name",
+            ]
+        ```
+    """
+
+    form_create_rules: ClassVar[list[str]] = []
+    """Customized rules for the create form. Cannot be specified with `form_rules`."""
+
+    form_edit_rules: ClassVar[list[str]] = []
+    """Customized rules for the edit form. Cannot be specified with `form_rules`."""
+
     # General options
     column_labels: ClassVar[Dict[MODEL_ATTR, str]] = {}
     """A mapping of column labels, used to map column names to new names.
@@ -684,6 +710,8 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
             self._form_ajax_refs[name] = create_ajax_loader(
                 model_admin=self, name=name, options=options
             )
+
+        self._refresh_form_rules_cache()
 
         self._custom_actions_in_list: Dict[str, str] = {}
         self._custom_actions_in_detail: Dict[str, str] = {}
@@ -1054,6 +1082,13 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
         return select(self.model)
 
     def edit_form_query(self, request: Request) -> Select:
+        msg = (
+            "Overriding 'edit_form_query' is deprecated. Use 'form_edit_query' instead."
+        )
+        warnings.warn(msg, DeprecationWarning, stacklevel=2)
+        return self.form_edit_query(request)
+
+    def form_edit_query(self, request: Request) -> Select:
         """
         The SQLAlchemy select expression used for the edit form page which can be
         customized. By default it will select the object by primary key(s) without any
@@ -1143,3 +1178,26 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
             media_type="text/csv",
             headers={"Content-Disposition": f"attachment;filename={filename}"},
         )
+
+    def _refresh_form_rules_cache(self) -> None:
+        if self.form_rules:
+            self._form_create_rules = self.form_rules
+            self._form_edit_rules = self.form_rules
+        else:
+            self._form_create_rules = self.form_create_rules
+            self._form_edit_rules = self.form_edit_rules
+
+    def _validate_form_class(self, ruleset: List[Any], form_class: Type[Form]) -> None:
+        form_fields = []
+        for name, obj in form_class.__dict__.items():
+            if isinstance(obj, UnboundField):
+                form_fields.append(name)
+
+        missing_fields = []
+        if ruleset:
+            for field_name in form_fields:
+                if field_name not in ruleset:
+                    missing_fields.append(field_name)
+
+        for field_name in missing_fields:
+            delattr(form_class, field_name)

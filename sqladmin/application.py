@@ -509,6 +509,7 @@ class Admin(BaseAdminView):
         model_view = self._find_model_view(identity)
 
         Form = await model_view.scaffold_form()
+        model_view._validate_form_class(model_view._form_create_rules, Form)
         form_data = await self._handle_form_data(request)
         form = Form(form_data)
 
@@ -559,6 +560,7 @@ class Admin(BaseAdminView):
             raise HTTPException(status_code=404)
 
         Form = await model_view.scaffold_form()
+        model_view._validate_form_class(model_view._form_edit_rules, Form)
         context = {
             "obj": model,
             "model_view": model_view,
