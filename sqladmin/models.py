@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import time
+import warnings
 from enum import Enum
 from typing import (
     TYPE_CHECKING,
@@ -606,6 +607,7 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
     This property changes default form rendering behavior and to rearrange
     order of rendered fields, add some text between fields, group them, etc.
     If not set, will use default Flask-Admin form rendering logic.
+
     ???+ example
         ```python
         class UserAdmin(ModelAdmin, model=User):
@@ -613,6 +615,7 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
                 "first_name",
                 "last_name",
             ]
+        ```
     """
 
     form_create_rules: ClassVar[list[str]] = []
@@ -1079,6 +1082,13 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
         return select(self.model)
 
     def edit_form_query(self, request: Request) -> Select:
+        msg = (
+            "Overriding 'edit_form_query' is deprecated. Use 'form_edit_query' instead."
+        )
+        warnings.warn(msg, DeprecationWarning, stacklevel=2)
+        return self.form_edit_query(request)
+
+    def form_edit_query(self, request: Request) -> Select:
         """
         The SQLAlchemy select expression used for the edit form page which can be
         customized. By default it will select the object by primary key(s) without any

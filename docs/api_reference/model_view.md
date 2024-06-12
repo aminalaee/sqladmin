@@ -44,12 +44,15 @@
         - form_include_pk
         - form_ajax_refs
         - form_converter
+        - form_edit_query
+        - form_rules
+        - form_create_rules
+        - form_edit_rules
         - column_type_formatters
         - list_query
         - count_query
         - search_query
         - sort_query
-        - edit_form_query
         - on_model_change
         - after_model_change
         - on_model_delete
