@@ -1,4 +1,6 @@
-from typing import TYPE_CHECKING, Any, Dict, List
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, Any
 
 import anyio
 from sqlalchemy import select
@@ -24,7 +26,7 @@ class Query:
     def __init__(self, model_view: "ModelView") -> None:
         self.model_view = model_view
 
-    def _get_to_many_stmt(self, relation: MODEL_PROPERTY, values: List[Any]) -> Select:
+    def _get_to_many_stmt(self, relation: MODEL_PROPERTY, values: list[Any]) -> Select:
         target = relation.mapper.class_
 
         target_pks = get_primary_keys(target)
@@ -131,7 +133,7 @@ class Query:
                 setattr(obj, key, value)
         return obj
 
-    def _update_sync(self, pk: Any, data: Dict[str, Any], request: Request) -> Any:
+    def _update_sync(self, pk: Any, data: dict[str, Any], request: Request) -> Any:
         stmt = self.model_view._stmt_by_identifier(pk)
 
         with self.model_view.session_maker(expire_on_commit=False) as session:
@@ -147,7 +149,7 @@ class Query:
             return obj
 
     async def _update_async(
-        self, pk: Any, data: Dict[str, Any], request: Request
+        self, pk: Any, data: dict[str, Any], request: Request
     ) -> Any:
         stmt = self.model_view._stmt_by_identifier(pk)
 
@@ -187,7 +189,7 @@ class Query:
             await session.commit()
             await self.model_view.after_model_delete(obj, request)
 
-    def _insert_sync(self, data: Dict[str, Any], request: Request) -> Any:
+    def _insert_sync(self, data: dict[str, Any], request: Request) -> Any:
         obj = self.model_view.model()
 
         with self.model_view.session_maker(expire_on_commit=False) as session:
@@ -202,7 +204,7 @@ class Query:
             )
             return obj
 
-    async def _insert_async(self, data: Dict[str, Any], request: Request) -> Any:
+    async def _insert_async(self, data: dict[str, Any], request: Request) -> Any:
         obj = self.model_view.model()
 
         async with self.model_view.session_maker(expire_on_commit=False) as session:
