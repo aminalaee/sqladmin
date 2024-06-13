@@ -1,6 +1,8 @@
+from __future__ import annotations
+
 import functools
 import inspect
-from typing import Any, Callable, Union
+from typing import Any, Callable
 
 from starlette.middleware import Middleware
 from starlette.requests import Request
@@ -33,7 +35,7 @@ class AuthenticationBackend:
         """
         raise NotImplementedError()
 
-    async def authenticate(self, request: Request) -> Union[Response, bool]:
+    async def authenticate(self, request: Request) -> Response | bool:
         """Implement authenticate logic here.
         This method will be called for each incoming request
         to validate the authentication.

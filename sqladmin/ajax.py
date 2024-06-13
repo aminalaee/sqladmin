@@ -1,4 +1,6 @@
-from typing import TYPE_CHECKING, Any, Dict, List
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, Any
 
 from sqlalchemy import String, cast, inspect, or_, select
 
@@ -52,13 +54,13 @@ class QueryAjaxModelLoader:
 
         return remote_fields
 
-    def format(self, model: type) -> Dict[str, Any]:
+    def format(self, model: type) -> dict[str, Any]:
         if not model:
             return {}
 
         return {"id": str(get_object_identifier(model)), "text": str(model)}
 
-    async def get_list(self, term: str, limit: int = DEFAULT_PAGE_SIZE) -> List[Any]:
+    async def get_list(self, term: str, limit: int = DEFAULT_PAGE_SIZE) -> list[Any]:
         stmt = select(self.model)
 
         # no type casting to string if a ColumnAssociationProxyInstance is given

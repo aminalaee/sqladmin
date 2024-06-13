@@ -848,7 +848,7 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
         return await self._get_object_by_pk(stmt)
 
     async def get_object_for_edit(self, request: Request) -> Any:
-        stmt = self.edit_form_query(request)
+        stmt = self.form_edit_query(request)
         return await self._get_object_by_pk(stmt)
 
     async def get_object_for_delete(self, value: Any) -> Any:
