@@ -29,7 +29,6 @@ class UserAdmin(ModelView, model=User):
         if is_created:
             # Hash the password before saving into DB !
             data["hashed_password"] = data["hashed_password"] +  "_hashed"
-        return await super().on_model_change(data, model, is_created, request)
 
 ```
 
