@@ -46,6 +46,9 @@ class Pagination:
 
         raise RuntimeError("Next page not found.")
 
+    def new_page_number(self, new_page_size) -> int:
+        return (self.page - 1) * self.page_size // new_page_size + 1
+
     def add_pagination_urls(self, base_url: URL) -> None:
         # Previous pages
         for p in range(self.page - min(self.max_page_controls, 3), self.page):
