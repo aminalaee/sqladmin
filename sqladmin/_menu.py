@@ -65,7 +65,7 @@ class ViewMenu(ItemMenu):
     def is_visible(self, request: Request) -> bool:
         return self.view.is_visible(request)
 
-    async def is_accessible(self, request: Request) -> bool:
+    def is_accessible(self, request: Request) -> bool:
         return self.view.is_accessible(request)
 
     def is_active(self, request: Request) -> bool:
