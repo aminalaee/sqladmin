@@ -827,7 +827,7 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
     ) -> List[Any]:
         # For unlimited rows this should pass None
         limit = None if limit == 0 else limit
-        stmt = await self.list_query(request).limit(limit)
+        stmt = (await self.list_query(request)).limit(limit)
 
         for relation in self._list_relations:
             stmt = stmt.options(selectinload(relation))
