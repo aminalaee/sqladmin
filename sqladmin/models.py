@@ -117,7 +117,7 @@ class ModelViewMeta(type):
 
 
 class BaseModelView:
-    def is_visible(self, request: Request) -> bool:
+    async def is_visible(self, request: Request) -> bool:
         """Override this method if you want dynamically
         hide or show administrative views from SQLAdmin menu structure
         By default, item is visible in menu.
@@ -125,7 +125,7 @@ class BaseModelView:
         """
         return True
 
-    def is_accessible(self, request: Request) -> bool:
+    async def is_accessible(self, request: Request) -> bool:
         """Override this method to add permission checks.
         SQLAdmin does not make any assumptions about the authentication system
         used in your application, so it is up to you to implement it.
@@ -798,7 +798,7 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
         page_size = min(page_size or self.page_size, max(self.page_size_options))
         search = request.query_params.get("search", None)
 
-        stmt = self.list_query(request)
+        stmt = await self.list_query(request)
         for relation in self._list_relations:
             stmt = stmt.options(selectinload(relation))
 
@@ -827,7 +827,7 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
     ) -> List[Any]:
         # For unlimited rows this should pass None
         limit = None if limit == 0 else limit
-        stmt = self.list_query(request).limit(limit)
+        stmt = await self.list_query(request).limit(limit)
 
         for relation in self._list_relations:
             stmt = stmt.options(selectinload(relation))
@@ -1073,7 +1073,7 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
 
         return stmt.filter(or_(*expressions))
 
-    def list_query(self, request: Request) -> Select:
+    async def list_query(self, request: Request) -> Select:
         """
         The SQLAlchemy select expression used for the list page which can be customized.
         By default it will select all objects without any filters.
