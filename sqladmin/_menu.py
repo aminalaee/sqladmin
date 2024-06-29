@@ -62,11 +62,11 @@ class ViewMenu(ItemMenu):
         super().__init__(name=name, icon=icon)
         self.view = view
 
-    async def is_visible(self, request: Request) -> bool:
-        return await self.view.is_visible(request)
+    def is_visible(self, request: Request) -> bool:
+        return self.view.is_visible(request)
 
     async def is_accessible(self, request: Request) -> bool:
-        return await self.view.is_accessible(request)
+        return self.view.is_accessible(request)
 
     def is_active(self, request: Request) -> bool:
         return self.view.identity == request.path_params.get("identity")
