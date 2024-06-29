@@ -373,8 +373,8 @@ async def test_get_model_objects_uses_list_query() -> None:
         async_engine = False
         session_maker = session_maker
 
-        def list_query(self, request: Request) -> Select:
-            return super().list_query(request).filter(User.name.endswith("man"))
+        async def list_query(self, request: Request) -> Select:
+            return (await super().list_query(request)).filter(User.name.endswith("man"))
 
     view = UserAdmin()
     request = Request({"type": "http"})
