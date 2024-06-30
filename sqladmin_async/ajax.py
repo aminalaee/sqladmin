@@ -4,10 +4,10 @@ from typing import TYPE_CHECKING, Any
 
 from sqlalchemy import String, cast, inspect, or_, select
 
-from sqladmin.helpers import get_object_identifier, get_primary_keys
+from sqladmin_async.helpers import get_object_identifier, get_primary_keys
 
 if TYPE_CHECKING:
-    from sqladmin.models import ModelView
+    from sqladmin_async.models import ModelView
 
 
 DEFAULT_PAGE_SIZE = 10

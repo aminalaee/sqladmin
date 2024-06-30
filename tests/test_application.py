@@ -11,7 +11,7 @@ from starlette.responses import Response
 from starlette.testclient import TestClient
 from starlette.types import ASGIApp, Message, Receive, Scope, Send
 
-from sqladmin import Admin, ModelView
+from sqladmin_async import Admin, ModelView
 from tests.common import sync_engine as engine
 
 Base = declarative_base()  # type: ignore

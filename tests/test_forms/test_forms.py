@@ -29,9 +29,9 @@ from sqlalchemy.orm import (
 from wtforms import BooleanField, Field, Form, IntegerField, StringField, TimeField
 from wtforms.fields.core import UnboundField
 
-from sqladmin import ModelView
-from sqladmin.fields import Select2TagsField, SelectField
-from sqladmin.forms import ModelConverter, converts, get_model_form
+from sqladmin_async import ModelView
+from sqladmin_async.fields import Select2TagsField, SelectField
+from sqladmin_async.forms import ModelConverter, converts, get_model_form
 from tests.common import async_engine as engine
 
 pytestmark = pytest.mark.anyio

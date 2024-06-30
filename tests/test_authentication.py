@@ -6,8 +6,8 @@ from starlette.requests import Request
 from starlette.responses import RedirectResponse
 from starlette.testclient import TestClient
 
-from sqladmin import Admin
-from sqladmin.authentication import AuthenticationBackend
+from sqladmin_async import Admin
+from sqladmin_async.authentication import AuthenticationBackend
 from tests.common import sync_engine as engine
 
 

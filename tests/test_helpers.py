@@ -5,7 +5,7 @@ import pytest
 from sqlalchemy import Column, ForeignKey, Integer, String
 from sqlalchemy.orm import declarative_base
 
-from sqladmin.helpers import (
+from sqladmin_async.helpers import (
     get_object_identifier,
     is_falsy_value,
     object_identifier_values,

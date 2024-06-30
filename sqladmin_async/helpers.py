@@ -19,7 +19,7 @@ from sqlalchemy import Column, inspect
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import RelationshipProperty, sessionmaker
 
-from sqladmin._types import MODEL_PROPERTY
+from sqladmin_async._types import MODEL_PROPERTY
 
 T = TypeVar("T")
 

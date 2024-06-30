@@ -10,9 +10,9 @@ from sqlalchemy.sql.expression import Select
 from starlette.applications import Starlette
 from starlette.requests import Request
 
-from sqladmin import Admin, ModelView
-from sqladmin.exceptions import InvalidModelError
-from sqladmin.helpers import get_column_python_type
+from sqladmin_async import Admin, ModelView
+from sqladmin_async.exceptions import InvalidModelError
+from sqladmin_async.helpers import get_column_python_type
 from tests.common import sync_engine as engine
 
 pytestmark = pytest.mark.anyio
@@ -373,8 +373,8 @@ async def test_get_model_objects_uses_list_query() -> None:
         async_engine = False
         session_maker = session_maker
 
-        def list_query(self, request: Request) -> Select:
-            return super().list_query(request).filter(User.name.endswith("man"))
+        async def list_query(self, request: Request) -> Select:
+            return (await super().list_query(request)).filter(User.name.endswith("man"))
 
     view = UserAdmin()
     request = Request({"type": "http"})

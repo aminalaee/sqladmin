@@ -10,7 +10,7 @@ except ImportError:
 
 from sqlalchemy.orm import sessionmaker
 
-from sqladmin.forms import get_model_form
+from sqladmin_async.forms import get_model_form
 from tests.common import sync_engine as engine
 
 pytestmark = pytest.mark.anyio

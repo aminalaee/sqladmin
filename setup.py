@@ -1,0 +1,30 @@
+from setuptools import setup
+
+setup(name='sqladmin_async',
+      version='2.7',
+      description='Fork of Sqladmin with async functions',
+      package_data={"sqladmin_async": ["statics/**/*", "templates/**/*"]},
+      author_email='ilikepustoshka@gmail.com',
+      license="Copyright © 2024, Scherba Matthew. All rights reserved.",
+      zip_safe=False,
+      classifiers = [
+            "Development Status :: 4 - Beta",
+            "Programming Language :: Python",
+            "Programming Language :: Python :: 3.8",
+            "Programming Language :: Python :: 3.9",
+            "Programming Language :: Python :: 3.10",
+            "Programming Language :: Python :: 3.11",
+            "Programming Language :: Python :: 3.12",
+            "Environment :: Web Environment",
+            "Intended Audience :: Developers",
+            "License :: OSI Approved :: BSD License",
+            "Topic :: Internet :: WWW/HTTP",
+            "Operating System :: OS Independent",
+            ],
+      requires = [
+            "starlette",
+            "sqlalchemy",
+            "wtforms",
+            "jinja2",
+            "python_multipart",
+      ])

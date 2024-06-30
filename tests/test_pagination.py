@@ -1,7 +1,7 @@
 import pytest
 from starlette.datastructures import URL
 
-from sqladmin.pagination import PageControl, Pagination
+from sqladmin_async.pagination import PageControl, Pagination
 
 BASE_URL = URL("http://testserver/users/list")
 

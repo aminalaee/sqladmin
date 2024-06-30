@@ -33,16 +33,16 @@ from wtforms import (
 )
 from wtforms.fields.core import UnboundField
 
-from sqladmin._types import MODEL_PROPERTY
-from sqladmin._validators import (
+from sqladmin_async._types import MODEL_PROPERTY
+from sqladmin_async._validators import (
     ColorValidator,
     CurrencyValidator,
     PhoneNumberValidator,
     TimezoneValidator,
 )
-from sqladmin.ajax import QueryAjaxModelLoader
-from sqladmin.exceptions import NoConverterFound
-from sqladmin.fields import (
+from sqladmin_async.ajax import QueryAjaxModelLoader
+from sqladmin_async.exceptions import NoConverterFound
+from sqladmin_async.fields import (
     AjaxSelectField,
     AjaxSelectMultipleField,
     DateField,
@@ -55,7 +55,7 @@ from sqladmin.fields import (
     Select2TagsField,
     SelectField,
 )
-from sqladmin.helpers import (
+from sqladmin_async.helpers import (
     choice_type_coerce_factory,
     get_direction,
     get_object_identifier,

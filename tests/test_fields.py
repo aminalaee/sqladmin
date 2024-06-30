@@ -6,7 +6,7 @@ from sqlalchemy import Column, Integer, String
 from sqlalchemy.orm import declarative_base
 from wtforms import Form
 
-from sqladmin.fields import (
+from sqladmin_async.fields import (
     DateField,
     DateTimeField,
     IntervalField,
