@@ -20,7 +20,7 @@ from sqlalchemy.orm import declarative_base, relationship, selectinload, session
 from starlette.applications import Starlette
 from starlette.requests import Request
 
-from sqladmin import Admin, ModelView
+from sqladmin_async import Admin, ModelView
 from tests.common import async_engine as engine
 
 pytestmark = pytest.mark.anyio

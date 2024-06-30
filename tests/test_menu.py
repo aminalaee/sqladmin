@@ -2,8 +2,8 @@ from sqlalchemy import Column, Integer, String
 from sqlalchemy.orm import declarative_base
 from starlette.requests import Request
 
-from sqladmin import ModelView
-from sqladmin._menu import CategoryMenu, ItemMenu, Menu, ViewMenu
+from sqladmin_async import ModelView
+from sqladmin_async._menu import CategoryMenu, ItemMenu, Menu, ViewMenu
 
 Base = declarative_base()  # type: ignore
 

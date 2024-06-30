@@ -6,9 +6,9 @@ from typing import Any, Callable, Generator
 
 from wtforms import Form, ValidationError, fields, widgets
 
-from sqladmin import widgets as sqladmin_widgets
-from sqladmin.ajax import QueryAjaxModelLoader
-from sqladmin.helpers import get_object_identifier, parse_interval
+from sqladmin_async import widgets as sqladmin_widgets
+from sqladmin_async.ajax import QueryAjaxModelLoader
+from sqladmin_async.helpers import get_object_identifier, parse_interval
 
 __all__ = [
     "AjaxSelectField",

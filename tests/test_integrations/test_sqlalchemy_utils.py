@@ -17,7 +17,7 @@ from sqlalchemy_utils import (
     UUIDType,
 )
 
-from sqladmin.forms import get_model_form
+from sqladmin_async.forms import get_model_form
 from tests.common import DummyData
 from tests.common import async_engine as engine
 

@@ -9,8 +9,8 @@ from sqlalchemy.orm import Session, selectinload
 from sqlalchemy.sql.expression import Select, and_, or_
 from starlette.requests import Request
 
-from sqladmin._types import MODEL_PROPERTY
-from sqladmin.helpers import (
+from sqladmin_async._types import MODEL_PROPERTY
+from sqladmin_async.helpers import (
     get_column_python_type,
     get_direction,
     get_primary_keys,
@@ -19,7 +19,7 @@ from sqladmin.helpers import (
 )
 
 if TYPE_CHECKING:
-    from sqladmin.models import ModelView
+    from sqladmin_async.models import ModelView
 
 
 class Query:

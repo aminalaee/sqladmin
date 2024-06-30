@@ -34,13 +34,13 @@ from starlette.responses import StreamingResponse
 from wtforms import Field, Form
 from wtforms.fields.core import UnboundField
 
-from sqladmin._queries import Query
-from sqladmin._types import MODEL_ATTR
-from sqladmin.ajax import create_ajax_loader
-from sqladmin.exceptions import InvalidModelError
-from sqladmin.formatters import BASE_FORMATTERS
-from sqladmin.forms import ModelConverter, ModelConverterBase, get_model_form
-from sqladmin.helpers import (
+from sqladmin_async._queries import Query
+from sqladmin_async._types import MODEL_ATTR
+from sqladmin_async.ajax import create_ajax_loader
+from sqladmin_async.exceptions import InvalidModelError
+from sqladmin_async.formatters import BASE_FORMATTERS
+from sqladmin_async.forms import ModelConverter, ModelConverterBase, get_model_form
+from sqladmin_async.helpers import (
     Writer,
     get_object_identifier,
     get_primary_keys,
@@ -52,13 +52,13 @@ from sqladmin.helpers import (
 )
 
 # stream_to_csv,
-from sqladmin.pagination import Pagination
-from sqladmin.templating import Jinja2Templates
+from sqladmin_async.pagination import Pagination
+from sqladmin_async.templating import Jinja2Templates
 
 if TYPE_CHECKING:
     from sqlalchemy.ext.asyncio import async_sessionmaker
 
-    from sqladmin.application import BaseAdmin
+    from sqladmin_async.application import BaseAdmin
 
 __all__ = [
     "BaseView",

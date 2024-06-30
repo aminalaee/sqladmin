@@ -5,7 +5,7 @@ from sqlalchemy import Column, DateTime, ForeignKey, Integer, String
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import declarative_base, relationship, sessionmaker
 
-from sqladmin.forms import get_model_form
+from sqladmin_async.forms import get_model_form
 from tests.common import async_engine as engine
 
 pytestmark = pytest.mark.anyio

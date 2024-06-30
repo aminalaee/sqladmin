@@ -28,18 +28,18 @@ from starlette.responses import JSONResponse, RedirectResponse, Response
 from starlette.routing import Mount, Route
 from starlette.staticfiles import StaticFiles
 
-from sqladmin._menu import CategoryMenu, Menu, ViewMenu
-from sqladmin._types import ENGINE_TYPE
-from sqladmin.ajax import QueryAjaxModelLoader
-from sqladmin.authentication import AuthenticationBackend, login_required
-from sqladmin.forms import WTFORMS_ATTRS, WTFORMS_ATTRS_REVERSED
-from sqladmin.helpers import (
+from sqladmin_async._menu import CategoryMenu, Menu, ViewMenu
+from sqladmin_async._types import ENGINE_TYPE
+from sqladmin_async.ajax import QueryAjaxModelLoader
+from sqladmin_async.authentication import AuthenticationBackend, login_required
+from sqladmin_async.forms import WTFORMS_ATTRS, WTFORMS_ATTRS_REVERSED
+from sqladmin_async.helpers import (
     get_object_identifier,
     is_async_session_maker,
     slugify_action_name,
 )
-from sqladmin.models import BaseView, ModelView
-from sqladmin.templating import Jinja2Templates
+from sqladmin_async.models import BaseView, ModelView
+from sqladmin_async.templating import Jinja2Templates
 
 if TYPE_CHECKING:
     from sqlalchemy.ext.asyncio import async_sessionmaker
@@ -104,7 +104,7 @@ class BaseAdmin:
         templates = Jinja2Templates("templates")
         loaders = [
             FileSystemLoader(self.templates_dir),
-            PackageLoader("sqladmin", "templates"),
+            PackageLoader("sqladmin_async", "templates"),
         ]
 
         templates.env.loader = ChoiceLoader(loaders)
@@ -367,7 +367,7 @@ class Admin(BaseAdminView):
             authentication_backend=authentication_backend,
         )
 
-        statics = StaticFiles(packages=["sqladmin"])
+        statics = StaticFiles(packages=["sqladmin_async"])
 
         async def http_exception(
             request: Request, exc: Exception

@@ -9,8 +9,8 @@ from starlette.requests import Request
 from starlette.responses import RedirectResponse, Response
 from starlette.testclient import TestClient
 
-from sqladmin import Admin, ModelView
-from sqladmin.application import action
+from sqladmin_async import Admin, ModelView
+from sqladmin_async.application import action
 from tests.common import sync_engine as engine
 
 Base: Any = declarative_base()

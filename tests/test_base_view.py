@@ -6,7 +6,7 @@ from starlette.applications import Starlette
 from starlette.requests import Request
 from starlette.testclient import TestClient
 
-from sqladmin import Admin, BaseView, expose
+from sqladmin_async import Admin, BaseView, expose
 from tests.common import sync_engine as engine
 
 Base = declarative_base()  # type: ignore

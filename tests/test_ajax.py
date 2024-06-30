@@ -7,8 +7,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import declarative_base, relationship, selectinload, sessionmaker
 from starlette.applications import Starlette
 
-from sqladmin import Admin, ModelView
-from sqladmin.ajax import create_ajax_loader
+from sqladmin_async import Admin, ModelView
+from sqladmin_async.ajax import create_ajax_loader
 from tests.common import async_engine as engine
 
 pytestmark = pytest.mark.anyio
