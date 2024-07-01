@@ -4,6 +4,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+
+## Version 0.18.0 - 2024-07-01
+
+### Added
+
+* Add `form_rules`, `form_create_rules`, `form_edit_rules` by @aminalaee in https://github.com/aminalaee/sqladmin/pull/779
+* Add more docs for overriding default tempates by @jonocodes in https://github.com/aminalaee/sqladmin/pull/769
+
+### Fixed
+* Fix edit_form_query documentation example by @lukeclimen in https://github.com/aminalaee/sqladmin/pull/777
+
+**Full Changelog**: https://github.com/aminalaee/sqladmin/compare/0.17.0...0.18.0
+
 ## Version 0.17.0 - 2024-05-13
 
 ### Added
