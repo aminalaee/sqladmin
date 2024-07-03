@@ -1,5 +1,7 @@
+from __future__ import annotations
+
 from dataclasses import dataclass, field
-from typing import Any, List
+from typing import Any
 
 from starlette.datastructures import URL
 
@@ -12,11 +14,11 @@ class PageControl:
 
 @dataclass
 class Pagination:
-    rows: List[Any]
+    rows: list[Any]
     page: int
     page_size: int
     count: int
-    page_controls: List[PageControl] = field(default_factory=list)
+    page_controls: list[PageControl] = field(default_factory=list)
     max_page_controls: int = 7
 
     @property

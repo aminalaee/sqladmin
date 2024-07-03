@@ -1,4 +1,7 @@
+from __future__ import annotations
+
 import time
+import warnings
 from enum import Enum
 from typing import (
     TYPE_CHECKING,
@@ -20,14 +23,16 @@ from urllib.parse import urlencode
 import anyio
 from sqlalchemy import Column, String, asc, cast, desc, func, inspect, or_
 from sqlalchemy.exc import NoInspectionAvailable
-from sqlalchemy.orm import joinedload, sessionmaker
+from sqlalchemy.orm import selectinload, sessionmaker
 from sqlalchemy.orm.exc import DetachedInstanceError
 from sqlalchemy.sql.elements import ClauseElement
 from sqlalchemy.sql.expression import Select, select
 from starlette.datastructures import URL
+from starlette.exceptions import HTTPException
 from starlette.requests import Request
 from starlette.responses import StreamingResponse
 from wtforms import Field, Form
+from wtforms.fields.core import UnboundField
 
 from sqladmin._queries import Query
 from sqladmin._types import MODEL_ATTR
@@ -414,17 +419,17 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
     """
 
     # Templates
-    list_template: ClassVar[str] = "list.html"
-    """List view template. Default is `list.html`."""
+    list_template: ClassVar[str] = "sqladmin/list.html"
+    """List view template. Default is `sqladmin/list.html`."""
 
-    create_template: ClassVar[str] = "create.html"
-    """Create view template. Default is `create.html`."""
+    create_template: ClassVar[str] = "sqladmin/create.html"
+    """Create view template. Default is `sqladmin/create.html`."""
 
-    details_template: ClassVar[str] = "details.html"
-    """Details view template. Default is `details.html`."""
+    details_template: ClassVar[str] = "sqladmin/details.html"
+    """Details view template. Default is `sqladmin/details.html`."""
 
-    edit_template: ClassVar[str] = "edit.html"
-    """Edit view template. Default is `edit.html`."""
+    edit_template: ClassVar[str] = "sqladmin/edit.html"
+    """Edit view template. Default is `sqladmin/edit.html`."""
 
     # Export
     column_export_list: ClassVar[List[MODEL_ATTR]] = []
@@ -597,6 +602,28 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
         ```
     """
 
+    form_rules: ClassVar[list[str]] = []
+    """List of rendering rules for model creation and edit form.
+    This property changes default form rendering behavior and to rearrange
+    order of rendered fields, add some text between fields, group them, etc.
+    If not set, will use default Flask-Admin form rendering logic.
+
+    ???+ example
+        ```python
+        class UserAdmin(ModelAdmin, model=User):
+            form_rules = [
+                "first_name",
+                "last_name",
+            ]
+        ```
+    """
+
+    form_create_rules: ClassVar[list[str]] = []
+    """Customized rules for the create form. Cannot be specified with `form_rules`."""
+
+    form_edit_rules: ClassVar[list[str]] = []
+    """Customized rules for the edit form. Cannot be specified with `form_rules`."""
+
     # General options
     column_labels: ClassVar[Dict[MODEL_ATTR, str]] = {}
     """A mapping of column labels, used to map column names to new names.
@@ -684,6 +711,8 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
                 model_admin=self, name=name, options=options
             )
 
+        self._refresh_form_rules_cache()
+
         self._custom_actions_in_list: Dict[str, str] = {}
         self._custom_actions_in_detail: Dict[str, str] = {}
         self._custom_actions_confirmation: Dict[str, str] = {}
@@ -746,6 +775,17 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
 
         return value
 
+    def validate_page_number(self, number: Union[str, None], default: int) -> int:
+        if not number:
+            return default
+
+        try:
+            return int(number)
+        except ValueError:
+            raise HTTPException(
+                status_code=400, detail="Invalid page or pageSize parameter"
+            )
+
     async def count(self, request: Request, stmt: Optional[Select] = None) -> int:
         if stmt is None:
             stmt = self.count_query(request)
@@ -753,14 +793,14 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
         return rows[0]
 
     async def list(self, request: Request) -> Pagination:
-        page = int(request.query_params.get("page", 1))
-        page_size = int(request.query_params.get("pageSize", 0))
+        page = self.validate_page_number(request.query_params.get("page"), 1)
+        page_size = self.validate_page_number(request.query_params.get("pageSize"), 0)
         page_size = min(page_size or self.page_size, max(self.page_size_options))
         search = request.query_params.get("search", None)
 
         stmt = self.list_query(request)
         for relation in self._list_relations:
-            stmt = stmt.options(joinedload(relation))
+            stmt = stmt.options(selectinload(relation))
 
         stmt = self.sort_query(stmt, request)
 
@@ -790,7 +830,7 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
         stmt = self.list_query(request).limit(limit)
 
         for relation in self._list_relations:
-            stmt = stmt.options(joinedload(relation))
+            stmt = stmt.options(selectinload(relation))
 
         rows = await self._run_query(stmt)
         return rows
@@ -803,16 +843,12 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
         stmt = self._stmt_by_identifier(value)
 
         for relation in self._details_relations:
-            stmt = stmt.options(joinedload(relation))
+            stmt = stmt.options(selectinload(relation))
 
         return await self._get_object_by_pk(stmt)
 
-    async def get_object_for_edit(self, value: Any) -> Any:
-        stmt = self._stmt_by_identifier(value)
-
-        for relation in self._form_relations:
-            stmt = stmt.options(joinedload(relation))
-
+    async def get_object_for_edit(self, request: Request) -> Any:
+        stmt = self.form_edit_query(request)
         return await self._get_object_by_pk(stmt)
 
     async def get_object_for_delete(self, value: Any) -> Any:
@@ -1045,6 +1081,25 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
 
         return select(self.model)
 
+    def edit_form_query(self, request: Request) -> Select:
+        msg = (
+            "Overriding 'edit_form_query' is deprecated. Use 'form_edit_query' instead."
+        )
+        warnings.warn(msg, DeprecationWarning, stacklevel=2)
+        return self.form_edit_query(request)
+
+    def form_edit_query(self, request: Request) -> Select:
+        """
+        The SQLAlchemy select expression used for the edit form page which can be
+        customized. By default it will select the object by primary key(s) without any
+        additional filters.
+        """
+
+        stmt = self._stmt_by_identifier(request.path_params["pk"])
+        for relation in self._form_relations:
+            stmt = stmt.options(selectinload(relation))
+        return stmt
+
     def count_query(self, request: Request) -> Select:
         """
         The SQLAlchemy select expression used for the count query
@@ -1123,3 +1178,26 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
             media_type="text/csv",
             headers={"Content-Disposition": f"attachment;filename={filename}"},
         )
+
+    def _refresh_form_rules_cache(self) -> None:
+        if self.form_rules:
+            self._form_create_rules = self.form_rules
+            self._form_edit_rules = self.form_rules
+        else:
+            self._form_create_rules = self.form_create_rules
+            self._form_edit_rules = self.form_edit_rules
+
+    def _validate_form_class(self, ruleset: List[Any], form_class: Type[Form]) -> None:
+        form_fields = []
+        for name, obj in form_class.__dict__.items():
+            if isinstance(obj, UnboundField):
+                form_fields.append(name)
+
+        missing_fields = []
+        if ruleset:
+            for field_name in form_fields:
+                if field_name not in ruleset:
+                    missing_fields.append(field_name)
+
+        for field_name in missing_fields:
+            delattr(form_class, field_name)

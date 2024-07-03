@@ -44,6 +44,10 @@
         - form_include_pk
         - form_ajax_refs
         - form_converter
+        - form_edit_query
+        - form_rules
+        - form_create_rules
+        - form_edit_rules
         - column_type_formatters
         - list_query
         - count_query

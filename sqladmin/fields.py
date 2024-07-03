@@ -1,6 +1,8 @@
+from __future__ import annotations
+
 import json
 import operator
-from typing import Any, Callable, Dict, Generator, List, Optional, Set, Tuple, Union
+from typing import Any, Callable, Generator
 
 from wtforms import Form, ValidationError, fields, widgets
 
@@ -43,7 +45,7 @@ class IntervalField(fields.StringField):
     A text field which stores a `datetime.timedelta` object.
     """
 
-    def process_formdata(self, valuelist: List[str]) -> None:
+    def process_formdata(self, valuelist: list[str]) -> None:
         if not valuelist:
             return
 
@@ -57,19 +59,19 @@ class IntervalField(fields.StringField):
 class SelectField(fields.SelectField):
     def __init__(
         self,
-        label: Optional[str] = None,
-        validators: Optional[list] = None,
+        label: str | None = None,
+        validators: list | None = None,
         coerce: type = str,
-        choices: Optional[Union[list, Callable]] = None,
+        choices: list | Callable | None = None,
         allow_blank: bool = False,
-        blank_text: Optional[str] = None,
+        blank_text: str | None = None,
         **kwargs: Any,
     ) -> None:
         super().__init__(label, validators, coerce, choices, **kwargs)
         self.allow_blank = allow_blank
         self.blank_text = blank_text or " "
 
-    def iter_choices(self) -> Generator[Tuple[str, str, bool, Dict], None, None]:
+    def iter_choices(self) -> Generator[tuple[str, str, bool, dict], None, None]:
         choices = self.choices or []
 
         if self.allow_blank:
@@ -86,7 +88,7 @@ class SelectField(fields.SelectField):
                     {},
                 )
 
-    def process_formdata(self, valuelist: List[str]) -> None:
+    def process_formdata(self, valuelist: list[str]) -> None:
         if valuelist:
             if valuelist[0] == "__None":
                 self.data = None
@@ -112,7 +114,7 @@ class JSONField(fields.TextAreaField):
         else:
             return "{}"
 
-    def process_formdata(self, valuelist: List[str]) -> None:
+    def process_formdata(self, valuelist: list[str]) -> None:
         if valuelist:
             value = valuelist[0]
 
@@ -132,10 +134,10 @@ class QuerySelectField(fields.SelectFieldBase):
 
     def __init__(
         self,
-        data: Optional[list] = None,
-        label: Optional[str] = None,
-        validators: Optional[list] = None,
-        get_label: Optional[Union[Callable, str]] = None,
+        data: list | None = None,
+        label: str | None = None,
+        validators: list | None = None,
+        get_label: Callable | str | None = None,
         allow_blank: bool = False,
         blank_text: str = "",
         **kwargs: Any,
@@ -153,11 +155,11 @@ class QuerySelectField(fields.SelectFieldBase):
 
         self.allow_blank = allow_blank
         self.blank_text = blank_text
-        self._data: Optional[tuple]
-        self._formdata: Optional[Union[str, List[str]]]
+        self._data: tuple | None
+        self._formdata: str | list[str] | None
 
     @property
-    def data(self) -> Optional[tuple]:
+    def data(self) -> tuple | None:
         if self._formdata is not None:
             for pk, _ in self._select_data:
                 if pk == self._formdata:
@@ -170,7 +172,7 @@ class QuerySelectField(fields.SelectFieldBase):
         self._data = data
         self._formdata = None
 
-    def iter_choices(self) -> Generator[Tuple[str, str, bool, Dict], None, None]:
+    def iter_choices(self) -> Generator[tuple[str, str, bool, dict], None, None]:
         if self.allow_blank:
             yield ("__None", self.blank_text, self.data is None, {})
 
@@ -186,7 +188,7 @@ class QuerySelectField(fields.SelectFieldBase):
         for pk, label in self._select_data:
             yield (pk, self.get_label(label), str(pk) == primary_key, {})
 
-    def process_formdata(self, valuelist: List[str]) -> None:
+    def process_formdata(self, valuelist: list[str]) -> None:
         if valuelist:
             if self.allow_blank and valuelist[0] == "__None":
                 self.data = None
@@ -220,9 +222,9 @@ class QuerySelectMultipleField(QuerySelectField):
 
     def __init__(
         self,
-        data: Optional[list] = None,
-        label: Optional[str] = None,
-        validators: Optional[list] = None,
+        data: list | None = None,
+        label: str | None = None,
+        validators: list | None = None,
         default: Any = None,
         **kwargs: Any,
     ) -> None:
@@ -238,11 +240,11 @@ class QuerySelectMultipleField(QuerySelectField):
                 "allow_blank=True does not do anything for QuerySelectMultipleField."
             )
         self._invalid_formdata = False
-        self._formdata: Optional[List[str]] = None
-        self._data: Optional[tuple] = None
+        self._formdata: list[str] | None = None
+        self._data: tuple | None = None
 
     @property
-    def data(self) -> Optional[tuple]:
+    def data(self) -> tuple | None:
         formdata = self._formdata
         if formdata is not None:
             data = []
@@ -262,7 +264,7 @@ class QuerySelectMultipleField(QuerySelectField):
         self._data = data
         self._formdata = None
 
-    def iter_choices(self) -> Generator[Tuple[str, Any, bool, Dict], None, None]:
+    def iter_choices(self) -> Generator[tuple[str, Any, bool, dict], None, None]:
         if self.data is not None:
             primary_keys = (
                 self.data
@@ -272,7 +274,7 @@ class QuerySelectMultipleField(QuerySelectField):
             for pk, label in self._select_data:
                 yield (pk, self.get_label(label), pk in primary_keys, {})
 
-    def process_formdata(self, valuelist: List[str]) -> None:
+    def process_formdata(self, valuelist: list[str]) -> None:
         self._formdata = list(set(valuelist))
 
     def pre_validate(self, form: Form) -> None:
@@ -297,8 +299,8 @@ class AjaxSelectField(fields.SelectFieldBase):
     def __init__(
         self,
         loader: QueryAjaxModelLoader,
-        label: Optional[str] = None,
-        validators: Optional[list] = None,
+        label: str | None = None,
+        validators: list | None = None,
         allow_blank: bool = False,
         **kwargs: Any,
     ) -> None:
@@ -339,9 +341,9 @@ class AjaxSelectMultipleField(fields.SelectFieldBase):
     def __init__(
         self,
         loader: QueryAjaxModelLoader,
-        label: Optional[str] = None,
-        validators: Optional[list] = None,
-        default: Optional[list] = None,
+        label: str | None = None,
+        validators: list | None = None,
+        default: list | None = None,
         allow_blank: bool = False,
         **kwargs: Any,
     ) -> None:
@@ -349,7 +351,7 @@ class AjaxSelectMultipleField(fields.SelectFieldBase):
         self.loader = loader
         self.allow_blank = allow_blank
         default = default or []
-        self._formdata: Set[Any] = set()
+        self._formdata: set[Any] = set()
 
         super().__init__(label, validators, default=default, **kwargs)
 
@@ -382,7 +384,7 @@ class Select2TagsField(fields.SelectField):
     def process_formdata(self, valuelist: list) -> None:
         self.data = valuelist
 
-    def process_data(self, value: Optional[list]) -> None:
+    def process_data(self, value: list | None) -> None:
         self.data = value or []
 
 

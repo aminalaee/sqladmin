@@ -200,6 +200,10 @@ The forms are based on `WTForms` package and include the following options:
 * `form_include_pk`: Control if primary key column should be included in create/edit forms. Default is `False`.
 * `form_ajax_refs`: Use Ajax with Select2 for loading relationship models async. This is use ful when the related model has a lot of records.
 * `form_converter`: Allow adding custom converters to support additional column types.
+* `form_edit_query`: A method with the signature of `(request) -> stmt` which can customize the edit form data.
+* `form_rules`: List of form rules to manage rendering and behaviour of form.
+* `form_create_rules`: List of form rules to manage rendering and behaviour of form in create page.
+* `form_edit_rules`: List of form rules to manage rendering and behaviour of form in edit page.
 
 !!! example
 
@@ -216,6 +220,8 @@ The forms are based on `WTForms` package and include the following options:
                 "order_by": ("id",),
             }
         }
+        form_create_rules = ["name", "password"]
+        form_edit_rules = ["name"]
     ```
 
 ## Export options
@@ -234,10 +240,10 @@ The export options can be set per model and includes the following options:
 The template files are built using Jinja2 and can be completely overridden in the configurations.
 The pages available are:
 
-* `list_template`: Template to use for models list page. Default is `list.html`.
-* `create_template`: Template to use for model creation page. Default is `create.html`.
-* `details_template`: Template to use for model details page. Default is `details.html`.
-* `edit_template`: Template to use for model edit page. Default is `edit.html`.
+* `list_template`: Template to use for models list page. Default is `sqladmin/list.html`.
+* `create_template`: Template to use for model creation page. Default is `sqladmin/create.html`.
+* `details_template`: Template to use for model details page. Default is `sqladmin/details.html`.
+* `edit_template`: Template to use for model edit page. Default is `sqladmin/edit.html`.
 
 !!! example
 
