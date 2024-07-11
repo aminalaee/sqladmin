@@ -16,11 +16,14 @@ from sqlalchemy import (
     Text,
     Time,
     TypeDecorator,
+    func,
+    select,
 )
 from sqlalchemy.dialects.postgresql import ARRAY, INET, MACADDR, UUID
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import (
     ColumnProperty,
+    column_property,
     composite,
     declarative_base,
     relationship,
@@ -333,3 +336,16 @@ async def test_model_field_clashing_with_wtforms_reserved_attribute() -> None:
     assert inspect.isfunction(Form.process)
     assert inspect.isfunction(Form.validate)
     assert inspect.isfunction(Form.populate_obj)
+
+
+async def test_column_property_is_ignored_in_form() -> None:
+    class Model(Base):
+        __tablename__ = "model_column_property"
+
+        id = Column(Integer, primary_key=True)
+        number = Column(Integer)
+        count = column_property(select(func.count("Model")).scalar_subquery())
+
+    Form = await get_model_form(model=Model, session_maker=session_maker)
+
+    assert "count" not in Form()._fields
