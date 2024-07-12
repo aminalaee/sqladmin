@@ -18,7 +18,12 @@ from typing import (
 import anyio
 from sqlalchemy import Boolean, select
 from sqlalchemy import inspect as sqlalchemy_inspect
-from sqlalchemy.orm import ColumnProperty, RelationshipProperty, sessionmaker
+from sqlalchemy.orm import (
+    ColumnProperty,
+    RelationshipProperty,
+    sessionmaker,
+)
+from sqlalchemy.sql.elements import Label
 from sqlalchemy.sql.schema import Column
 from wtforms import (
     BooleanField,
@@ -612,9 +617,12 @@ async def get_model_form(
     attributes = []
     names = only or mapper.attrs.keys()
     for name in names:
-        if exclude and name in exclude:
+        attr = mapper.attrs[name]
+        if (exclude and name in exclude) or (
+            isinstance(attr, ColumnProperty) and isinstance(attr.expression, Label)
+        ):
             continue
-        attributes.append((name, mapper.attrs[name]))
+        attributes.append((name, attr))
 
     field_dict = {}
     for name, attr in attributes:
