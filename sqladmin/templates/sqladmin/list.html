@@ -198,7 +198,7 @@
         </a>
         <div class="dropdown-menu">
           {% for page_size_option in model_view.page_size_options %}
-          <a class="dropdown-item" href="{{ request.url.include_query_params(pageSize=page_size_option,page=pagination.new_page_number(page_size_option)) }}">
+          <a class="dropdown-item" href="{{ request.url.include_query_params(pageSize=page_size_option,page=pagination.resize(page_size_option)).page }}">
             {{ page_size_option }} / Page
           </a>
           {% endfor %}
