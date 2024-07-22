@@ -176,7 +176,7 @@ class BaseView(BaseModelView):
 
     icon: ClassVar[str] = ""
     """Display icon for ModelAdmin in the sidebar.
-    Currently only supports FontAwesome icons.
+    Currently only supports FontAwesome and Tabler icons.
     """
 
     category: ClassVar[str] = ""
