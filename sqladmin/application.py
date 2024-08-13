@@ -68,6 +68,7 @@ class BaseAdmin:
         base_url: str = "/admin",
         title: str = "Admin",
         logo_url: str | None = None,
+        favicon_url: str | None = None,
         templates_dir: str = "templates",
         middlewares: Sequence[Middleware] | None = None,
         authentication_backend: AuthenticationBackend | None = None,
@@ -78,6 +79,7 @@ class BaseAdmin:
         self.templates_dir = templates_dir
         self.title = title
         self.logo_url = logo_url
+        self.favicon_url = favicon_url
 
         if session_maker:
             self.session_maker = session_maker
@@ -340,6 +342,7 @@ class Admin(BaseAdminView):
         base_url: str = "/admin",
         title: str = "Admin",
         logo_url: str | None = None,
+        favicon_url: str | None = None,
         middlewares: Sequence[Middleware] | None = None,
         debug: bool = False,
         templates_dir: str = "templates",
@@ -353,6 +356,7 @@ class Admin(BaseAdminView):
             base_url: Base URL for Admin interface.
             title: Admin title.
             logo_url: URL of logo to be displayed instead of title.
+            favicon_url: URL of favicon to be displayed.
         """
 
         super().__init__(
@@ -362,6 +366,7 @@ class Admin(BaseAdminView):
             base_url=base_url,
             title=title,
             logo_url=logo_url,
+            favicon_url=favicon_url,
             templates_dir=templates_dir,
             middlewares=middlewares,
             authentication_backend=authentication_backend,
