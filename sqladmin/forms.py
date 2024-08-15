@@ -24,6 +24,7 @@ from sqlalchemy.orm import (
     RelationshipProperty,
     sessionmaker,
 )
+from sqlalchemy.sql import Select
 from sqlalchemy.sql.elements import Label
 from sqlalchemy.sql.schema import Column
 from wtforms import (
@@ -110,7 +111,7 @@ def converts(*args: str) -> Callable[[T_CC], T_CC]:
 
 
 class ModelConverterBase:
-    relationships_statements: dict[str, Any] = {}
+    relationships_statements: dict[str, Select] = {}
     """
     Select statement for relationships.
     """
