@@ -17,11 +17,7 @@ from typing import (
 )
 
 import anyio
-from sqlalchemy import (
-    Boolean,
-    Select,
-    select,
-)
+from sqlalchemy import Boolean, select
 from sqlalchemy import inspect as sqlalchemy_inspect
 from sqlalchemy.orm import (
     ColumnProperty,
@@ -114,7 +110,7 @@ def converts(*args: str) -> Callable[[T_CC], T_CC]:
 
 
 class ModelConverterBase:
-    relationships_statements: dict[str, Select] = {}
+    relationships_statements: dict[str, Any] = {}
     """
     Select statement for relationships.
     """
