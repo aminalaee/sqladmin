@@ -109,6 +109,11 @@ def converts(*args: str) -> Callable[[T_CC], T_CC]:
 
 
 class ModelConverterBase:
+    relationships_statements: dict[str, str] = {}
+    """
+    Select statement for relationships.
+    """
+
     _converters: dict[str, ConverterCallable] = {}
 
     def __init__(self) -> None:
@@ -229,7 +234,10 @@ class ModelConverterBase:
         session_maker: sessionmaker,
     ) -> list[tuple[str, Any]]:
         target_model = prop.mapper.class_
-        stmt = select(target_model)
+        if prop.key in self.relationships_statements:
+            stmt = self.relationships_statements[prop.key]
+        else:
+            stmt = select(target_model)
 
         if is_async_session_maker(session_maker):
             async with session_maker() as session:
