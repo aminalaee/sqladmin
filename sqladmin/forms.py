@@ -16,7 +16,7 @@ from typing import (
 )
 
 import anyio
-from sqlalchemy import Boolean, select, Select
+from sqlalchemy import Select, Boolean, select
 from sqlalchemy import inspect as sqlalchemy_inspect
 from sqlalchemy.orm import (
     ColumnProperty,
