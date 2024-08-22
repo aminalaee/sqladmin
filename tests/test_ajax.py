@@ -203,7 +203,8 @@ async def test_ajax_response_limit(client: AsyncClient) -> None:
     response = await client.get("/admin/address/ajax/lookup?name=user&term=john")
 
     assert response.status_code == 200
-    # Address admin has no limit so will return all created users (up to default cap of 10)
+    # Address admin has no limit so will return all created users
+    # (up to default cap of 10)
     assert response.json() == {
         "results": [
             {"id": f"{i+1}", "text": f"User {i+1}"} for i in range(users_to_create)
