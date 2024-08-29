@@ -176,6 +176,7 @@ async def login_google(request: Request) -> Response:
         request.session['user'] = user
     return RedirectResponse(request.url_for("admin:index"))
 
+
 admin.app.router.add_route("/auth/google", login_google)
 ```
 
