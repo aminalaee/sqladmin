@@ -169,13 +169,14 @@ class AdminAuth(AuthenticationBackend):
 admin = Admin(app=app, engine=engine, authentication_backend=AdminAuth("test"))
 
 
-@admin.app.route("/auth/google")
 async def login_google(request: Request) -> Response:
     token = await google.authorize_access_token(request)
     user = token.get('userinfo')
     if user:
         request.session['user'] = user
     return RedirectResponse(request.url_for("admin:index"))
+
+admin.app.router.add_route("/auth/google", login_google)
 ```
 
 ## Permissions
