@@ -26,6 +26,7 @@ class QueryAjaxModelLoader:
         self.model_admin = model_admin
         self.fields = options.get("fields", {})
         self.order_by = options.get("order_by")
+        self.limit = options.get("limit", DEFAULT_PAGE_SIZE)
 
         pks = get_primary_keys(self.model)
         self.pk = pks[0] if len(pks) == 1 else None
@@ -60,7 +61,7 @@ class QueryAjaxModelLoader:
 
         return {"id": str(get_object_identifier(model)), "text": str(model)}
 
-    async def get_list(self, term: str, limit: int = DEFAULT_PAGE_SIZE) -> list[Any]:
+    async def get_list(self, term: str) -> list[Any]:
         stmt = select(self.model)
 
         # no type casting to string if a ColumnAssociationProxyInstance is given
@@ -71,9 +72,13 @@ class QueryAjaxModelLoader:
         stmt = stmt.filter(or_(*filters))
 
         if self.order_by:
-            stmt = stmt.order_by(self.order_by)
+            if isinstance(self.order_by, list):
+                for o in self.order_by:
+                    stmt = stmt.order_by(o)
+            else:
+                stmt = stmt.order_by(self.order_by)
 
-        stmt = stmt.limit(limit)
+        stmt = stmt.limit(self.limit)
         result = await self.model_admin._run_query(stmt)
         return result
 
