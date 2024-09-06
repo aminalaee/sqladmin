@@ -5,6 +5,22 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 
+## Version 0.19.0 - 2024-09-06
+
+### Added
+* Add favicon by @sheldygg in https://github.com/aminalaee/sqladmin/pull/787
+* Add tabler icons by @r-m-n in https://github.com/aminalaee/sqladmin/pull/795
+* feat: use favicon_url instead of logo_url for favicon by @alex-lambdaloopers in https://github.com/aminalaee/sqladmin/pull/800
+* Allow multiple ajax sorts and changes to result size by @mfriedy in https://github.com/aminalaee/sqladmin/pull/805
+
+### Fixed
+* Fix column_property by @aminalaee in https://github.com/aminalaee/sqladmin/pull/791
+* Fix page number issue when changing page size by @numberbee7070 in https://github.com/aminalaee/sqladmin/pull/782
+* Document update to resolve DeprecationWarning from Starlette (#809) by @a4rcvv in https://github.com/aminalaee/sqladmin/pull/810
+* Bug fix: unhandled exception during AjaxSelect load by @diskream in https://github.com/aminalaee/sqladmin/pull/727
+
+**Full Changelog**: https://github.com/aminalaee/sqladmin/compare/0.18.0...0.19.0
+
 ## Version 0.18.0 - 2024-07-01
 
 ### Added
