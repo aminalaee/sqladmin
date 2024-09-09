@@ -52,6 +52,9 @@ class Pagination:
         return self
 
     def add_pagination_urls(self, base_url: URL) -> None:
+        # Clamp page
+        self.page = min(self.page, max(1, self.count // self.page_size + 1))
+
         # Previous pages
         for p in range(self.page - min(self.max_page_controls, 3), self.page):
             if p > 0:

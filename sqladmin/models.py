@@ -810,6 +810,9 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
         else:
             count = await self.count(request)
 
+        # Clamp page
+        page = min(page, max(1, count // page_size + 1))
+
         stmt = stmt.limit(page_size).offset((page - 1) * page_size)
         rows = await self._run_query(stmt)
 

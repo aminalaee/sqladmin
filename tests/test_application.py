@@ -177,7 +177,7 @@ def test_validate_page_and_page_size():
     client = TestClient(app)
 
     response = client.get("/admin/user/list?page=10000")
-    assert response.status_code == 400
+    assert response.status_code == 200
 
     response = client.get("/admin/user/list?page=aaaa")
     assert response.status_code == 400
