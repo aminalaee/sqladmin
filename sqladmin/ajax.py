@@ -72,7 +72,7 @@ class QueryAjaxModelLoader:
         if not result:
             return None
 
-        return result
+        return result[0]
     
     async def get_list(self, term: str) -> list[Any]:
         stmt = select(self.model)
