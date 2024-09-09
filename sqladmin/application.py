@@ -442,12 +442,13 @@ class Admin(BaseAdminView):
         pagination = await model_view.list(request)
         pagination.add_pagination_urls(request.url)
 
-        if (
-            pagination.page * pagination.page_size
-            > pagination.count + pagination.page_size
-        ):
-            raise HTTPException(
-                status_code=400, detail="Invalid page or pageSize parameter"
+        request_page = model_view.validate_page_number(
+            request.query_params.get("page"), 1
+        )
+
+        if request_page > pagination.page:
+            return RedirectResponse(
+                request.url.include_query_params(page=pagination.page), status_code=302
             )
 
         context = {"model_view": model_view, "pagination": pagination}
