@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Optional
 
 from sqlalchemy import String, cast, inspect, or_, select
 
@@ -59,8 +59,21 @@ class QueryAjaxModelLoader:
         if not model:
             return {}
 
+        if isinstance(model, str):
+            model = self.get_object(model)
+
         return {"id": str(get_object_identifier(model)), "text": str(model)}
 
+    def get_object(self, pk: str) -> Optional[type]:
+        pk_attr = get_object_identifier(self.model)
+        stmt = select(self.model).filter(pk_attr == pk)
+
+        result = self.model_admin._run_query_sync(stmt)
+        if not result:
+            return None
+
+        return result
+    
     async def get_list(self, term: str) -> list[Any]:
         stmt = select(self.model)
 
