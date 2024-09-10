@@ -9,7 +9,7 @@ class Post(Base):
     content = Column(Text, nullable=False)
 ```
 
-- First create a `templates` directory in your project.
+- First create a `templates/sqladmin` directory in your project.
 - Then add a file `custom_edit.html` there with the following content:
 ```html title="custom_edit.html"
 {% extends "sqladmin/edit.html" %}
