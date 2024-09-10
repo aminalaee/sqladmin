@@ -75,7 +75,7 @@ The metadata for the model. The options are:
 
 * `name`: Display name for this model. Default value is the class name.
 * `name_plural`: Display plural name for this model. Default value is class name + `s`.
-* `icon`: Icon to be displayed for this model in the admin. Only FontAwesome names are supported.
+* `icon`: Icon to be displayed for this model in the admin. Only FontAwesome and Tabler names are supported.
 * `category`: Category name to display group of `ModelView` classes together in dropdown.
 
 !!! example
@@ -200,7 +200,10 @@ The forms are based on `WTForms` package and include the following options:
 * `form_include_pk`: Control if primary key column should be included in create/edit forms. Default is `False`.
 * `form_ajax_refs`: Use Ajax with Select2 for loading relationship models async. This is use ful when the related model has a lot of records.
 * `form_converter`: Allow adding custom converters to support additional column types.
-* `edit_form_query`: A method with the signature of `(request) -> stmt` which can customize the edit form data.
+* `form_edit_query`: A method with the signature of `(request) -> stmt` which can customize the edit form data.
+* `form_rules`: List of form rules to manage rendering and behaviour of form.
+* `form_create_rules`: List of form rules to manage rendering and behaviour of form in create page.
+* `form_edit_rules`: List of form rules to manage rendering and behaviour of form in edit page.
 
 !!! example
 
@@ -217,6 +220,8 @@ The forms are based on `WTForms` package and include the following options:
                 "order_by": ("id",),
             }
         }
+        form_create_rules = ["name", "password"]
+        form_edit_rules = ["name"]
     ```
 
 ## Export options

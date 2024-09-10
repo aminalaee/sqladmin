@@ -27,9 +27,24 @@ class User(Base):
     name = Column(String(length=16))
 
     addresses = relationship("Address", back_populates="user")
+    rooms = relationship("Room", back_populates="user")
 
     def __str__(self) -> str:
         return f"User {self.id}"
+
+
+class City(Base):
+    __tablename__ = "cities"
+
+    id = Column(Integer, primary_key=True)
+    name = Column(String(length=16))
+    state = Column(String(length=3))
+
+    addresses = relationship("Address", back_populates="city")
+    rooms = relationship("Room", back_populates="city")
+
+    def __str__(self) -> str:
+        return f"{self.name}, {self.state}"
 
 
 class Address(Base):
@@ -37,11 +52,27 @@ class Address(Base):
 
     id = Column(Integer, primary_key=True)
     user_id = Column(Integer, ForeignKey("users.id"))
+    city_id = Column(Integer, ForeignKey("cities.id"))
 
     user = relationship("User", back_populates="addresses")
+    city = relationship("City", back_populates="addresses")
 
     def __str__(self) -> str:
         return f"Address {self.id}"
+
+
+class Room(Base):
+    __tablename__ = "rooms"
+
+    id = Column(Integer, primary_key=True)
+    user_id = Column(Integer, ForeignKey("users.id"))
+    city_id = Column(Integer, ForeignKey("cities.id"))
+
+    user = relationship("User", back_populates="rooms")
+    city = relationship("City", back_populates="rooms")
+
+    def __str__(self) -> str:
+        return f"Room {self.id}"
 
 
 class UserAdmin(ModelView, model=User):
@@ -57,12 +88,29 @@ class AddressAdmin(ModelView, model=Address):
         "user": {
             "fields": ("name",),
             "order_by": ("id"),
-        }
+        },
+        "city": {
+            "fields": ("name", "state"),
+            "order_by": ["state", "id"],
+            "limit": 2,
+        },
+    }
+
+
+class RoomAdmin(ModelView, model=Room):
+    form_ajax_refs = {
+        "user": {"fields": ("name",), "order_by": ("id"), "limit": 3},
+        "city": {
+            "fields": ("name", "state"),
+            "order_by": ["state", "name"],
+            "limit": 2,
+        },
     }
 
 
 admin.add_view(UserAdmin)
 admin.add_view(AddressAdmin)
+admin.add_view(RoomAdmin)
 
 
 @pytest.fixture
@@ -103,6 +151,73 @@ async def test_ajax_response(client: AsyncClient) -> None:
 
     assert response.status_code == 200
     assert response.json() == {"results": [{"id": "1", "text": "User 1"}]}
+
+
+async def test_ajax_response_order_by(client: AsyncClient) -> None:
+    async with session_maker() as s:
+        s.add(City(name="Sydney", state="NSW"))
+        s.add(City(name="Melbourne", state="VIC"))
+        s.add(City(name="Newcastle", state="NSW"))
+        s.add(City(name="Byron Bay", state="NSW"))
+        s.add(City(name="Melbourne", state="TAS"))
+        await s.commit()
+
+    response = await client.get("/admin/address/ajax/lookup?name=city&term=nsw")
+    # Sorted by state then id
+    assert response.status_code == 200
+    assert response.json() == {
+        "results": [
+            {"id": "1", "text": "Sydney, NSW"},
+            {"id": "3", "text": "Newcastle, NSW"},
+        ]
+    }
+
+    response = await client.get("/admin/room/ajax/lookup?name=city&term=nsw")
+    # Sorted by state then name
+    assert response.status_code == 200
+    assert response.json() == {
+        "results": [
+            {"id": "4", "text": "Byron Bay, NSW"},
+            {"id": "3", "text": "Newcastle, NSW"},
+        ]
+    }
+    response = await client.get("/admin/room/ajax/lookup?name=city&term=melb")
+    # Sorted by state then name
+    assert response.status_code == 200
+    assert response.json() == {
+        "results": [
+            {"id": "5", "text": "Melbourne, TAS"},
+            {"id": "2", "text": "Melbourne, VIC"},
+        ]
+    }
+
+
+async def test_ajax_response_limit(client: AsyncClient) -> None:
+    users_to_create = 5
+    user_list = [User(name=f"John Snow {i}") for i in range(users_to_create)]
+    async with session_maker() as s:
+        for user in user_list:
+            s.add(user)
+        await s.commit()
+
+    response = await client.get("/admin/address/ajax/lookup?name=user&term=john")
+
+    assert response.status_code == 200
+    # Address admin has no limit so will return all created users
+    # (up to default cap of 10)
+    assert response.json() == {
+        "results": [
+            {"id": f"{i+1}", "text": f"User {i+1}"} for i in range(users_to_create)
+        ]
+    }
+
+    response = await client.get("/admin/room/ajax/lookup?name=user&term=john")
+
+    assert response.status_code == 200
+    # Room admin has a limit 3 of
+    assert response.json() == {
+        "results": [{"id": f"{i+1}", "text": f"User {i+1}"} for i in range(3)]
+    }
 
 
 async def test_create_ajax_loader_exceptions() -> None:

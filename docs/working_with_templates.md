@@ -1,6 +1,6 @@
 The template uses `Jinja2` template engine and by default looks for a `templates/sqladmin` directory in your project.
 
-If your `templates/sqladmin` directory has the default template files like `sqladmin/list.html` or `sqladmin/create.html` then they will be used.
+If your `templates/sqladmin` directory has the default template files like `list.html` or `create.html` then they will be used.
 Otherwise you can create custom templates and use them.
 
 ## Customizing templates
@@ -8,7 +8,7 @@ Otherwise you can create custom templates and use them.
 As the first step you should create a `templates/sqladmin` directory in you project.
 
 Since `Jinja2` is modular, you can override your specific template file and do your changes.
-For example you can create a `custom_details.html` file which overrides the `sqladmin/details.html` from
+For example you can create a `custom_details.html` file which overrides the `details.html` from
 SQLAdmin and in the `content` block it adds custom HTML tags:
 
 !!! example
@@ -24,6 +24,26 @@ SQLAdmin and in the `content` block it adds custom HTML tags:
     ```python title="admin.py"
     class UserAdmin(ModelView, model=User):
         details_template = "custom_details.html"
+    ```
+
+## Overriding default templates
+
+If you need to change one of the existing default templates in SQLAdmin such that it affects multiple pages, you can do so by copying the existing template from `templates/sqladmin` into your `templates/sqladmin` directory. It will then be used instead of the one in the package. For example if there is some Javascript you want to run on every page you may want to do it in layout.html like so:
+
+!!! example
+
+    ```html title="myproject/templates/sqladmin/layout.html"
+    ...
+    </div>
+    </div>
+    {% endblock %}
+
+    {% block tail %}
+    <script type="text/javascript">
+        console.log('hello world');
+    </script>
+    {% endblock %}
+
     ```
 
 ## Customizing Jinja2 environment
@@ -90,7 +110,7 @@ Usage in templates:
 ```python
 def value_is_filepath(value: Any) -> bool:
     return isinstance(value, str) and os.path.isfile(value)
-    
+
 admin.templates.env.globals["value_is_filepath"] = value_is_filepath
 ```
 
