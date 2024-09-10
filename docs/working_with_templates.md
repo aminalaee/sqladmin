@@ -1,9 +1,14 @@
-The template uses `Jinja2` template engine and by default looks for a `templates` directory in your project. As the first step you should create a `templates` directory in you project.
+The template uses `Jinja2` template engine and by default looks for a `templates/sqladmin` directory in your project.
 
-## Customizing specific templates
+If your `templates/sqladmin` directory has the default template files like `list.html` or `create.html` then they will be used.
+Otherwise you can create custom templates and use them.
+
+## Customizing templates
+
+As the first step you should create a `templates/sqladmin` directory in you project.
 
 Since `Jinja2` is modular, you can override your specific template file and do your changes.
-For example you can create a `custom_details.html` file which overrides the `sqladmin/details.html` from
+For example you can create a `custom_details.html` file which overrides the `details.html` from
 SQLAdmin and in the `content` block it adds custom HTML tags:
 
 !!! example
