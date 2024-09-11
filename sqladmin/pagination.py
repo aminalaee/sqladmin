@@ -46,6 +46,10 @@ class Pagination:
 
         raise RuntimeError("Next page not found.")
 
+    def __post_init__(self) -> None:
+        # Clamp page
+        self.page = min(self.page, max(1, self.count // self.page_size + 1))
+
     def resize(self, page_size: int) -> Pagination:
         self.page = (self.page - 1) * self.page_size // page_size + 1
         self.page_size = page_size
