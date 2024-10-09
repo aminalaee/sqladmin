@@ -1183,15 +1183,15 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
         )
 
     async def _export_json(
-            self,
-            data: List[Any],
+        self,
+        data: List[Any],
     ) -> StreamingResponse:
         async def generate() -> AsyncGenerator[str, None]:
-            yield '['
+            yield "["
             first_row = True
             for row in data:
                 if not first_row:
-                    yield ','
+                    yield ","
                 else:
                     first_row = False
                 row_dict = {
@@ -1199,7 +1199,8 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
                     for name in self._export_prop_names
                 }
                 yield json.dumps(row_dict)
-            yield ']'
+            yield "]"
+
         filename = secure_filename(self.get_export_name(export_type="json"))
         return StreamingResponse(
             content=generate(),
