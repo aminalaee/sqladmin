@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import time
 import warnings
 from enum import Enum
@@ -454,7 +455,7 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
         ```
     """
 
-    export_types: ClassVar[List[str]] = ["csv"]
+    export_types: ClassVar[List[str]] = ["csv", "json"]
     """A list of available export filetypes.
     Currently only `csv` is supported.
     """
@@ -1152,7 +1153,9 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
     ) -> StreamingResponse:
         if export_type == "csv":
             return await self._export_csv(data)
-        raise NotImplementedError("Only export_type='csv' is implemented.")
+        elif export_type == "json":
+            return await self._export_json(data)
+        raise NotImplementedError("Only export_type='csv' or 'json' is implemented.")
 
     async def _export_csv(
         self,
@@ -1176,6 +1179,31 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
         return StreamingResponse(
             content=stream_to_csv(generate),
             media_type="text/csv",
+            headers={"Content-Disposition": f"attachment;filename={filename}"},
+        )
+
+    async def _export_json(
+            self,
+            data: List[Any],
+    ) -> StreamingResponse:
+        async def generate() -> AsyncGenerator[str, None]:
+            yield '['
+            first_row = True
+            for row in data:
+                if not first_row:
+                    yield ','
+                else:
+                    first_row = False
+                row_dict = {
+                    name: await self.get_prop_value(row, name)
+                    for name in self._export_prop_names
+                }
+                yield json.dumps(row_dict)
+            yield ']'
+        filename = secure_filename(self.get_export_name(export_type="json"))
+        return StreamingResponse(
+            content=generate(),
+            media_type="application/json",
             headers={"Content-Disposition": f"attachment;filename={filename}"},
         )
 

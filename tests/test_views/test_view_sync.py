@@ -730,6 +730,14 @@ def test_export_csv(client: TestClient) -> None:
     response = client.get("/admin/user/export/csv")
     assert response.text == "name,status\r\nDaniel,ACTIVE\r\n"
 
+def test_export_json(client: TestClient) -> None:
+    with session_maker() as session:
+        user = User(name="Daniel", status="ACTIVE")
+        session.add(user)
+        session.commit()
+
+    response = client.get("/admin/user/export/json")
+    assert response.text == '[{"name": "Daniel", "status": "ACTIVE"}]'
 
 def test_export_csv_row_count(client: TestClient) -> None:
     def row_count(resp) -> int:
