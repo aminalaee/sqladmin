@@ -803,18 +803,21 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
             stmt = stmt.options(selectinload(relation))
 
         stmt = self.sort_query(stmt, request)
-        
+
         if search:
             stmt = self.search_query(stmt=stmt, term=search)
             count = await self.count(request, select(func.count()).select_from(stmt))
         else:
             count = await self.count(request)
 
-        max_pages = (count + page_size - 1) // page_size
+        if count > 0:
+            max_pages = (count + page_size - 1) // page_size
+        else:
+            max_pages = 1
 
-        if page > max_pages and count >= 0:
+        if page > max_pages:
             page = 1
-        
+
         stmt = stmt.limit(page_size).offset((page - 1) * page_size)
         rows = await self._run_query(stmt)
 
