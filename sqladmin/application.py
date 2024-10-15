@@ -511,8 +511,7 @@ class Admin(BaseAdminView):
         identity = request.path_params["identity"]
         model_view = self._find_model_view(identity)
 
-        Form = await model_view.scaffold_form()
-        model_view._validate_form_class(model_view._form_create_rules, Form)
+        Form = await model_view.scaffold_form(model_view._form_create_rules)
         form_data = await self._handle_form_data(request)
         form = Form(form_data)
 
@@ -562,8 +561,7 @@ class Admin(BaseAdminView):
         if not model:
             raise HTTPException(status_code=404)
 
-        Form = await model_view.scaffold_form()
-        model_view._validate_form_class(model_view._form_edit_rules, Form)
+        Form = await model_view.scaffold_form(model_view._form_edit_rules)
         context = {
             "obj": model,
             "model_view": model_view,

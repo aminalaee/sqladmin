@@ -1015,10 +1015,11 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
         By default do nothing.
         """
 
-    async def scaffold_form(self) -> Type[Form]:
+    async def scaffold_form(self, rules: List[str] | None = None) -> Type[Form]:
         if self.form is not None:
             return self.form
-        return await get_model_form(
+
+        form = await get_model_form(
             model=self.model,
             session_maker=self.session_maker,
             only=self._form_prop_names,
@@ -1031,6 +1032,11 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
             form_include_pk=self.form_include_pk,
             form_converter=self.form_converter,
         )
+
+        if rules:
+            self._validate_form_class(rules, form)
+
+        return form
 
     def search_placeholder(self) -> str:
         """Return search placeholder text.

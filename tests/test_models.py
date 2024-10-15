@@ -236,9 +236,9 @@ def test_form_columns_default() -> None:
 
 def test_form_columns_by_model_columns() -> None:
     class UserAdmin(ModelView, model=User):
-        form_columns = [User.id, User.name]
+        form_columns = [User.id, User.profile, User.name, User.addresses]
 
-    assert UserAdmin().get_form_columns() == ["id", "name"]
+    assert UserAdmin().get_form_columns() == ["id", "profile", "name", "addresses"]
 
 
 def test_form_columns_by_str_name() -> None:
