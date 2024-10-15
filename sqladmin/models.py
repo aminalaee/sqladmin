@@ -1015,7 +1015,7 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
         By default do nothing.
         """
 
-    async def scaffold_form(self, rules: list[str] = None) -> Type[Form]:
+    async def scaffold_form(self, rules: List[str] | None = None) -> Type[Form]:
         if self.form is not None:
             return self.form
 
