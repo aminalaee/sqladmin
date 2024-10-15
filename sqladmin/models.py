@@ -1188,17 +1188,15 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
     ) -> StreamingResponse:
         async def generate() -> AsyncGenerator[str, None]:
             yield "["
-            first_row = True
+            separator = "," if len(data) > 1 else ""
+
             for row in data:
-                if not first_row:
-                    yield ","
-                else:
-                    first_row = False
                 row_dict = {
                     name: await self.get_prop_value(row, name)
                     for name in self._export_prop_names
                 }
-                yield json.dumps(row_dict)
+                yield json.dumps(row_dict) + separator
+
             yield "]"
 
         filename = secure_filename(self.get_export_name(export_type="json"))
