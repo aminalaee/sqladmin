@@ -778,11 +778,26 @@ async def test_export_csv_row_count(client: AsyncClient) -> None:
     assert row_count(response) == 3
 
 
+async def test_export_json(client: AsyncClient) -> None:
+    async with session_maker() as session:
+        user = User(name="Daniel", status="ACTIVE")
+        session.add(user)
+        await session.commit()
+
+    response = await client.get("/admin/user/export/json")
+    assert response.text == '[{"name": "Daniel", "status": "ACTIVE"}]'
+
+
 async def test_export_bad_type_is_404(client: AsyncClient) -> None:
     response = await client.get("/admin/user/export/bad_type")
     assert response.status_code == 404
 
 
-async def test_export_permission(client: AsyncClient) -> None:
+async def test_export_permission_csv(client: AsyncClient) -> None:
     response = await client.get("/admin/movie/export/csv")
+    assert response.status_code == 403
+
+
+async def test_export_permission_json(client: AsyncClient) -> None:
+    response = await client.get("/admin/movie/export/json")
     assert response.status_code == 403
