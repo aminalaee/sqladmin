@@ -157,7 +157,7 @@ def test_query_select_multiple_field() -> None:
     assert form.validate() is False
 
 
-def test_seelct2_tags_field() -> None:
+def test_select2_tags_field() -> None:
     class F(Form):
         array = Select2TagsField()
 
