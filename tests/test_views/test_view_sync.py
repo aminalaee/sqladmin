@@ -752,13 +752,9 @@ def test_export_json_complex_model(client: TestClient) -> None:
         session.commit()
 
     response = client.get("/admin/address/export/json")
-    assert (response.text ==
-            json.dumps(
-                [{"id": "1",
-                  "user_id": "1",
-                  "user": "User 1",
-                  "user.profile.id": "None"
-                  }]))
+    assert response.text == json.dumps(
+        [{"id": "1", "user_id": "1", "user": "User 1", "user.profile.id": "None"}]
+    )
 
 
 def test_export_csv_row_count(client: TestClient) -> None:
