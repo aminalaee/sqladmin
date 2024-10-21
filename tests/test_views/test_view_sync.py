@@ -1,4 +1,5 @@
 import enum
+import json
 from typing import Any, Generator
 
 import pytest
@@ -740,6 +741,18 @@ def test_export_json(client: TestClient) -> None:
     response = client.get("/admin/user/export/json")
     assert response.text == '[{"name": "Daniel", "status": "ACTIVE"}]'
 
+
+def test_export_json_complex_model(client: TestClient) -> None:
+    with session_maker() as session:
+        user = User(name="Daniel", status="ACTIVE")
+        session.add(user)
+        session.commit()
+        address = Address(user_id=user.id)
+        session.add(address)
+        session.commit()
+
+    response = client.get("/admin/address/export/json")
+    assert response.text == json.dumps([{"id": "1", "user_id": "1", "user": "User 1", "user.profile.id": "None"}])
 
 def test_export_csv_row_count(client: TestClient) -> None:
     def row_count(resp) -> int:
