@@ -719,8 +719,10 @@ class Admin(BaseAdminView):
             reserved_field_name = field_name[:-1]
             if (
                 field_name in data
+                # ensures that the object do not contain the reserved plus '_'
+                # eg.: if the object has an attribute 'data_'
+                # it won't be mistaken for a wtform denormalize field
                 and not getattr(obj, field_name, None)
-                and getattr(obj, reserved_field_name, None)
             ):
                 data[reserved_field_name] = data.pop(field_name)
         return data
