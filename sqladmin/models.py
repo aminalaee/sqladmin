@@ -403,16 +403,16 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
     Normally, objects have three save options:
     ``Save`, `Save and continue editing` and `Save and add another`.
 
-    If save_as is True, `Save and add another` will be replaced 
-    by a `Save as new` button 
-    that creates a new object (with a new ID) 
+    If save_as is True, `Save and add another` will be replaced
+    by a `Save as new` button
+    that creates a new object (with a new ID)
     rather than updating the existing object.
 
     By default, `save_as` is set to `False`.
     """
 
     save_as_continue: ClassVar[bool] = True
-    """When `save_as=True`, the default redirect after saving the new object 
+    """When `save_as=True`, the default redirect after saving the new object
     is to the edit view for that object.
     If you set `save_as_continue=False`, the redirect will be to the list view.
 
@@ -1195,6 +1195,7 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
         async def generate() -> AsyncGenerator[str, None]:
             yield "["
             len_data = len(data)
+            last_idx = len_data - 1
             separator = "," if len_data > 1 else ""
 
             for idx, row in enumerate(data):
@@ -1202,7 +1203,7 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
                     name: await self.get_prop_value(row, name)
                     for name in self._export_prop_names
                 }
-                yield json.dumps(row_dict) + (separator if idx < len_data-1 else "")
+                yield json.dumps(row_dict) + (separator if idx < last_idx else "")
 
             yield "]"
 
