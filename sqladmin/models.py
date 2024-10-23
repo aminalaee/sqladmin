@@ -1200,7 +1200,7 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
 
             for idx, row in enumerate(data):
                 row_dict = {
-                    name: await self.get_prop_value(row, name)
+                    name: str(await self.get_prop_value(row, name))
                     for name in self._export_prop_names
                 }
                 yield json.dumps(row_dict) + (separator if idx < last_idx else "")
