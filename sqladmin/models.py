@@ -1194,14 +1194,15 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
     ) -> StreamingResponse:
         async def generate() -> AsyncGenerator[str, None]:
             yield "["
-            separator = "," if len(data) > 1 else ""
+            len_data = len(data)
+            separator = "," if len_data > 1 else ""
 
-            for row in data:
+            for idx, row in enumerate(data):
                 row_dict = {
                     name: await self.get_prop_value(row, name)
                     for name in self._export_prop_names
                 }
-                yield json.dumps(row_dict) + separator
+                yield json.dumps(row_dict) + (separator if idx < len_data-1 else "")
 
             yield "]"
 
