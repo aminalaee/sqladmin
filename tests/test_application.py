@@ -158,9 +158,16 @@ def test_denormalize_wtform_fields() -> None:
     class DataModelAdmin(ModelView, model=DataModel):
         ...
 
-    datamodel = DataModel(id=1, data="abcdef")
     admin.add_view(DataModelAdmin)
+
+    datamodel = DataModel(id=1, data="abcdef")
     assert admin._denormalize_wtform_data({"data_": "abcdef"}, datamodel) == {
+        "data": "abcdef"
+    }
+    assert admin._denormalize_wtform_data({"data_": ""}, datamodel) == {"data": ""}
+
+    datamodel_empty = DataModel(id=1, data="")
+    assert admin._denormalize_wtform_data({"data_": "abcdef"}, datamodel_empty) == {
         "data": "abcdef"
     }
 
