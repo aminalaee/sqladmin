@@ -183,6 +183,8 @@ class BaseView(BaseModelView):
     category: ClassVar[str] = ""
     """Category name to group views together."""
 
+    category_icon: ClassVar[str] = ""
+    """Display icon for category in the sidebar."""
 
 class ModelView(BaseView, metaclass=ModelViewMeta):
     """Base class for defining admnistrative behaviour for the model.
