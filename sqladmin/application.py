@@ -266,7 +266,7 @@ class BaseAdmin:
 
     def _build_menu(self, view: ModelView | BaseView) -> None:
         if view.category:
-            menu = CategoryMenu(name=view.category)
+            menu = CategoryMenu(name=view.category, icon=view.category_icon)
             menu.add_child(ViewMenu(view=view, name=view.name, icon=view.icon))
             self._menu.add(menu)
         else:
