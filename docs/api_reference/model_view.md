@@ -6,6 +6,7 @@
         - name_plural
         - icon
         - category
+        - category_icon
         - column_labels
         - can_create
         - can_edit
