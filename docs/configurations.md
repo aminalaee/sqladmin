@@ -77,6 +77,7 @@ The metadata for the model. The options are:
 * `name_plural`: Display plural name for this model. Default value is class name + `s`.
 * `icon`: Icon to be displayed for this model in the admin. Only FontAwesome and Tabler names are supported.
 * `category`: Category name to display group of `ModelView` classes together in dropdown.
+* `category_icon`: Category icon to display.
 
 !!! example
 
@@ -86,6 +87,7 @@ The metadata for the model. The options are:
         name_plural = "Users"
         icon = "fa-solid fa-user"
         category = "accounts"
+        category_icon = "fa-solid fa-user"
     ```
 
 ## List page
