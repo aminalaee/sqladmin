@@ -54,7 +54,18 @@ def login_required(func: Callable[..., Any]) -> Callable[..., Any]:
 
     @functools.wraps(func)
     async def wrapper_decorator(*args: Any, **kwargs: Any) -> Any:
-        view, request = args[0], args[1]
+        view = args[0]
+
+        if len(args) > 1:
+            request = args[1]
+        elif isinstance(kwargs.get("request", None), Request):
+            request = kwargs["request"]
+        else:
+            # It might not be called request
+            request = next(
+                filter(lambda kwarg: isinstance(kwarg, Request), kwargs.values())
+            )
+
         admin = getattr(view, "_admin_ref", view)
         auth_backend = getattr(admin, "authentication_backend", None)
         if auth_backend is not None:
