@@ -753,7 +753,7 @@ def test_export_json_complex_model(client: TestClient) -> None:
 
     response = client.get("/admin/address/export/json")
     assert response.text == json.dumps(
-        [{"id": "1", "user_id": "1", "user": "User 1", "user.profile.id": "None"}]
+        [{"id": 1, "user_id": 1, "user": "User 1", "user.profile.id": None}]
     )
 
 
