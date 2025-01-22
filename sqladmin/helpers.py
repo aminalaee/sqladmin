@@ -168,7 +168,7 @@ def stream_to_csv(
 
     https://docs.djangoproject.com/en/1.8/howto/outputting-csv/
     """
-    writer = csv.writer(_PseudoBuffer())
+    writer = csv.writer(_PseudoBuffer(), delimiter=";")
     return callback(writer)  # type: ignore
 
 

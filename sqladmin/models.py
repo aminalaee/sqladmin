@@ -26,6 +26,7 @@ from sqlalchemy import Column, String, asc, cast, desc, func, inspect, or_
 from sqlalchemy.exc import NoInspectionAvailable
 from sqlalchemy.orm import selectinload, sessionmaker
 from sqlalchemy.orm.exc import DetachedInstanceError
+from sqlalchemy.orm.collections import InstrumentedList
 from sqlalchemy.sql.elements import ClauseElement
 from sqlalchemy.sql.expression import Select, select
 from starlette.datastructures import URL
@@ -1175,10 +1176,13 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
             yield writer.writerow(self._export_prop_names)
 
             for row in data:
-                vals = [
-                    str(await self.get_prop_value(row, name))
-                    for name in self._export_prop_names
-                ]
+                vals = []
+                for name in self._export_prop_names:
+                    value = await self.get_prop_value(row, name)
+                    if isinstance(value, InstrumentedList):
+                        vals.append(",".join([str(v) for v in value]))
+                    else:
+                        vals.append(str(value))
                 yield writer.writerow(vals)
 
         # `get_export_name` can be subclassed.
