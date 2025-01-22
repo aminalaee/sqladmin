@@ -753,7 +753,7 @@ async def test_export_csv(client: AsyncClient) -> None:
         await session.commit()
 
     response = await client.get("/admin/user/export/csv")
-    assert response.text == "name,status\r\nDaniel,ACTIVE\r\n"
+    assert response.text == "name;status\r\nDaniel;ACTIVE\r\n"
 
 
 async def test_export_csv_row_count(client: AsyncClient) -> None:

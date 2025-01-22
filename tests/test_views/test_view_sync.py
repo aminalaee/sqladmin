@@ -729,7 +729,7 @@ def test_export_csv(client: TestClient) -> None:
         session.commit()
 
     response = client.get("/admin/user/export/csv")
-    assert response.text == "name,status\r\nDaniel,ACTIVE\r\n"
+    assert response.text == "name;status\r\nDaniel;ACTIVE\r\n"
 
 
 def test_export_json(client: TestClient) -> None:
