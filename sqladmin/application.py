@@ -298,7 +298,9 @@ class BaseAdminView(BaseAdmin):
             assert pk is not None and isinstance(pk, str), \
                 f'pk not found in request.path_params "{request.path_params}"'
             model = await model_view.get_object_for_details(pk)
-            can_view_details_row = await model_view.check_can_view_details(request, model)
+            can_view_details_row = await model_view.check_can_view_details(
+                request, model
+            )
             if can_view_details_row is not True:
                 raise HTTPException(status_code=403)
 
