@@ -137,7 +137,7 @@ class UserAdmin(ModelView, model=User):
     column_labels = {User.email: "Email"}
     column_searchable_list = [User.name]
     column_sortable_list = [User.id]
-    column_export_list = [User.name, User.status]
+    column_export_list = [User.name, User.status, User.addresses]
     column_formatters = {
         User.addresses_formattable: lambda m, a: [
             f"Formatted {a}" for a in m.addresses_formattable
@@ -729,7 +729,24 @@ def test_export_csv(client: TestClient) -> None:
         session.commit()
 
     response = client.get("/admin/user/export/csv")
-    assert response.text == "name;status\r\nDaniel;ACTIVE\r\n"
+    assert response.text == "name;status;addresses\r\nDaniel;ACTIVE;\r\n"
+
+
+def test_export_csv_with_fk(client: TestClient) -> None:
+    with session_maker() as session:
+        user = User(name="Daniel", status="ACTIVE")
+        address_1 = Address(user=user)
+        address_2 = Address(user=user)
+        session.add(user)
+        session.add(address_1)
+        session.add(address_2)
+        session.commit()
+
+    response = client.get("/admin/user/export/csv")
+    assert (
+        response.text
+        == "name;status;addresses\r\nDaniel;ACTIVE;Address 1,Address 2\r\n"
+    )
 
 
 def test_export_json(client: TestClient) -> None:
@@ -739,7 +756,9 @@ def test_export_json(client: TestClient) -> None:
         session.commit()
 
     response = client.get("/admin/user/export/json")
-    assert response.text == '[{"name": "Daniel", "status": "ACTIVE"}]'
+    assert (
+        response.text == '[{"name": "Daniel", "status": "ACTIVE", "addresses": "[]"}]'
+    )
 
 
 def test_export_json_complex_model(client: TestClient) -> None:
