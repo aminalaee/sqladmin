@@ -118,19 +118,19 @@
               <input class="form-check-input m-0 align-middle select-box" type="checkbox" aria-label="Select item">
             </td>
             <td class="text-end">
-              {% if model_view.can_view_details %}
+              {% if model_view.check_can_view_details(request, row) %}
               <a href="{{ model_view._build_url_for('admin:details', request, row) }}" data-bs-toggle="tooltip"
                 data-bs-placement="top" title="View">
                 <span class="me-1"><i class="fa-solid fa-eye"></i></span>
               </a>
               {% endif %}
-              {% if model_view.can_edit %}
+              {% if model_view.check_can_edit(request, row) %}
               <a href="{{ model_view._build_url_for('admin:edit', request, row) }}" data-bs-toggle="tooltip"
                 data-bs-placement="top" title="Edit">
                 <span class="me-1"><i class="fa-solid fa-pen-to-square"></i></span>
               </a>
               {% endif %}
-              {% if model_view.can_delete %}
+              {% if model_view.check_can_delete(request, row) %}
               <a href="#" data-name="{{ model_view.name }}" data-pk="{{ get_object_identifier(row) }}"
                 data-url="{{ model_view._url_for_delete(request, row) }}" data-bs-toggle="modal"
                 data-bs-target="#modal-delete" title="Delete">
