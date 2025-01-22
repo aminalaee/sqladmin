@@ -1019,6 +1019,24 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
         By default do nothing.
         """
 
+    async def check_can_view_details(self, request: Request, model: Any) -> bool:
+        """
+        You can add a custom model attribute checker before view details.
+        """
+        return self.can_view_details
+
+    async def check_can_edit(self, request: Request, model: Any) -> bool:
+        """
+        You can add a custom model attribute checker before edit.
+        """
+        return self.can_edit
+
+    async def check_can_delete(self, request: Request, model: Any) -> bool:
+        """
+        You can add a custom model attribute checker before delete.
+        """
+        return self.can_delete
+
     async def scaffold_form(self, rules: List[str] | None = None) -> Type[Form]:
         if self.form is not None:
             return self.form
