@@ -157,15 +157,3 @@ from sqladmin import ModelView
 class UserAdmin(BaseAdmin):
     form_converter = CustomModelConverter
 ```
-
----
-
-## Conclusion
-
-Model Converters are a powerful tool for customizing how SQLAlchemy models are represented in the admin interface. By inheriting from `ModelConverter` and overriding its methods, you can tailor form fields to your specific needs. Use the `form_converter` attribute in your `ModelView` classes to apply your custom converters.
-
-For more details, refer to the [API Reference](./api_reference/model_converter.md).
-
---- 
-
-This documentation page provides a clear and structured explanation of Model Converters, their customization, and usage in the admin interface. It follows the style of the example you provided and includes code snippets for clarity.
