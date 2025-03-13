@@ -478,3 +478,4 @@ def test_search_query() -> None:
     stmt = AddressAdmin().search_query(select(Address), "example")
     assert "lower(CAST(users.name AS VARCHAR))" in str(stmt)
     assert "lower(CAST(profiles.role AS VARCHAR))" in str(stmt)
+    assert str(stmt).count("JOIN users") == 1
