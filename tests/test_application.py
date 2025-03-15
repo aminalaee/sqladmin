@@ -8,6 +8,7 @@ from starlette.datastructures import MutableHeaders
 from starlette.middleware import Middleware
 from starlette.requests import Request
 from starlette.responses import Response
+from starlette.routing import Route
 from starlette.testclient import TestClient
 from starlette.types import ASGIApp, Message, Receive, Scope, Send
 
@@ -97,20 +98,19 @@ def test_middlewares() -> None:
 
 
 def test_get_save_redirect_url():
-    app = Starlette()
+    async def index(request: Request):
+        obj = User(id=1)
+        form_data = await request.form()
+        url = admin.get_save_redirect_url(request, form_data, admin.views[0], obj)
+        return Response(str(url))
+
+    app = Starlette(routes=[Route("/{identity}", endpoint=index, methods=["POST"])])
     admin = Admin(app=app, engine=engine)
 
     class UserAdmin(ModelView, model=User):
         save_as = True
 
     admin.add_view(UserAdmin)
-
-    @app.route("/{identity}", methods=["POST"])
-    async def index(request: Request):
-        obj = User(id=1)
-        form_data = await request.form()
-        url = admin.get_save_redirect_url(request, form_data, admin.views[0], obj)
-        return Response(str(url))
 
     client = TestClient(app)
 
