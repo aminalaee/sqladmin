@@ -479,3 +479,28 @@ def test_search_query() -> None:
     assert "lower(CAST(users.name AS VARCHAR))" in str(stmt)
     assert "lower(CAST(profiles.role AS VARCHAR))" in str(stmt)
     assert str(stmt).count("JOIN users") == 1
+
+
+def test_search_query_multiple_related_objects() -> None:
+    class Cat(Base):
+        __tablename__ = "cats"
+        id = Column(Integer, primary_key=True)
+
+        owner_id = Column(Integer, ForeignKey("users.id"))
+        address_id = Column(Integer, ForeignKey("addresses.id"))
+        owner = relationship("User")
+        address = relationship("Address")
+
+    class CatAdmin(ModelView, model=Cat):
+        column_searchable_list = ["owner.name", "address.name"]
+
+    stmt = CatAdmin().search_query(select(Cat), "example")
+    assert "JOIN users ON users.id = cats.owner_id" in str(stmt)
+    assert "JOIN addresses ON addresses.id = cats.address_id" in str(stmt)
+
+    class AnotherCatAdmin(ModelView, model=Cat):
+        column_searchable_list = ["owner.name", "owner.addresses.name"]
+
+    stmt = AnotherCatAdmin().search_query(select(Cat), "example")
+    assert "JOIN users ON users.id = cats.owner_id" in str(stmt)
+    assert "JOIN addresses ON users.id = addresses.user_id" in str(stmt)
