@@ -135,7 +135,7 @@ class UserAdmin(ModelView, model=User):
         User.status,
     ]
     column_labels = {User.email: "Email"}
-    column_searchable_list = [User.name]
+    column_searchable_list = [User.name, "profile.id"]
     column_sortable_list = [User.id]
     column_export_list = [User.name, User.status]
     column_formatters = {
@@ -694,6 +694,9 @@ def test_searchable_list(client: TestClient) -> None:
         session.add(user)
         user = User(name="Boss")
         session.add(user)
+        session.flush()
+        profile = Profile(user_id=user.id)
+        session.add(profile)
         session.commit()
 
     response = client.get("/admin/user/list")
@@ -705,6 +708,9 @@ def test_searchable_list(client: TestClient) -> None:
 
     response = client.get("/admin/user/list?search=rose")
     assert "/admin/user/details/1" not in response.text
+
+    response = client.get("/admin/user/list?search=1")
+    assert "/admin/user/details/2" in response.text
 
 
 def test_sortable_list(client: TestClient) -> None:
