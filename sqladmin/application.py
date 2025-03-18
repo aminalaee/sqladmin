@@ -576,7 +576,7 @@ class Admin(BaseAdminView):
             )
 
         form_data = await self._handle_form_data(request, model)
-        form = Form(form_data=form_data, obj=model)
+        form = Form(formdata=form_data, obj=model)
         if not form.validate():
             context["form"] = form
             return await self.templates.TemplateResponse(
