@@ -562,7 +562,7 @@ class Admin(BaseAdminView):
             raise HTTPException(status_code=404)
 
         Form = await model_view.scaffold_form(model_view._form_edit_rules)
-        
+
         context = {
             "obj": model,
             "model_view": model_view,
