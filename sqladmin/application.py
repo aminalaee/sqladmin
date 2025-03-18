@@ -562,19 +562,21 @@ class Admin(BaseAdminView):
             raise HTTPException(status_code=404)
 
         Form = await model_view.scaffold_form(model_view._form_edit_rules)
+        
         context = {
             "obj": model,
             "model_view": model_view,
-            "form": Form(obj=model, data=self._normalize_wtform_data(model)),
         }
 
         if request.method == "GET":
+            form = Form(obj=model, data=self._normalize_wtform_data(model))
+            context["form"] = form
             return await self.templates.TemplateResponse(
                 request, model_view.edit_template, context
             )
 
         form_data = await self._handle_form_data(request, model)
-        form = Form(form_data)
+        form = Form(form_data=form_data, obj=model)
         if not form.validate():
             context["form"] = form
             return await self.templates.TemplateResponse(
