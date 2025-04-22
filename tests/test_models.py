@@ -14,6 +14,9 @@ from starlette.testclient import TestClient
 
 from sqladmin import Admin, ModelView, expose
 from sqladmin.exceptions import InvalidModelError
+from sqladmin.filters import (
+    AllUniqueStringValuesFilter,
+)
 from sqladmin.helpers import get_column_python_type
 from tests.common import sync_engine as engine
 
@@ -133,6 +136,17 @@ def test_column_list_by_str_name() -> None:
         column_list = ["id", "user_id"]
 
     assert AddressAdmin().get_list_columns() == ["id", "user_id"]
+
+
+def test_filter_list() -> None:
+    filter = AllUniqueStringValuesFilter(User.name)
+
+    class UserAdmin(ModelView, model=User):
+        filter_list = [filter]
+
+    all_filters = UserAdmin().get_filters()
+    assert len(all_filters) == 1
+    assert all_filters[0] == filter
 
 
 def test_column_list_both_include_and_exclude() -> None:
