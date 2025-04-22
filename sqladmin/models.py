@@ -24,7 +24,7 @@ from urllib.parse import urlencode
 import anyio
 from sqlalchemy import Column, String, asc, cast, desc, func, inspect, or_
 from sqlalchemy.exc import NoInspectionAvailable
-from sqlalchemy.orm import selectinload, sessionmaker
+from sqlalchemy.orm import class_mapper, selectinload, sessionmaker
 from sqlalchemy.orm.exc import DetachedInstanceError
 from sqlalchemy.sql.elements import ClauseElement
 from sqlalchemy.sql.expression import Select, select
@@ -1082,9 +1082,10 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
             for part in parts[:-1]:
                 model = getattr(model, part).mapper.class_
 
-                if model.__tablename__ not in joined_tables:
+                table_name = class_mapper(model).mapped_table.name
+                if table_name not in joined_tables:
                     stmt = stmt.join(model)
-                    joined_tables.add(model.__tablename__)
+                    joined_tables.add(table_name)
 
             field = getattr(model, parts[-1])
             expressions.append(cast(field, String).ilike(f"%{term}%"))
@@ -1151,9 +1152,10 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
             for part in parts[:-1]:
                 model = getattr(model, part).mapper.class_
 
-                if model.__tablename__ not in joined_tables:
+                table_name = class_mapper(model).mapped_table.name
+                if table_name not in joined_tables:
                     stmt = stmt.join(model)
-                    joined_tables.add(model.__tablename__)
+                    joined_tables.add(table_name)
 
             if is_desc:
                 stmt = stmt.order_by(desc(getattr(model, parts[-1])))
