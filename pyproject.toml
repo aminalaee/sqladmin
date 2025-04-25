@@ -93,9 +93,15 @@ dependencies = [
 
 [tool.hatch.envs.docs]
 dependencies = [
+<<<<<<< HEAD
   "mkdocs-material==9.6.14",
   "mkdocs==1.6.1",
   "mkdocstrings[python]==0.26.1",
+=======
+  "mkdocs-material>=9.4.0",
+  "mkdocs>=1.5.0",
+  "mkdocstrings[python]>=0.24.0"
+>>>>>>> 49706ff (fixing docs build step)
 ]
 
 [tool.hatch.envs.test.scripts]
