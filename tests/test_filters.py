@@ -80,27 +80,6 @@ admin.add_view(AddressAdmin)
 async def prepare_database() -> AsyncGenerator[None, None]:
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
-
-        # Add test data
-        async with session_maker() as session:
-            office1 = Office(name="Office1")
-            office2 = Office(name="Office2")
-            session.add_all([office1, office2])
-            await session.commit()
-
-            # Create users with different boolean values and titles
-            user1 = User(
-                name="Admin User", title="Manager", is_admin=True, office_id=office1.id
-            )
-            user2 = User(
-                name="Regular User",
-                title="Developer",
-                is_admin=False,
-                office_id=office2.id,
-            )
-            session.add_all([user1, user2])
-            await session.commit()
-
     yield
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.drop_all)
@@ -109,7 +88,34 @@ async def prepare_database() -> AsyncGenerator[None, None]:
 
 
 @pytest.fixture
-async def client(prepare_database: Any) -> AsyncGenerator[AsyncClient, None]:
+async def prepare_data(prepare_database: Any) -> AsyncGenerator[None, None]:
+    # Add test data
+    async with session_maker() as session:
+        office1 = Office(name="Office1")
+        office2 = Office(name="Office2")
+        session.add_all([office1, office2])
+        await session.commit()
+
+        # Create users with different boolean values and titles
+        user1 = User(
+            name="Admin User", title="Manager", is_admin=True, office_id=office1.id
+        )
+        user2 = User(
+            name="Regular User",
+            title="Developer",
+            is_admin=False,
+            office_id=office2.id,
+        )
+        session.add_all([user1, user2])
+        await session.commit()
+
+    yield
+
+
+@pytest.fixture
+async def client(
+    prepare_database: Any, prepare_data: Any
+) -> AsyncGenerator[AsyncClient, None]:
     async with AsyncClient(app=app, base_url="http://testserver") as c:
         yield c
 
