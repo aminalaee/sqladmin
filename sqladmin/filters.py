@@ -1,6 +1,7 @@
 import re
 from typing import Any, Callable, List, Optional, Tuple
 
+from sqlalchemy import Integer
 from sqlalchemy.sql.expression import Select, select
 from starlette.requests import Request
 
@@ -166,4 +167,8 @@ class ForeignKeyFilter:
 
     async def get_filtered_query(self, query: Select, value: Any, model: Any) -> Select:
         foreign_key_obj = get_column_obj(self.foreign_key, model)
+        column_type = foreign_key_obj.type
+        if isinstance(column_type, Integer):
+            value = int(value)
+
         return query.filter(foreign_key_obj == value)
