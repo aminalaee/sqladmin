@@ -295,6 +295,12 @@ The pages available are:
 
 For more information about working with template see [Working with Templates](./working_with_templates.md).
 
+## Template configurations
+
+The following options are available to configure the templates:
+
+* `show_compact_lists`: If `False`, the list of objects will be displayed in a separate line for each object. Default is `True`.
+
 ## Events
 
 There might be some cases which you want to do some actions
