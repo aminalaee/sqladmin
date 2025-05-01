@@ -28,7 +28,7 @@
               {% if is_list( value ) %}
               <td>
                 {% for elem, formatted_elem in zip(value, formatted_value) %}
-                <a href="{{ model_view._build_url_for('admin:details', request, elem) }}">({{ formatted_elem }})</a>
+                <a href="{{ model_view._build_url_for('admin:details', request, elem) }}">{{ formatted_elem }}</a><br/>
                 {% endfor %}
               </td>
               {% else %}
