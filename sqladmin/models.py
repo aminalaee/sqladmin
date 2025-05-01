@@ -446,6 +446,12 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
     edit_template: ClassVar[str] = "sqladmin/edit.html"
     """Edit view template. Default is `sqladmin/edit.html`."""
 
+    # Template configuration
+    show_compact_lists: ClassVar[bool] = True
+    """Show compact lists. Default is `True`. 
+    If False, when showing lists of objects, each object will be \
+    displayed in a separate line."""
+
     # Export
     column_export_list: ClassVar[List[MODEL_ATTR]] = []
     """List of columns to include when exporting.
