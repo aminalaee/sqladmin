@@ -40,7 +40,7 @@ class AuthenticationBackend:
         This method will be called for each incoming request
         to validate the authentication.
 
-        If a 'Response' or `RedirectResponse` is returned,
+        If a `Response` or `RedirectResponse` is returned,
         that response is returned to the user,
         otherwise a True/False is expected.
         """
