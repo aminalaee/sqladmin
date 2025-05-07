@@ -152,8 +152,11 @@ class _PseudoBuffer:
     interface.
     """
 
-    def write(self, value: T) -> T:
-        return value
+    encoding = "utf_8_sig"
+    
+    def write(self, value: T) -> bytes:
+        return str(value).encode(self.encoding)
+
 
 
 def stream_to_csv(

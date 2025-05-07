@@ -1187,7 +1187,7 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
 
         return StreamingResponse(
             content=stream_to_csv(generate),
-            media_type="text/csv",
+            media_type="text/csv; charset=utf_8_sig",
             headers={"Content-Disposition": f"attachment;filename={filename}"},
         )
 
@@ -1206,7 +1206,9 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
                     name: str(await self.get_prop_value(row, name))
                     for name in self._export_prop_names
                 }
-                yield json.dumps(row_dict) + (separator if idx < last_idx else "")
+                yield json.dumps(row_dict, ensure_ascii=False) + (
+                    separator if idx < last_idx else ""
+                )
 
             yield "]"
 
