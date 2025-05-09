@@ -1344,3 +1344,15 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
 
         for field_name in missing_fields:
             delattr(form_class, field_name)
+
+    async def perform_list_context(self, context: dict | None = None) -> dict:
+        pass
+
+    async def perform_details_context(self, context: dict | None = None) -> dict:
+        pass
+
+    async def perform_create_context(self, context: dict | None = None) -> dict:
+        pass
+
+    async def perform_edit_context(self, context: dict | None = None) -> dict:
+        pass
