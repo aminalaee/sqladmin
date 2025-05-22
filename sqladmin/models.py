@@ -758,6 +758,13 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
             pk=get_object_identifier(obj),
         )
 
+    def _build_url_from_view(self, name: str, request: Request, obj: Any) -> URL:
+        return request.url_for(
+            name,
+            identity=self.identity,
+            pk=get_object_identifier(obj),
+        )
+
     def _get_prop_name(self, prop: MODEL_ATTR) -> str:
         return prop if isinstance(prop, str) else prop.key
 
