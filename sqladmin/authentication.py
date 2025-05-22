@@ -29,9 +29,13 @@ class AuthenticationBackend:
         """
         raise NotImplementedError()
 
-    async def logout(self, request: Request) -> bool:
+    async def logout(self, request: Request) -> Response | bool:
         """Implement logout logic here.
         This will usually clear the session with `request.session.clear()`.
+
+        If a `Response` or `RedirectResponse` is returned,
+        that response is returned to the user,
+        otherwise the user will be redirected to the index page.
         """
         raise NotImplementedError()
 
@@ -40,7 +44,7 @@ class AuthenticationBackend:
         This method will be called for each incoming request
         to validate the authentication.
 
-        If a 'Response' or `RedirectResponse` is returned,
+        If a `Response` or `RedirectResponse` is returned,
         that response is returned to the user,
         otherwise a True/False is expected.
         """
