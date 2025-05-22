@@ -57,4 +57,4 @@ and displayed in the admin dashboard.
 
 You can replace `FileSystemStorage` with `S3Storage` to upload to S3 or any S3-compatible API.
 
-For complete features and API reference of the `fastapi-storages` you can visit the docs at [https://aminalaee.dev/fastapi-storages](https://aminalaee.dev/fastapi-storages).
+For complete features and API reference of the `fastapi-storages` you can visit the docs at [https://aminalaee.github.io/fastapi-storages](https://aminalaee.github.io/fastapi-storages).

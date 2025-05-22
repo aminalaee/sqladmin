@@ -41,7 +41,7 @@ full = [
 ]
 
 [project.urls]
-Documentation = "https://aminalaee.dev/sqladmin"
+Documentation = "https://aminalaee.github.io/sqladmin/"
 Issues = "https://github.com/aminalaee/sqladmin/issues"
 Source = "https://github.com/aminalaee/sqladmin"
 
