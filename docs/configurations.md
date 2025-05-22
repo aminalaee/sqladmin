@@ -6,7 +6,7 @@ you can visit [API Reference](./api_reference/model_view.md).
 Let's say you've defined your SQLAlchemy models like this:
 
 ```python
-from sqlalchemy import Column, Integer, String, create_engine
+from sqlalchemy import Column, Integer, String, Boolean, create_engine
 from sqlalchemy.orm import declarative_base
 
 
@@ -23,6 +23,7 @@ class User(Base):
     id = Column(Integer, primary_key=True)
     name = Column(String)
     email = Column(String)
+    is_admin = Column(Boolean, default=False)
 
 
 Base.metadata.create_all(engine)  # Create tables
@@ -107,6 +108,7 @@ or list of the tuple for multiple columns.
 * `list_query`: A method with the signature of `(request) -> stmt` which can customize the list query.
 * `count_query`: A method with the signature of `(request) -> stmt` which can customize the count query.
 * `search_query`: A method with the signature of `(stmt, term) -> stmt` which can customize the search query.
+* `filter_list`: A list of objects that implement the `ColumnFilter` protocol to be displayed in the list page. See example below.
 
 !!! example
 
@@ -117,6 +119,7 @@ or list of the tuple for multiple columns.
         column_sortable_list = [User.id]
         column_formatters = {User.name: lambda m, a: m.name[:10]}
         column_default_sort = [(User.email, True), (User.name, False)]
+        column_filterable_list = [User.is_admin]
     ```
 
 
@@ -124,6 +127,42 @@ or list of the tuple for multiple columns.
 
     You can use the special keyword `"__all__"` in `column_list` or `column_details_list`
     if you don't want to specify all the columns manually. For example: `column_list = "__all__"`
+
+### ColumnFilter
+ 
+A ColumnFilter is a class that defines a filter for a column. A few standard filters are implemented in `sqladmin.filters` module. Here is an example of a generic ColumnFilter. Note that the fields `title`, `parameter_name`, `lookups` and `get_filtered_query` are required.
+
+```python
+class IsAdminFilter:
+    # Human-readable title which will be displayed in the
+    # right admin sidebar just above the filter options.
+    title = "Is Admin"
+
+    # Parameter for the filter that will be used in the URL query.
+    parameter_name = "is_admin"
+
+    def lookups(self, request, model) -> list[tuple[str, str]]:
+        """
+        Returns a list of tuples with the filter key and the human-readable label.
+        """
+        return [
+            ("all", "All"),
+            ("true", "Yes"),
+            ("false", "No"),
+        ]
+
+    def get_filtered_query(self, query, value):
+        """
+        Returns a filtered query based on the filter value.
+        """
+        if value == "true":
+            return query.filter(model.is_admin == True)
+        elif value == "false":
+            return query.filter(model.is_admin == False)
+        else:
+            return query
+```
+
 
 ## Details page
 
