@@ -3,7 +3,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Any
 
 import anyio
-from sqlalchemy import select
+from sqlalchemy import Table, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import Session, selectinload
 from sqlalchemy.sql.expression import Select, and_, or_
@@ -215,6 +215,61 @@ class Query:
             await self.model_view.after_model_change(data, obj, True, request)
             return obj
 
+    def _insert_sync_many(
+        self, data: list[dict[str, Any]], request: Request
+    ) -> list[Any]:
+        objs = []
+        with self.model_view.session_maker(expire_on_commit=False) as session:
+            for row in data:
+                obj = self.model_view.model()
+                anyio.from_thread.run(
+                    self.model_view.on_model_change, row, obj, True, request
+                )
+                obj = self._set_attributes_sync(session, obj, row)
+                objs.append(obj)
+            session.add_all(objs)
+            session.commit()
+            for obj, row in zip(objs, data):
+                anyio.from_thread.run(
+                    self.model_view.after_model_change, row, obj, True, request
+                )
+        return objs
+
+    async def _insert_async_many(
+        self, data: list[dict[str, Any]], request: Request
+    ) -> list[Any]:
+        objs = []
+        async with self.model_view.session_maker(expire_on_commit=False) as session:
+            for row in data:
+                obj = self.model_view.model()
+                await self.model_view.on_model_change(row, obj, True, request)
+                obj = await self._set_attributes_async(session, obj, row)
+                objs.append(obj)
+            session.add_all(objs)
+            await session.commit()
+            for obj, row in zip(objs, data):
+                await self.model_view.after_model_change(row, obj, True, request)
+        return objs
+
+    async def _get_relation_objects_async(self, relation: Table) -> Any:
+        stmt = select(relation)
+        async with self.model_view.session_maker(expire_on_commit=False) as session:
+            result = await session.scalars(stmt)
+        return result.all()
+
+    def _get_relation_objects_sync(self, relation: Table) -> Any:
+        stmt = select(relation)
+        with self.model_view.session_maker(expire_on_commit=False) as session:
+            return session.scalars(stmt).all()
+
+    async def get_relation_objects(self, relation: Table) -> Any:
+        if self.model_view.is_async:
+            return await self._get_relation_objects_async(relation)
+        else:
+            return await anyio.to_thread.run_sync(
+                self._get_relation_objects_sync, relation
+            )
+
     async def delete(self, obj: Any, request: Request) -> None:
         if self.model_view.is_async:
             await self._delete_async(obj, request)
@@ -226,6 +281,12 @@ class Query:
             return await self._insert_async(data, request)
         else:
             return await anyio.to_thread.run_sync(self._insert_sync, data, request)
+
+    async def insert_many(self, data: list[dict[str, Any]], request: Request) -> Any:
+        if self.model_view.is_async:
+            return await self._insert_async_many(data, request)
+        else:
+            return await anyio.to_thread.run_sync(self._insert_sync_many, data, request)
 
     async def update(self, pk: Any, data: dict, request: Request) -> Any:
         if self.model_view.is_async:
