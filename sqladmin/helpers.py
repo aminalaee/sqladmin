@@ -152,7 +152,7 @@ class _PseudoBuffer:
     interface.
     """
 
-    encoding = "utf_8_sig"
+    encoding = "utf-8"
 
     def write(self, value: T) -> bytes:
         return str(value).encode(self.encoding)
