@@ -226,6 +226,10 @@ The forms are based on `WTForms` package and include the following options:
         form_edit_rules = ["name"]
     ```
 
+### Related models
+
+To define how related model is displayed in the dropdown, `__str__` method must be difined in the related model.
+
 ## Export options
 
 SQLAdmin supports exporting data in the list page. Currently only CSV export is supported.
