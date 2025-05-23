@@ -810,7 +810,9 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
 
         if search:
             stmt = self.search_query(stmt=stmt, term=search)
-            count = await self.count(request, select(func.count()).select_from(stmt))
+            count = await self.count(
+                request, select(func.count()).select_from(stmt.subquery())
+            )
         else:
             count = await self.count(request)
 
@@ -1070,17 +1072,21 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
         ```
         """
 
+        to_join = []
         expressions = []
         for field in self._search_fields:
             model = self.model
             parts = field.split(".")
             for part in parts[:-1]:
+                if (model, part) not in to_join:
+                    to_join.append((model, part))
                 model = getattr(model, part).mapper.class_
-                stmt = stmt.join(model)
 
             field = getattr(model, parts[-1])
             expressions.append(cast(field, String).ilike(f"%{term}%"))
 
+        for model, attr in to_join:
+            stmt = stmt.outerjoin(getattr(model, attr))
         return stmt.filter(or_(*expressions))
 
     def list_query(self, request: Request) -> Select:

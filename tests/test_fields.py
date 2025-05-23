@@ -142,7 +142,7 @@ def test_query_select_multiple_field() -> None:
     data = [(str(i), str(User(id=i))) for i in range(5)]
 
     class F(Form):
-        select = QuerySelectMultipleField(allow_blank=True, data=data)
+        select = QuerySelectMultipleField(data=data)
 
     form = F()
     assert form.validate() is True

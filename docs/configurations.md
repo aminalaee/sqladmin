@@ -112,8 +112,8 @@ or list of the tuple for multiple columns.
 
     ```python
     class UserAdmin(ModelView, model=User):
-        column_list = [User.id, User.name, "user.address.zip_code"]
-        column_searchable_list = [User.name]
+        column_list = [User.id, User.name, "address.zip_code"]
+        column_searchable_list = [User.name, "address.zip_code"]
         column_sortable_list = [User.id]
         column_formatters = {User.name: lambda m, a: m.name[:10]}
         column_default_sort = [(User.email, True), (User.name, False)]
@@ -140,7 +140,7 @@ The options available are:
 
     ```python
     class UserAdmin(ModelView, model=User):
-        column_details_list = [User.id, User.name, "user.address.zip_code"]
+        column_details_list = [User.id, User.name, "address.zip_code"]
         column_formatters_detail = {User.name: lambda m, a: m.name[:10]}
     ```
 

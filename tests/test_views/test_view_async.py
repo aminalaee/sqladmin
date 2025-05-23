@@ -142,7 +142,7 @@ class UserAdmin(ModelView, model=User):
         User.status,
     ]
     column_labels = {User.email: "Email"}
-    column_searchable_list = [User.name]
+    column_searchable_list = [User.name, "profile.id"]
     column_sortable_list = [User.id]
     column_export_list = [User.name, User.status]
     column_formatters = {
@@ -718,6 +718,9 @@ async def test_searchable_list(client: AsyncClient) -> None:
         session.add(user)
         user = User(name="Boss")
         session.add(user)
+        await session.flush()
+        profile = Profile(user_id=user.id)
+        session.add(profile)
         await session.commit()
 
     response = await client.get("/admin/user/list")
@@ -729,6 +732,9 @@ async def test_searchable_list(client: AsyncClient) -> None:
 
     response = await client.get("/admin/user/list?search=rose")
     assert "/admin/user/details/1" not in response.text
+
+    response = await client.get("/admin/user/list?search=1")
+    assert "/admin/user/details/2" in response.text
 
 
 async def test_sortable_list(client: AsyncClient) -> None:
