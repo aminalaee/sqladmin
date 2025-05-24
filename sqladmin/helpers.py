@@ -6,7 +6,7 @@ import os
 import re
 import unicodedata
 from abc import ABC, abstractmethod
-from datetime import timedelta
+from datetime import datetime, timedelta
 from typing import (
     Any,
     AsyncGenerator,
@@ -224,7 +224,11 @@ def object_identifier_values(id_string: str, model: Any) -> tuple:
     pks = get_primary_keys(model)
     for pk, part in zip(pks, _object_identifier_parts(id_string, model)):
         type_ = get_column_python_type(pk)
-        value = False if type_ is bool and part == "False" else type_(part)
+        if type_ is datetime:
+            value = datetime.strptime(part, "%Y-%m-%d %H:%M:%S")
+        else:
+            print(part)
+            value = False if part == "False" else type_(part)
         values.append(value)
     return tuple(values)
 
