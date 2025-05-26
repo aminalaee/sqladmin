@@ -10,7 +10,7 @@ The class `AuthenticationBackend` has three methods you need to override:
 
 * `authenticate`: Will be called for validating each incoming request.
 * `login`: Will be called only in the login page to validate username/password.
-* `logout`: Will be called only for the logout, usually clearin the session.
+* `logout`: Will be called only for the logout, usually clearing the session.
 
 ```python
 from sqladmin import Admin

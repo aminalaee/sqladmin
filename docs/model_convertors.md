@@ -4,8 +4,6 @@
 
 Model Converters are special classes used to convert SQLAlchemy model properties into web interface form fields. They allow you to customize how backend SQLAlchemy models are represented in the admin interface, providing flexibility in handling different data types and validation rules.
 
-This page will guide you through the basics of using and customizing Model Converters. For advanced usage, refer to the [API Reference](./api_reference/model_converter.md).
-
 ---
 
 ## Overview

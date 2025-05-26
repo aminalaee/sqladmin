@@ -640,7 +640,11 @@ class Admin(BaseAdminView):
     async def logout(self, request: Request) -> Response:
         assert self.authentication_backend is not None
 
-        await self.authentication_backend.logout(request)
+        response = await self.authentication_backend.logout(request)
+
+        if isinstance(response, Response):
+            return response
+
         return RedirectResponse(request.url_for("admin:index"), status_code=302)
 
     async def ajax_lookup(self, request: Request) -> Response:
