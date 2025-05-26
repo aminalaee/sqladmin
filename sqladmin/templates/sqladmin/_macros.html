@@ -1,5 +1,5 @@
 {% macro menu_category(menu, request) %}
-{% if menu.is_active(request) %}
+{% if menu.is_visible(request) and menu.is_accessible(request) %}
 <li class="nav-item dropdown">
   <a class="nav-link dropdown-toggle {% if menu.is_active(request) %}active{% endif %}" data-bs-toggle="dropdown"
     href="#">
