@@ -72,14 +72,14 @@ Ready to contribute? Here's how to set up `sqladmin` for local development.
 5. Apply linting and formatting, if not already done:
 
     ```
-    $ hatch run lint
+    $ hatch run lint:format
     ```
 
 6. When you're done making changes, check that your changes pass the tests:
 
     ```
-    $ hatch run check
-    $ hatch run test
+    $ hatch run lint:check
+    $ hatch run test:test
     ```
 
 7. Commit your changes and push your branch to GitHub:
