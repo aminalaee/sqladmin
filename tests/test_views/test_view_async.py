@@ -113,6 +113,14 @@ class Movie(Base):
     id = Column(Integer, primary_key=True)
 
 
+class Product(Base):
+    __tablename__ = "product"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    name = Column(String, nullable=False)
+    price = Column(BigInteger)
+
+
 @pytest.fixture
 async def prepare_database() -> AsyncGenerator[None, None]:
     async with engine.begin() as conn:
@@ -182,10 +190,15 @@ class MovieAdmin(ModelView, model=Movie):
         return False
 
 
+class ProductAdmin(ModelView, model=Product):
+    pass
+
+
 admin.add_view(UserAdmin)
 admin.add_view(AddressAdmin)
 admin.add_view(ProfileAdmin)
 admin.add_view(MovieAdmin)
+admin.add_view(ProductAdmin)
 
 
 async def test_root_view(client: AsyncClient) -> None:
@@ -460,6 +473,20 @@ async def test_create_endpoint_get_form(client: AsyncClient) -> None:
     )
     assert (
         '<input class="form-control" id="email" name="email" type="text" value="">'
+        in response.text
+    )
+
+
+async def test_create_endpoint_with_required_fields(client: AsyncClient) -> None:
+    response = await client.get("/admin/product/create")
+
+    assert response.status_code == 200
+    assert (
+        '<label class="form-label col-sm-2 col-form-label required-label" for="name" '
+        'title="This is a required field">Name</label>' in response.text
+    )
+    assert (
+        '<label class="form-label col-sm-2 col-form-label" for="price">Price</label>'
         in response.text
     )
 
