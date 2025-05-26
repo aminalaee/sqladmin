@@ -197,15 +197,21 @@ class BaseAdmin:
         view_instance: BaseView | ModelView,
     ) -> None:
         if hasattr(func, "_exposed"):
+            if view.is_model:
+                path = f"/{view_instance.identity}" + getattr(func, "_path")
+                name = f"view-{view_instance.identity}-{func.__name__}"
+            else:
+                view.identity = getattr(func, "_identity")
+                path = getattr(func, "_path")
+                name = getattr(func, "_identity")
+
             self.admin.add_route(
                 route=func,
-                path=getattr(func, "_path"),
+                path=path,
                 methods=getattr(func, "_methods"),
-                name=getattr(func, "_identity"),
+                name=name,
                 include_in_schema=getattr(func, "_include_in_schema"),
             )
-
-            view.identity = getattr(func, "_identity")
 
     def add_model_view(self, view: type[ModelView]) -> None:
         """Add ModelView to the Admin.
@@ -233,6 +239,11 @@ class BaseAdmin:
         self._find_decorated_funcs(
             view, view_instance, self._handle_action_decorated_func
         )
+
+        self._find_decorated_funcs(
+            view, view_instance, self._handle_expose_decorated_func
+        )
+
         self._views.append(view_instance)
         self._build_menu(view_instance)
 
