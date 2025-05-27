@@ -737,8 +737,7 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
     def _url_for_delete(self, request: Request, obj: Any) -> str:
         pk = get_object_identifier(obj)
         query_params = urlencode({"pks": pk})
-        url = request.url_for(
-            "admin:delete", identity=self.identity)
+        url = request.url_for("admin:delete", identity=self.identity)
         return str(url) + "?" + query_params
 
     def _url_for_details_with_prop(self, request: Request, obj: Any, prop: str) -> URL:
