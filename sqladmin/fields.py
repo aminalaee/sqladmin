@@ -286,6 +286,11 @@ class QuerySelectMultipleField(QuerySelectField):
                 if v not in pk_list:  # pragma: no cover
                     raise ValidationError(self.gettext("Not a valid choice"))
 
+    def __call__(self, **kwargs):
+        klass = kwargs.get("class_", "")
+        kwargs["class_"] = f'{klass} select2-multiple'
+        return super().__call__(**kwargs)
+
 
 class AjaxSelectField(fields.SelectFieldBase):
     widget = sqladmin_widgets.AjaxSelect2Widget()
