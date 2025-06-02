@@ -1172,7 +1172,9 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
     ) -> StreamingResponse:
         async def generate(writer: Writer) -> AsyncGenerator[Any, None]:
             # Append the column titles at the beginning
-            yield writer.writerow(self._export_prop_names)
+            yield writer.writerow(
+                self._get_export_labels(self._export_prop_names),
+            )
 
             for row in data:
                 vals = [
@@ -1216,6 +1218,16 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
             media_type="application/json",
             headers={"Content-Disposition": f"attachment;filename={filename}"},
         )
+
+    def _get_export_labels(self, export_prop_names: List[str]) -> List[str]:
+        _export_prop_names = []
+        for item in export_prop_names:
+            if item in self.column_labels:
+                _export_prop_names.append(self.column_labels[item])
+            else:
+                _export_prop_names.append(item)
+
+        return _export_prop_names
 
     def _refresh_form_rules_cache(self) -> None:
         if self.form_rules:
