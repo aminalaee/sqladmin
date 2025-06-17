@@ -2,6 +2,7 @@ import enum
 from typing import Generator
 
 import pytest
+from jinja2 import TemplateNotFound
 from markupsafe import Markup
 from sqlalchemy import Boolean, Column, Enum, ForeignKey, Integer, String, select
 from sqlalchemy.dialects.postgresql import UUID
@@ -9,8 +10,9 @@ from sqlalchemy.orm import contains_eager, declarative_base, relationship, sessi
 from sqlalchemy.sql.expression import Select
 from starlette.applications import Starlette
 from starlette.requests import Request
+from starlette.testclient import TestClient
 
-from sqladmin import Admin, ModelView
+from sqladmin import Admin, ModelView, expose
 from sqladmin.exceptions import InvalidModelError
 from sqladmin.helpers import get_column_python_type
 from tests.common import sync_engine as engine
@@ -75,6 +77,12 @@ def prepare_database() -> Generator[None, None, None]:
     Base.metadata.create_all(engine)
     yield
     Base.metadata.drop_all(engine)
+
+
+@pytest.fixture
+def client() -> Generator[TestClient, None, None]:
+    with TestClient(app=app, base_url="http://testserver") as c:
+        yield c
 
 
 def test_metadata_setup() -> None:
@@ -478,3 +486,18 @@ def test_search_query() -> None:
     stmt = AddressAdmin().search_query(select(Address), "example")
     assert "lower(CAST(users.name AS VARCHAR))" in str(stmt)
     assert "lower(CAST(profiles.role AS VARCHAR))" in str(stmt)
+
+
+def test_expose_decorator(client: TestClient) -> None:
+    class UserAdmin(ModelView, model=User):
+        @expose("/profile/{pk}")
+        async def profile(self, request: Request):
+            user: User = await self.get_object_for_edit(request)
+            return await self.templates.TemplateResponse(
+                request, "user.html", {"user": user}
+            )
+
+    admin.add_view(UserAdmin)
+
+    with pytest.raises(TemplateNotFound, match="user.html"):
+        client.get("/admin/user/profile/1")
