@@ -53,7 +53,7 @@ class UserAdmin(ModelView, model=User):
     can_edit = True
     can_delete = True
     can_view_details = True
-    filter_list = [
+    column_filters = [
         AllUniqueStringValuesFilter(User.title),
         BooleanFilter(User.is_admin),
         ForeignKeyFilter(User.office_id, Office.name),
@@ -121,7 +121,7 @@ async def client(
 
 
 @pytest.mark.anyio
-async def test_filter_list_sidebar_existence(client: AsyncClient) -> None:
+async def test_column_filters_sidebar_existence(client: AsyncClient) -> None:
     """Test that the filter list sidebar appears only when filters are defined."""
     # Test view with filters (UserAdmin)
     response = await client.get("/admin/user/list")

@@ -315,14 +315,14 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
         ```
     """
 
-    filter_list: ClassVar[Sequence[ColumnFilter]] = []
+    column_filters: ClassVar[Sequence[ColumnFilter]] = []
     """Collection of the filterable columns for the list view.
     Columns can either be string names or SQLAlchemy columns.
 
     ???+ example
         ```python
         class UserAdmin(ModelView, model=User):
-            filter_list = [User.is_admin]
+            column_filters = [User.is_admin]
         ```
     """
 
@@ -1015,7 +1015,7 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
     def get_filters(self) -> List[ColumnFilter]:
         """Get list of filters."""
 
-        filters = getattr(self, "filter_list", None)
+        filters = getattr(self, "column_filters", None)
         if not filters:
             return []
 

@@ -138,11 +138,11 @@ def test_column_list_by_str_name() -> None:
     assert AddressAdmin().get_list_columns() == ["id", "user_id"]
 
 
-def test_filter_list() -> None:
+def test_column_filters() -> None:
     filter = AllUniqueStringValuesFilter(User.name)
 
     class UserAdmin(ModelView, model=User):
-        filter_list = [filter]
+        column_filters = [filter]
 
     all_filters = UserAdmin().get_filters()
     assert len(all_filters) == 1
