@@ -826,12 +826,6 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
 
         return pagination
 
-    async def details(self, request: Request) -> None:
-        stmt = self.details_query(request)
-        for relation in self._list_relations:
-            stmt = stmt.options(selectinload(relation))
-        await self._run_query(stmt)
-
     async def get_model_objects(
         self, request: Request, limit: Union[int, None] = 0
     ) -> List[Any]:
@@ -849,12 +843,8 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
         rows = await self._run_query(stmt)
         return rows[0] if rows else None
 
-    async def get_object_for_details(self, value: Any) -> Any:
-        stmt = self._stmt_by_identifier(value)
-
-        for relation in self._details_relations:
-            stmt = stmt.options(selectinload(relation))
-
+    async def get_object_for_details(self, request: Request) -> Any:
+        stmt = self.details_query(request)
         return await self._get_object_by_pk(stmt)
 
     async def get_object_for_edit(self, request: Request) -> Any:
@@ -1103,7 +1093,7 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
         customized. By default it will select all objects without any filters.
         """
 
-        return select(self.model)
+        return self.form_edit_query(request)
 
     def edit_form_query(self, request: Request) -> Select:
         msg = (

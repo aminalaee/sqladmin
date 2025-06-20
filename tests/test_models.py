@@ -6,7 +6,7 @@ from jinja2 import TemplateNotFound
 from markupsafe import Markup
 from sqlalchemy import Boolean, Column, Enum, ForeignKey, Integer, String, select
 from sqlalchemy.dialects.postgresql import UUID
-from sqlalchemy.orm import contains_eager, declarative_base, relationship, sessionmaker
+from sqlalchemy.orm import contains_eager, declarative_base, relationship, selectinload, sessionmaker
 from sqlalchemy.sql.expression import Select
 from starlette.applications import Starlette
 from starlette.requests import Request
@@ -44,11 +44,26 @@ class User(Base):
 
     addresses = relationship("Address", back_populates="user")
     profile = relationship("Profile", back_populates="user", uselist=False)
+    groups = relationship("Group", back_populates="users", secondary="user_groups", lazy="raise_on_sql")
 
     @property
     def name_with_id(self) -> str:
         return f"{self.name} - {self.id}"
 
+
+class Group(Base):
+    __tablename__ = "groups"
+
+    id = Column(Integer, primary_key=True)
+    name = Column(String)
+    users = relationship("User", back_populates="groups", secondary="user_groups", lazy="raise_on_sql")
+
+
+class UserGroup(Base):
+    __tablename__ = "user_groups"
+
+    user_id = Column(Integer, ForeignKey("users.id"), primary_key=True)
+    group_id = Column(Integer, ForeignKey("groups.id"), primary_key=True)
 
 class Address(Base):
     __tablename__ = "addresses"
@@ -392,25 +407,28 @@ async def test_get_model_objects_uses_list_query() -> None:
 
 async def test_get_details_query() -> None:
     session = session_maker()
-    batman = User(name="batman")
-    batcave = Address(user=batman, name="bat cave")
-    wayne_manor = Address(user=batman, name="wayne manor")
+    batman = User(id=123, name="batman")
+    gotham = Group(users=[batman], name="gotham city")
+    dc = Group(users=[batman], name="dc")
     session.add(batman)
-    session.add(batcave)
-    session.add(wayne_manor)
+    session.add(gotham)
+    session.add(dc)
     session.commit()
 
     class UserAdmin(ModelView, model=User):
         async_engine = False
         session_maker = session_maker
 
-        def list_query(self, request: Request) -> Select:
-            return super().list_query(request).filter(User.name.endswith("man"))
+        def details_query(self, request: Request) -> Select:
+            return super().details_query(request).options(
+                selectinload(User.groups)
+            )
 
     view = UserAdmin()
-    request = Request({"type": "http"})
+    request = Request({"type": "http", "path_params": {"pk": 123}})
+    user = await view.get_object_for_details(request)
+    assert len(user.groups) == 2 
 
-    assert len(await view.get_model_objects(request)) == 1
 
 
 async def test_form_edit_query() -> None:
@@ -524,3 +542,5 @@ def test_expose_decorator(client: TestClient) -> None:
 
     with pytest.raises(TemplateNotFound, match="user.html"):
         client.get("/admin/user/profile/1")
+
+
