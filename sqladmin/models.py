@@ -826,6 +826,12 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
 
         return pagination
 
+    async def details(self, request: Request) -> None:
+        stmt = self.details_query(request)
+        for relation in self._list_relations:
+            stmt = stmt.options(selectinload(relation))
+        await self._run_query(stmt)
+
     async def get_model_objects(
         self, request: Request, limit: Union[int, None] = 0
     ) -> List[Any]:
@@ -1087,6 +1093,14 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
         """
         The SQLAlchemy select expression used for the list page which can be customized.
         By default it will select all objects without any filters.
+        """
+
+        return select(self.model)
+
+    def details_query(self, request: Request) -> Select:
+        """
+        The SQLAlchemy select expression used for the details page which can be
+        customized. By default it will select all objects without any filters.
         """
 
         return select(self.model)

@@ -390,6 +390,29 @@ async def test_get_model_objects_uses_list_query() -> None:
     assert len(await view.get_model_objects(request)) == 1
 
 
+async def test_get_details_query() -> None:
+    session = session_maker()
+    batman = User(name="batman")
+    batcave = Address(user=batman, name="bat cave")
+    wayne_manor = Address(user=batman, name="wayne manor")
+    session.add(batman)
+    session.add(batcave)
+    session.add(wayne_manor)
+    session.commit()
+
+    class UserAdmin(ModelView, model=User):
+        async_engine = False
+        session_maker = session_maker
+
+        def list_query(self, request: Request) -> Select:
+            return super().list_query(request).filter(User.name.endswith("man"))
+
+    view = UserAdmin()
+    request = Request({"type": "http"})
+
+    assert len(await view.get_model_objects(request)) == 1
+
+
 async def test_form_edit_query() -> None:
     session = session_maker()
     batman = User(id=123, name="batman")
