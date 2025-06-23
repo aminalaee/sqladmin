@@ -6,7 +6,12 @@ from jinja2 import TemplateNotFound
 from markupsafe import Markup
 from sqlalchemy import Boolean, Column, Enum, ForeignKey, Integer, String, select
 from sqlalchemy.dialects.postgresql import UUID
-from sqlalchemy.orm import contains_eager, declarative_base, relationship, selectinload, sessionmaker
+from sqlalchemy.orm import (
+    contains_eager,
+    declarative_base,
+    relationship,
+    sessionmaker,
+)
 from sqlalchemy.sql.expression import Select
 from starlette.applications import Starlette
 from starlette.requests import Request
@@ -44,7 +49,9 @@ class User(Base):
 
     addresses = relationship("Address", back_populates="user")
     profile = relationship("Profile", back_populates="user", uselist=False)
-    groups = relationship("Group", back_populates="users", secondary="user_groups", lazy="raise_on_sql")
+    groups = relationship(
+        "Group", back_populates="users", secondary="user_groups", lazy="raise_on_sql"
+    )
 
     @property
     def name_with_id(self) -> str:
@@ -56,7 +63,9 @@ class Group(Base):
 
     id = Column(Integer, primary_key=True)
     name = Column(String)
-    users = relationship("User", back_populates="groups", secondary="user_groups", lazy="raise_on_sql")
+    users = relationship(
+        "User", back_populates="groups", secondary="user_groups", lazy="raise_on_sql"
+    )
 
 
 class UserGroup(Base):
@@ -64,6 +73,7 @@ class UserGroup(Base):
 
     user_id = Column(Integer, ForeignKey("users.id"), primary_key=True)
     group_id = Column(Integer, ForeignKey("groups.id"), primary_key=True)
+
 
 class Address(Base):
     __tablename__ = "addresses"
@@ -164,14 +174,14 @@ def test_column_exclude_list_by_str_name() -> None:
     class UserAdmin(ModelView, model=User):
         column_exclude_list = ["id"]
 
-    assert UserAdmin().get_list_columns() == ["addresses", "profile", "name"]
+    assert UserAdmin().get_list_columns() == ["addresses", "profile", "groups", "name"]
 
 
 def test_column_exclude_list_by_model_column() -> None:
     class UserAdmin(ModelView, model=User):
         column_exclude_list = [User.id]
 
-    assert UserAdmin().get_list_columns() == ["addresses", "profile", "name"]
+    assert UserAdmin().get_list_columns() == ["addresses", "profile", "groups", "name"]
 
 
 async def test_column_list_formatters() -> None:
@@ -233,7 +243,13 @@ def test_column_details_list_default() -> None:
     class UserAdmin(ModelView, model=User):
         pass
 
-    assert UserAdmin().get_details_columns() == ["addresses", "profile", "id", "name"]
+    assert UserAdmin().get_details_columns() == [
+        "addresses",
+        "profile",
+        "groups",
+        "id",
+        "name",
+    ]
 
 
 def test_column_details_list_by_model_column() -> None:
@@ -247,14 +263,25 @@ def test_column_details_exclude_list_by_model_column() -> None:
     class UserAdmin(ModelView, model=User):
         column_details_exclude_list = [User.id]
 
-    assert UserAdmin().get_details_columns() == ["addresses", "profile", "name"]
+    assert UserAdmin().get_details_columns() == [
+        "addresses",
+        "profile",
+        "groups",
+        "name",
+    ]
 
 
 def test_form_columns_default() -> None:
     class UserAdmin(ModelView, model=User):
         pass
 
-    assert UserAdmin().get_form_columns() == ["addresses", "profile", "id", "name"]
+    assert UserAdmin().get_form_columns() == [
+        "addresses",
+        "profile",
+        "groups",
+        "id",
+        "name",
+    ]
 
 
 def test_form_columns_by_model_columns() -> None:
@@ -285,14 +312,14 @@ def test_form_excluded_columns_by_str_name() -> None:
     class UserAdmin(ModelView, model=User):
         form_excluded_columns = ["id"]
 
-    assert UserAdmin().get_form_columns() == ["addresses", "profile", "name"]
+    assert UserAdmin().get_form_columns() == ["addresses", "profile", "groups", "name"]
 
 
 def test_form_excluded_columns_by_model_column() -> None:
     class UserAdmin(ModelView, model=User):
         form_excluded_columns = [User.id]
 
-    assert UserAdmin().get_form_columns() == ["addresses", "profile", "name"]
+    assert UserAdmin().get_form_columns() == ["addresses", "profile", "groups", "name"]
 
 
 def test_export_columns_default() -> None:
@@ -344,14 +371,24 @@ def test_export_excluded_columns_by_str_name() -> None:
     class UserAdmin(ModelView, model=User):
         column_export_exclude_list = ["id"]
 
-    assert UserAdmin().get_export_columns() == ["addresses", "profile", "name"]
+    assert UserAdmin().get_export_columns() == [
+        "addresses",
+        "profile",
+        "groups",
+        "name",
+    ]
 
 
 def test_export_excluded_columns_by_model_column() -> None:
     class UserAdmin(ModelView, model=User):
         column_export_exclude_list = [User.id]
 
-    assert UserAdmin().get_export_columns() == ["addresses", "profile", "name"]
+    assert UserAdmin().get_export_columns() == [
+        "addresses",
+        "profile",
+        "groups",
+        "name",
+    ]
 
 
 @pytest.mark.skipif(engine.name != "postgresql", reason="PostgreSQL only")
@@ -419,16 +456,10 @@ async def test_get_details_query() -> None:
         async_engine = False
         session_maker = session_maker
 
-        def details_query(self, request: Request) -> Select:
-            return super().details_query(request).options(
-                selectinload(User.groups)
-            )
-
     view = UserAdmin()
     request = Request({"type": "http", "path_params": {"pk": 123}})
     user = await view.get_object_for_details(request)
-    assert len(user.groups) == 2 
-
+    assert len(user.groups) == 2
 
 
 async def test_form_edit_query() -> None:
@@ -497,7 +528,13 @@ async def test_model_property_in_columns() -> None:
     user = User(id=1, name="batman")
 
     assert UserAdmin().get_list_columns() == ["id", "name", "name_with_id"]
-    assert UserAdmin().get_details_columns() == ["addresses", "profile", "id", "name"]
+    assert UserAdmin().get_details_columns() == [
+        "addresses",
+        "profile",
+        "groups",
+        "id",
+        "name",
+    ]
     assert await UserAdmin().get_prop_value(user, "name_with_id") == "batman - 1"
 
 
@@ -542,5 +579,3 @@ def test_expose_decorator(client: TestClient) -> None:
 
     with pytest.raises(TemplateNotFound, match="user.html"):
         client.get("/admin/user/profile/1")
-
-
