@@ -472,10 +472,9 @@ class Admin(BaseAdminView):
         """Details route."""
 
         await self._details(request)
-
         model_view = self._find_model_view(request.path_params["identity"])
+        model = await model_view.get_object_for_details(request)
 
-        model = await model_view.get_object_for_details(request.path_params["pk"])
         if not model:
             raise HTTPException(status_code=404)
 

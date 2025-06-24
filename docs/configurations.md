@@ -107,6 +107,8 @@ or list of the tuple for multiple columns.
 * `list_query`: A method with the signature of `(request) -> stmt` which can customize the list query.
 * `count_query`: A method with the signature of `(request) -> stmt` which can customize the count query.
 * `search_query`: A method with the signature of `(stmt, term) -> stmt` which can customize the search query.
+* `details_query`: A method with the signature of `(request) -> stmt` which can customize the details query.
+
 
 !!! example
 
