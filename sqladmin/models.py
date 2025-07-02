@@ -36,7 +36,7 @@ from wtforms import Field, Form
 from wtforms.fields.core import UnboundField
 
 from sqladmin._queries import Query
-from sqladmin._types import MODEL_ATTR
+from sqladmin._types import MODEL_ATTR, ColumnFilter
 from sqladmin.ajax import create_ajax_loader
 from sqladmin.exceptions import InvalidModelError
 from sqladmin.formatters import BASE_FORMATTERS
@@ -315,6 +315,17 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
         ```
     """
 
+    column_filters: ClassVar[Sequence[ColumnFilter]] = []
+    """Collection of the filterable columns for the list view.
+    Columns can either be string names or SQLAlchemy columns.
+
+    ???+ example
+        ```python
+        class UserAdmin(ModelView, model=User):
+            column_filters = [User.is_admin]
+        ```
+    """
+
     column_sortable_list: ClassVar[Sequence[MODEL_ATTR]] = []
     """Collection of the sortable columns for the list view.
 
@@ -401,7 +412,7 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
     """
 
     save_as: ClassVar[bool] = False
-    """Set `save_as` to enable a “save as new” feature on admin change forms.
+    """Set `save_as` to enable a "save as new" feature on admin change forms.
 
     Normally, objects have three save options:
     ``Save`, `Save and continue editing` and `Save and add another`.
@@ -434,6 +445,12 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
 
     edit_template: ClassVar[str] = "sqladmin/edit.html"
     """Edit view template. Default is `sqladmin/edit.html`."""
+
+    # Template configuration
+    show_compact_lists: ClassVar[bool] = True
+    """Show compact lists. Default is `True`. 
+    If False, when showing lists of objects, each object will be \
+    displayed in a separate line."""
 
     # Export
     column_export_list: ClassVar[List[MODEL_ATTR]] = []
@@ -648,7 +665,7 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
         - None will be displayed as an empty string
         - bool will be displayed as a checkmark if it is True otherwise as an X.
 
-    If you don’t like the default behavior and don’t want any type formatters applied,
+    If you don't like the default behavior and don't want any type formatters applied,
     just override this property with an empty dictionary:
 
     ???+ example
@@ -720,6 +737,19 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
         self._custom_actions_in_list: Dict[str, str] = {}
         self._custom_actions_in_detail: Dict[str, str] = {}
         self._custom_actions_confirmation: Dict[str, str] = {}
+
+    def _run_arbitrary_query_sync(self, stmt: ClauseElement) -> Any:
+        with self.session_maker(expire_on_commit=False) as session:
+            result = session.execute(stmt)
+            return result.all()
+
+    async def _run_arbitrary_query(self, stmt: ClauseElement) -> Any:
+        if self.is_async:
+            async with self.session_maker(expire_on_commit=False) as session:
+                result = await session.execute(stmt)
+                return result.all()
+        else:
+            return self._run_arbitrary_query_sync(stmt)
 
     def _run_query_sync(self, stmt: ClauseElement) -> Any:
         with self.session_maker(expire_on_commit=False) as session:
@@ -806,6 +836,12 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
         for relation in self._list_relations:
             stmt = stmt.options(selectinload(relation))
 
+        for filter in self.get_filters():
+            if request.query_params.get(filter.parameter_name):
+                stmt = await filter.get_filtered_query(
+                    stmt, request.query_params.get(filter.parameter_name), self.model
+                )
+
         stmt = self.sort_query(stmt, request)
 
         if search:
@@ -843,12 +879,8 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
         rows = await self._run_query(stmt)
         return rows[0] if rows else None
 
-    async def get_object_for_details(self, value: Any) -> Any:
-        stmt = self._stmt_by_identifier(value)
-
-        for relation in self._details_relations:
-            stmt = stmt.options(selectinload(relation))
-
+    async def get_object_for_details(self, request: Request) -> Any:
+        stmt = self.details_query(request)
         return await self._get_object_by_pk(stmt)
 
     async def get_object_for_edit(self, request: Request) -> Any:
@@ -976,6 +1008,15 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
             defaults=self._list_prop_names,
         )
 
+    def get_filters(self) -> List[ColumnFilter]:
+        """Get list of filters."""
+
+        filters = getattr(self, "column_filters", None)
+        if not filters:
+            return []
+
+        return filters
+
     async def on_model_change(
         self, data: dict, model: Any, is_created: bool, request: Request
     ) -> None:
@@ -1090,6 +1131,14 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
         """
 
         return select(self.model)
+
+    def details_query(self, request: Request) -> Select:
+        """
+        The SQLAlchemy select expression used for the details page which can be
+        customized. By default it will select all objects without any filters.
+        """
+
+        return self.form_edit_query(request)
 
     def edit_form_query(self, request: Request) -> Select:
         msg = (
