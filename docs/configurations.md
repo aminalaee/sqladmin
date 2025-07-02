@@ -121,6 +121,7 @@ The options available are:
 - `count_query`: A method with the signature of `(request) -> stmt` which can customize the count query.
 - `search_query`: A method with the signature of `(stmt, term) -> stmt` which can customize the search query.
 - `column_filters`: A list of objects that implement the `ColumnFilter` protocol to be displayed in the list page. See example below.
+- `details_query`: A method with the signature of `(request) -> stmt` which can customize the details query.
 
 !!! example
 
