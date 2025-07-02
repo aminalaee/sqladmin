@@ -54,6 +54,7 @@
         - count_query
         - search_query
         - sort_query
+        - details_query
         - on_model_change
         - after_model_change
         - on_model_delete
