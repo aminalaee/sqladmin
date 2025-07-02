@@ -6,7 +6,7 @@ you can visit [API Reference](./api_reference/model_view.md).
 Let's say you've defined your SQLAlchemy models like this:
 
 ```python
-from sqlalchemy import Column, Integer, String, create_engine
+from sqlalchemy import Column, Boolean, Integer, String, create_engine
 from sqlalchemy.orm import declarative_base, relationship
 
 
@@ -35,7 +35,7 @@ class Address(Base):
     city = Column(String)
     state = Column(String)
     zip = Column(Integer)
-
+    is_admin = Column(Boolean, default=False)
 
 
 Base.metadata.create_all(engine)  # Create tables
@@ -120,6 +120,7 @@ The options available are:
 - `list_query`: A method with the signature of `(request) -> stmt` which can customize the list query.
 - `count_query`: A method with the signature of `(request) -> stmt` which can customize the count query.
 - `search_query`: A method with the signature of `(stmt, term) -> stmt` which can customize the search query.
+- `column_filters`: A list of objects that implement the `ColumnFilter` protocol to be displayed in the list page. See example below.
 
 !!! example
 
@@ -130,12 +131,99 @@ The options available are:
         column_sortable_list = [User.id]
         column_formatters = {User.name: lambda m, a: m.name[:10]}
         column_default_sort = [(User.email, True), (User.name, False)]
+        column_filterable_list = [User.is_admin]
     ```
 
 !!! tip
 
     You can use the special keyword `"__all__"` in `column_list` or `column_details_list`
     if you don't want to specify all the columns manually. For example: `column_list = "__all__"`
+
+### ColumnFilter
+ 
+A ColumnFilter is a class that defines a filter for a column. A few standard filters are implemented in `sqladmin.filters` module. Here is an example of a generic ColumnFilter. Note that the fields `title`, `parameter_name`, `lookups` and `get_filtered_query` are required.
+
+```python
+class IsAdminFilter:
+    # Human-readable title which will be displayed in the
+    # right admin sidebar just above the filter options.
+    title = "Is Admin"
+
+    # Parameter for the filter that will be used in the URL query.
+    parameter_name = "is_admin"
+
+    def lookups(self, request, model) -> list[tuple[str, str]]:
+        """
+        Returns a list of tuples with the filter key and the human-readable label.
+        """
+        return [
+            ("all", "All"),
+            ("true", "Yes"),
+            ("false", "No"),
+        ]
+
+    def get_filtered_query(self, query, value):
+        """
+        Returns a filtered query based on the filter value.
+        """
+        if value == "true":
+            return query.filter(model.is_admin == True)
+        elif value == "false":
+            return query.filter(model.is_admin == False)
+        else:
+            return query
+```
+
+### Built in Column Filters
+
+The following built in column filters are available. All filters have a default value of "all" which allows the user to not filter the column
+
+* BooleanFilter - A filter for boolean columns, with the values of Yes (true) and No (false)
+* AllUniqueStringValuesFilter - A filter for string columns, with the values of all unique values in the column
+* StaticValuesFilter - A filter for string columns, with the values of a static list of values. This is similar to AllUniqueStringValuesFilter, but instead of getting the list of possible values from the database, you can provide a static list of values.
+* ForeignKeyFilter - A filter for foreign key columns, with the values of all unique values in the foreign key column. To make this filter readable, you need to provide the field name from the foreign model that you want to display as the name of the filter.
+  
+Here is an example of how to use BooleanFilter, AllUniqueStringValuesFilter and ForeignKeyFilter:
+
+```python
+
+class User(Base):
+    __tablename__ = "users"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    name: Mapped[str] = mapped_column(String, nullable=False)
+    email: Mapped[str] = mapped_column(String, nullable=False, index=True, unique=True)
+    is_admin: Mapped[bool] = mapped_column(Boolean, default=False)
+    site_id: Mapped[Optional[int]] = mapped_column(Integer, ForeignKey("sites.id"), nullable=True, default=None)
+    site: Mapped[Optional["Site"]] = relationship(back_populates="users")
+
+class Site(Base):
+    __tablename__ = "sites"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    name: Mapped[str] = mapped_column(String, nullable=False)
+    users: Mapped[list["User"]] = relationship(back_populates="site")
+
+
+# Define User Admin View
+class UserAdmin(ModelView, model=User):
+    column_list = ["id", "name", "email", "is_admin"]
+    column_filters = [
+        BooleanFilter(User.is_admin), 
+        AllUniqueStringValuesFilter(User.name),
+        ForeignKeyFilter(User.site_id, Site.name, title="Site")
+    ]
+    can_create = True
+    can_edit = True
+    can_delete = True
+    can_view_details = True
+    name = "User"
+    name_plural = "Users"
+    icon = "fa-solid fa-user"
+    identity = "user"
+
+```
+
 
 ## Details page
 
@@ -271,6 +359,12 @@ The pages available are:
     ```
 
 For more information about working with template see [Working with Templates](./working_with_templates.md).
+
+## Template configurations
+
+The following options are available to configure the templates:
+
+* `show_compact_lists`: If `False`, the list of objects will be displayed in a separate line for each object. Default is `True`.
 
 ## Events
 
