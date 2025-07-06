@@ -189,8 +189,20 @@ class Query:
             await session.commit()
             await self.model_view.after_model_delete(obj, request)
 
+    def _prepare_insert_dataclass(self, data: dict[str, Any]) -> dict[str, Any]:
+        try:
+            init = {
+                k: v
+                for k, v in data.items()
+                if self.model_view.model.__dataclass_fields__[k].init  # type: ignore[attr-defined]  # caught in except block
+            }
+        except AttributeError:
+            return {}
+        else:
+            return init
+
     def _insert_sync(self, data: dict[str, Any], request: Request) -> Any:
-        obj = self.model_view.model()
+        obj = self.model_view.model(**self._prepare_insert_dataclass(data))
 
         with self.model_view.session_maker(expire_on_commit=False) as session:
             anyio.from_thread.run(
@@ -205,7 +217,7 @@ class Query:
             return obj
 
     async def _insert_async(self, data: dict[str, Any], request: Request) -> Any:
-        obj = self.model_view.model()
+        obj = self.model_view.model(**self._prepare_insert_dataclass(data))
 
         async with self.model_view.session_maker(expire_on_commit=False) as session:
             await self.model_view.on_model_change(data, obj, True, request)
