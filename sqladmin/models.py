@@ -22,7 +22,7 @@ from typing import (
 from urllib.parse import urlencode
 
 import anyio
-from sqlalchemy import Column, String, asc, cast, desc, func, inspect, or_
+from sqlalchemy import Column, String, Table, asc, cast, desc, func, inspect, or_
 from sqlalchemy.exc import NoInspectionAvailable
 from sqlalchemy.orm import selectinload, sessionmaker
 from sqlalchemy.orm.exc import DetachedInstanceError
@@ -107,6 +107,9 @@ class ModelViewMeta(type):
         )
         mcls._check_conflicting_options(
             ["column_export_list", "column_export_exclude_list"], attrs
+        )
+        mcls._check_conflicting_options(
+            ["column_import_list", "column_import_exclude_list"], attrs
         )
 
         return cls
@@ -209,6 +212,7 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
     is_async: ClassVar[bool] = False
     is_model: ClassVar[bool] = True
     ajax_lookup_url: ClassVar[str] = ""
+    importing: ClassVar[bool] = False
 
     name_plural: ClassVar[str] = ""
     """Plural name of ModelView.
@@ -233,6 +237,11 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
     can_export: ClassVar[bool] = True
     """Permission for exporting lists of Models.
     Default value is set to `True`.
+    """
+
+    can_import: ClassVar[bool] = False
+    """Permission for importing lists of Models.
+    Default value is set to `False`.
     """
 
     # List page
@@ -485,6 +494,29 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
     Unlimited by default.
     """
 
+    # Import
+    column_import_list: ClassVar[List[MODEL_ATTR]] = []
+    """List of columns to include when importing.
+    Columns can either be string names or SQLAlchemy columns.
+
+    ???+ example
+        ```python
+        class UserAdmin(ModelView, model=User):
+            column_import_list = [User.id, User.name]
+        ```
+    """
+
+    column_import_exclude_list: ClassVar[List[MODEL_ATTR]] = []
+    """List of columns to exclude when importing.
+    Columns can either be string names or SQLAlchemy columns.
+
+    ???+ example
+        ```python
+        class UserAdmin(ModelView, model=User):
+            column_import_exclude_list = [User.id, User.name]
+        ```
+    """
+
     # Form
     form: ClassVar[Optional[Type[Form]]] = None
     """Form class.
@@ -719,6 +751,8 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
 
         self._export_prop_names = self.get_export_columns()
 
+        self._import_prop_names = self.get_import_columns()
+
         self._search_fields = [
             self._get_prop_name(attr) for attr in self.column_searchable_list
         ]
@@ -875,6 +909,9 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
         rows = await self._run_query(stmt)
         return rows
 
+    async def get_relation_objects(self, relation: Table) -> Any:
+        return await Query(self).get_relation_objects(relation)
+
     async def _get_object_by_pk(self, stmt: Select) -> Any:
         rows = await self._run_query(stmt)
         return rows[0] if rows else None
@@ -1017,6 +1054,18 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
 
         return filters
 
+    def get_import_columns(self) -> List[str]:
+        """Get list of properties to import."""
+
+        columns = getattr(self, "column_import_list", None)
+        excluded_columns = getattr(self, "column_import_exclude_list", None)
+
+        return self._build_column_list(
+            include=columns,
+            exclude=excluded_columns,
+            defaults=self._list_prop_names,
+        )
+
     async def on_model_change(
         self, data: dict, model: Any, is_created: bool, request: Request
     ) -> None:
@@ -1046,6 +1095,13 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
 
     async def insert_model(self, request: Request, data: dict) -> Any:
         return await Query(self).insert(data, request)
+
+    async def insert_many_models(
+        self,
+        request: Request,
+        data: Any,
+    ) -> Any:
+        return await Query(self).insert_many(data, request)
 
     async def update_model(self, request: Request, pk: str, data: dict) -> Any:
         return await Query(self).update(pk, data, request)

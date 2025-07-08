@@ -71,6 +71,7 @@ The following options are available:
 - `can_delete`: If the model instances can be deleted via SQLAdmin. Default value is `True`.
 - `can_view_details`: If the model instance details can be viewed via SQLAdmin. Default value is `True`.
 - `can_export`: If the model data can be exported in the list page. Default value is `True`.
+- `can_import`: If the model data can be imported from a CSV file in the list page. Default value is `False`.
 
 !!! example
 
@@ -341,6 +342,47 @@ The export options can be set per model and includes the following options:
 - `column_export_exclude_list`: List of columns to exclude in the export data.
 - `export_max_rows`: Maximum number of rows to be exported. Default value is `0` which means unlimited.
 - `export_types`: List of export types to be enabled. Default value is `["csv","json"]`.
+
+## Import options
+
+SQLAdmin supports importing data from a CSV file in the list page.
+If the model has relations, the association will be according to the returned data `__str__` method of the SQLAlchemy model.
+Relation models in a CSV file separated by a comma.
+
+![import_csv](assets/images/import_csv.png)
+
+The import options can be set per model and includes the following options:
+
+* `can_import`: If the model can be imported. Default value is `False`.
+* `column_import_list`: List of columns to include in the import data. Default is all model columns.
+* `column_import_exclude_list`: List of columns to exclude in the import data.
+
+!!! example
+
+    ```python
+    class User(Base):
+        __tablename__ = "users"
+        id = Column(Integer, primary_key=True)
+        name = Column(String)
+        addresses: Mapped[list["Address"] | None] = relationship(
+            "Address", secondary=association_table
+        )
+
+        def __str__(self) -> str:
+            return f"User {self.id}"
+    
+    
+    class Address(Base):
+        __tablename__ = "addresses"
+        id = Column(Integer, primary_key=True)
+
+        def __str__(self) -> str:
+            return f"Address {self.id}"
+
+    class UserAdmin(ModelView, model=User):
+        can_import = True
+        column_import_list = [User.name, User.addresses]
+    ```
 
 ## Templates
 
