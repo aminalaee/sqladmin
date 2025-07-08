@@ -433,14 +433,14 @@ def test_import_columns_both_include_and_exclude() -> None:
 
 def test_import_excluded_columns_by_str_name() -> None:
     class UserAdmin(ModelView, model=User):
-        column_import_exclude_list = ["id"]
+        column_import_exclude_list = ["id", "groups"]
 
     assert UserAdmin().get_import_columns() == ["addresses", "profile", "name"]
 
 
 def test_import_excluded_columns_by_model_column() -> None:
     class UserAdmin(ModelView, model=User):
-        column_import_exclude_list = [User.id]
+        column_import_exclude_list = [User.id, User.groups]
 
     assert UserAdmin().get_import_columns() == ["addresses", "profile", "name"]
 
