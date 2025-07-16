@@ -212,7 +212,6 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
     is_async: ClassVar[bool] = False
     is_model: ClassVar[bool] = True
     ajax_lookup_url: ClassVar[str] = ""
-    importing: ClassVar[bool] = False
 
     name_plural: ClassVar[str] = ""
     """Plural name of ModelView.
@@ -1346,3 +1345,10 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
 
         for field_name in missing_fields:
             delattr(form_class, field_name)
+
+    def filter_import_columns(
+        self, data: list[dict[str | Any, str | Any]]
+    ) -> list[dict[str | Any, str | Any]]:
+        return [
+            {key: d[key] for key in self._import_prop_names if key in d} for d in data
+        ]

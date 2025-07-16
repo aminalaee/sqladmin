@@ -687,6 +687,7 @@ class Admin(BaseAdminView):
             form_data_dict = self._denormalize_wtform_data(form.data, model_view.model)
             import_models.append(form_data_dict)
 
+        import_models = model_view.filter_import_columns(import_models)
         await model_view.insert_many_models(request, import_models)
 
         return RedirectResponse(
