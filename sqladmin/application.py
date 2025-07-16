@@ -655,7 +655,7 @@ class Admin(BaseAdminView):
             if not csv_content:
                 return Response(content="Undefined file.", status_code=400)
 
-            data = parse_csv(csv_content)
+            data = parse_csv(csv_content, model_view._import_prop_names)
 
         except Exception as e:
             logger.exception(e)
@@ -687,7 +687,6 @@ class Admin(BaseAdminView):
             form_data_dict = self._denormalize_wtform_data(form.data, model_view.model)
             import_models.append(form_data_dict)
 
-        import_models = model_view.filter_import_columns(import_models)
         await model_view.insert_many_models(request, import_models)
 
         return RedirectResponse(

@@ -175,8 +175,10 @@ def stream_to_csv(
     return callback(writer)  # type: ignore
 
 
-def parse_csv(csv_content: bytes, delimiter: str = ";") -> list[MultiDict]:
-    if csv_content[:2] == b"\xef\xbb\xbf":
+def parse_csv(
+    csv_content: bytes, columns: list[str], delimiter: str = ";"
+) -> list[MultiDict]:
+    if csv_content[:3] == b"\xef\xbb\xbf":
         csv_content = csv_content[3:]
     _csv_content = csv_content.decode("utf-8").splitlines()
     reader = csv.DictReader(_csv_content, delimiter=delimiter)
@@ -184,6 +186,8 @@ def parse_csv(csv_content: bytes, delimiter: str = ";") -> list[MultiDict]:
     for row in reader:
         md = MultiDict()
         for column, value in row.items():
+            if column not in columns:
+                continue
             if value and "," in value:
                 for iter_value in value.split(","):
                     md.append(column, iter_value)
