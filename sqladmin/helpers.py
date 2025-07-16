@@ -176,6 +176,8 @@ def stream_to_csv(
 
 
 def parse_csv(csv_content: bytes, delimiter: str = ";") -> list[MultiDict]:
+    if csv_content.startswith(b"\xef\xbb\xbf"):
+        csv_content = csv_content.removeprefix(b"\xef\xbb\xbf")
     _csv_content = csv_content.decode("utf-8").splitlines()
     reader = csv.DictReader(_csv_content, delimiter=delimiter)
     result = []
