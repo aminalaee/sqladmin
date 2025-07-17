@@ -342,6 +342,54 @@ The export options can be set per model and includes the following options:
 - `export_max_rows`: Maximum number of rows to be exported. Default value is `0` which means unlimited.
 - `export_types`: List of export types to be enabled. Default value is `["csv","json"]`.
 
+## Pretty CSV Export
+- `ModelView.use_pretty_export`: Default value is `False`
+
+Enables exporting CSV files with user-friendly column labels and formatted cell values 
+matching the UI list view. 
+When enabled, exports utilize the `column_formatters` and `column_labels` defined in the admin view, 
+improving readability and ensuring consistency between the UI and exported data.  
+
+Custom cell formatting can be implemented in the ModelView class by overriding the async method 
+`custom_export_cell`.
+
+Example of usage:
+```python
+class ExamResultAdmin(ModelView, model=ExamResult):
+    use_pretty_export = True  # Enable pretty export
+
+    column_list = ["score", "instructors", "course.title", "course.instructors", "created_at"]
+    column_labels = {
+        "score": "Score", 
+        "instructors": "Exam Instructors", 
+        "course.title": "Course Title", 
+        "course.instructors": "Course Instructors", 
+        "created_at": "Exam Time",
+    }
+    column_formatters = {
+        "score": lambda obj, _: f"{obj.score} / 100" if obj.score else "",
+        "instructors": lambda obj, _: [instructor.full_name for instructor in obj.instructors],
+        "course.title": lambda obj, _: obj.course.title if obj.course else "",
+        "course.instructors": lambda obj, _: [instructor.full_name for instructor in obj.course.instructors],
+        "created_at": lambda obj, _: obj.created_at.strftime("%m/%d/%Y %H:%M"),
+    }
+
+    # custom cell formatter on ModelView layer
+    async def custom_export_cell(
+        self,
+        row: Any,
+        name: str,
+        value: Any,
+    ) -> Optional[str]:
+        if name == "course.instructors" and value:
+            course_instructors_list =  [f"{instructor.id}: {instructor.full_name}" for instructor in value]
+            return ",".join(course_instructors_list)
+        return None
+```
+
+
+
+
 ## Templates
 
 The template files are built using Jinja2 and can be completely overridden in the configurations.

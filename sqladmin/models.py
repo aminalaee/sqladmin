@@ -54,6 +54,7 @@ from sqladmin.helpers import (
 
 # stream_to_csv,
 from sqladmin.pagination import Pagination
+from sqladmin.pretty_export import PrettyExport
 from sqladmin.templating import Jinja2Templates
 
 if TYPE_CHECKING:
@@ -483,6 +484,17 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
     export_max_rows: ClassVar[int] = 0
     """Maximum number of rows allowed for export.
     Unlimited by default.
+    """
+
+    use_pretty_export: ClassVar[bool] = False
+    """
+    Enable export of CSV files using column labels and column formatters.
+
+    If set to True, the export will apply column labels and formatting logic 
+    used in the list template.
+    Otherwise, raw database values and field names will be used.
+
+    You can override cell formatting per column by implementing `custom_export_cell`.
     """
 
     # Form
@@ -1210,7 +1222,12 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
         export_type: str = "csv",
     ) -> StreamingResponse:
         if export_type == "csv":
-            return await self._export_csv(data)
+            export_method = (
+                PrettyExport.pretty_export_csv(self, data)
+                if self.use_pretty_export
+                else self._export_csv(data)
+            )
+            return await export_method
         elif export_type == "json":
             return await self._export_json(data)
         raise NotImplementedError("Only export_type='csv' or 'json' is implemented.")
@@ -1267,6 +1284,22 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
             media_type="application/json",
             headers={"Content-Disposition": f"attachment;filename={filename}"},
         )
+
+    async def custom_export_cell(
+        self,
+        row: Any,
+        name: str,
+        value: Any,
+    ) -> Optional[str]:
+        """
+        Override to provide custom formatting for a specific cell in pretty export.
+
+        Return a string to override the default formatting for the given field,
+        or return None to fall back to `base_export_cell`.
+
+        Only used when `use_pretty_export = True`.
+        """
+        return None
 
     def _refresh_form_rules_cache(self) -> None:
         if self.form_rules:
