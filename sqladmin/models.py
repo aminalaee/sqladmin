@@ -1345,8 +1345,3 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
 
         for field_name in missing_fields:
             delattr(form_class, field_name)
-
-    def filter_import_columns(self, data: List[dict]) -> List[dict]:
-        return [
-            {key: d[key] for key in self._import_prop_names if key in d} for d in data
-        ]
