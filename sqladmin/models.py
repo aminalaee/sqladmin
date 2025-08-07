@@ -837,10 +837,24 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
             stmt = stmt.options(selectinload(relation))
 
         for filter in self.get_filters():
-            if request.query_params.get(filter.parameter_name):
-                stmt = await filter.get_filtered_query(
-                    stmt, request.query_params.get(filter.parameter_name), self.model
-                )
+            filter_param_name = filter.parameter_name
+            filter_value = request.query_params.get(filter_param_name)
+
+            if filter_value:
+                if hasattr(filter, "has_operator") and filter.has_operator:
+                    # Use operation-based filtering
+                    operation_param = request.query_params.get(
+                        f"{filter_param_name}_op"
+                    )
+                    if operation_param:
+                        stmt = await filter.get_filtered_query(
+                            stmt, operation_param, filter_value, self.model
+                        )
+                else:
+                    # Use simple filtering for filters without operators
+                    stmt = await filter.get_filtered_query(
+                        stmt, filter_value, self.model
+                    )
 
         stmt = self.sort_query(stmt, request)
 
