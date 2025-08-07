@@ -19,6 +19,7 @@ from typing import (
     Union,
     no_type_check,
 )
+from typing import cast as typing_cast
 from urllib.parse import urlencode
 
 import anyio
@@ -36,7 +37,12 @@ from wtforms import Field, Form
 from wtforms.fields.core import UnboundField
 
 from sqladmin._queries import Query
-from sqladmin._types import MODEL_ATTR, ColumnFilter
+from sqladmin._types import (
+    MODEL_ATTR,
+    ColumnFilter,
+    OperationColumnFilter,
+    SimpleColumnFilter,
+)
 from sqladmin.ajax import create_ajax_loader
 from sqladmin.exceptions import InvalidModelError
 from sqladmin.formatters import BASE_FORMATTERS
@@ -843,16 +849,18 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
             if filter_value:
                 if hasattr(filter, "has_operator") and filter.has_operator:
                     # Use operation-based filtering
+                    operation_filter = typing_cast(OperationColumnFilter, filter)
                     operation_param = request.query_params.get(
                         f"{filter_param_name}_op"
                     )
                     if operation_param:
-                        stmt = await filter.get_filtered_query(
+                        stmt = await operation_filter.get_filtered_query(
                             stmt, operation_param, filter_value, self.model
                         )
                 else:
                     # Use simple filtering for filters without operators
-                    stmt = await filter.get_filtered_query(
+                    simple_filter = typing_cast(SimpleColumnFilter, filter)
+                    stmt = await simple_filter.get_filtered_query(
                         stmt, filter_value, self.model
                     )
 
