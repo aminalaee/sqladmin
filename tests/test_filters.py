@@ -500,3 +500,253 @@ async def test_column_filter_uuid_operations(client: AsyncClient) -> None:
         response = await client.get(url)
         assert response.status_code == 200
         assert "UUID User" in response.text
+
+
+@pytest.mark.anyio
+async def test_column_filter_edge_cases():
+    """Test edge cases for ColumnFilter"""
+    from sqladmin.filters import ColumnFilter
+
+    # Test with empty/None values
+    column_filter = ColumnFilter(User.name)
+
+    # Test empty value handling
+    query = column_filter._convert_value_for_column("", User.name.property.columns[0])
+    assert query is None
+
+    # Test None value handling
+    query = column_filter._convert_value_for_column(None, User.name.property.columns[0])
+    assert query is None
+
+    # Test invalid numeric conversion
+    age_filter = ColumnFilter(User.age)
+    query = age_filter._convert_value_for_column(
+        "invalid_number", User.age.property.columns[0]
+    )
+    assert query is None
+
+    # Test invalid float conversion
+    salary_filter = ColumnFilter(User.salary)
+    query = salary_filter._convert_value_for_column(
+        "invalid_float", User.salary.property.columns[0]
+    )
+    assert query is None
+
+
+@pytest.mark.anyio
+async def test_column_filter_type_detection():
+    """Test ColumnFilter type detection methods"""
+    from sqladmin.filters import ColumnFilter
+
+    filter_instance = ColumnFilter(User.name)
+
+    # Test string type detection
+    assert filter_instance._is_string_type(User.name.property.columns[0]) is True
+    assert filter_instance._is_numeric_type(User.name.property.columns[0]) is False
+
+    # Test numeric type detection
+    assert filter_instance._is_numeric_type(User.age.property.columns[0]) is True
+    assert filter_instance._is_string_type(User.age.property.columns[0]) is False
+
+    # Test float type detection
+    assert filter_instance._is_numeric_type(User.salary.property.columns[0]) is True
+    assert filter_instance._is_string_type(User.salary.property.columns[0]) is False
+
+    # Test UUID type detection (if available)
+    if hasattr(User, "user_uuid") and HAS_UUID_SUPPORT:
+        uuid_col = User.user_uuid.property.columns[0]
+        assert filter_instance._is_uuid_type(uuid_col) is True
+        assert filter_instance._is_string_type(uuid_col) is False
+        assert filter_instance._is_numeric_type(uuid_col) is False
+
+
+@pytest.mark.anyio
+async def test_column_filter_operations_comprehensive(client: AsyncClient) -> None:
+    """Test all ColumnFilter operations comprehensively"""
+
+    # Test string operations with ends_with
+    url = "/admin/user/list?name=User&name_op=ends_with"
+    response = await client.get(url)
+    assert response.status_code == 200
+
+    # Test numeric greater_than and less_than operations
+    url = "/admin/user/list?age=25&age_op=greater_than"
+    response = await client.get(url)
+    assert response.status_code == 200
+
+    url = "/admin/user/list?age=25&age_op=less_than"
+    response = await client.get(url)
+    assert response.status_code == 200
+
+    # Test empty operation handling
+    url = "/admin/user/list?name=Test&name_op="
+    response = await client.get(url)
+    assert response.status_code == 200
+
+    # Test empty value handling
+    url = "/admin/user/list?name=&name_op=contains"
+    response = await client.get(url)
+    assert response.status_code == 200
+
+
+@pytest.mark.anyio
+async def test_column_filter_operation_options():
+    """Test ColumnFilter operation options for different column types"""
+    from sqladmin.filters import ColumnFilter
+
+    # Test string column operation options
+    name_filter = ColumnFilter(User.name)
+    options = name_filter.get_operation_options_for_model(User)
+    expected_string_ops = ["contains", "equals", "starts_with", "ends_with"]
+    assert len(options) == 4
+    for op, _ in options:
+        assert op in expected_string_ops
+
+    # Test numeric column operation options
+    age_filter = ColumnFilter(User.age)
+    options = age_filter.get_operation_options_for_model(User)
+    expected_numeric_ops = ["equals", "greater_than", "less_than"]
+    assert len(options) == 3
+    for op, _ in options:
+        assert op in expected_numeric_ops
+
+    # Test UUID column operation options (if available)
+    if hasattr(User, "user_uuid") and HAS_UUID_SUPPORT:
+        uuid_filter = ColumnFilter(User.user_uuid)
+        options = uuid_filter.get_operation_options_for_model(User)
+        expected_uuid_ops = ["equals", "contains", "starts_with"]
+        assert len(options) == 3
+        for op, _ in options:
+            assert op in expected_uuid_ops
+
+
+@pytest.mark.anyio
+async def test_column_filter_lookups_method():
+    """Test ColumnFilter lookups method (returns empty for has_operator filters)"""
+    from sqladmin.filters import ColumnFilter
+
+    filter_instance = ColumnFilter(User.name)
+
+    # Mock request and run_query function
+    from unittest.mock import MagicMock
+
+    mock_request = MagicMock()
+    mock_run_query = MagicMock()
+
+    # Test that lookups returns empty list for has_operator=True filters
+    result = await filter_instance.lookups(mock_request, User, mock_run_query)
+    assert result == []
+
+
+@pytest.mark.anyio
+async def test_column_filter_unknown_operation():
+    """Test ColumnFilter with unknown operation type"""
+    from sqlalchemy.sql.expression import select
+
+    from sqladmin.filters import ColumnFilter
+
+    filter_instance = ColumnFilter(User.name)
+
+    # Create a mock query
+    stmt = select(User)
+
+    # Test with unknown operation - should return query unchanged
+    result = await filter_instance.get_filtered_query(
+        stmt, "unknown_operation", "test_value", User
+    )
+    assert result == stmt
+
+
+@pytest.mark.anyio
+async def test_column_filter_conversion_edge_cases():
+    """Test ColumnFilter value conversion edge cases"""
+    from sqladmin.filters import ColumnFilter
+
+    filter_instance = ColumnFilter(User.name)
+
+    # Test empty string
+    result = filter_instance._convert_value_for_column(
+        "", User.name.property.columns[0]
+    )
+    assert result is None
+
+    # Test whitespace-only string for numeric conversion
+    age_filter = ColumnFilter(User.age)
+    result = age_filter._convert_value_for_column("   ", User.age.property.columns[0])
+    assert result is None
+
+    # Test valid string with whitespace
+    result = filter_instance._convert_value_for_column(
+        "  test  ", User.name.property.columns[0]
+    )
+    assert result == "  test  "
+
+    # Test valid integer conversion
+    result = age_filter._convert_value_for_column("42", User.age.property.columns[0])
+    assert result == 42
+
+    # Test valid float conversion
+    salary_filter = ColumnFilter(User.salary)
+    result = salary_filter._convert_value_for_column(
+        "1234.56", User.salary.property.columns[0]
+    )
+    assert result == 1234.56
+
+
+@pytest.mark.skipif(
+    not HAS_UUID_SUPPORT, reason="UUID support requires SQLAlchemy 2.0+"
+)
+@pytest.mark.anyio
+async def test_column_filter_uuid_conversion():
+    """Test ColumnFilter UUID value conversion"""
+    import uuid
+
+    from sqladmin.filters import ColumnFilter
+
+    if hasattr(User, "user_uuid"):
+        filter_instance = ColumnFilter(User.user_uuid)
+        uuid_col = User.user_uuid.property.columns[0]
+
+        # Test valid UUID conversion for equals operation
+        test_uuid = "550e8400-e29b-41d4-a716-446655440000"
+        result = filter_instance._convert_value_for_column(
+            test_uuid, uuid_col, "equals"
+        )
+        assert isinstance(result, uuid.UUID)
+        assert str(result) == test_uuid
+
+        # Test UUID conversion for contains operation (keeps as string)
+        result = filter_instance._convert_value_for_column(
+            test_uuid, uuid_col, "contains"
+        )
+        assert isinstance(result, str)
+        assert result == test_uuid
+
+        # Test invalid UUID conversion
+        result = filter_instance._convert_value_for_column(
+            "invalid-uuid", uuid_col, "equals"
+        )
+        assert result is None
+
+
+@pytest.mark.anyio
+async def test_column_filter_no_operation_or_value():
+    """Test ColumnFilter behavior with missing operation or value"""
+    from sqlalchemy.sql.expression import select
+
+    from sqladmin.filters import ColumnFilter
+
+    filter_instance = ColumnFilter(User.name)
+    stmt = select(User)
+
+    # Test with empty operation
+    result = await filter_instance.get_filtered_query(stmt, "", "test_value", User)
+    assert result == stmt
+
+    # Test with no operation
+    result = await filter_instance.get_filtered_query(stmt, None, "test_value", User)
+    assert result == stmt
+
+    # Test with empty value
+    result = await filter_instance.get_filtered_query(stmt, "contains", "", User)
+    assert result == stmt
