@@ -11,8 +11,8 @@ from sqladmin import Admin, ModelView
 from sqladmin.filters import (
     AllUniqueStringValuesFilter,
     BooleanFilter,
-    ColumnFilter,
     ForeignKeyFilter,
+    OperationColumnFilter,
     StaticValuesFilter,
 )
 from tests.common import async_engine as engine
@@ -87,15 +87,15 @@ class UserAdmin(ModelView, model=User):
         StaticValuesFilter(
             User.name, [("Admin User", "adminadmin")], parameter_name="static_name"
         ),
-        ColumnFilter(User.name),
-        ColumnFilter(User.age),
-        ColumnFilter(User.salary),
-        ColumnFilter(User.description),
+        OperationColumnFilter(User.name),
+        OperationColumnFilter(User.age),
+        OperationColumnFilter(User.salary),
+        OperationColumnFilter(User.description),
     ]
 
     # Add UUID filter only if UUID column exists
     if hasattr(User, "user_uuid"):
-        column_filters.append(ColumnFilter(User.user_uuid))
+        column_filters.append(OperationColumnFilter(User.user_uuid))
 
 
 class AddressAdmin(ModelView, model=Address):
@@ -505,10 +505,10 @@ async def test_column_filter_uuid_operations(client: AsyncClient) -> None:
 @pytest.mark.anyio
 async def test_column_filter_edge_cases():
     """Test edge cases for ColumnFilter"""
-    from sqladmin.filters import ColumnFilter
+    from sqladmin.filters import OperationColumnFilter
 
     # Test with empty/None values
-    column_filter = ColumnFilter(User.name)
+    column_filter = OperationColumnFilter(User.name)
 
     # Test empty value handling
     query = column_filter._convert_value_for_column("", User.name.property.columns[0])
@@ -519,14 +519,14 @@ async def test_column_filter_edge_cases():
     assert query is None
 
     # Test invalid numeric conversion
-    age_filter = ColumnFilter(User.age)
+    age_filter = OperationColumnFilter(User.age)
     query = age_filter._convert_value_for_column(
         "invalid_number", User.age.property.columns[0]
     )
     assert query is None
 
     # Test invalid float conversion
-    salary_filter = ColumnFilter(User.salary)
+    salary_filter = OperationColumnFilter(User.salary)
     query = salary_filter._convert_value_for_column(
         "invalid_float", User.salary.property.columns[0]
     )
@@ -536,9 +536,9 @@ async def test_column_filter_edge_cases():
 @pytest.mark.anyio
 async def test_column_filter_type_detection():
     """Test ColumnFilter type detection methods"""
-    from sqladmin.filters import ColumnFilter
+    from sqladmin.filters import OperationColumnFilter
 
-    filter_instance = ColumnFilter(User.name)
+    filter_instance = OperationColumnFilter(User.name)
 
     # Test string type detection
     assert filter_instance._is_string_type(User.name.property.columns[0]) is True
@@ -592,10 +592,10 @@ async def test_column_filter_operations_comprehensive(client: AsyncClient) -> No
 @pytest.mark.anyio
 async def test_column_filter_operation_options():
     """Test ColumnFilter operation options for different column types"""
-    from sqladmin.filters import ColumnFilter
+    from sqladmin.filters import OperationColumnFilter
 
     # Test string column operation options
-    name_filter = ColumnFilter(User.name)
+    name_filter = OperationColumnFilter(User.name)
     options = name_filter.get_operation_options_for_model(User)
     expected_string_ops = ["contains", "equals", "starts_with", "ends_with"]
     assert len(options) == 4
@@ -603,7 +603,7 @@ async def test_column_filter_operation_options():
         assert op in expected_string_ops
 
     # Test numeric column operation options
-    age_filter = ColumnFilter(User.age)
+    age_filter = OperationColumnFilter(User.age)
     options = age_filter.get_operation_options_for_model(User)
     expected_numeric_ops = ["equals", "greater_than", "less_than"]
     assert len(options) == 3
@@ -612,7 +612,7 @@ async def test_column_filter_operation_options():
 
     # Test UUID column operation options (if available)
     if hasattr(User, "user_uuid") and HAS_UUID_SUPPORT:
-        uuid_filter = ColumnFilter(User.user_uuid)
+        uuid_filter = OperationColumnFilter(User.user_uuid)
         options = uuid_filter.get_operation_options_for_model(User)
         expected_uuid_ops = ["equals", "contains", "starts_with"]
         assert len(options) == 3
@@ -623,9 +623,9 @@ async def test_column_filter_operation_options():
 @pytest.mark.anyio
 async def test_column_filter_lookups_method():
     """Test ColumnFilter lookups method (returns empty for has_operator filters)"""
-    from sqladmin.filters import ColumnFilter
+    from sqladmin.filters import OperationColumnFilter
 
-    filter_instance = ColumnFilter(User.name)
+    filter_instance = OperationColumnFilter(User.name)
 
     # Mock request and run_query function
     from unittest.mock import MagicMock
@@ -643,9 +643,9 @@ async def test_column_filter_unknown_operation():
     """Test ColumnFilter with unknown operation type"""
     from sqlalchemy.sql.expression import select
 
-    from sqladmin.filters import ColumnFilter
+    from sqladmin.filters import OperationColumnFilter
 
-    filter_instance = ColumnFilter(User.name)
+    filter_instance = OperationColumnFilter(User.name)
 
     # Create a mock query
     stmt = select(User)
@@ -660,9 +660,9 @@ async def test_column_filter_unknown_operation():
 @pytest.mark.anyio
 async def test_column_filter_conversion_edge_cases():
     """Test ColumnFilter value conversion edge cases"""
-    from sqladmin.filters import ColumnFilter
+    from sqladmin.filters import OperationColumnFilter
 
-    filter_instance = ColumnFilter(User.name)
+    filter_instance = OperationColumnFilter(User.name)
 
     # Test empty string
     result = filter_instance._convert_value_for_column(
@@ -671,7 +671,7 @@ async def test_column_filter_conversion_edge_cases():
     assert result is None
 
     # Test whitespace-only string for numeric conversion
-    age_filter = ColumnFilter(User.age)
+    age_filter = OperationColumnFilter(User.age)
     result = age_filter._convert_value_for_column("   ", User.age.property.columns[0])
     assert result is None
 
@@ -686,7 +686,7 @@ async def test_column_filter_conversion_edge_cases():
     assert result == 42
 
     # Test valid float conversion
-    salary_filter = ColumnFilter(User.salary)
+    salary_filter = OperationColumnFilter(User.salary)
     result = salary_filter._convert_value_for_column(
         "1234.56", User.salary.property.columns[0]
     )
@@ -701,10 +701,10 @@ async def test_column_filter_uuid_conversion():
     """Test ColumnFilter UUID value conversion"""
     import uuid
 
-    from sqladmin.filters import ColumnFilter
+    from sqladmin.filters import OperationColumnFilter
 
     if hasattr(User, "user_uuid"):
-        filter_instance = ColumnFilter(User.user_uuid)
+        filter_instance = OperationColumnFilter(User.user_uuid)
         uuid_col = User.user_uuid.property.columns[0]
 
         # Test valid UUID conversion for equals operation
@@ -734,9 +734,9 @@ async def test_column_filter_no_operation_or_value():
     """Test ColumnFilter behavior with missing operation or value"""
     from sqlalchemy.sql.expression import select
 
-    from sqladmin.filters import ColumnFilter
+    from sqladmin.filters import OperationColumnFilter
 
-    filter_instance = ColumnFilter(User.name)
+    filter_instance = OperationColumnFilter(User.name)
     stmt = select(User)
 
     # Test with empty operation

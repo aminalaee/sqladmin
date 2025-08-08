@@ -183,12 +183,12 @@ The following built in column filters are available. All filters have a default 
 * AllUniqueStringValuesFilter - A filter for string columns, with the values of all unique values in the column
 * StaticValuesFilter - A filter for string columns, with the values of a static list of values. This is similar to AllUniqueStringValuesFilter, but instead of getting the list of possible values from the database, you can provide a static list of values.
 * ForeignKeyFilter - A filter for foreign key columns, with the values of all unique values in the foreign key column. To make this filter readable, you need to provide the field name from the foreign model that you want to display as the name of the filter.
-* ColumnFilter - A flexible filter that automatically detects column types and provides appropriate operations. For string columns, it offers Contains, Equals, Starts with, and Ends with operations. For numeric columns (integer, float), it offers Equals, Greater than, and Less than operations. For UUID columns (SQLAlchemy 2.0+), it offers Contains, Equals, and Starts with operations.
-  
-Here is an example of how to use BooleanFilter, AllUniqueStringValuesFilter, ForeignKeyFilter, and ColumnFilter:
+* OperationColumnFilter - A flexible filter that automatically detects column types and provides appropriate operations. For string columns, it offers Contains, Equals, Starts with, and Ends with operations. For numeric columns (integer, float), it offers Equals, Greater than, and Less than operations. For UUID columns (SQLAlchemy 2.0+), it offers Contains, Equals, and Starts with operations.
+
+Here is an example of how to use BooleanFilter, AllUniqueStringValuesFilter, ForeignKeyFilter, and OperationColumnFilter:
 
 ```python
-from sqladmin.filters import BooleanFilter, AllUniqueStringValuesFilter, ForeignKeyFilter, ColumnFilter
+from sqladmin.filters import BooleanFilter, AllUniqueStringValuesFilter, ForeignKeyFilter, OperationColumnFilter
 
 class User(Base):
     __tablename__ = "users"
@@ -218,9 +218,9 @@ class UserAdmin(ModelView, model=User):
         BooleanFilter(User.is_admin), 
         AllUniqueStringValuesFilter(User.name),
         ForeignKeyFilter(User.site_id, Site.name, title="Site"),
-        # ColumnFilter provides dropdown UI with multiple operations
-        ColumnFilter(User.email),        # String operations: Contains, Equals, Starts with, Ends with
-        ColumnFilter(User.age),          # Numeric operations: Equals, Greater than, Less than
+        # OperationColumnFilter provides dropdown UI with multiple operations
+        OperationColumnFilter(User.email),        # String operations: Contains, Equals, Starts with, Ends with
+        OperationColumnFilter(User.age),          # Numeric operations: Equals, Greater than, Less than
     ]
     can_create = True
     can_edit = True
@@ -232,7 +232,7 @@ class UserAdmin(ModelView, model=User):
     identity = "user"
 ```
 
-ColumnFilter automatically detects the column type and provides appropriate filtering operations:
+OperationColumnFilter automatically detects the column type and provides appropriate filtering operations:
 
 - **String columns** (name, email, description): Users can select from Contains, Equals, Starts with, and Ends with operations via a dropdown menu
 - **Numeric columns** (age, salary): Users can select from Equals, Greater than, and Less than operations via a dropdown menu
@@ -240,14 +240,14 @@ ColumnFilter automatically detects the column type and provides appropriate filt
 
 The filter UI provides a dropdown for operation selection and a text input for the filter value, making it user-friendly and intuitive.
 
-!!! tip "ColumnFilter vs Other Filters"
+!!! tip "OperationColumnFilter vs Other Filters"
 
-    ColumnFilter provides a more flexible and user-friendly interface compared to other filter types:
+    OperationColumnFilter provides a more flexible interface compared to other filter types:
 
     - **AllUniqueStringValuesFilter/StaticValuesFilter/ForeignKeyFilter**: Shows all possible values as links (good for columns with few unique values)
-    - **ColumnFilter**: Provides operation dropdown + text input (good for columns with many possible values or numeric/date operations)
+    - **OperationColumnFilter**: Provides operation dropdown + text input (good for columns with many possible values or numeric/date operations)
     
-    Choose ColumnFilter when you want users to type custom search terms with operation flexibility, and AllUniqueStringValuesFilter when you want to show all available options as clickable links.
+    Choose OperationColumnFilter when you want users to type custom search terms with operation flexibility, and AllUniqueStringValuesFilter when you want to show all available options as clickable links.
 
 
 ## Details page

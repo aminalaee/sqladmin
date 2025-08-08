@@ -203,7 +203,7 @@ class ForeignKeyFilter:
         return query.filter(foreign_key_obj == value)
 
 
-class ColumnFilter:
+class OperationColumnFilter:
     """Universal filter that provides appropriate filter types based on column type"""
 
     has_operator = True

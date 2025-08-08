@@ -11,7 +11,7 @@ from starlette.testclient import TestClient
 
 from sqladmin import Admin, ModelView
 from sqladmin.application import action
-from sqladmin.filters import AllUniqueStringValuesFilter, ColumnFilter
+from sqladmin.filters import AllUniqueStringValuesFilter, OperationColumnFilter
 from tests.common import sync_engine as engine
 
 Base: Any = declarative_base()
@@ -34,7 +34,7 @@ class User(Base):
 
 class UserAdmin(ModelView, model=User):
     column_filters = [
-        ColumnFilter(User.name),
+        OperationColumnFilter(User.name),
         AllUniqueStringValuesFilter(User.name, parameter_name="simple_name"),
     ]
     column_list = [User.id, User.name]
