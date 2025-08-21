@@ -253,11 +253,6 @@ async def test_list_view_with_relations(client: AsyncClient) -> None:
         '<a href="http://testserver/admin/address/details/1">(Address 1)</a>'
         in response.text
     )
-
-    assert (
-        '<a href="http://testserver/admin/address/details/1">(Address 1)</a>'
-        in response.text
-    )
     assert (
         '<a href="http://testserver/admin/profile/details/1">Profile 1</a>'
         in response.text
@@ -279,7 +274,34 @@ async def test_list_view_with_formatted_relations(client: AsyncClient) -> None:
 
     # Show values of relationships
     assert "(Formatted Address 1)" in response.text
-    assert "Formatted Profile 1" in response.text
+    assert "<td>Formatted Profile 1</td>" in response.text
+
+
+async def test_list_page_with_non_link_fields(client: AsyncClient) -> None:
+    async with session_maker() as session:
+        for _ in range(5):
+            user = User(name="John Doe")
+            user.addresses.append(Address())
+            user.addresses_formattable.append(AddressFormattable())
+            user.profile = Profile()
+            user.profile_formattable = ProfileFormattable()
+            session.add(user)
+        await session.commit()
+
+    response = await client.get("/admin/user/list")
+
+    assert response.status_code == 200
+    assert (
+        '<a href="http://testserver/admin/address/details/1">(Address 1)</a>'
+        in response.text
+    )
+    assert (
+        '<a href="http://testserver/admin/profile/details/1">Profile 1</a>'
+        in response.text
+    )
+
+    assert "(Formatted Address 1)</a>" not in response.text
+    assert "Formatted Profile 1</a>" not in response.text
 
 
 async def test_list_view_multi_page(client: AsyncClient) -> None:
@@ -385,7 +407,7 @@ async def test_detail_page(client: AsyncClient) -> None:
     assert "<td>addresses_formattable</td>" in response.text
     assert "(Formatted Address 1)" in response.text
     assert "<td>profile_formattable</td>" in response.text
-    assert "Formatted Profile 1</a>" in response.text
+    assert "Formatted Profile 1" in response.text
 
     # Action Buttons
     assert response.text.count("http://testserver/admin/user/list") == 2
@@ -394,6 +416,41 @@ async def test_detail_page(client: AsyncClient) -> None:
     # Delete modal
     assert response.text.count("Cancel") == 1
     assert response.text.count("Delete") == 2
+
+
+async def test_detail_page_with_non_link_fields(client: AsyncClient) -> None:
+    async with session_maker() as session:
+        user = User(name="Amin Alaee")
+        session.add(user)
+        await session.flush()
+
+        for _ in range(2):
+            address = Address(user_id=user.id)
+            session.add(address)
+            address_formattable = AddressFormattable(user_id=user.id)
+            session.add(address_formattable)
+        profile = Profile(user_id=user.id)
+        session.add(profile)
+        profile_formattable = ProfileFormattable(user=user)
+        session.add(profile_formattable)
+        await session.commit()
+
+    response = await client.get("/admin/user/details/1")
+
+    assert response.status_code == 200
+    # link fields
+    assert (
+        '<a href="http://testserver/admin/address/details/1">(Address 1)</a>'
+        in response.text
+    )
+    assert (
+        '<a href="http://testserver/admin/profile/details/1">Profile 1</a>'
+        in response.text
+    )
+
+    # non-link fields
+    assert "(Formatted Address 1)</a>" not in response.text
+    assert "Formatted Profile 1</a>" not in response.text
 
 
 async def test_column_labels(client: AsyncClient) -> None:
