@@ -743,7 +743,7 @@ class Admin(BaseAdminView):
                 data[reserved_field_name] = data.pop(field_name)
         return data
 
-    async def _set_non_link_fields(self, model_view):
+    async def _set_non_link_fields(self, model_view: ModelView) -> None:
         if model_view._non_link_fields is not None:
             return
 
