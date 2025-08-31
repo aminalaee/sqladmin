@@ -23,7 +23,7 @@ SQLAdmin and in the `content` block it adds custom HTML tags:
 
     ```python title="admin.py"
     class UserAdmin(ModelView, model=User):
-        details_template = "custom_details.html"
+        details_template = "sqladmin/custom_details.html"
     ```
 
 ## Overriding default templates
