@@ -141,7 +141,10 @@ The options available are:
     if you don't want to specify all the columns manually. For example: `column_list = "__all__"`
 
 ### ColumnFilter
-A ColumnFilter is a class that defines a filter for a column. A few standard filters are implemented in the `sqladmin.filters` module. Below is an example of a generic ColumnFilter. Note that the fields `title` and `parameter_name`, and the methods `lookups` and `get_filtered_query` are all required in a filter class.
+A ColumnFilter is a class that defines a filter for a column. A few standard filters are
+implemented in the `sqladmin.filters` module. Below is an example of a generic ColumnFilter. Note
+that the fields `title` and `parameter_name`, and the methods `lookups` and `get_filtered_query`
+are all required in a filter class.
 
 ```python
 class IsAdminFilter:
