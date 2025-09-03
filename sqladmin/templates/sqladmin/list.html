@@ -147,7 +147,7 @@
                       {% if name in model_view._relation_names %}
                         {% if is_list( value ) %}
                           <td>
-                            {% if name in model_view._non_link_fields %}
+                            {% if name in model_view._non_link_related_fields %}
                               {% for elem, formatted_elem in zip(value, formatted_value) %}
                                 {% if model_view.show_compact_lists %}
                                   ({{ formatted_elem }})
@@ -166,7 +166,7 @@
                             {% endif %}
                           </td>
                         {% else %}
-                          {% if name in model_view._non_link_fields %}
+                          {% if name in model_view._non_link_related_fields %}
                             <td>{{ formatted_value }}</td>
                           {% else %}
                             <td><a href="{{ model_view._url_for_details_with_prop(request, row, name) }}">{{ formatted_value }}</a></td>

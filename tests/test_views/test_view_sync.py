@@ -389,7 +389,7 @@ def test_detail_page(client: TestClient) -> None:
     assert response.text.count("Delete") == 2
 
 
-def test_detail_page_with_non_link_fields(client: TestClient) -> None:
+def test_detail_page_with_non_link_related_fields(client: TestClient) -> None:
     with session_maker() as session:
         user = User(name="Amin Alaee")
         session.add(user)
@@ -418,13 +418,12 @@ def test_detail_page_with_non_link_fields(client: TestClient) -> None:
         '<a href="http://testserver/admin/profile/details/1">Profile 1</a>'
         in response.text
     )
-
     # non-link fields
     assert "(Formatted Address 1)</a>" not in response.text
     assert "Formatted Profile 1</a>" not in response.text
 
 
-def test_list_page_with_non_link_fields(client: TestClient) -> None:
+def test_list_page_with_non_link_related_fields(client: TestClient) -> None:
     with session_maker() as session:
         for _ in range(5):
             user = User(name="John Doe")
@@ -446,7 +445,6 @@ def test_list_page_with_non_link_fields(client: TestClient) -> None:
         '<a href="http://testserver/admin/profile/details/1">Profile 1</a>'
         in response.text
     )
-
     assert "(Formatted Address 1)</a>" not in response.text
     assert "Formatted Profile 1</a>" not in response.text
 
