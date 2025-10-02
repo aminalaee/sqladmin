@@ -183,7 +183,7 @@ The following built in column filters are available. All filters have a default 
 * AllUniqueStringValuesFilter - A filter for string columns, with the values of all unique values in the column
 * StaticValuesFilter - A filter for string columns, with the values of a static list of values. This is similar to AllUniqueStringValuesFilter, but instead of getting the list of possible values from the database, you can provide a static list of values.
 * ForeignKeyFilter - A filter for foreign key columns, with the values of all unique values in the foreign key column. To make this filter readable, you need to provide the field name from the foreign model that you want to display as the name of the filter.
-* OperationColumnFilter - A flexible filter that automatically detects column types and provides appropriate operations. For string columns, it offers Contains, Equals, Starts with, and Ends with operations. For numeric columns (integer, float), it offers Equals, Greater than, and Less than operations. For UUID columns (SQLAlchemy 2.0+), it offers Contains, Equals, and Starts with operations.
+* OperationColumnFilter - A flexible filter that automatically detects column types and provides appropriate operations. For string columns, it offers Contains, Equals, StartsWith, and EndsWith operations. For numeric columns (integer, float), it offers Equals, GreaterThan, and LessThan operations. For UUID columns (SQLAlchemy 2.0+), it offers Contains, Equals, and StartsWith operations.
 
 Here is an example of how to use BooleanFilter, AllUniqueStringValuesFilter, ForeignKeyFilter, and OperationColumnFilter:
 
