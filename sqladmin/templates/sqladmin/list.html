@@ -221,23 +221,61 @@
             <div class="card-header">
               <h3 class="card-title">Filters</h3>
             </div>
-            <div class="card-body p-0">
-              <div class="list-group list-group-flush">
-                {% for filter in model_view.get_filters() %}
-                <div class="list-group-item">
-                  <div class="p-2">
-                    <div class="fw-bold text-truncate">{{ filter.title }}</div>
-                    <div>
-                      {% for lookup in filter.lookups(request, model_view.model, model_view._run_arbitrary_query) %}
-                      <a href="{{ request.url.include_query_params(**{filter.parameter_name: lookup[0]}) }}" class="d-block text-decoration-none text-truncate">
-                        {{ lookup[1] }}
-                      </a>
-                      {% endfor %}
-                    </div>
+            <div class="card-body">
+              {% for filter in model_view.get_filters() %}
+              {% if filter.has_operator %}
+              <div class="mb-3">
+                <div class="fw-bold text-truncate">{{ filter.title }}</div>
+                <div>
+                  <!-- Show current filter if active -->
+                  {% set current_filter = request.query_params.get(filter.parameter_name, '') %}
+                  {% set current_op = request.query_params.get(filter.parameter_name + '_op', '') %}
+                  {% if current_filter %}
+                  <div class="mb-2 text-muted small">
+                    Current: {{ current_op }} {{ current_filter }} 
+                    <a href="{{ request.url.remove_query_params(filter.parameter_name).remove_query_params(filter.parameter_name + '_op') }}" class="text-decoration-none">[Clear]</a>
                   </div>
+                  {% endif %}
+                  <!-- Single form with dropdown for operations -->
+                  <form method="get" class="d-flex flex-column" style="gap: 8px;">
+                    <!-- Preserve existing query parameters -->
+                    {% for key, value in request.query_params.items() %}
+                      {% if key != filter.parameter_name and key != filter.parameter_name + '_op' %}
+                      <input type="hidden" name="{{ key }}" value="{{ value }}">
+                      {% endif %}
+                    {% endfor %}
+                    <!-- Operation dropdown -->
+                    <select name="{{ filter.parameter_name }}_op" class="form-select form-select-sm" required>
+                      <option value="">Select operation...</option>
+                      {% for op_value, op_label in filter.get_operation_options_for_model(model_view.model) %}
+                      <option value="{{ op_value }}" {% if current_op == op_value %}selected{% endif %}>{{ op_label }}</option>
+                      {% endfor %}
+                    </select>
+                    <!-- Value input -->
+                    <input type="text" 
+                           name="{{ filter.parameter_name }}" 
+                           placeholder="Enter value"
+                           class="form-control form-control-sm"
+                           value="{{ current_filter }}"
+                           required>
+                    <button type="submit" class="btn btn-sm btn-outline-primary">Apply Filter</button>
+                  </form>
                 </div>
-                {% endfor %}
               </div>
+              {% else %}
+              <!-- Fallback for other filter types -->
+              <div class="mb-3">
+                <div class="fw-bold text-truncate">{{ filter.title }}</div>
+                <div>
+                  {% for lookup in filter.lookups(request, model_view.model, model_view._run_arbitrary_query) %}
+                  <a href="{{ request.url.include_query_params(**{filter.parameter_name: lookup[0]}) }}" class="d-block text-decoration-none text-truncate">
+                    {{ lookup[1] }}
+                  </a>
+                  {% endfor %}
+                </div>
+              </div>
+              {% endif %}
+              {% endfor %}
             </div>
           </div>
         </div>
