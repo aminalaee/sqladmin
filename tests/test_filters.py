@@ -1,3 +1,4 @@
+import re
 from typing import Any, AsyncGenerator
 
 import pytest
@@ -173,6 +174,22 @@ async def client(
         yield c
 
 
+def assert_records_count(
+    showing_records_from: int,
+    showing_records_to: int,
+    total_records_count: int,
+    response_text: str,
+) -> None:
+    pattern = (
+        rf"Showing\s*.*{showing_records_from}\s*.*to\s*.*"
+        rf"{showing_records_to}\s*.*of\s*.*{total_records_count}"
+    )
+
+    assert re.search(
+        pattern, response_text, re.DOTALL
+    ), f"Expected pattern not found in response text: {pattern}"
+
+
 @pytest.mark.anyio
 async def test_column_filters_sidebar_existence(client: AsyncClient) -> None:
     """Test that the filter list sidebar appears only when filters are defined."""
@@ -214,21 +231,25 @@ async def test_boolean_filter_functionality(client: AsyncClient) -> None:
     based on their is_admin status."""
     # Test with no filter or 'all' filter - should show both users
     response = await client.get("/admin/user/list?is_admin=all")
+
     assert response.status_code == 200
     assert "Admin User" in response.text
     assert "Regular User" in response.text
+    assert_records_count(1, 2, 2, response.text)
 
     # Test filtering for admin users (is_admin=true)
     response = await client.get("/admin/user/list?is_admin=true")
     assert response.status_code == 200
     assert "Admin User" in response.text
     assert "Regular User" not in response.text
+    assert_records_count(1, 1, 1, response.text)
 
     # Test filtering for non-admin users (is_admin=false)
     response = await client.get("/admin/user/list?is_admin=false")
     assert response.status_code == 200
     assert "Admin User" not in response.text
     assert "Regular User" in response.text
+    assert_records_count(1, 1, 1, response.text)
 
 
 @pytest.mark.anyio
@@ -238,11 +259,13 @@ async def test_foreign_key_filter_functionality(client: AsyncClient) -> None:
     assert response.status_code == 200
     assert "Office1" in response.text
     assert "Office2" in response.text
+    assert_records_count(1, 2, 2, response.text)
 
     response = await client.get("/admin/user/list?office_id=1")
     assert response.status_code == 200
     assert "Admin User" in response.text
     assert "Regular User" not in response.text
+    assert_records_count(1, 1, 1, response.text)
 
 
 @pytest.mark.anyio
@@ -253,6 +276,7 @@ async def test_static_values_filter_functionality(client: AsyncClient) -> None:
     assert "adminadmin" in response.text
     assert "Admin User" in response.text
     assert "Regular User" not in response.text
+    assert_records_count(1, 1, 1, response.text)
 
 
 @pytest.mark.anyio
