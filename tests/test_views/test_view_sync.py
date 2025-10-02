@@ -11,10 +11,16 @@ from sqlalchemy import (
     ForeignKey,
     Integer,
     String,
+    Table,
     func,
     select,
 )
-from sqlalchemy.orm import declarative_base, relationship, selectinload, sessionmaker
+from sqlalchemy.orm import (
+    declarative_base,
+    relationship,
+    selectinload,
+    sessionmaker,
+)
 from starlette.applications import Starlette
 from starlette.requests import Request
 from starlette.testclient import TestClient
@@ -118,6 +124,36 @@ class Product(Base):
     price = Column(Integer)
 
 
+association_table = Table(
+    "association_table",
+    Base.metadata,
+    Column("author_id", ForeignKey("authors.id")),
+    Column("book_id", ForeignKey("books.id")),
+)
+
+
+class Author(Base):
+    __tablename__ = "authors"
+
+    id = Column(Integer, primary_key=True)
+    name = Column(String)
+    books = relationship("Book", secondary=association_table)
+
+    def __str__(self) -> str:
+        return f"{self.name}"
+
+
+class Book(Base):
+    __tablename__ = "books"
+
+    id = Column(Integer, primary_key=True)
+    title = Column(String)
+    text = Column(String)
+
+    def __str__(self) -> str:
+        return f"{self.title}"
+
+
 @pytest.fixture
 def prepare_database() -> Generator[None, None, None]:
     Base.metadata.create_all(engine)
@@ -146,6 +182,7 @@ class UserAdmin(ModelView, model=User):
     column_searchable_list = [User.name]
     column_sortable_list = [User.id]
     column_export_list = [User.name, User.status]
+    column_import_list = [User.name, User.status]
     column_formatters = {
         User.addresses_formattable: lambda m, a: [
             f"Formatted {a}" for a in m.addresses_formattable
@@ -161,12 +198,15 @@ class UserAdmin(ModelView, model=User):
     save_as = True
     form_create_rules = ["name", "email", "addresses", "profile", "birthdate", "status"]
     form_edit_rules = ["name", "email", "addresses", "profile", "birthdate"]
+    can_import = True
 
 
 class AddressAdmin(ModelView, model=Address):
     column_list = ["id", "user_id", "user", "user.profile.id"]
     name_plural = "Addresses"
     export_max_rows = 3
+    column_import_list = ["user"]
+    can_import = True
 
 
 class ProfileAdmin(ModelView, model=Profile):
@@ -189,11 +229,25 @@ class ProductAdmin(ModelView, model=Product):
     pass
 
 
+class AuthorAdmin(ModelView, model=Author):
+    column_list = [Author.id, Author.name, Author.books]
+    column_import_list = [Author.name, Author.books]
+    can_import = True
+
+
+class BookAdmin(ModelView, model=Book):
+    column_list = [Book.id, Book.title, Book.text]
+    column_import_list = [Book.title, Book.text]
+    can_import = True
+
+
 admin.add_view(UserAdmin)
 admin.add_view(AddressAdmin)
 admin.add_view(ProfileAdmin)
 admin.add_view(MovieAdmin)
 admin.add_view(ProductAdmin)
+admin.add_view(AuthorAdmin)
+admin.add_view(BookAdmin)
 
 
 def test_root_view(client: TestClient) -> None:
@@ -853,4 +907,148 @@ def test_export_bad_type_is_404(client: TestClient) -> None:
 
 def test_export_permission(client: TestClient) -> None:
     response = client.get("/admin/movie/export/csv")
+    assert response.status_code == 403
+
+
+def test_import_csv_file(client: TestClient) -> None:
+    client.post(
+        "/admin/user/import",
+        files={
+            "csvfile": (
+                "user.csv",
+                b"name;status\r\nUSER_1;ACTIVE\r\nUSER_2;DEACTIVE\r\n",
+                "text/csv",
+            )
+        },
+    )
+    with session_maker() as s:
+        users = list(s.execute(select(User).order_by(User.id)).scalars())
+    assert users[0].name == "USER_1"
+    assert users[0].id == 1
+    assert users[0].status == Status.ACTIVE
+    assert users[1].name == "USER_2"
+    assert users[1].id == 2
+    assert users[1].status == Status.DEACTIVE
+
+
+def test_import_csv_file_with_fk(client: TestClient) -> None:
+    client.post(
+        "/admin/user/import",
+        files={
+            "csvfile": (
+                "user.csv",
+                b"id;name;status\r\n1;USER_1;ACTIVE\r\n2;USER_2;DEACTIVE\r\n",
+                "text/csv",
+            )
+        },
+    )
+    with session_maker() as s:
+        users = list(s.execute(select(User).order_by(User.id)).scalars())
+    assert users[0].name == "USER_1"
+    assert users[0].id == 1
+    assert users[1].name == "USER_2"
+    assert users[1].id == 2
+
+    client.post(
+        "/admin/address/import",
+        files={
+            "csvfile": (
+                "address.csv",
+                b"id;user\r\n1;User 1\r\n2;User 2\r\n",
+                "text/csv",
+            )
+        },
+    )
+    with session_maker() as s:
+        addresses = list(
+            s.execute(
+                select(Address).options(selectinload(Address.user)).order_by(Address.id)
+            ).scalars()
+        )
+    assert addresses[0].id == 1
+    assert addresses[0].user.name == "USER_1"
+    assert addresses[0].user.id == 1
+    assert addresses[1].id == 2
+    assert addresses[1].user.name == "USER_2"
+    assert addresses[1].user.id == 2
+
+
+def test_import_csv_file_with_many_to_many(client: TestClient) -> None:
+    files = {
+        "csvfile": (
+            "book.csv",
+            b"id;title;text\r\n1;cool book;Once upon a time\r\n2;good_book;Well...\r\n",
+            "text/csv",
+        )
+    }
+    client.post(
+        "/admin/book/import",
+        files=files,
+    )
+    with session_maker() as s:
+        result = s.execute(select(Book).order_by(Book.id))
+        books = list(result.scalars())
+    assert books[0].title == "cool book"
+    assert books[0].text == "Once upon a time"
+    assert books[1].title == "good_book"
+    assert books[1].text == "Well..."
+
+    files = {
+        "csvfile": (
+            "author.csv",
+            b"name;books\r\nalex;cool book,good_book\r\nsam;cool book,good_book\r\n",
+            "text/csv",
+        )
+    }
+    client.post(
+        "/admin/author/import",
+        files=files,
+    )
+    with session_maker() as s:
+        result = s.execute(
+            select(Author).options(selectinload(Author.books)).order_by(Author.id)
+        )
+        authors = list(result.scalars())
+    assert authors[0].id == 1
+    assert authors[0].books[0].text == "Once upon a time"
+    assert authors[0].books[1].text == "Well..."
+    assert authors[1].id == 2
+    assert authors[1].books[0].text == "Once upon a time"
+    assert authors[1].books[1].text == "Well..."
+
+
+def test_import_csv_button(client: TestClient) -> None:
+    response = client.get("/admin/user/list")
+    assert response.status_code == 200
+    assert (
+        '<input id="csvfile" name="csvfile" type="file" accept="text/csv" />'
+        in response.text
+    )
+
+
+def test_import_csv_bad_type_is_404(client: TestClient) -> None:
+    response = client.post(
+        "/admin/notfound/import",
+        files={
+            "csvfile": (
+                "notfound.csv",
+                b"id\r\n1\r\n2\r\n",
+                "text/csv",
+            )
+        },
+    )
+    assert response.status_code == 404
+
+
+def test_import_csv_permission(client: TestClient) -> None:
+    response = client.post(
+        "/admin/movie/import",
+        files={
+            "csvfile": (
+                "movie.csv",
+                b"id\r\n1\r\n2\r\n",
+                "text/csv",
+            )
+        },
+    )
     assert response.status_code == 403
