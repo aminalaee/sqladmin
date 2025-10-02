@@ -141,8 +141,10 @@ The options available are:
     if you don't want to specify all the columns manually. For example: `column_list = "__all__"`
 
 ### ColumnFilter
- 
-A ColumnFilter is a class that defines a filter for a column. A few standard filters are implemented in `sqladmin.filters` module. Here is an example of a generic ColumnFilter. Note that the fields `title`, `parameter_name`, `lookups` and `get_filtered_query` are required.
+A ColumnFilter is a class that defines a filter for a column. A few standard filters are
+implemented in the `sqladmin.filters` module. Below is an example of a generic ColumnFilter. Note
+that the fields `title` and `parameter_name`, and the methods `lookups` and `get_filtered_query`
+are all required in a filter class.
 
 ```python
 class IsAdminFilter:
@@ -153,7 +155,7 @@ class IsAdminFilter:
     # Parameter for the filter that will be used in the URL query.
     parameter_name = "is_admin"
 
-    def lookups(self, request, model) -> list[tuple[str, str]]:
+    def lookups(self, request, model, run_query) -> list[tuple[str, str]]:
         """
         Returns a list of tuples with the filter key and the human-readable label.
         """
@@ -163,7 +165,7 @@ class IsAdminFilter:
             ("false", "No"),
         ]
 
-    def get_filtered_query(self, query, value):
+    def get_filtered_query(self, query, value, model):
         """
         Returns a filtered query based on the filter value.
         """
@@ -183,7 +185,7 @@ The following built in column filters are available. All filters have a default 
 * AllUniqueStringValuesFilter - A filter for string columns, with the values of all unique values in the column
 * StaticValuesFilter - A filter for string columns, with the values of a static list of values. This is similar to AllUniqueStringValuesFilter, but instead of getting the list of possible values from the database, you can provide a static list of values.
 * ForeignKeyFilter - A filter for foreign key columns, with the values of all unique values in the foreign key column. To make this filter readable, you need to provide the field name from the foreign model that you want to display as the name of the filter.
-  
+
 Here is an example of how to use BooleanFilter, AllUniqueStringValuesFilter and ForeignKeyFilter:
 
 ```python
@@ -210,7 +212,7 @@ class Site(Base):
 class UserAdmin(ModelView, model=User):
     column_list = ["id", "name", "email", "is_admin"]
     column_filters = [
-        BooleanFilter(User.is_admin), 
+        BooleanFilter(User.is_admin),
         AllUniqueStringValuesFilter(User.name),
         ForeignKeyFilter(User.site_id, Site.name, title="Site")
     ]
