@@ -19,6 +19,7 @@ from typing import (
     Union,
     no_type_check,
 )
+from typing import cast as typing_cast
 from urllib.parse import urlencode
 
 import anyio
@@ -36,7 +37,12 @@ from wtforms import Field, Form
 from wtforms.fields.core import UnboundField
 
 from sqladmin._queries import Query
-from sqladmin._types import MODEL_ATTR, ColumnFilter
+from sqladmin._types import (
+    MODEL_ATTR,
+    ColumnFilter,
+    OperationColumnFilter,
+    SimpleColumnFilter,
+)
 from sqladmin.ajax import create_ajax_loader
 from sqladmin.exceptions import InvalidModelError
 from sqladmin.formatters import BASE_FORMATTERS
@@ -837,18 +843,33 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
             stmt = stmt.options(selectinload(relation))
 
         for filter in self.get_filters():
-            if request.query_params.get(filter.parameter_name):
-                stmt = await filter.get_filtered_query(
-                    stmt, request.query_params.get(filter.parameter_name), self.model
-                )
+            filter_param_name = filter.parameter_name
+            filter_value = request.query_params.get(filter_param_name)
+
+            if filter_value:
+                if hasattr(filter, "has_operator") and filter.has_operator:
+                    # Use operation-based filtering
+                    operation_filter = typing_cast(OperationColumnFilter, filter)
+                    operation_param = request.query_params.get(
+                        f"{filter_param_name}_op"
+                    )
+                    if operation_param:
+                        stmt = await operation_filter.get_filtered_query(
+                            stmt, operation_param, filter_value, self.model
+                        )
+                else:
+                    # Use simple filtering for filters without operators
+                    simple_filter = typing_cast(SimpleColumnFilter, filter)
+                    stmt = await simple_filter.get_filtered_query(
+                        stmt, filter_value, self.model
+                    )
 
         stmt = self.sort_query(stmt, request)
 
         if search:
             stmt = self.search_query(stmt=stmt, term=search)
-            count = await self.count(request, select(func.count()).select_from(stmt))
-        else:
-            count = await self.count(request)
+
+        count = await self.count(request, select(func.count()).select_from(stmt))
 
         stmt = stmt.limit(page_size).offset((page - 1) * page_size)
         rows = await self._run_query(stmt)

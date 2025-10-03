@@ -141,8 +141,10 @@ The options available are:
     if you don't want to specify all the columns manually. For example: `column_list = "__all__"`
 
 ### ColumnFilter
- 
-A ColumnFilter is a class that defines a filter for a column. A few standard filters are implemented in `sqladmin.filters` module. Here is an example of a generic ColumnFilter. Note that the fields `title`, `parameter_name`, `lookups` and `get_filtered_query` are required.
+A ColumnFilter is a class that defines a filter for a column. A few standard filters are
+implemented in the `sqladmin.filters` module. Below is an example of a generic ColumnFilter. Note
+that the fields `title` and `parameter_name`, and the methods `lookups` and `get_filtered_query`
+are all required in a filter class.
 
 ```python
 class IsAdminFilter:
@@ -153,7 +155,7 @@ class IsAdminFilter:
     # Parameter for the filter that will be used in the URL query.
     parameter_name = "is_admin"
 
-    def lookups(self, request, model) -> list[tuple[str, str]]:
+    def lookups(self, request, model, run_query) -> list[tuple[str, str]]:
         """
         Returns a list of tuples with the filter key and the human-readable label.
         """
@@ -163,7 +165,7 @@ class IsAdminFilter:
             ("false", "No"),
         ]
 
-    def get_filtered_query(self, query, value):
+    def get_filtered_query(self, query, value, model):
         """
         Returns a filtered query based on the filter value.
         """
@@ -183,10 +185,12 @@ The following built in column filters are available. All filters have a default 
 * AllUniqueStringValuesFilter - A filter for string columns, with the values of all unique values in the column
 * StaticValuesFilter - A filter for string columns, with the values of a static list of values. This is similar to AllUniqueStringValuesFilter, but instead of getting the list of possible values from the database, you can provide a static list of values.
 * ForeignKeyFilter - A filter for foreign key columns, with the values of all unique values in the foreign key column. To make this filter readable, you need to provide the field name from the foreign model that you want to display as the name of the filter.
-  
-Here is an example of how to use BooleanFilter, AllUniqueStringValuesFilter and ForeignKeyFilter:
+* OperationColumnFilter - A flexible filter that automatically detects column types and provides appropriate operations. For string columns, it offers Contains, Equals, StartsWith, and EndsWith operations. For numeric columns (integer, float), it offers Equals, GreaterThan, and LessThan operations. For UUID columns (SQLAlchemy 2.0+), it offers Contains, Equals, and StartsWith operations.
+
+Here is an example of how to use BooleanFilter, AllUniqueStringValuesFilter, ForeignKeyFilter, and OperationColumnFilter:
 
 ```python
+from sqladmin.filters import BooleanFilter, AllUniqueStringValuesFilter, ForeignKeyFilter, OperationColumnFilter
 
 class User(Base):
     __tablename__ = "users"
@@ -196,6 +200,9 @@ class User(Base):
     email: Mapped[str] = mapped_column(String, nullable=False, index=True, unique=True)
     is_admin: Mapped[bool] = mapped_column(Boolean, default=False)
     site_id: Mapped[Optional[int]] = mapped_column(Integer, ForeignKey("sites.id"), nullable=True, default=None)
+    age: Mapped[int] = mapped_column(Integer, nullable=False)
+    salary: Mapped[float] = mapped_column(Float, nullable=False)
+    description: Mapped[str] = mapped_column(String, nullable=True)
     site: Mapped[Optional["Site"]] = relationship(back_populates="users")
 
 class Site(Base):
@@ -208,11 +215,14 @@ class Site(Base):
 
 # Define User Admin View
 class UserAdmin(ModelView, model=User):
-    column_list = ["id", "name", "email", "is_admin"]
+    column_list = ["id", "name", "email", "is_admin", "age"]
     column_filters = [
-        BooleanFilter(User.is_admin), 
+        BooleanFilter(User.is_admin),
         AllUniqueStringValuesFilter(User.name),
-        ForeignKeyFilter(User.site_id, Site.name, title="Site")
+        ForeignKeyFilter(User.site_id, Site.name, title="Site"),
+        # OperationColumnFilter provides dropdown UI with multiple operations
+        OperationColumnFilter(User.email),        # String operations: Contains, Equals, Starts with, Ends with
+        OperationColumnFilter(User.age),          # Numeric operations: Equals, Greater than, Less than
     ]
     can_create = True
     can_edit = True
@@ -222,8 +232,24 @@ class UserAdmin(ModelView, model=User):
     name_plural = "Users"
     icon = "fa-solid fa-user"
     identity = "user"
-
 ```
+
+OperationColumnFilter automatically detects the column type and provides appropriate filtering operations:
+
+- **String columns** (name, email, description): Users can select from Contains, Equals, Starts with, and Ends with operations via a dropdown menu
+- **Numeric columns** (age, salary): Users can select from Equals, Greater than, and Less than operations via a dropdown menu
+- **UUID columns** (SQLAlchemy 2.0+): Users can select from Contains, Equals, and Starts with operations via a dropdown menu
+
+The filter UI provides a dropdown for operation selection and a text input for the filter value, making it user-friendly and intuitive.
+
+!!! tip "OperationColumnFilter vs Other Filters"
+
+    OperationColumnFilter provides a more flexible interface compared to other filter types:
+
+    - **AllUniqueStringValuesFilter/StaticValuesFilter/ForeignKeyFilter**: Shows all possible values as links (good for columns with few unique values)
+    - **OperationColumnFilter**: Provides operation dropdown + text input (good for columns with many possible values or numeric/date operations)
+    
+    Choose OperationColumnFilter when you want users to type custom search terms with operation flexibility, and AllUniqueStringValuesFilter when you want to show all available options as clickable links.
 
 
 ## Details page
