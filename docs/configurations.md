@@ -428,6 +428,7 @@ To add custom action on models to the Admin, you can use the `action` decorator.
 
     ```python
     from sqladmin import BaseView, action
+    from starlette.responses import RedirectResponse
 
     class UserAdmin(ModelView, model=User):
         @action(
