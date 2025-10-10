@@ -463,6 +463,8 @@ class Admin(BaseAdminView):
             )
 
         context = {"model_view": model_view, "pagination": pagination}
+        context = await model_view.perform_list_context(context)
+
         return await self.templates.TemplateResponse(
             request, model_view.list_template, context
         )
@@ -483,6 +485,7 @@ class Admin(BaseAdminView):
             "model": model,
             "title": model_view.name,
         }
+        context = await model_view.perform_details_context(context)
 
         return await self.templates.TemplateResponse(
             request, model_view.details_template, context
@@ -529,6 +532,7 @@ class Admin(BaseAdminView):
             "model_view": model_view,
             "form": form,
         }
+        context = await model_view.perform_create_context(context)
 
         if request.method == "GET":
             return await self.templates.TemplateResponse(
@@ -577,6 +581,8 @@ class Admin(BaseAdminView):
             "model_view": model_view,
             "form": Form(obj=model, data=self._normalize_wtform_data(model)),
         }
+
+        context = await model_view.perform_edit_context(context)
 
         if request.method == "GET":
             return await self.templates.TemplateResponse(
