@@ -174,7 +174,7 @@ class Query:
 
     def _delete_sync(self, pk: str, request: Request) -> None:
         with self.model_view.session_maker() as session:
-            obj = session.execute(self._get_delete_stmt(pk)).scalar_one_or_none()
+            obj = session.execute(self._get_delete_stmt(pk)).unique().scalar_one_or_none()
             anyio.from_thread.run(self.model_view.on_model_delete, obj, request)
             session.delete(obj)
             session.commit()
