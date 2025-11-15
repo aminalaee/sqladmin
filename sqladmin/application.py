@@ -231,7 +231,7 @@ class BaseAdmin:
         view.session_maker = self.session_maker
         view.is_async = self.is_async
         view.ajax_lookup_url = urljoin(
-            self.base_url + "/", f"{view.identity}/ajax/lookup"
+            self.app.root_path + self.base_url + "/", f"{view.identity}/ajax/lookup"
         )
         view.templates = self.templates
         view_instance = view()
