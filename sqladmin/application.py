@@ -80,7 +80,7 @@ class BaseAdmin:
         self.logo_url = logo_url
         self.favicon_url = favicon_url
 
-        if hasattr(self.app, 'root_path'):
+        if hasattr(self.app, "root_path"):
             self.base_url = self.app.root_path + base_url
         else:
             self.base_url = base_url
