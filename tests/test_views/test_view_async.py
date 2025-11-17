@@ -1,7 +1,8 @@
 import enum
-from typing import Any, AsyncGenerator, Generator
+from typing import Any, AsyncGenerator
 
 import pytest
+from httpx import ASGITransport, AsyncClient
 from sqlalchemy import (
     JSON,
     BigInteger,
@@ -18,7 +19,6 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import declarative_base, relationship, selectinload, sessionmaker
 from starlette.applications import Starlette
 from starlette.requests import Request
-from starlette.testclient import TestClient
 
 from sqladmin import Admin, ModelView
 from tests.common import async_engine as engine
@@ -125,7 +125,9 @@ class Product(Base):
 async def prepare_database() -> AsyncGenerator[None, None]:
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
+
     yield
+
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.drop_all)
 
@@ -133,9 +135,10 @@ async def prepare_database() -> AsyncGenerator[None, None]:
 
 
 @pytest.fixture
-def client(prepare_database: Any) -> Generator[TestClient, None, None]:
-    with TestClient(app=app, base_url="http://testserver") as c:
-        yield c
+async def client(prepare_database: Any) -> AsyncGenerator[AsyncClient, None]:
+    transport = ASGITransport(app=app)
+    async with AsyncClient(transport=transport, base_url="http://testserver") as client:
+        yield client
 
 
 class UserAdmin(ModelView, model=User):
@@ -201,28 +204,28 @@ admin.add_view(MovieAdmin)
 admin.add_view(ProductAdmin)
 
 
-async def test_root_view(client: TestClient) -> None:
-    response = client.get("/admin/")
+async def test_root_view(client: AsyncClient) -> None:
+    response = await client.get("/admin/")
 
     assert response.status_code == 200
     assert '<span class="nav-link-title">Users</span>' in response.text
     assert '<span class="nav-link-title">Addresses</span>' in response.text
 
 
-async def test_invalid_list_page(client: TestClient) -> None:
-    response = client.get("/admin/example/list")
+async def test_invalid_list_page(client: AsyncClient) -> None:
+    response = await client.get("/admin/example/list")
 
     assert response.status_code == 404
 
 
-async def test_list_view_single_page(client: TestClient) -> None:
+async def test_list_view_single_page(client: AsyncClient) -> None:
     async with session_maker() as session:
         for _ in range(5):
             user = User(name="John Doe")
             session.add(user)
         await session.commit()
 
-    response = client.get("/admin/user/list")
+    response = await client.get("/admin/user/list")
     assert response.status_code == 200
 
     # Showing active navigation link
@@ -235,7 +238,7 @@ async def test_list_view_single_page(client: TestClient) -> None:
     assert response.text.count('<li class="page-item disabled">') == 2
 
 
-async def test_list_view_with_relations(client: TestClient) -> None:
+async def test_list_view_with_relations(client: AsyncClient) -> None:
     async with session_maker() as session:
         for _ in range(5):
             user = User(name="John Doe")
@@ -244,7 +247,7 @@ async def test_list_view_with_relations(client: TestClient) -> None:
             session.add(user)
         await session.commit()
 
-    response = client.get("/admin/user/list")
+    response = await client.get("/admin/user/list")
 
     assert response.status_code == 200
 
@@ -264,7 +267,7 @@ async def test_list_view_with_relations(client: TestClient) -> None:
     )
 
 
-async def test_list_view_with_formatted_relations(client: TestClient) -> None:
+async def test_list_view_with_formatted_relations(client: AsyncClient) -> None:
     async with session_maker() as session:
         for _ in range(5):
             user = User(name="John Doe")
@@ -273,7 +276,7 @@ async def test_list_view_with_formatted_relations(client: TestClient) -> None:
             session.add(user)
         await session.commit()
 
-    response = client.get("/admin/user/list")
+    response = await client.get("/admin/user/list")
 
     assert response.status_code == 200
 
@@ -282,25 +285,25 @@ async def test_list_view_with_formatted_relations(client: TestClient) -> None:
     assert "Formatted Profile 1" in response.text
 
 
-async def test_list_view_multi_page(client: TestClient) -> None:
+async def test_list_view_multi_page(client: AsyncClient) -> None:
     async with session_maker() as session:
         for _ in range(45):
             user = User(name="John Doe")
             session.add(user)
         await session.commit()
 
-    response = client.get("/admin/user/list")
+    response = await client.get("/admin/user/list")
     assert response.status_code == 200
 
     # Previous disabled
     assert response.text.count('<li class="page-item disabled">') == 1
     assert response.text.count('<li class="page-item ">') == 5
 
-    response = client.get("/admin/user/list?page=3")
+    response = await client.get("/admin/user/list?page=3")
     assert response.status_code == 200
     assert response.text.count('<li class="page-item ">') == 6
 
-    response = client.get("/admin/user/list?page=5")
+    response = await client.get("/admin/user/list?page=5")
     assert response.status_code == 200
 
     # Next disabled
@@ -308,7 +311,7 @@ async def test_list_view_multi_page(client: TestClient) -> None:
     assert response.text.count('<li class="page-item ">') == 5
 
 
-async def test_list_page_permission_actions(client: TestClient) -> None:
+async def test_list_page_permission_actions(client: AsyncClient) -> None:
     async with session_maker() as session:
         for _ in range(10):
             user = User(name="John Doe")
@@ -320,13 +323,13 @@ async def test_list_page_permission_actions(client: TestClient) -> None:
 
         await session.commit()
 
-    response = client.get("/admin/user/list")
+    response = await client.get("/admin/user/list")
 
     assert response.status_code == 200
     assert response.text.count('<i class="fa-solid fa-eye"></i>') == 10
     assert response.text.count('<i class="fa-solid fa-trash"></i>') == 10
 
-    response = client.get("/admin/address/list")
+    response = await client.get("/admin/address/list")
 
     assert response.status_code == 200
     assert response.text.count('<i class="fa-solid fa-eye"></i>') == 10
@@ -334,19 +337,19 @@ async def test_list_page_permission_actions(client: TestClient) -> None:
     assert response.text.count('<i class="fa-solid fa-trash"></i>') == 10
 
 
-async def test_unauthorized_detail_page(client: TestClient) -> None:
-    response = client.get("/admin/movie/details/1")
+async def test_unauthorized_detail_page(client: AsyncClient) -> None:
+    response = await client.get("/admin/movie/details/1")
 
     assert response.status_code == 403
 
 
-async def test_not_found_detail_page(client: TestClient) -> None:
-    response = client.get("/admin/user/details/1")
+async def test_not_found_detail_page(client: AsyncClient) -> None:
+    response = await client.get("/admin/user/details/1")
 
     assert response.status_code == 404
 
 
-async def test_detail_page(client: TestClient) -> None:
+async def test_detail_page(client: AsyncClient) -> None:
     async with session_maker() as session:
         user = User(name="Amin Alaee")
         session.add(user)
@@ -363,7 +366,7 @@ async def test_detail_page(client: TestClient) -> None:
         session.add(profile_formattable)
         await session.commit()
 
-    response = client.get("/admin/user/details/1")
+    response = await client.get("/admin/user/details/1")
 
     assert response.status_code == 200
     assert '<th class="w-1">Column</th>' in response.text
@@ -396,31 +399,31 @@ async def test_detail_page(client: TestClient) -> None:
     assert response.text.count("Delete") == 2
 
 
-async def test_column_labels(client: TestClient) -> None:
+async def test_column_labels(client: AsyncClient) -> None:
     async with session_maker() as session:
         user = User(name="Foo")
         session.add(user)
         await session.commit()
 
-    response = client.get("/admin/user/list")
+    response = await client.get("/admin/user/list")
 
     assert response.status_code == 200
     assert "Email" in response.text
 
-    response = client.get("/admin/user/details/1")
+    response = await client.get("/admin/user/details/1")
 
     assert response.status_code == 200
     assert "Email" in response.text
 
 
-async def test_delete_endpoint_unauthorized_response(client: TestClient) -> None:
-    response = client.delete("/admin/movie/delete")
+async def test_delete_endpoint_unauthorized_response(client: AsyncClient) -> None:
+    response = await client.delete("/admin/movie/delete")
 
     assert response.status_code == 403
 
 
-async def test_delete_endpoint_not_found_response(client: TestClient) -> None:
-    response = client.delete("/admin/user/delete?pks=1")
+async def test_delete_endpoint_not_found_response(client: AsyncClient) -> None:
+    response = await client.delete("/admin/user/delete?pks=1")
 
     assert response.status_code == 404
 
@@ -431,7 +434,7 @@ async def test_delete_endpoint_not_found_response(client: TestClient) -> None:
     assert result.scalar_one() == 0
 
 
-async def test_delete_endpoint(client: TestClient) -> None:
+async def test_delete_endpoint(client: AsyncClient) -> None:
     async with session_maker() as session:
         user = User(name="Bar")
         session.add(user)
@@ -443,7 +446,7 @@ async def test_delete_endpoint(client: TestClient) -> None:
         result = await s.execute(stmt)
     assert result.scalar_one() == 1
 
-    response = client.delete("/admin/user/delete?pks=1")
+    response = await client.delete("/admin/user/delete?pks=1")
 
     assert response.status_code == 200
 
@@ -452,14 +455,14 @@ async def test_delete_endpoint(client: TestClient) -> None:
     assert result.scalar_one() == 0
 
 
-async def test_create_endpoint_unauthorized_response(client: TestClient) -> None:
-    response = client.get("/admin/movie/create")
+async def test_create_endpoint_unauthorized_response(client: AsyncClient) -> None:
+    response = await client.get("/admin/movie/create")
 
     assert response.status_code == 403
 
 
-async def test_create_endpoint_get_form(client: TestClient) -> None:
-    response = client.get("/admin/user/create")
+async def test_create_endpoint_get_form(client: AsyncClient) -> None:
+    response = await client.get("/admin/user/create")
 
     assert response.status_code == 200
     assert (
@@ -477,8 +480,8 @@ async def test_create_endpoint_get_form(client: TestClient) -> None:
     )
 
 
-async def test_create_endpoint_with_required_fields(client: TestClient) -> None:
-    response = client.get("/admin/product/create")
+async def test_create_endpoint_with_required_fields(client: AsyncClient) -> None:
+    response = await client.get("/admin/product/create")
 
     assert response.status_code == 200
     assert (
@@ -491,9 +494,9 @@ async def test_create_endpoint_with_required_fields(client: TestClient) -> None:
     )
 
 
-async def test_create_endpoint_post_form(client: TestClient) -> None:
+async def test_create_endpoint_post_form(client: AsyncClient) -> None:
     data = {"date_of_birth": "Wrong Date Format"}
-    response = client.post("/admin/user/create", data=data)
+    response = await client.post("/admin/user/create", data=data)
 
     assert response.status_code == 400
     assert (
@@ -501,7 +504,7 @@ async def test_create_endpoint_post_form(client: TestClient) -> None:
     )
 
     data = {"name": "SQLAlchemy", "email": "amin"}
-    response = client.post("/admin/user/create", data=data)
+    response = await client.post("/admin/user/create", data=data)
 
     stmt = select(func.count(User.id))
     async with session_maker() as s:
@@ -523,7 +526,7 @@ async def test_create_endpoint_post_form(client: TestClient) -> None:
     assert user.profile is None
 
     data = {"user": user.id}
-    response = client.post("/admin/address/create", data=data)
+    response = await client.post("/admin/address/create", data=data)
 
     stmt = select(func.count(Address.id))
     async with session_maker() as s:
@@ -538,7 +541,7 @@ async def test_create_endpoint_post_form(client: TestClient) -> None:
     assert address.user_id == user.id
 
     data = {"user": user.id}
-    response = client.post("/admin/profile/create", data=data)
+    response = await client.post("/admin/profile/create", data=data)
 
     stmt = select(func.count(Profile.id))
     async with session_maker() as s:
@@ -556,7 +559,7 @@ async def test_create_endpoint_post_form(client: TestClient) -> None:
         "addresses": [address.id],
         "profile": profile.id,
     }
-    response = client.post("/admin/user/create", data=data)
+    response = await client.post("/admin/user/create", data=data)
 
     stmt = select(func.count(User.id))
     async with session_maker() as s:
@@ -578,13 +581,13 @@ async def test_create_endpoint_post_form(client: TestClient) -> None:
     assert user.profile.id == profile.id
 
     data = {"name": "SQLAlchemy", "email": "amin"}
-    response = client.post("/admin/user/create", data=data)
+    response = await client.post("/admin/user/create", data=data)
     assert response.status_code == 400
     assert "alert alert-danger" in response.text
 
 
-async def test_list_view_page_size_options(client: TestClient) -> None:
-    response = client.get("/admin/user/list")
+async def test_list_view_page_size_options(client: AsyncClient) -> None:
+    response = await client.get("/admin/user/list")
 
     assert response.status_code == 200
     assert "http://testserver/admin/user/list?pageSize=10" in response.text
@@ -593,14 +596,14 @@ async def test_list_view_page_size_options(client: TestClient) -> None:
     assert "http://testserver/admin/user/list?pageSize=100" in response.text
 
 
-async def test_is_accessible_method(client: TestClient) -> None:
-    response = client.get("/admin/movie/list")
+async def test_is_accessible_method(client: AsyncClient) -> None:
+    response = await client.get("/admin/movie/list")
 
     assert response.status_code == 403
 
 
-async def test_is_visible_method(client: TestClient) -> None:
-    response = client.get("/admin/")
+async def test_is_visible_method(client: AsyncClient) -> None:
+    response = await client.get("/admin/")
 
     assert response.status_code == 200
     assert '<span class="nav-link-title">Users</span>' in response.text
@@ -608,19 +611,19 @@ async def test_is_visible_method(client: TestClient) -> None:
     assert "Movie" not in response.text
 
 
-async def test_edit_endpoint_unauthorized_response(client: TestClient) -> None:
-    response = client.get("/admin/movie/edit/1")
+async def test_edit_endpoint_unauthorized_response(client: AsyncClient) -> None:
+    response = await client.get("/admin/movie/edit/1")
 
     assert response.status_code == 403
 
 
-async def test_not_found_edit_page(client: TestClient) -> None:
-    response = client.get("/admin/user/edit/1")
+async def test_not_found_edit_page(client: AsyncClient) -> None:
+    response = await client.get("/admin/user/edit/1")
 
     assert response.status_code == 404
 
 
-async def test_update_get_page(client: TestClient) -> None:
+async def test_update_get_page(client: AsyncClient) -> None:
     async with session_maker() as session:
         user = User(name="Joe", meta_data={"A": "B"})
         session.add(user)
@@ -632,7 +635,7 @@ async def test_update_get_page(client: TestClient) -> None:
         session.add(profile)
         await session.commit()
 
-    response = client.get("/admin/user/edit/1")
+    response = await client.get("/admin/user/edit/1")
 
     assert response.status_code == 200
     assert (
@@ -646,20 +649,20 @@ async def test_update_get_page(client: TestClient) -> None:
         'id="name" maxlength="16" name="name" type="text" value="Joe">' in response.text
     )
 
-    response = client.get("/admin/address/edit/1")
+    response = await client.get("/admin/address/edit/1")
 
     assert '<select class="form-control" id="user" name="user">' in response.text
     assert '<option value="__None"></option>' in response.text
     assert '<option selected value="1">User 1</option>' in response.text
 
-    response = client.get("/admin/profile/edit/1")
+    response = await client.get("/admin/profile/edit/1")
 
     assert '<select class="form-control" id="user" name="user">' in response.text
     assert '<option value="__None"></option>' in response.text
     assert '<option selected value="1">User 1</option>' in response.text
 
 
-async def test_update_submit_form(client: TestClient) -> None:
+async def test_update_submit_form(client: AsyncClient) -> None:
     async with session_maker() as session:
         user = User(name="Joe")
         session.add(user)
@@ -674,7 +677,7 @@ async def test_update_submit_form(client: TestClient) -> None:
         await session.commit()
 
     data = {"name": "Jack", "email": "amin"}
-    response = client.post("/admin/user/edit/1", data=data)
+    response = await client.post("/admin/user/edit/1", data=data)
 
     stmt = (
         select(User)
@@ -691,7 +694,7 @@ async def test_update_submit_form(client: TestClient) -> None:
     assert user.email == "amin"
 
     data = {"name": "Jack", "addresses": "1", "profile": "1"}
-    response = client.post("/admin/user/edit/1", data=data)
+    response = await client.post("/admin/user/edit/1", data=data)
 
     stmt = select(Address).filter(Address.id == 1).limit(1)
     async with session_maker() as s:
@@ -706,12 +709,12 @@ async def test_update_submit_form(client: TestClient) -> None:
     assert profile.user_id == 1
 
     data = {"name": "Jack" * 10}
-    response = client.post("/admin/user/edit/1", data=data)
+    response = await client.post("/admin/user/edit/1", data=data)
 
     assert response.status_code == 400
 
     data = {"user": user.id}
-    response = client.post("/admin/address/edit/1", data=data)
+    response = await client.post("/admin/address/edit/1", data=data)
 
     stmt = select(Address).filter(Address.id == 1).limit(1)
     async with session_maker() as s:
@@ -720,17 +723,17 @@ async def test_update_submit_form(client: TestClient) -> None:
     assert address.user_id == 1
 
     data = {"name": "Jack", "email": "", "save": "Save as new"}
-    response = client.post("/admin/user/edit/1", data=data, follow_redirects=True)
+    response = await client.post("/admin/user/edit/1", data=data, follow_redirects=True)
     assert response.url == "http://testserver/admin/user/edit/2"
 
     data = {"name": "Jack", "email": "amin"}
-    client.post("/admin/user/edit/1", data=data)
-    response = client.post("/admin/user/edit/2", data=data)
+    await client.post("/admin/user/edit/1", data=data)
+    response = await client.post("/admin/user/edit/2", data=data)
     assert response.status_code == 400
     assert "alert alert-danger" in response.text
 
     data = {"name": "Jack", "addresses": ["1", "2"], "profile": "1"}
-    response = client.post("/admin/user/edit/1", data=data)
+    response = await client.post("/admin/user/edit/1", data=data)
 
     stmt = select(Address).limit(1)
     async with session_maker() as s:
@@ -739,7 +742,7 @@ async def test_update_submit_form(client: TestClient) -> None:
         assert address[0].user_id == 1
 
 
-async def test_searchable_list(client: TestClient) -> None:
+async def test_searchable_list(client: AsyncClient) -> None:
     async with session_maker() as session:
         user = User(name="Ross")
         session.add(user)
@@ -747,43 +750,43 @@ async def test_searchable_list(client: TestClient) -> None:
         session.add(user)
         await session.commit()
 
-    response = client.get("/admin/user/list")
+    response = await client.get("/admin/user/list")
     assert "Search: name" in response.text
     assert "/admin/user/details/1" in response.text
 
-    response = client.get("/admin/user/list?search=ro")
+    response = await client.get("/admin/user/list?search=ro")
     assert "/admin/user/details/1" in response.text
 
-    response = client.get("/admin/user/list?search=rose")
+    response = await client.get("/admin/user/list?search=rose")
     assert "/admin/user/details/1" not in response.text
 
 
-async def test_sortable_list(client: TestClient) -> None:
+async def test_sortable_list(client: AsyncClient) -> None:
     async with session_maker() as session:
         user = User(name="Lisa")
         session.add(user)
         await session.commit()
 
-    response = client.get("/admin/user/list?sortBy=id&sort=asc")
+    response = await client.get("/admin/user/list?sortBy=id&sort=asc")
 
     assert "http://testserver/admin/user/list?sortBy=id&amp;sort=desc" in response.text
 
-    response = client.get("/admin/user/list?sortBy=id&sort=desc")
+    response = await client.get("/admin/user/list?sortBy=id&sort=desc")
 
     assert "http://testserver/admin/user/list?sortBy=id&amp;sort=asc" in response.text
 
 
-async def test_export_csv(client: TestClient) -> None:
+async def test_export_csv(client: AsyncClient) -> None:
     async with session_maker() as session:
         user = User(name="Daniel", status="ACTIVE")
         session.add(user)
         await session.commit()
 
-    response = client.get("/admin/user/export/csv")
+    response = await client.get("/admin/user/export/csv")
     assert response.text == "name,status\r\nDaniel,ACTIVE\r\n"
 
 
-async def test_export_csv_row_count(client: TestClient) -> None:
+async def test_export_csv_row_count(client: AsyncClient) -> None:
     def row_count(resp) -> int:
         return resp.text.count("\r\n") - 1
 
@@ -798,14 +801,14 @@ async def test_export_csv_row_count(client: TestClient) -> None:
 
         await session.commit()
 
-    response = client.get("/admin/user/export/csv")
+    response = await client.get("/admin/user/export/csv")
     assert row_count(response) == 20
 
-    response = client.get("/admin/address/export/csv")
+    response = await client.get("/admin/address/export/csv")
     assert row_count(response) == 3
 
 
-async def test_export_csv_utf8(client: TestClient) -> None:
+async def test_export_csv_utf8(client: AsyncClient) -> None:
     async with session_maker() as session:
         user_1 = User(name="Daniel", status="ACTIVE")
         user_2 = User(name="دانيال", status="ACTIVE")
@@ -817,24 +820,24 @@ async def test_export_csv_utf8(client: TestClient) -> None:
         session.add(user_4)
         await session.commit()
 
-    response = client.get("/admin/user/export/csv")
+    response = await client.get("/admin/user/export/csv")
     assert response.text == (
         "name,status\r\nDaniel,ACTIVE\r\nدانيال,ACTIVE\r\n"
         "積極的,ACTIVE\r\nДаниэль,ACTIVE\r\n"
     )
 
 
-async def test_export_json(client: TestClient) -> None:
+async def test_export_json(client: AsyncClient) -> None:
     async with session_maker() as session:
         user = User(name="Daniel", status="ACTIVE")
         session.add(user)
         await session.commit()
 
-    response = client.get("/admin/user/export/json")
+    response = await client.get("/admin/user/export/json")
     assert response.text == '[{"name": "Daniel", "status": "ACTIVE"}]'
 
 
-async def test_export_json_utf8(client: TestClient) -> None:
+async def test_export_json_utf8(client: AsyncClient) -> None:
     async with session_maker() as session:
         user_1 = User(name="Daniel", status="ACTIVE")
         user_2 = User(name="دانيال", status="ACTIVE")
@@ -846,7 +849,7 @@ async def test_export_json_utf8(client: TestClient) -> None:
         session.add(user_4)
         await session.commit()
 
-    response = client.get("/admin/user/export/json")
+    response = await client.get("/admin/user/export/json")
     assert response.text == (
         '[{"name": "Daniel", "status": "ACTIVE"},'
         '{"name": "دانيال", "status": "ACTIVE"},'
@@ -855,16 +858,16 @@ async def test_export_json_utf8(client: TestClient) -> None:
     )
 
 
-async def test_export_bad_type_is_404(client: TestClient) -> None:
-    response = client.get("/admin/user/export/bad_type")
+async def test_export_bad_type_is_404(client: AsyncClient) -> None:
+    response = await client.get("/admin/user/export/bad_type")
     assert response.status_code == 404
 
 
-async def test_export_permission_csv(client: TestClient) -> None:
-    response = client.get("/admin/movie/export/csv")
+async def test_export_permission_csv(client: AsyncClient) -> None:
+    response = await client.get("/admin/movie/export/csv")
     assert response.status_code == 403
 
 
-async def test_export_permission_json(client: TestClient) -> None:
-    response = client.get("/admin/movie/export/json")
+async def test_export_permission_json(client: AsyncClient) -> None:
+    response = await client.get("/admin/movie/export/json")
     assert response.status_code == 403

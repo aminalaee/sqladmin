@@ -160,7 +160,9 @@ def prepare_database() -> Generator[None, None, None]:
     # Add UserAdmin only once
     if not admin.views:
         admin.add_view(UserAdmin)
+
     yield
+
     Base.metadata.drop_all(engine)
 
 

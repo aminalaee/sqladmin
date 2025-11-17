@@ -1,11 +1,11 @@
-from typing import Any, AsyncGenerator, Generator
+from typing import Any, AsyncGenerator
 
 import pytest
+from httpx import ASGITransport, AsyncClient
 from sqlalchemy import Column, ForeignKey, Integer, String, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import declarative_base, relationship, selectinload, sessionmaker
 from starlette.applications import Starlette
-from starlette.testclient import TestClient
 
 from sqladmin import Admin, ModelView
 from sqladmin.ajax import create_ajax_loader
@@ -120,40 +120,40 @@ async def prepare_database() -> AsyncGenerator[None, None]:
     yield
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.drop_all)
-
     await engine.dispose()
 
 
 @pytest.fixture
-def client(prepare_database: Any) -> Generator[TestClient, None, None]:
-    with TestClient(app=app, base_url="http://testserver", follow_redirects=False) as c:
-        yield c
+async def client(prepare_database: Any) -> AsyncGenerator[AsyncClient, None]:
+    transport = ASGITransport(app=app)
+    async with AsyncClient(transport=transport, base_url="http://testserver") as client:
+        yield client
 
 
-async def test_ajax_lookup_invalid_query_params(client: TestClient) -> None:
-    response = client.get("/admin/user/ajax/lookup")
+async def test_ajax_lookup_invalid_query_params(client: AsyncClient) -> None:
+    response = await client.get("/admin/user/ajax/lookup")
     assert response.status_code == 400
 
-    response = client.get("/admin/address/ajax/lookup")
+    response = await client.get("/admin/address/ajax/lookup")
     assert response.status_code == 400
 
-    response = client.get("/admin/user/ajax/lookup?name=test&term=x")
+    response = await client.get("/admin/user/ajax/lookup?name=test&term=x")
     assert response.status_code == 400
 
 
-async def test_ajax_response(client: TestClient) -> None:
+async def test_ajax_response_test(client: AsyncClient) -> None:
     user = User(name="John Snow")
     async with session_maker() as s:
         s.add(user)
         await s.commit()
 
-    response = client.get("/admin/address/ajax/lookup?name=user&term=john")
+    response = await client.get("/admin/address/ajax/lookup?name=user&term=john")
 
     assert response.status_code == 200
     assert response.json() == {"results": [{"id": "1", "text": "User 1"}]}
 
 
-async def test_ajax_response_order_by(client: TestClient) -> None:
+async def test_ajax_response_order_by(client: AsyncClient) -> None:
     async with session_maker() as s:
         s.add(City(name="Sydney", state="NSW"))
         s.add(City(name="Melbourne", state="VIC"))
@@ -162,7 +162,7 @@ async def test_ajax_response_order_by(client: TestClient) -> None:
         s.add(City(name="Melbourne", state="TAS"))
         await s.commit()
 
-    response = client.get("/admin/address/ajax/lookup?name=city&term=nsw")
+    response = await client.get("/admin/address/ajax/lookup?name=city&term=nsw")
     # Sorted by state then id
     assert response.status_code == 200
     assert response.json() == {
@@ -172,7 +172,7 @@ async def test_ajax_response_order_by(client: TestClient) -> None:
         ]
     }
 
-    response = client.get("/admin/room/ajax/lookup?name=city&term=nsw")
+    response = await client.get("/admin/room/ajax/lookup?name=city&term=nsw")
     # Sorted by state then name
     assert response.status_code == 200
     assert response.json() == {
@@ -181,7 +181,7 @@ async def test_ajax_response_order_by(client: TestClient) -> None:
             {"id": "3", "text": "Newcastle, NSW"},
         ]
     }
-    response = client.get("/admin/room/ajax/lookup?name=city&term=melb")
+    response = await client.get("/admin/room/ajax/lookup?name=city&term=melb")
     # Sorted by state then name
     assert response.status_code == 200
     assert response.json() == {
@@ -192,7 +192,7 @@ async def test_ajax_response_order_by(client: TestClient) -> None:
     }
 
 
-async def test_ajax_response_limit(client: TestClient) -> None:
+async def test_ajax_response_limit(client: AsyncClient) -> None:
     users_to_create = 5
     user_list = [User(name=f"John Snow {i}") for i in range(users_to_create)]
     async with session_maker() as s:
@@ -200,7 +200,7 @@ async def test_ajax_response_limit(client: TestClient) -> None:
             s.add(user)
         await s.commit()
 
-    response = client.get("/admin/address/ajax/lookup?name=user&term=john")
+    response = await client.get("/admin/address/ajax/lookup?name=user&term=john")
 
     assert response.status_code == 200
     # Address admin has no limit so will return all created users
@@ -211,7 +211,7 @@ async def test_ajax_response_limit(client: TestClient) -> None:
         ]
     }
 
-    response = client.get("/admin/room/ajax/lookup?name=user&term=john")
+    response = await client.get("/admin/room/ajax/lookup?name=user&term=john")
 
     assert response.status_code == 200
     # Room admin has a limit 3 of
@@ -228,20 +228,20 @@ async def test_create_ajax_loader_exceptions() -> None:
         create_ajax_loader(model_admin=AddressAdmin(), name="user", options={})
 
 
-async def test_create_page_template(client: TestClient) -> None:
-    response = client.get("/admin/user/create")
+async def test_create_page_template(client: AsyncClient) -> None:
+    response = await client.get("/admin/user/create")
 
     assert 'data-json="[]"' in response.text
     assert 'data-role="select2-ajax"' in response.text
     assert 'data-url="/admin/user/ajax/lookup"' in response.text
 
-    response = client.get("/admin/address/create")
+    response = await client.get("/admin/address/create")
 
     assert 'data-role="select2-ajax"' in response.text
     assert 'data-url="/admin/address/ajax/lookup"' in response.text
 
 
-async def test_edit_page_template(client: TestClient) -> None:
+async def test_edit_page_template(client: AsyncClient) -> None:
     user = User(name="John Snow")
     async with session_maker() as s:
         s.add(user)
@@ -251,7 +251,7 @@ async def test_edit_page_template(client: TestClient) -> None:
         s.add(address)
         await s.commit()
 
-    response = client.get("/admin/user/edit/1")
+    response = await client.get("/admin/user/edit/1")
     assert (
         'data-json="[{&#34;id&#34;: &#34;1&#34;, &#34;text&#34;: &#34;Address 1&#34;}]"'
         in response.text
@@ -259,7 +259,7 @@ async def test_edit_page_template(client: TestClient) -> None:
     assert 'data-role="select2-ajax"' in response.text
     assert 'data-url="/admin/user/ajax/lookup"' in response.text
 
-    response = client.get("/admin/address/edit/1")
+    response = await client.get("/admin/address/edit/1")
     assert (
         'data-json="[{&#34;id&#34;: &#34;1&#34;, &#34;text&#34;: &#34;User 1&#34;}]"'
         in response.text
@@ -268,18 +268,18 @@ async def test_edit_page_template(client: TestClient) -> None:
     assert 'data-url="/admin/address/ajax/lookup"' in response.text
 
 
-async def test_create_and_edit_forms(client: TestClient) -> None:
-    response = client.post("/admin/address/create", data={})
+async def test_create_and_edit_forms(client: AsyncClient) -> None:
+    response = await client.post("/admin/address/create", data={})
     assert response.status_code == 302
-    response = client.post("/admin/address/create", data={"id": "2"})
+    response = await client.post("/admin/address/create", data={"id": "2"})
     assert response.status_code == 302
 
     data = {"addresses": ["1"], "name": "Tyrion"}
-    response = client.post("/admin/user/create", data=data)
+    response = await client.post("/admin/user/create", data=data)
     assert response.status_code == 302
 
     data = {}
-    response = client.post("/admin/address/edit/1", data=data)
+    response = await client.post("/admin/address/edit/1", data=data)
     assert response.status_code == 302
 
     async with session_maker() as s:
@@ -290,7 +290,7 @@ async def test_create_and_edit_forms(client: TestClient) -> None:
     assert len(user.addresses) == 0
 
     data = {"addresses": ["1"]}
-    response = client.post("/admin/user/edit/1", data=data)
+    response = await client.post("/admin/user/edit/1", data=data)
     assert response.status_code == 302
 
     async with session_maker() as s:
@@ -301,7 +301,7 @@ async def test_create_and_edit_forms(client: TestClient) -> None:
     assert len(user.addresses) == 1
 
     data = {"addresses": ["1", "2"]}
-    response = client.post("/admin/user/edit/1", data=data)
+    response = await client.post("/admin/user/edit/1", data=data)
     assert response.status_code == 302
 
     async with session_maker() as s:
