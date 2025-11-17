@@ -40,8 +40,12 @@ class Hero(SQLModel, table=True):
 @pytest.fixture(autouse=True)
 def prepare_database() -> AsyncGenerator[None, None]:
     SQLModel.metadata.create_all(engine)
+
     yield
-    SQLModel.metadata.drop_all(engine)
+
+    with engine.begin() as conn:
+        for table in reversed(SQLModel.metadata.sorted_tables):
+            table.drop(conn)
 
 
 async def test_model_form_converter() -> None:
