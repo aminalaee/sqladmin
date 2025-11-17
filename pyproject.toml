@@ -15,6 +15,7 @@ authors = [
 classifiers = [
   "Development Status :: 4 - Beta",
   "Programming Language :: Python",
+  "Programming Language :: Python :: 3.9",
   "Programming Language :: Python :: 3.10",
   "Programming Language :: Python :: 3.11",
   "Programming Language :: Python :: 3.12",
@@ -82,7 +83,7 @@ dependencies = [
 ]
 
 [[tool.hatch.envs.test.matrix]]
-python = ["38", "39", "310", "311", "3.12"]
+python = ["3.9", "3.10", "3.11", "3.12", "3.13", "3.14"]
 
 [tool.hatch.envs.lint]
 dependencies = [
@@ -120,16 +121,6 @@ format = [
 build = "mkdocs build"
 serve = "mkdocs serve --dev-addr localhost:8080"
 deploy = "mkdocs gh-deploy --force"
-
-[[tool.hatch.envs.test.matrix]]
-sqlalchemy = ["1.4", "2.0"]
-
-[tool.hatch.envs.test.overrides]
-matrix.sqlalchemy.dependencies = [
-  { value = "sqlalchemy==1.4.41", if = ["1.4"] },
-  { value = "sqlmodel==0.0.8", if = ["1.4"] },
-  { value = "sqlalchemy==2.0", if = ["2.0"] },
-]
 
 [tool.mypy]
 disallow_untyped_defs = true

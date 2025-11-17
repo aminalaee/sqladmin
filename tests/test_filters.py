@@ -1,12 +1,12 @@
 import re
-from typing import Any, AsyncGenerator
+from typing import Any, AsyncGenerator, Generator
 
 import pytest
-from httpx import AsyncClient
 from sqlalchemy import Boolean, Column, Float, ForeignKey, Integer, String
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import declarative_base, sessionmaker
 from starlette.applications import Starlette
+from starlette.testclient import TestClient
 
 from sqladmin import Admin, ModelView
 from sqladmin.filters import (
@@ -167,10 +167,10 @@ async def prepare_data(prepare_database: Any) -> AsyncGenerator[None, None]:
 
 
 @pytest.fixture
-async def client(
+def client(
     prepare_database: Any, prepare_data: Any
-) -> AsyncGenerator[AsyncClient, None]:
-    async with AsyncClient(app=app, base_url="http://testserver") as c:
+) -> Generator[TestClient, None, None]:
+    with TestClient(app=app, base_url="http://testserver") as c:
         yield c
 
 
@@ -191,17 +191,17 @@ def assert_records_count(
 
 
 @pytest.mark.anyio
-async def test_column_filters_sidebar_existence(client: AsyncClient) -> None:
+async def test_column_filters_sidebar_existence(client: TestClient) -> None:
     """Test that the filter list sidebar appears only when filters are defined."""
     # Test view with filters (UserAdmin)
-    response = await client.get("/admin/user/list")
+    response = client.get("/admin/user/list")
     assert response.status_code == 200
 
     # Check for the filter sidebar container
     assert '<div id="filter-sidebar"' in response.text
 
     # Test view without filters (AddressAdmin)
-    response = await client.get("/admin/address/list")
+    response = client.get("/admin/address/list")
     assert response.status_code == 200
 
     # Verify filter sidebar does not appear
@@ -209,9 +209,9 @@ async def test_column_filters_sidebar_existence(client: AsyncClient) -> None:
 
 
 @pytest.mark.anyio
-async def test_filter_lookups(client: AsyncClient) -> None:
+async def test_filter_lookups(client: TestClient) -> None:
     """Test that the filter lookups are correct."""
-    response = await client.get("/admin/user/list")
+    response = client.get("/admin/user/list")
     assert response.status_code == 200
 
     # Check for the filter sidebar container
@@ -226,11 +226,11 @@ async def test_filter_lookups(client: AsyncClient) -> None:
 
 
 @pytest.mark.anyio
-async def test_boolean_filter_functionality(client: AsyncClient) -> None:
+async def test_boolean_filter_functionality(client: TestClient) -> None:
     """Test that boolean filters correctly filter users
     based on their is_admin status."""
     # Test with no filter or 'all' filter - should show both users
-    response = await client.get("/admin/user/list?is_admin=all")
+    response = client.get("/admin/user/list?is_admin=all")
 
     assert response.status_code == 200
     assert "Admin User" in response.text
@@ -238,14 +238,14 @@ async def test_boolean_filter_functionality(client: AsyncClient) -> None:
     assert_records_count(1, 2, 2, response.text)
 
     # Test filtering for admin users (is_admin=true)
-    response = await client.get("/admin/user/list?is_admin=true")
+    response = client.get("/admin/user/list?is_admin=true")
     assert response.status_code == 200
     assert "Admin User" in response.text
     assert "Regular User" not in response.text
     assert_records_count(1, 1, 1, response.text)
 
     # Test filtering for non-admin users (is_admin=false)
-    response = await client.get("/admin/user/list?is_admin=false")
+    response = client.get("/admin/user/list?is_admin=false")
     assert response.status_code == 200
     assert "Admin User" not in response.text
     assert "Regular User" in response.text
@@ -253,15 +253,15 @@ async def test_boolean_filter_functionality(client: AsyncClient) -> None:
 
 
 @pytest.mark.anyio
-async def test_foreign_key_filter_functionality(client: AsyncClient) -> None:
+async def test_foreign_key_filter_functionality(client: TestClient) -> None:
     """Test that foreign key filters correctly filter users based on their office."""
-    response = await client.get("/admin/user/list")
+    response = client.get("/admin/user/list")
     assert response.status_code == 200
     assert "Office1" in response.text
     assert "Office2" in response.text
     assert_records_count(1, 2, 2, response.text)
 
-    response = await client.get("/admin/user/list?office_id=1")
+    response = client.get("/admin/user/list?office_id=1")
     assert response.status_code == 200
     assert "Admin User" in response.text
     assert "Regular User" not in response.text
@@ -269,9 +269,9 @@ async def test_foreign_key_filter_functionality(client: AsyncClient) -> None:
 
 
 @pytest.mark.anyio
-async def test_static_values_filter_functionality(client: AsyncClient) -> None:
+async def test_static_values_filter_functionality(client: TestClient) -> None:
     """Test that static values filters correctly filter users based on their name."""
-    response = await client.get("/admin/user/list?static_name=Admin User")
+    response = client.get("/admin/user/list?static_name=Admin User")
     assert response.status_code == 200
     assert "adminadmin" in response.text
     assert "Admin User" in response.text
@@ -280,11 +280,11 @@ async def test_static_values_filter_functionality(client: AsyncClient) -> None:
 
 
 @pytest.mark.anyio
-async def test_column_filter_string_operations(client: AsyncClient) -> None:
+async def test_column_filter_string_operations(client: TestClient) -> None:
     """Test that ColumnFilter correctly handles string operations."""
     # Test contains operation
     url = "/admin/user/list?name=Admin&name_op=contains"
-    response = await client.get(url)
+    response = client.get(url)
     assert response.status_code == 200
     assert "Admin User" in response.text
     assert "Regular User" not in response.text
@@ -292,7 +292,7 @@ async def test_column_filter_string_operations(client: AsyncClient) -> None:
 
     # Test equals operation
     url = "/admin/user/list?name=Test User&name_op=equals"
-    response = await client.get(url)
+    response = client.get(url)
     assert response.status_code == 200
     assert "Test User" in response.text
     assert "Admin User" not in response.text
@@ -300,7 +300,7 @@ async def test_column_filter_string_operations(client: AsyncClient) -> None:
 
     # Test starts_with operation
     url = "/admin/user/list?name=Regular&name_op=starts_with"
-    response = await client.get(url)
+    response = client.get(url)
     assert response.status_code == 200
     assert "Regular User" in response.text
     assert "Admin User" not in response.text
@@ -308,7 +308,7 @@ async def test_column_filter_string_operations(client: AsyncClient) -> None:
 
     # Test ends_with operation
     url = "/admin/user/list?name=User&name_op=ends_with"
-    response = await client.get(url)
+    response = client.get(url)
     assert response.status_code == 200
     assert "Admin User" in response.text
     assert "Regular User" in response.text
@@ -316,24 +316,24 @@ async def test_column_filter_string_operations(client: AsyncClient) -> None:
 
 
 @pytest.mark.anyio
-async def test_column_filter_numeric_operations(client: AsyncClient) -> None:
+async def test_column_filter_numeric_operations(client: TestClient) -> None:
     """Test that ColumnFilter correctly handles numeric operations."""
     # Test equals operation for age
-    response = await client.get("/admin/user/list?age=35&age_op=equals")
+    response = client.get("/admin/user/list?age=35&age_op=equals")
     assert response.status_code == 200
     assert "Admin User" in response.text
     assert "Regular User" not in response.text
     assert "Test User" not in response.text
 
     # Test greater_than operation for age
-    response = await client.get("/admin/user/list?age=30&age_op=greater_than")
+    response = client.get("/admin/user/list?age=30&age_op=greater_than")
     assert response.status_code == 200
     assert "Admin User" in response.text
     assert "Test User" in response.text
     assert "Regular User" not in response.text
 
     # Test less_than operation for age
-    response = await client.get("/admin/user/list?age=30&age_op=less_than")
+    response = client.get("/admin/user/list?age=30&age_op=less_than")
     assert response.status_code == 200
     assert "Regular User" in response.text
     assert "Admin User" not in response.text
@@ -341,7 +341,7 @@ async def test_column_filter_numeric_operations(client: AsyncClient) -> None:
 
     # Test equals operation for salary (float)
     url = "/admin/user/list?salary=55000.75&salary_op=equals"
-    response = await client.get(url)
+    response = client.get(url)
     assert response.status_code == 200
     assert "Regular User" in response.text
     assert "Admin User" not in response.text
@@ -349,7 +349,7 @@ async def test_column_filter_numeric_operations(client: AsyncClient) -> None:
 
     # Test greater_than operation for salary
     url = "/admin/user/list?salary=60000&salary_op=greater_than"
-    response = await client.get(url)
+    response = client.get(url)
     assert response.status_code == 200
     assert "Admin User" in response.text
     assert "Test User" in response.text
@@ -357,11 +357,11 @@ async def test_column_filter_numeric_operations(client: AsyncClient) -> None:
 
 
 @pytest.mark.anyio
-async def test_column_filter_description_operations(client: AsyncClient) -> None:
+async def test_column_filter_description_operations(client: TestClient) -> None:
     """Test ColumnFilter string operations on description field."""
     # Test contains operation
     url = "/admin/user/list?description=administrator&description_op=contains"
-    response = await client.get(url)
+    response = client.get(url)
     assert response.status_code == 200
     assert "Admin User" in response.text
     assert "Regular User" not in response.text
@@ -369,7 +369,7 @@ async def test_column_filter_description_operations(client: AsyncClient) -> None
 
     # Test contains operation - case insensitive
     url = "/admin/user/list?description=SOFTWARE&description_op=contains"
-    response = await client.get(url)
+    response = client.get(url)
     assert response.status_code == 200
     assert "Regular User" in response.text
     assert "Admin User" not in response.text
@@ -377,7 +377,7 @@ async def test_column_filter_description_operations(client: AsyncClient) -> None
 
     # Test starts_with operation
     url = "/admin/user/list?description=Data&description_op=starts_with"
-    response = await client.get(url)
+    response = client.get(url)
     assert response.status_code == 200
     assert "Test User" in response.text
     assert "Admin User" not in response.text
@@ -385,7 +385,7 @@ async def test_column_filter_description_operations(client: AsyncClient) -> None
 
     # Test ends_with operation
     url = "/admin/user/list?description=applications&description_op=ends_with"
-    response = await client.get(url)
+    response = client.get(url)
     assert response.status_code == 200
     assert "Regular User" in response.text
     assert "Admin User" not in response.text
@@ -393,9 +393,9 @@ async def test_column_filter_description_operations(client: AsyncClient) -> None
 
 
 @pytest.mark.anyio
-async def test_column_filter_dropdown_ui_presence(client: AsyncClient) -> None:
+async def test_column_filter_dropdown_ui_presence(client: TestClient) -> None:
     """Test that ColumnFilter provides dropdown UI elements."""
-    response = await client.get("/admin/user/list")
+    response = client.get("/admin/user/list")
     assert response.status_code == 200
 
     # Check for the filter sidebar container
@@ -438,10 +438,10 @@ async def test_column_filter_dropdown_ui_presence(client: AsyncClient) -> None:
 
 
 @pytest.mark.anyio
-async def test_column_filter_invalid_values(client: AsyncClient) -> None:
+async def test_column_filter_invalid_values(client: TestClient) -> None:
     """Test that ColumnFilter handles invalid values gracefully."""
     # Test invalid numeric value for age
-    response = await client.get("/admin/user/list?age=invalid&age_op=equals")
+    response = client.get("/admin/user/list?age=invalid&age_op=equals")
     assert response.status_code == 200
     # Should show all users when invalid value is provided
     assert "Admin User" in response.text
@@ -450,7 +450,7 @@ async def test_column_filter_invalid_values(client: AsyncClient) -> None:
 
     # Test invalid numeric value for salary
     url = "/admin/user/list?salary=not_a_number&salary_op=greater_than"
-    response = await client.get(url)
+    response = client.get(url)
     assert response.status_code == 200
     # Should show all users when invalid value is provided
     assert "Admin User" in response.text
@@ -459,10 +459,10 @@ async def test_column_filter_invalid_values(client: AsyncClient) -> None:
 
 
 @pytest.mark.anyio
-async def test_column_filter_empty_values(client: AsyncClient) -> None:
+async def test_column_filter_empty_values(client: TestClient) -> None:
     """Test that ColumnFilter handles empty values gracefully."""
     # Test empty value for string field
-    response = await client.get("/admin/user/list?name=&name_op=contains")
+    response = client.get("/admin/user/list?name=&name_op=contains")
     assert response.status_code == 200
     # Should show all users when empty value is provided
     assert "Admin User" in response.text
@@ -470,7 +470,7 @@ async def test_column_filter_empty_values(client: AsyncClient) -> None:
     assert "Test User" in response.text
 
     # Test empty value for numeric field
-    response = await client.get("/admin/user/list?age=&age_op=equals")
+    response = client.get("/admin/user/list?age=&age_op=equals")
     assert response.status_code == 200
     # Should show all users when empty value is provided
     assert "Admin User" in response.text
@@ -482,7 +482,7 @@ async def test_column_filter_empty_values(client: AsyncClient) -> None:
     not HAS_UUID_SUPPORT, reason="UUID support requires SQLAlchemy 2.0+"
 )
 @pytest.mark.anyio
-async def test_column_filter_uuid_operations(client: AsyncClient) -> None:
+async def test_column_filter_uuid_operations(client: TestClient) -> None:
     """Test that ColumnFilter correctly handles UUID operations when supported."""
     import uuid
 
@@ -509,19 +509,19 @@ async def test_column_filter_uuid_operations(client: AsyncClient) -> None:
         partial_uuid = uuid_str[:8]  # Use first 8 characters
 
         url = f"/admin/user/list?user_uuid={partial_uuid}&user_uuid_op=contains"
-        response = await client.get(url)
+        response = client.get(url)
         assert response.status_code == 200
         assert "UUID User" in response.text
 
         # Test UUID starts_with operation
         url = f"/admin/user/list?user_uuid={partial_uuid}&user_uuid_op=starts_with"
-        response = await client.get(url)
+        response = client.get(url)
         assert response.status_code == 200
         assert "UUID User" in response.text
 
         # Test UUID equals operation (full UUID)
         url = f"/admin/user/list?user_uuid={uuid_str}&user_uuid_op=equals"
-        response = await client.get(url)
+        response = client.get(url)
         assert response.status_code == 200
         assert "UUID User" in response.text
 
@@ -585,31 +585,31 @@ async def test_column_filter_type_detection():
 
 
 @pytest.mark.anyio
-async def test_column_filter_operations_comprehensive(client: AsyncClient) -> None:
+async def test_column_filter_operations_comprehensive(client: TestClient) -> None:
     """Test all ColumnFilter operations comprehensively"""
 
     # Test string operations with ends_with
     url = "/admin/user/list?name=User&name_op=ends_with"
-    response = await client.get(url)
+    response = client.get(url)
     assert response.status_code == 200
 
     # Test numeric greater_than and less_than operations
     url = "/admin/user/list?age=25&age_op=greater_than"
-    response = await client.get(url)
+    response = client.get(url)
     assert response.status_code == 200
 
     url = "/admin/user/list?age=25&age_op=less_than"
-    response = await client.get(url)
+    response = client.get(url)
     assert response.status_code == 200
 
     # Test empty operation handling
     url = "/admin/user/list?name=Test&name_op="
-    response = await client.get(url)
+    response = client.get(url)
     assert response.status_code == 200
 
     # Test empty value handling
     url = "/admin/user/list?name=&name_op=contains"
-    response = await client.get(url)
+    response = client.get(url)
     assert response.status_code == 200
 
 
