@@ -125,9 +125,12 @@ class Product(Base):
 async def prepare_database() -> AsyncGenerator[None, None]:
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
+
     yield
+
     async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.drop_all)
+        for table in reversed(Base.metadata.sorted_tables):
+            await conn.run_sync(table.drop, conn)
 
     await engine.dispose()
 

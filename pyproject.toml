@@ -82,9 +82,6 @@ dependencies = [
   "sqlalchemy_utils",
 ]
 
-[[tool.hatch.envs.test.matrix]]
-python = ["3.9", "3.10", "3.11", "3.12", "3.13", "3.14"]
-
 [tool.hatch.envs.lint]
 dependencies = [
   "mypy==1.8.0",

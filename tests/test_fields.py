@@ -32,8 +32,12 @@ class User(Base):
 @pytest.fixture(autouse=True, scope="function")
 def prepare_database() -> Generator[None, None, None]:
     Base.metadata.create_all(engine)
+
     yield
-    Base.metadata.drop_all(engine)
+
+    with engine.begin() as conn:
+        for table in reversed(Base.metadata.sorted_tables):
+            table.drop(conn)
 
 
 def test_date_field() -> None:
