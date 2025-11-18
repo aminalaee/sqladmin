@@ -81,7 +81,7 @@ class BaseAdmin:
         self.favicon_url = favicon_url
 
         if hasattr(self.app, "root_path"):
-            self.base_url = self.app.root_path + base_url
+            self.base_url = urljoin(self.app.root_path + "/", base_url.lstrip("/"))
         else:
             self.base_url = base_url
 
