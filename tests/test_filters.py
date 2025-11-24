@@ -2,7 +2,7 @@ import re
 from typing import Any, AsyncGenerator
 
 import pytest
-from httpx import AsyncClient
+from httpx import ASGITransport, AsyncClient
 from sqlalchemy import Boolean, Column, Float, ForeignKey, Integer, String
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import declarative_base, sessionmaker
@@ -119,13 +119,11 @@ async def prepare_database() -> AsyncGenerator[None, None]:
     yield
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.drop_all)
-
     await engine.dispose()
 
 
 @pytest.fixture
 async def prepare_data(prepare_database: Any) -> AsyncGenerator[None, None]:
-    # Add test data
     async with session_maker() as session:
         office1 = Office(name="Office1")
         office2 = Office(name="Office2")
@@ -170,8 +168,9 @@ async def prepare_data(prepare_database: Any) -> AsyncGenerator[None, None]:
 async def client(
     prepare_database: Any, prepare_data: Any
 ) -> AsyncGenerator[AsyncClient, None]:
-    async with AsyncClient(app=app, base_url="http://testserver") as c:
-        yield c
+    transport = ASGITransport(app=app)
+    async with AsyncClient(transport=transport, base_url="http://testserver") as client:
+        yield client
 
 
 def assert_records_count(
