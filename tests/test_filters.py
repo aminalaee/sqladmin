@@ -285,59 +285,46 @@ async def test_applied_filter_highlighting(client: AsyncClient) -> None:
     # Test with is_admin=true filter applied
     response = await client.get("/admin/user/list?is_admin=true")
     assert response.status_code == 200
-    
+
     # Check that "Yes" option is highlighted with appropriate styling
     # Applied filter should have bg-secondary-lt class
-    assert re.search(
-        r'<div[^>]*class="[^"]*bg-secondary-lt[^"]*"[^>]*>',
-        response.text
-    )
-    
+    assert re.search(r'<div[^>]*class="[^"]*bg-secondary-lt[^"]*"[^>]*>', response.text)
+
     # Check for fw-bold and text-dark classes in the span
     assert re.search(
         r'<span[^>]*class="[^"]*fw-bold[^"]*text-dark[^"]*"[^>]*>\s*Yes\s*</span>',
         response.text,
-        re.DOTALL
+        re.DOTALL,
     )
-    
+
     # Check for the clear button with fa-times icon and "Clear filter" title
     assert 'title="Clear filter"' in response.text
     assert re.search(
-        r'<i[^>]*class="[^"]*fa-solid[^"]*fa-times[^"]*"[^>]*>',
-        response.text
+        r'<i[^>]*class="[^"]*fa-solid[^"]*fa-times[^"]*"[^>]*>', response.text
     )
-    
+
     # Check that "No" option is still a clickable link (not applied)
-    assert re.search(
-        r'<a[^>]*href="[^"]*is_admin=false[^"]*"[^>]*>',
-        response.text
-    )
-    
+    assert re.search(r'<a[^>]*href="[^"]*is_admin=false[^"]*"[^>]*>', response.text)
+
     # Test with title filter applied
     response = await client.get("/admin/user/list?title=Manager")
     assert response.status_code == 200
-    
+
     # Check that "Manager" is highlighted as applied filter with bg-secondary-lt
-    assert re.search(
-        r'<div[^>]*class="[^"]*bg-secondary-lt[^"]*"[^>]*>',
-        response.text
-    )
-    
+    assert re.search(r'<div[^>]*class="[^"]*bg-secondary-lt[^"]*"[^>]*>', response.text)
+
     # Check for fw-bold class and "Manager" text
     assert re.search(
         r'<span[^>]*class="[^"]*fw-bold[^"]*"[^>]*>\s*Manager\s*</span>',
         response.text,
-        re.DOTALL
+        re.DOTALL,
     )
-    
+
     # Check for the clear button
     assert 'title="Clear filter"' in response.text
-    
+
     # Check that "Developer" is still a clickable link (not applied)
-    assert re.search(
-        r'<a[^>]*href="[^"]*title=Developer[^"]*"[^>]*>',
-        response.text
-    )
+    assert re.search(r'<a[^>]*href="[^"]*title=Developer[^"]*"[^>]*>', response.text)
 
 
 @pytest.mark.anyio
