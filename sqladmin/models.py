@@ -20,7 +20,7 @@ from urllib.parse import urlencode
 import anyio
 from sqlalchemy import Column, String, asc, cast, desc, func, inspect, or_
 from sqlalchemy.exc import NoInspectionAvailable
-from sqlalchemy.orm import joinedload, sessionmaker
+from sqlalchemy.orm import selectinload, sessionmaker
 from sqlalchemy.orm.exc import DetachedInstanceError
 from sqlalchemy.sql.elements import ClauseElement
 from sqlalchemy.sql.expression import Select, select
@@ -779,7 +779,7 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
 
         stmt = self.list_query(request)
         for relation in self._list_relations:
-            stmt = stmt.options(joinedload(relation))
+            stmt = stmt.options(selectinload(relation))
 
         stmt = self.sort_query(stmt, request)
 
@@ -809,7 +809,7 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
         stmt = self.list_query(request).limit(limit)
 
         for relation in self._list_relations:
-            stmt = stmt.options(joinedload(relation))
+            stmt = stmt.options(selectinload(relation))
 
         rows = await self._run_query(stmt)
         return rows
@@ -822,7 +822,7 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
         stmt = self._stmt_by_identifier(value)
 
         for relation in self._details_relations:
-            stmt = stmt.options(joinedload(relation))
+            stmt = stmt.options(selectinload(relation))
 
         return await self._get_object_by_pk(stmt)
 
@@ -1069,7 +1069,7 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
 
         stmt = self._stmt_by_identifier(request.path_params["pk"])
         for relation in self._form_relations:
-            stmt = stmt.options(joinedload(relation))
+            stmt = stmt.options(selectinload(relation))
         return stmt
 
     def count_query(self, request: Request) -> Select:

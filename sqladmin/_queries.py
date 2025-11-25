@@ -3,7 +3,7 @@ from typing import TYPE_CHECKING, Any, Dict, List
 import anyio
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import Session, joinedload
+from sqlalchemy.orm import Session, selectinload
 from sqlalchemy.sql.expression import Select, and_, or_
 from starlette.requests import Request
 
@@ -152,7 +152,7 @@ class Query:
         stmt = self.model_view._stmt_by_identifier(pk)
 
         for relation in self.model_view._form_relations:
-            stmt = stmt.options(joinedload(relation))
+            stmt = stmt.options(selectinload(relation))
 
         async with self.model_view.session_maker(expire_on_commit=False) as session:
             result = await session.execute(stmt)
