@@ -12,11 +12,17 @@ from sqlalchemy import (
     ForeignKey,
     Integer,
     String,
+    Table,
     func,
     select,
 )
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import declarative_base, relationship, selectinload, sessionmaker
+from sqlalchemy.orm import (
+    declarative_base,
+    relationship,
+    selectinload,
+    sessionmaker,
+)
 from starlette.applications import Starlette
 from starlette.requests import Request
 
@@ -121,6 +127,36 @@ class Product(Base):
     price = Column(BigInteger)
 
 
+association_table = Table(
+    "association_table",
+    Base.metadata,
+    Column("author_id", ForeignKey("authors.id")),
+    Column("book_id", ForeignKey("books.id")),
+)
+
+
+class Author(Base):
+    __tablename__ = "authors"
+
+    id = Column(Integer, primary_key=True)
+    name = Column(String)
+    books = relationship("Book", secondary=association_table)
+
+    def __str__(self) -> str:
+        return f"{self.name}"
+
+
+class Book(Base):
+    __tablename__ = "books"
+
+    id = Column(Integer, primary_key=True)
+    title = Column(String)
+    text = Column(String)
+
+    def __str__(self) -> str:
+        return f"{self.title}"
+
+
 @pytest.fixture
 async def prepare_database() -> AsyncGenerator[None, None]:
     async with engine.begin() as conn:
@@ -156,6 +192,7 @@ class UserAdmin(ModelView, model=User):
     column_searchable_list = [User.name]
     column_sortable_list = [User.id]
     column_export_list = [User.name, User.status]
+    column_import_list = [User.name, User.status]
     column_formatters = {
         User.addresses_formattable: lambda m, a: [
             f"Formatted {a}" for a in m.addresses_formattable
@@ -169,12 +206,15 @@ class UserAdmin(ModelView, model=User):
         User.profile_formattable: lambda m, a: f"Formatted {m.profile_formattable}",
     }
     save_as = True
+    can_import = True
 
 
 class AddressAdmin(ModelView, model=Address):
     column_list = ["id", "user_id", "user", "user.profile.id"]
     name_plural = "Addresses"
     export_max_rows = 3
+    column_import_list = ["user"]
+    can_import = True
 
 
 class ProfileAdmin(ModelView, model=Profile):
@@ -197,11 +237,25 @@ class ProductAdmin(ModelView, model=Product):
     pass
 
 
+class AuthorAdmin(ModelView, model=Author):
+    column_list = [Author.id, Author.name, Author.books]
+    column_import_list = [Author.name, Author.books]
+    can_import = True
+
+
+class BookAdmin(ModelView, model=Book):
+    column_list = [Book.id, Book.title, Book.text]
+    column_import_list = [Book.id, Book.title, Book.text]
+    can_import = True
+
+
 admin.add_view(UserAdmin)
 admin.add_view(AddressAdmin)
 admin.add_view(ProfileAdmin)
 admin.add_view(MovieAdmin)
 admin.add_view(ProductAdmin)
+admin.add_view(AuthorAdmin)
+admin.add_view(BookAdmin)
 
 
 async def test_root_view(client: AsyncClient) -> None:
@@ -870,4 +924,148 @@ async def test_export_permission_csv(client: AsyncClient) -> None:
 
 async def test_export_permission_json(client: AsyncClient) -> None:
     response = await client.get("/admin/movie/export/json")
+    assert response.status_code == 403
+
+
+async def test_import_csv_file(client: AsyncClient) -> None:
+    await client.post(
+        "/admin/user/import",
+        files={
+            "csvfile": (
+                "user.csv",
+                b"name;status\r\nUSER_1;ACTIVE\r\nUSER_2;DEACTIVE\r\n",
+                "text/csv",
+            )
+        },
+    )
+    async with session_maker() as s:
+        result = await s.execute(select(User).order_by(User.id))
+        users = list(result.scalars())
+    assert users[0].name == "USER_1"
+    assert users[0].id == 1
+    assert users[0].status == Status.ACTIVE
+    assert users[1].name == "USER_2"
+    assert users[1].id == 2
+    assert users[1].status == Status.DEACTIVE
+
+
+async def test_import_csv_file_with_fk(client: AsyncClient) -> None:
+    await client.post(
+        "/admin/user/import",
+        files={
+            "csvfile": (
+                "user.csv",
+                b"id;name;status\r\n1;USER_1;ACTIVE\r\n2;USER_2;DEACTIVE\r\n",
+                "text/csv",
+            )
+        },
+    )
+    async with session_maker() as s:
+        result = await s.execute(select(User).order_by(User.id))
+        users = list(result.scalars())
+    assert users[0].name == "USER_1"
+    assert users[0].id == 1
+    assert users[1].name == "USER_2"
+    assert users[1].id == 2
+
+    await client.post(
+        "/admin/address/import",
+        files={
+            "csvfile": (
+                "address.csv",
+                b"id;user\r\n1;User 1\r\n2;User 2\r\n",
+                "text/csv",
+            )
+        },
+    )
+    async with session_maker() as s:
+        result = await s.execute(
+            select(Address).options(selectinload(Address.user)).order_by(Address.id)
+        )
+        addresses = list(result.scalars())
+    assert addresses[0].id == 1
+    assert addresses[0].user.name == "USER_1"
+    assert addresses[0].user.id == 1
+    assert addresses[1].id == 2
+    assert addresses[1].user.name == "USER_2"
+    assert addresses[1].user.id == 2
+
+
+async def test_import_csv_file_with_many_to_many(client: AsyncClient) -> None:
+    files = {
+        "csvfile": (
+            "book.csv",
+            b"id;title;text\r\n1;cool book;Once upon a time\r\n2;good_book;Well...\r\n",
+            "text/csv",
+        )
+    }
+    await client.post("/admin/book/import", files=files)
+    async with session_maker() as s:
+        result = await s.execute(select(Book).order_by(Book.id))
+        books = list(result.scalars())
+    assert books[0].title == "cool book"
+    assert books[0].text == "Once upon a time"
+    assert books[0].id == 1
+    assert books[1].title == "good_book"
+    assert books[1].text == "Well..."
+    assert books[1].id == 2
+
+    files = {
+        "csvfile": (
+            "author.csv",
+            b"name;books\r\nalex;cool book,good_book\r\nsam;cool book,good_book\r\n",
+            "text/csv",
+        )
+    }
+    await client.post(
+        "/admin/author/import",
+        files=files,
+    )
+    async with session_maker() as s:
+        result = await s.execute(
+            select(Author).options(selectinload(Author.books)).order_by(Author.id)
+        )
+        authors = list(result.scalars())
+    assert authors[0].id == 1
+    assert authors[0].books[0].text == "Once upon a time"
+    assert authors[0].books[1].text == "Well..."
+    assert authors[1].id == 2
+    assert authors[1].books[0].text == "Once upon a time"
+    assert authors[1].books[1].text == "Well..."
+
+
+async def test_import_csv_button(client: AsyncClient) -> None:
+    response = await client.get("/admin/user/list")
+    assert response.status_code == 200
+    assert (
+        '<input id="csvfile" name="csvfile" type="file" accept="text/csv" />'
+        in response.text
+    )
+
+
+async def test_import_csv_bad_type_is_404(client: AsyncClient) -> None:
+    response = await client.post(
+        "/admin/notfound/import",
+        files={
+            "csvfile": (
+                "notfound.csv",
+                b"id\r\n1\r\n2\r\n",
+                "text/csv",
+            )
+        },
+    )
+    assert response.status_code == 404
+
+
+async def test_import_csv_permission(client: AsyncClient) -> None:
+    response = await client.post(
+        "/admin/movie/import",
+        files={
+            "csvfile": (
+                "movie.csv",
+                b"id\r\n1\r\n2\r\n",
+                "text/csv",
+            )
+        },
+    )
     assert response.status_code == 403

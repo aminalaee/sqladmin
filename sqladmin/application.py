@@ -36,6 +36,7 @@ from sqladmin.forms import WTFORMS_ATTRS, WTFORMS_ATTRS_REVERSED
 from sqladmin.helpers import (
     get_object_identifier,
     is_async_session_maker,
+    parse_csv,
     slugify_action_name,
 )
 from sqladmin.models import BaseView, ModelView
@@ -321,6 +322,11 @@ class BaseAdminView(BaseAdmin):
         if request.path_params["export_type"] not in model_view.export_types:
             raise HTTPException(status_code=404)
 
+    async def _import(self, request: Request) -> None:
+        model_view = self._find_model_view(request.path_params["identity"])
+        if not model_view.can_import or not model_view.is_accessible(request):
+            raise HTTPException(status_code=403)
+
 
 class Admin(BaseAdminView):
     """Main entrypoint to admin interface.
@@ -424,6 +430,12 @@ class Admin(BaseAdminView):
             ),
             Route(
                 "/{identity}/export/{export_type}", endpoint=self.export, name="export"
+            ),
+            Route(
+                "/{identity}/import",
+                endpoint=self.import_endpoint,
+                name="import",
+                methods=["POST"],
             ),
             Route(
                 "/{identity}/ajax/lookup", endpoint=self.ajax_lookup, name="ajax_lookup"
@@ -629,6 +641,58 @@ class Admin(BaseAdminView):
         )
         return await model_view.export_data(rows, export_type=export_type)
 
+    @login_required
+    async def import_endpoint(self, request: Request) -> Response:
+        """Import model endpoint."""
+
+        await self._import(request)
+
+        identity = request.path_params["identity"]
+        model_view = self._find_model_view(identity)
+
+        try:
+            csv_content = await self._handle_form_file(request)
+            if not csv_content:
+                return Response(content="Undefined file.", status_code=400)
+
+            data = parse_csv(csv_content, model_view._import_prop_names)
+
+        except Exception as e:
+            logger.exception(e)
+            return Response(content=f"Failed parse CSV file.\n{e}", status_code=400)
+
+        Form = await model_view.scaffold_form(model_view._form_create_rules)
+        for relation in model_view._mapper.relationships:
+            relation_name = relation.key
+            relation_mapper = relation.mapper.class_
+
+            relation_objs = await model_view.get_relation_objects(relation_mapper)
+            if not relation_objs:
+                continue
+            for relation_obj in relation_objs:
+                for row in data:
+                    n_row = []
+                    for value in row.getlist(relation_name):
+                        if value == str(relation_obj):
+                            n_row.append(str(relation_obj.id))
+                        else:
+                            n_row.append(value)
+                    row.setlist(relation_name, n_row)
+
+        import_models = []
+        for row in data:
+            form = Form(row)
+            if not form.validate():
+                continue
+            form_data_dict = self._denormalize_wtform_data(form.data, model_view.model)
+            import_models.append(form_data_dict)
+
+        await model_view.insert_many_models(request, import_models)
+
+        return RedirectResponse(
+            url=request.url_for("admin:list", identity=identity), status_code=302
+        )
+
     async def login(self, request: Request) -> Response:
         assert self.authentication_backend is not None
 
@@ -719,6 +783,19 @@ class Admin(BaseAdminView):
             else:
                 form_data.append((key, value))
         return FormData(form_data)
+
+    async def _handle_form_file(self, request: Request) -> bytes | None:
+        async with request.form(max_files=1) as form:
+            csv_file = form.get("csvfile")
+            assert isinstance(csv_file, UploadFile)
+            if (
+                not csv_file
+                or not csv_file.filename
+                or not csv_file.filename.endswith(".csv")
+            ):
+                return None
+            csv_content = await csv_file.read()
+        return csv_content
 
     def _normalize_wtform_data(self, obj: Any) -> dict:
         form_data = {}
