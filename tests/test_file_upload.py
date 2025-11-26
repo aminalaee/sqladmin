@@ -1,3 +1,4 @@
+from pathlib import Path
 from typing import Any, Generator
 
 import pytest
@@ -77,10 +78,10 @@ def test_create_form_post(client: TestClient) -> None:
 
     assert isinstance(user.file, StorageFile) is True
     assert user.file.name == "file.txt"
-    assert user.file.path == ".uploads/file.txt"
+    assert Path(user.file.path).as_posix() == ".uploads/file.txt"
     assert user.file.open().read() == b"abc"
     assert user.optional_file.name == "optional_file.txt"
-    assert user.optional_file.path == ".uploads/optional_file.txt"
+    assert Path(user.optional_file.path).as_posix() == ".uploads/optional_file.txt"
     assert user.optional_file.open().read() == b"cdb"
 
 
@@ -99,10 +100,10 @@ def test_create_form_update(client: TestClient) -> None:
 
     user = _query_user()
     assert user.file.name == "new_file.txt"
-    assert user.file.path == ".uploads/new_file.txt"
+    assert Path(user.file.path).as_posix() == ".uploads/new_file.txt"
     assert user.file.open().read() == b"xyz"
     assert user.optional_file.name == "new_optional_file.txt"
-    assert user.optional_file.path == ".uploads/new_optional_file.txt"
+    assert Path(user.optional_file.path).as_posix() == ".uploads/new_optional_file.txt"
     assert user.optional_file.open().read() == b"zyx"
 
     files = {"file": ("file.txt", b"abc")}
@@ -112,7 +113,7 @@ def test_create_form_update(client: TestClient) -> None:
 
     user = _query_user()
     assert user.file.name == "file.txt"
-    assert user.file.path == ".uploads/file.txt"
+    assert Path(user.file.path).as_posix() == ".uploads/file.txt"
     assert user.file.open().read() == b"abc"
     assert user.optional_file is None
 
