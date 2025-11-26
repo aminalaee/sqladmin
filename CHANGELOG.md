@@ -4,6 +4,40 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## Version 0.22.0 - 2025-11-24
+
+### Added
+* Implement OperationColumnFilter to filter String, Numeric, and UUID Types by @chezou in https://github.com/aminalaee/sqladmin/pull/945
+* Support Python 3.14 by @aminalaee in https://github.com/aminalaee/sqladmin/pull/963
+
+### Fixed
+* Fix filters inccorect records count by @birddevelper in https://github.com/aminalaee/sqladmin/pull/954
+* docs - update the example ColumnFilter by @proby-actvo in https://github.com/aminalaee/sqladmin/pull/949
+* Documentation improvements by @wnowicki in https://github.com/aminalaee/sqladmin/pull/941
+* Fix date and time type handling when used as primary key by @twoodwark in https://github.com/aminalaee/sqladmin/pull/958
+
+* **Full Changelog**: https://github.com/aminalaee/sqladmin/compare/0.21.0...0.22.0
+
+## Version 0.21.0 - 2025-07-02
+
+### Added
+* Add `category_icon` by @sheldygg in https://github.com/aminalaee/sqladmin/pull/848
+* Add model convertors docs by @Vasiliy566 in https://github.com/aminalaee/sqladmin/pull/883
+* Allow custom response in authentication logout by @joschnitzbauer in https://github.com/aminalaee/sqladmin/pull/914
+* ModelView @expose decorator support by @foarsitter in https://github.com/aminalaee/sqladmin/pull/881
+* Adding the ability to add filters to model views by @lorg in https://github.com/aminalaee/sqladmin/pull/906
+* Details page query by @wray27 in https://github.com/aminalaee/sqladmin/pull/929
+* export csv/json in `utf-8` by @alserious in https://github.com/aminalaee/sqladmin/pull/911
+* Indicate Required Fields with a Red Asterisk by @maxim-f1 in https://github.com/aminalaee/sqladmin/pull/880
+
+### Fixed
+* Update hatch command in CONTRIBUTING.md by @foarsitter in https://github.com/aminalaee/sqladmin/pull/882
+* fix: CategoryMenu is_active logic by @retromechs in https://github.com/aminalaee/sqladmin/pull/920
+* Doc update - Related model name by @wnowicki in https://github.com/aminalaee/sqladmin/pull/917
+* docs: Added model context, fixed syntax by @sreyemnayr in https://github.com/aminalaee/sqladmin/pull/930
+
+**Full Changelog**: https://github.com/aminalaee/sqladmin/compare/0.20.1...0.21.0
+
 ## Version 0.20.1 - 2024-10-28
 
 ### Fixed

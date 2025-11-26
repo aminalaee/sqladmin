@@ -197,15 +197,21 @@ class BaseAdmin:
         view_instance: BaseView | ModelView,
     ) -> None:
         if hasattr(func, "_exposed"):
+            if view.is_model:
+                path = f"/{view_instance.identity}" + getattr(func, "_path")
+                name = f"view-{view_instance.identity}-{func.__name__}"
+            else:
+                view.identity = getattr(func, "_identity")
+                path = getattr(func, "_path")
+                name = getattr(func, "_identity")
+
             self.admin.add_route(
                 route=func,
-                path=getattr(func, "_path"),
+                path=path,
                 methods=getattr(func, "_methods"),
-                name=getattr(func, "_identity"),
+                name=name,
                 include_in_schema=getattr(func, "_include_in_schema"),
             )
-
-            view.identity = getattr(func, "_identity")
 
     def add_model_view(self, view: type[ModelView]) -> None:
         """Add ModelView to the Admin.
@@ -233,6 +239,11 @@ class BaseAdmin:
         self._find_decorated_funcs(
             view, view_instance, self._handle_action_decorated_func
         )
+
+        self._find_decorated_funcs(
+            view, view_instance, self._handle_expose_decorated_func
+        )
+
         self._views.append(view_instance)
         self._build_menu(view_instance)
 
@@ -461,10 +472,9 @@ class Admin(BaseAdminView):
         """Details route."""
 
         await self._details(request)
-
         model_view = self._find_model_view(request.path_params["identity"])
+        model = await model_view.get_object_for_details(request)
 
-        model = await model_view.get_object_for_details(request.path_params["pk"])
         if not model:
             raise HTTPException(status_code=404)
 
@@ -638,7 +648,11 @@ class Admin(BaseAdminView):
     async def logout(self, request: Request) -> Response:
         assert self.authentication_backend is not None
 
-        await self.authentication_backend.logout(request)
+        response = await self.authentication_backend.logout(request)
+
+        if isinstance(response, Response):
+            return response
+
         return RedirectResponse(request.url_for("admin:index"), status_code=302)
 
     async def ajax_lookup(self, request: Request) -> Response:
