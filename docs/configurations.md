@@ -351,7 +351,7 @@ When enabled, exports utilize the `column_formatters` and `column_labels` define
 improving readability and ensuring consistency between the UI and exported data.  
 
 Custom cell formatting can be implemented in the ModelView class by overriding the async method 
-`custom_export_cell`.
+`custom_export_cell`, otherwise basic cell formatting is used by default.
 
 Example of usage:
 ```python
