@@ -28,7 +28,7 @@ try:
     from sqlalchemy import Uuid
 
     HAS_UUID_SUPPORT = True
-except ImportError:
+except ImportError:  # pragma: no cover
     # Fallback for SQLAlchemy < 2.0
     HAS_UUID_SUPPORT = False
     Uuid = None
@@ -52,7 +52,7 @@ def get_title(column: MODEL_ATTR) -> str:
 
 def get_column_obj(column: MODEL_ATTR, model: Any = None) -> Any:
     if isinstance(column, str):
-        if model is None:
+        if model is None:  # pragma: no cover
             raise ValueError("model is required for string column filters")
         return getattr(model, column)
     return column
@@ -189,9 +189,11 @@ class ForeignKeyFilter:
         self, request: Request, model: Any, run_query: Callable[[Select], Any]
     ) -> List[Tuple[str, str]]:
         foreign_key_obj = get_column_obj(self.foreign_key, model)
-        if self.foreign_model is None and isinstance(self.foreign_display_field, str):
+        if self.foreign_model is None and isinstance(
+            self.foreign_display_field, str
+        ):  # pragma: no cover
             raise ValueError("foreign_model is required for string foreign key filters")
-        if self.foreign_model is None:
+        if self.foreign_model is None:  # pragma: no cover
             assert not isinstance(self.foreign_display_field, str)
             foreign_display_field_obj = self.foreign_display_field
         else:

@@ -690,6 +690,52 @@ def test_many_to_many_filter_instance() -> None:
     assert filter_instance.has_operator is False
 
 
+async def test_many_to_many_filter_get_filtered_query(client: TestClient) -> None:
+    filter_instance = ManyToManyFilter(
+        column=User.id,
+        link_model=UserGroup,
+        local_field="user_id",
+        foreign_field="group_id",
+        foreign_model=Group,
+        foreign_display_field=Group.name,
+    )
+
+    stmt = select(User)
+    result = await filter_instance.get_filtered_query(stmt, "1", User)
+    assert result is not None
+
+    result = await filter_instance.get_filtered_query(stmt, ["1", "2"], User)
+    assert result is not None
+
+    # Test empty value
+    result = await filter_instance.get_filtered_query(stmt, "", User)
+    assert result == stmt
+
+    result = await filter_instance.get_filtered_query(stmt, [""], User)
+    assert result == stmt
+
+
+async def test_many_to_many_filter_lookups_empty() -> None:
+    filter_instance = ManyToManyFilter(
+        column=User.id,
+        link_model=UserGroup,
+        local_field="user_id",
+        foreign_field="group_id",
+        foreign_model=Group,
+        foreign_display_field=Group.name,
+        lookups_order=Group.name,
+    )
+
+    async def mock_run_query(stmt):
+        return []
+
+    class MockRequest:
+        pass
+
+    lookups = await filter_instance.lookups(MockRequest(), User, mock_run_query)
+    assert lookups[0] == ("", "All")
+
+
 def test_related_model_filter_instance() -> None:
     filter_instance = RelatedModelFilter(
         column=Address.user,
@@ -700,6 +746,84 @@ def test_related_model_filter_instance() -> None:
 
     assert filter_instance.title == "User Name"
     assert filter_instance.has_operator is False
+
+
+async def test_related_model_filter_get_filtered_query() -> None:
+    filter_instance = RelatedModelFilter(
+        column=Address.user,
+        foreign_column=User.name,
+        foreign_model=User,
+    )
+
+    stmt = select(Address)
+    result = await filter_instance.get_filtered_query(stmt, ["Test"], Address)
+    assert result is not None
+
+    # Test empty values
+    result = await filter_instance.get_filtered_query(stmt, "", Address)
+    assert result == stmt
+
+    result = await filter_instance.get_filtered_query(stmt, "all", Address)
+    assert result == stmt
+
+
+async def test_related_model_filter_safe_join() -> None:
+    filter_instance = RelatedModelFilter(
+        column=Address.user,
+        foreign_column=User.name,
+        foreign_model=User,
+    )
+
+    stmt = select(Address).join(User)
+    safe_stmt = filter_instance._safe_join(stmt, User)
+    assert str(safe_stmt).count("JOIN users") == 1
+
+
+async def test_related_model_filter_lookups_empty() -> None:
+    filter_instance = RelatedModelFilter(
+        column=Address.user,
+        foreign_column=User.name,
+        foreign_model=User,
+        lookups_order=User.name,
+    )
+
+    async def mock_run_query(stmt):
+        return []
+
+    class MockRequest:
+        pass
+
+    lookups = await filter_instance.lookups(MockRequest(), Address, mock_run_query)
+    assert lookups[0] == ("", "All")
+
+
+async def test_related_model_filter_boolean_column() -> None:
+    from sqlalchemy import Boolean
+
+    class TestModel(Base):
+        __tablename__ = "test_bool_model"
+        id = Column(Integer, primary_key=True)
+        is_active = Column(Boolean)
+
+    filter_instance = RelatedModelFilter(
+        column=Address.user,
+        foreign_column=TestModel.is_active,
+        foreign_model=TestModel,
+    )
+
+    class MockAdmin:
+        async def _run_arbitrary_query(self, stmt):
+            return []
+
+    class MockRequest:
+        pass
+
+    lookups = await filter_instance.lookups(
+        MockRequest(), Address, MockAdmin()._run_arbitrary_query
+    )
+
+    # Boolean should return special lookups
+    assert ("all", "All") in lookups or ("true", "Yes") in lookups
 
 
 def test_unique_values_filter_config() -> None:
@@ -713,3 +837,67 @@ def test_unique_values_filter_config() -> None:
     assert filter_instance.title == "User ID"
     assert filter_instance.lookups_ui_method is not None
     assert filter_instance.has_operator is False
+
+
+async def test_related_model_filter_with_boolean_true() -> None:
+    class BoolModel(Base):
+        __tablename__ = "bool_test_model"
+        id = Column(Integer, primary_key=True)
+        is_active = Column(Boolean)
+
+    filter_instance = RelatedModelFilter(
+        column=Address.id,
+        foreign_column=BoolModel.is_active,
+        foreign_model=BoolModel,
+    )
+
+    stmt = select(Address)
+    result = await filter_instance.get_filtered_query(stmt, ["true"], Address)
+    assert result is not None
+
+
+async def test_related_model_filter_with_boolean_false() -> None:
+    class BoolModel(Base):
+        __tablename__ = "bool_test_model2"
+        id = Column(Integer, primary_key=True)
+        is_active = Column(Boolean)
+
+    filter_instance = RelatedModelFilter(
+        column=Address.id,
+        foreign_column=BoolModel.is_active,
+        foreign_model=BoolModel,
+    )
+
+    stmt = select(Address)
+    result = await filter_instance.get_filtered_query(stmt, ["false"], Address)
+    assert result is not None
+
+
+def test_list_method_with_getlist_filters(client: TestClient) -> None:
+    """Test list method handles getlist for multiple filter values"""
+    response = client.get("/admin/user/list?name=Test1&name=Test2")
+    assert response.status_code == 200
+
+
+def test_list_method_async_search_disabled(client: TestClient) -> None:
+    """Test list method with async_search=False (default)"""
+    response = client.get("/admin/user/list?search=test")
+    assert response.status_code == 200
+
+
+async def test_related_model_filter_none_condition():
+    class BoolModel3(Base):
+        __tablename__ = "bool_test_model3"
+        id = Column(Integer, primary_key=True)
+        is_active = Column(Boolean)
+
+    filter_instance = RelatedModelFilter(
+        column=Address.id,
+        foreign_column=BoolModel3.is_active,
+        foreign_model=BoolModel3,
+    )
+
+    stmt = select(Address)
+    # Value that causes None condition (not "true" or "false")
+    result = await filter_instance.get_filtered_query(stmt, ["other"], Address)
+    assert result == stmt

@@ -836,21 +836,82 @@ async def test_column_filter_no_operation_or_value():
 
 
 @pytest.mark.anyio
-async def test_unique_values_filter_integer(client: AsyncClient) -> None:
+async def test_unique_values_filter_integer(
+    client: AsyncClient, prepare_data: Any
+) -> None:
     response = await client.get("/admin/user/list?age=30")
     assert response.status_code == 200
 
 
 @pytest.mark.anyio
-async def test_unique_values_filter_float(client: AsyncClient) -> None:
+async def test_unique_values_filter_float(
+    client: AsyncClient, prepare_data: Any
+) -> None:
     response = await client.get("/admin/user/list?salary=50000")
     assert response.status_code == 200
 
 
 @pytest.mark.anyio
-async def test_unique_values_filter_multiple_values(client: AsyncClient) -> None:
+async def test_unique_values_filter_multiple_values(
+    client: AsyncClient, prepare_data: Any
+) -> None:
     response = await client.get("/admin/user/list?age=25&age=30")
     assert response.status_code == 200
+
+
+@pytest.mark.anyio
+async def test_unique_values_filter_lookups_integer(prepare_data: Any) -> None:
+    filter_instance = UniqueValuesFilter(User.age)
+
+    class MockRequest:
+        pass
+
+    admin_instance = UserAdmin()
+    lookups = await filter_instance.lookups(
+        MockRequest(), User, admin_instance._run_arbitrary_query
+    )
+
+    assert lookups[0] == ("", "All")
+    assert len(lookups) > 1
+
+
+@pytest.mark.anyio
+async def test_unique_values_filter_lookups_float(prepare_data: Any) -> None:
+    filter_instance = UniqueValuesFilter(
+        User.salary, float_round_method=lambda v: math.floor(v)
+    )
+
+    class MockRequest:
+        pass
+
+    admin_instance = UserAdmin()
+    lookups = await filter_instance.lookups(
+        MockRequest(), User, admin_instance._run_arbitrary_query
+    )
+
+    assert lookups[0] == ("", "All")
+    assert len(lookups) > 1
+
+
+@pytest.mark.anyio
+async def test_unique_values_filter_get_filtered_query_float(prepare_data: Any) -> None:
+    filter_instance = UniqueValuesFilter(User.salary)
+    stmt = select(User)
+
+    result = await filter_instance.get_filtered_query(stmt, ["50000"], User)
+    assert "floor(" in str(result).lower()
+
+
+@pytest.mark.anyio
+async def test_unique_values_filter_empty_value(prepare_data: Any) -> None:
+    filter_instance = UniqueValuesFilter(User.age)
+    stmt = select(User)
+
+    result = await filter_instance.get_filtered_query(stmt, "", User)
+    assert result == stmt
+
+    result = await filter_instance.get_filtered_query(stmt, [""], User)
+    assert result == stmt
 
 
 def test_unique_values_filter_instance() -> None:
@@ -919,6 +980,84 @@ async def test_date_range_filter_empty_values() -> None:
 
 
 @pytest.mark.anyio
+async def test_date_range_filter_with_start_only() -> None:
+    class TempModel(Base):
+        __tablename__ = "temp_model_test3"
+        id = Column(Integer, primary_key=True)
+        created_at = Column(DateTime)
+
+    filter_instance = DateRangeFilter(TempModel.created_at)
+    stmt = select(TempModel)
+
+    result = await filter_instance.get_filtered_query(
+        stmt, {"start": "2024-01-01T00:00:00", "end": None}, TempModel
+    )
+    assert result is not None
+    assert ">=" in str(result)
+
+
+@pytest.mark.anyio
+async def test_date_range_filter_with_end_only() -> None:
+    class TempModel(Base):
+        __tablename__ = "temp_model_test4"
+        id = Column(Integer, primary_key=True)
+        created_at = Column(DateTime)
+
+    filter_instance = DateRangeFilter(TempModel.created_at)
+    stmt = select(TempModel)
+
+    result = await filter_instance.get_filtered_query(
+        stmt, {"start": None, "end": "2024-12-31T23:59:59"}, TempModel
+    )
+    assert result is not None
+    assert "<=" in str(result)
+
+
+@pytest.mark.anyio
+async def test_date_range_filter_with_both() -> None:
+    class TempModel(Base):
+        __tablename__ = "temp_model_test5"
+        id = Column(Integer, primary_key=True)
+        created_at = Column(DateTime)
+
+    filter_instance = DateRangeFilter(TempModel.created_at)
+    stmt = select(TempModel)
+
+    result = await filter_instance.get_filtered_query(
+        stmt, {"start": "2024-01-01T00:00:00", "end": "2024-12-31T23:59:59"}, TempModel
+    )
+    assert result is not None
+    assert ">=" in str(result) and "<=" in str(result)
+
+
+@pytest.mark.anyio
+async def test_date_range_filter_with_list() -> None:
+    class TempModel(Base):
+        __tablename__ = "temp_model_test6"
+        id = Column(Integer, primary_key=True)
+        created_at = Column(DateTime)
+
+    filter_instance = DateRangeFilter(TempModel.created_at)
+    stmt = select(TempModel)
+
+    result = await filter_instance.get_filtered_query(
+        stmt, ["2024-01-01T00:00:00", "2024-12-31T23:59:59"], TempModel
+    )
+    assert result is not None
+
+
+@pytest.mark.anyio
+async def test_date_range_filter_lookups() -> None:
+    filter_instance = DateRangeFilter(User.id)
+
+    class MockRequest:
+        pass
+
+    lookups = await filter_instance.lookups(MockRequest(), User, lambda x: [])
+    assert lookups == []
+
+
+@pytest.mark.anyio
 async def test_enhanced_foreign_key_filter_multiple_values() -> None:
     filter_instance = ForeignKeyFilter(
         User.office_id,
@@ -947,3 +1086,132 @@ def test_enhanced_foreign_key_filter_with_ordering() -> None:
     assert filter_instance.lookups_order == Office.name
     assert filter_instance.title == "Office Id"
     assert filter_instance.parameter_name == "office_id"
+
+
+@pytest.mark.anyio
+async def test_unique_values_filter_string_lookups(prepare_data: Any) -> None:
+    filter_instance = UniqueValuesFilter(User.name)
+
+    class MockRequest:
+        pass
+
+    admin_instance = UserAdmin()
+    lookups = await filter_instance.lookups(
+        MockRequest(), User, admin_instance._run_arbitrary_query
+    )
+
+    assert lookups[0] == ("", "All")
+    assert all(isinstance(item[0], str) for item in lookups)
+
+
+def test_get_parameter_name_with_string():
+    from sqladmin.filters import get_parameter_name
+
+    result = get_parameter_name("test_column")
+    assert result == "test_column"
+
+
+def test_get_parameter_name_with_column():
+    from sqladmin.filters import get_parameter_name
+
+    result = get_parameter_name(User.name)
+    assert result == "name"
+
+
+def test_get_column_obj_with_string_no_model():
+    from sqladmin.filters import get_column_obj
+
+    with pytest.raises(ValueError, match="model is required"):
+        get_column_obj("test_column", None)
+
+
+def test_get_column_obj_with_string_and_model():
+    from sqladmin.filters import get_column_obj
+
+    result = get_column_obj("name", User)
+    assert result == User.name
+
+
+def test_get_column_obj_with_column():
+    from sqladmin.filters import get_column_obj
+
+    result = get_column_obj(User.name)
+    assert result == User.name
+
+
+def test_get_filter_value_integer():
+    from sqladmin.filters import _get_filter_value
+
+    result = _get_filter_value(["1", "2", "3"], Integer())
+    assert result == [1, 2, 3]
+
+
+def test_get_filter_value_float():
+    from sqladmin.filters import _get_filter_value
+
+    result = _get_filter_value(["1.5", "2.5"], Float())
+    assert result == [1.5, 2.5]
+
+
+def test_get_filter_value_string():
+    from sqladmin.filters import _get_filter_value
+
+    result = _get_filter_value(["a", "b"], String())
+    assert result == ["a", "b"]
+
+
+def test_prettify_attribute_name():
+    from sqladmin.filters import prettify_attribute_name
+
+    assert prettify_attribute_name("first_name") == "First Name"
+    assert prettify_attribute_name("is_admin") == "Is Admin"
+
+
+def test_get_title_with_string():
+    from sqladmin.filters import get_title
+
+    result = get_title("user_name")
+    assert result == "User Name"
+
+
+def test_get_title_with_column():
+    from sqladmin.filters import get_title
+
+    result = get_title(User.name)
+    assert result == "Name"
+
+
+def test_get_foreign_column_name():
+    from sqladmin.filters import get_foreign_column_name
+
+    result = get_foreign_column_name(User.office_id)
+    assert result == "id"
+
+
+def test_get_model_from_column():
+    from sqladmin.filters import get_model_from_column
+
+    result = get_model_from_column(User.name)
+    assert result == User
+
+
+@pytest.mark.anyio
+async def test_date_range_filter_with_invalid_dates():
+    filter_instance = DateRangeFilter(User.id)
+    stmt = select(User)
+
+    # Test with invalid date strings
+    result = await filter_instance.get_filtered_query(
+        stmt, {"start": "invalid", "end": "also-invalid"}, User
+    )
+    assert result == stmt
+
+
+@pytest.mark.anyio
+async def test_date_range_filter_with_non_dict():
+    filter_instance = DateRangeFilter(User.id)
+    stmt = select(User)
+
+    # Test with non-dict, non-list value
+    result = await filter_instance.get_filtered_query(stmt, "string-value", User)
+    assert result == stmt
