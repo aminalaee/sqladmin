@@ -783,7 +783,7 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
             return await anyio.to_thread.run_sync(self._run_query_sync, stmt)
 
     def _safe_join(self, stmt: Select, target_model: Any) -> Select:
-        """Safely join a model to the statement, avoiding duplicate joins."""
+        """Prevent duplicate JOINs."""
         for from_obj in stmt.get_final_froms():
             target_table = target_model.__tablename__
             is_table_already_joined = (
@@ -794,7 +794,7 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
         return stmt.join(target_model)
 
     def add_relation_loads(self, stmt: Select) -> Select:
-        """Add selectinload options for all list relations to optimize queries."""
+        """Add selectinload for all list relations."""
         for relation in self._list_relations:
             stmt = stmt.options(selectinload(relation))
         return stmt
@@ -1190,7 +1190,7 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
     async def async_search_query(
         self, stmt: Select, term: str, request: Request
     ) -> Select:
-        """Override for custom async search. Set async_search = True to enable."""
+        """Custom async search. Set async_search = True to enable."""
         return self.search_query(stmt, term)
 
     def list_query(self, request: Request) -> Select:

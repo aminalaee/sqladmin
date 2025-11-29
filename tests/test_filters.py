@@ -1,9 +1,19 @@
+import math
 import re
 from typing import Any, AsyncGenerator
 
 import pytest
 from httpx import ASGITransport, AsyncClient
-from sqlalchemy import Boolean, Column, Float, ForeignKey, Integer, String
+from sqlalchemy import (
+    Boolean,
+    Column,
+    DateTime,
+    Float,
+    ForeignKey,
+    Integer,
+    String,
+    select,
+)
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import declarative_base, sessionmaker
 from starlette.applications import Starlette
@@ -12,9 +22,11 @@ from sqladmin import Admin, ModelView
 from sqladmin.filters import (
     AllUniqueStringValuesFilter,
     BooleanFilter,
+    DateRangeFilter,
     ForeignKeyFilter,
     OperationColumnFilter,
     StaticValuesFilter,
+    UniqueValuesFilter,
 )
 from tests.common import async_engine as engine
 
@@ -821,3 +833,117 @@ async def test_column_filter_no_operation_or_value():
     # Test with empty value
     result = await filter_instance.get_filtered_query(stmt, "contains", "", User)
     assert result == stmt
+
+
+@pytest.mark.anyio
+async def test_unique_values_filter_integer(client: AsyncClient) -> None:
+    response = await client.get("/admin/user/list?age=30")
+    assert response.status_code == 200
+
+
+@pytest.mark.anyio
+async def test_unique_values_filter_float(client: AsyncClient) -> None:
+    response = await client.get("/admin/user/list?salary=50000")
+    assert response.status_code == 200
+
+
+@pytest.mark.anyio
+async def test_unique_values_filter_multiple_values(client: AsyncClient) -> None:
+    response = await client.get("/admin/user/list?age=25&age=30")
+    assert response.status_code == 200
+
+
+def test_unique_values_filter_instance() -> None:
+    filter_instance = UniqueValuesFilter(
+        User.age,
+        title="Age",
+        lookups_order=User.age,
+        lookups_ui_method=lambda v: f"{v} years",
+        float_round_method=lambda v: math.floor(v),
+    )
+
+    assert filter_instance.title == "Age"
+    assert filter_instance.parameter_name == "age"
+    assert filter_instance.has_operator is False
+    assert filter_instance.lookups_order == User.age
+    assert filter_instance.lookups_ui_method is not None
+    assert filter_instance.float_round_method is not None
+
+
+@pytest.mark.anyio
+async def test_unique_values_filter_float_filtering() -> None:
+    filter_instance = UniqueValuesFilter(
+        User.salary,
+        lookups_ui_method=lambda v: f"${v:.2f}",
+        float_round_method=lambda v: math.floor(v),
+    )
+
+    stmt = select(User)
+    result = await filter_instance.get_filtered_query(stmt, "50000", User)
+
+    assert "floor(" in str(result).lower() or result is not None
+
+
+def test_date_range_filter_instance() -> None:
+    class TempModel(Base):
+        __tablename__ = "temp_model_test"
+        id = Column(Integer, primary_key=True)
+        created_at = Column(DateTime)
+
+    filter_instance = DateRangeFilter(
+        TempModel.created_at, title="Created Date", parameter_name="created"
+    )
+
+    assert filter_instance.title == "Created Date"
+    assert filter_instance.parameter_name == "created"
+    assert filter_instance.has_operator is False
+
+
+@pytest.mark.anyio
+async def test_date_range_filter_empty_values() -> None:
+    class TempModel(Base):
+        __tablename__ = "temp_model_test2"
+        id = Column(Integer, primary_key=True)
+        created_at = Column(DateTime)
+
+    filter_instance = DateRangeFilter(TempModel.created_at)
+    stmt = select(TempModel)
+
+    result = await filter_instance.get_filtered_query(stmt, {}, TempModel)
+    assert result is not None
+
+    result = await filter_instance.get_filtered_query(
+        stmt, {"start": None, "end": None}, TempModel
+    )
+    assert result is not None
+
+
+@pytest.mark.anyio
+async def test_enhanced_foreign_key_filter_multiple_values() -> None:
+    filter_instance = ForeignKeyFilter(
+        User.office_id,
+        Office.name,
+        foreign_model=Office,
+        lookups_order=Office.name,
+    )
+
+    stmt = select(User)
+
+    result = await filter_instance.get_filtered_query(stmt, ["1", "2"], User)
+    assert result is not None
+
+    result = await filter_instance.get_filtered_query(stmt, "1", User)
+    assert result is not None
+
+
+def test_enhanced_foreign_key_filter_with_ordering() -> None:
+    filter_instance = ForeignKeyFilter(
+        User.office_id,
+        Office.name,
+        foreign_model=Office,
+        lookups_order=Office.name,
+    )
+
+    assert filter_instance.lookups_order == Office.name
+    assert filter_instance.title == "Office Id"
+    assert filter_instance.parameter_name == "office_id"

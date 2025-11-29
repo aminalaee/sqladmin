@@ -346,3 +346,28 @@ class TestPrettyExport:
             "test_export_with_special_chars.csv" in content_disposition
             or "test_export_with_special_chars_.csv" in content_disposition
         )
+
+
+@pytest.mark.anyio
+class TestPrettyExportJSON:
+    """Tests for pretty_export_json functionality"""
+
+    async def test_pretty_export_json_basic(self):
+        """Test basic JSON export with column labels"""
+
+        class UserAdmin(ModelView, model=User):
+            column_list = ["id", "name", "email"]
+            column_labels = {"name": "Full Name", "email": "Email Address"}
+            session_maker = session_maker
+            is_async = False
+
+        user1 = User(id=1, name="John Doe", email="john@example.com", is_active=True)
+        user2 = User(id=2, name="Jane", email="jane@example.com", is_active=False)
+        model_view = UserAdmin()
+        rows = [user1, user2]
+
+        response = await PrettyExport.pretty_export_json(model_view, rows)
+
+        assert isinstance(response, StreamingResponse)
+        assert ".json" in response.headers["content-disposition"]
+        assert response.media_type == "application/json"

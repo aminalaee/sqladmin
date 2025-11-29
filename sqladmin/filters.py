@@ -17,7 +17,6 @@ from sqlalchemy import (
 from sqlalchemy.orm import Mapper
 from sqlalchemy.sql.expression import Select, select
 from sqlalchemy.sql.sqltypes import _Binary
-from sqlmodel import SQLModel
 from starlette.requests import Request
 
 from sqladmin._types import MODEL_ATTR
@@ -307,10 +306,10 @@ class ManyToManyFilter:
     def __init__(
         self,
         column: MODEL_ATTR,
-        link_model: type[SQLModel],
+        link_model: Any,
         local_field: str,
         foreign_field: str,
-        foreign_model: type[SQLModel],
+        foreign_model: Any,
         foreign_display_field: MODEL_ATTR,
         title: str | None = None,
         parameter_name: str | None = None,

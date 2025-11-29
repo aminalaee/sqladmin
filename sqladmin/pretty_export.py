@@ -13,27 +13,18 @@ class PrettyExport:
     @staticmethod
     async def _base_export_cell(
         model_view: "ModelView", name: str, value: Any, formatted_value: Any
-    ) -> str:
-        """
-        Default formatting logic for a cell in pretty export.
-
-        Used when `custom_export_cell` returns None.
-        Applies standard rules for related fields, booleans, etc.
-
-        Only used when `use_pretty_export = True`.
-        """
-        # Check if this is a related field
+    ) -> Any:
         related_model_relations = getattr(model_view, "related_model_relations", [])
         if name in model_view._relation_names or name in related_model_relations:
             if isinstance(value, list):
                 cell_value = ",".join(str(v) for v in formatted_value)
             else:
-                cell_value = str(formatted_value)
+                cell_value = formatted_value
         else:
             if isinstance(value, bool):
                 cell_value = "TRUE" if value else "FALSE"
             else:
-                cell_value = str(formatted_value)
+                cell_value = formatted_value
         return cell_value
 
     @classmethod
@@ -81,8 +72,6 @@ class PrettyExport:
     async def pretty_export_json(
         cls, model_view: "ModelView", rows: List[Any]
     ) -> StreamingResponse:
-        """Export data as JSON with pretty formatting applied."""
-
         async def generate() -> AsyncGenerator[str, None]:
             yield "["
             column_names = model_view.get_export_columns()

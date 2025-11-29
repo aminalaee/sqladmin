@@ -1,4 +1,5 @@
 import enum
+import math
 from typing import Generator
 
 import pytest
@@ -21,6 +22,9 @@ from sqladmin import Admin, ModelView, expose
 from sqladmin.exceptions import InvalidModelError
 from sqladmin.filters import (
     AllUniqueStringValuesFilter,
+    ManyToManyFilter,
+    RelatedModelFilter,
+    UniqueValuesFilter,
 )
 from sqladmin.helpers import get_column_python_type
 from tests.common import sync_engine as engine
@@ -593,3 +597,119 @@ def test_expose_decorator(client: TestClient) -> None:
 
     with pytest.raises(TemplateNotFound, match="user.html"):
         client.get("/admin/user/profile/1")
+
+
+def test_safe_join_prevents_duplicates() -> None:
+    class AddressAdmin(ModelView, model=Address):
+        pass
+
+    admin_instance = AddressAdmin()
+    stmt = select(Address).join(User)
+    safe_stmt = admin_instance._safe_join(stmt, User)
+
+    assert safe_stmt is not None
+    assert str(safe_stmt).count("JOIN users") == 1
+
+
+def test_safe_join_adds_new_join() -> None:
+    class AddressAdmin(ModelView, model=Address):
+        pass
+
+    admin_instance = AddressAdmin()
+    stmt = select(Address)
+    joined_stmt = admin_instance._safe_join(stmt, User)
+
+    assert "JOIN users" in str(joined_stmt)
+
+
+def test_add_relation_loads() -> None:
+    class UserAdmin(ModelView, model=User):
+        column_list = [User.id, User.name, "addresses", "profile"]
+
+    admin_instance = UserAdmin()
+    stmt = select(User)
+    optimized_stmt = admin_instance.add_relation_loads(stmt)
+
+    assert optimized_stmt is not None
+    assert len(optimized_stmt._with_options) > 0
+
+
+async def test_async_search_query_default() -> None:
+    class UserAdmin(ModelView, model=User):
+        column_searchable_list = [User.name]
+
+    admin_instance = UserAdmin()
+    stmt = select(User)
+
+    class MockRequest:
+        pass
+
+    result_stmt = await admin_instance.async_search_query(stmt, "test", MockRequest())
+
+    assert result_stmt is not None
+    assert "lower(CAST(users.name AS VARCHAR))" in str(result_stmt)
+
+
+def test_search_query_uses_safe_join() -> None:
+    class AddressAdmin(ModelView, model=Address):
+        column_searchable_list = ["user.name"]
+
+    admin_instance = AddressAdmin()
+    stmt = admin_instance.search_query(select(Address), "test")
+    sql_str = str(stmt)
+
+    assert "JOIN users" in sql_str
+    assert sql_str.count("JOIN users") == 1
+
+
+def test_sort_query_uses_safe_join() -> None:
+    class AddressAdmin(ModelView, model=Address):
+        column_sortable_list = ["user.name"]
+
+    admin_instance = AddressAdmin()
+    request = Request({"type": "http", "query_string": b"sortBy=user.name&sort=asc"})
+    stmt = admin_instance.sort_query(select(Address), request)
+
+    assert "JOIN users" in str(stmt)
+    assert "ORDER BY users.name" in str(stmt)
+
+
+def test_many_to_many_filter_instance() -> None:
+    filter_instance = ManyToManyFilter(
+        column=User.id,
+        link_model=UserGroup,
+        local_field="user_id",
+        foreign_field="group_id",
+        foreign_model=Group,
+        foreign_display_field=Group.name,
+        title="Group",
+    )
+
+    assert filter_instance.title == "Group"
+    assert filter_instance.parameter_name == "name"
+    assert filter_instance.has_operator is False
+
+
+def test_related_model_filter_instance() -> None:
+    filter_instance = RelatedModelFilter(
+        column=Address.user,
+        foreign_column=User.name,
+        foreign_model=User,
+        title="User Name",
+    )
+
+    assert filter_instance.title == "User Name"
+    assert filter_instance.has_operator is False
+
+
+def test_unique_values_filter_config() -> None:
+    filter_instance = UniqueValuesFilter(
+        User.id,
+        title="User ID",
+        lookups_ui_method=lambda v: f"ID: {v}",
+        float_round_method=lambda v: math.floor(v),
+    )
+
+    assert filter_instance.title == "User ID"
+    assert filter_instance.lookups_ui_method is not None
+    assert filter_instance.has_operator is False
