@@ -346,3 +346,159 @@ class TestPrettyExport:
             "test_export_with_special_chars.csv" in content_disposition
             or "test_export_with_special_chars_.csv" in content_disposition
         )
+
+
+@pytest.mark.anyio
+class TestPrettyExportJSON:
+    async def test_pretty_export_json_basic(self):
+        class UserAdmin(ModelView, model=User):
+            column_list = ["id", "name", "email"]
+            column_labels = {"name": "Full Name", "email": "Email Address"}
+            session_maker = session_maker
+            is_async = False
+
+        user1 = User(id=1, name="John Doe", email="john@example.com", is_active=True)
+        user2 = User(id=2, name="Jane", email="jane@example.com", is_active=False)
+        model_view = UserAdmin()
+        rows = [user1, user2]
+
+        response = await PrettyExport.pretty_export_json(model_view, rows)
+
+        assert isinstance(response, StreamingResponse)
+        assert ".json" in response.headers["content-disposition"]
+        assert response.media_type == "application/json"
+
+        # Read and verify content
+        content = ""
+        async for chunk in response.body_iterator:
+            content += chunk if isinstance(chunk, str) else chunk.decode()
+
+        import json
+
+        data = json.loads(content)
+
+        assert len(data) == 2
+        assert "Full Name" in data[0]
+        assert "Email Address" in data[0]
+
+    async def test_pretty_export_json_empty(self):
+        class UserAdmin(ModelView, model=User):
+            column_list = ["id", "name"]
+            session_maker = session_maker
+            is_async = False
+
+        model_view = UserAdmin()
+        rows = []
+
+        response = await PrettyExport.pretty_export_json(model_view, rows)
+
+        content = ""
+        async for chunk in response.body_iterator:
+            content += chunk if isinstance(chunk, str) else chunk.decode()
+
+        import json
+
+        data = json.loads(content)
+        assert data == []
+
+    async def test_pretty_export_json_with_formatters(self):
+        class UserAdmin(ModelView, model=User):
+            column_list = ["id", "name", "is_active"]
+            column_formatters = {"name": lambda m, a: m.name.upper()}
+            session_maker = session_maker
+            is_async = False
+
+        user = User(id=1, name="John Doe", email="john@example.com", is_active=True)
+        model_view = UserAdmin()
+        rows = [user]
+
+        response = await PrettyExport.pretty_export_json(model_view, rows)
+
+        content = ""
+        async for chunk in response.body_iterator:
+            content += chunk if isinstance(chunk, str) else chunk.decode()
+
+        import json
+
+        data = json.loads(content)
+        assert data[0]["name"] == "JOHN DOE"
+
+    async def test_export_data_uses_pretty_json(self):
+        class UserAdmin(ModelView, model=User):
+            column_list = ["id", "name"]
+            use_pretty_export = True
+            export_types = ["csv", "json"]
+            session_maker = session_maker
+            is_async = False
+
+        user = User(id=1, name="John Doe", email="john@example.com", is_active=True)
+        model_view = UserAdmin()
+        rows = [user]
+
+        response = await model_view.export_data(rows, export_type="json")
+
+        assert isinstance(response, StreamingResponse)
+        assert response.media_type == "application/json"
+
+    async def test_base_export_cell_with_list_relations(self):
+        class UserAdmin(ModelView, model=User):
+            column_list = ["id", "name"]
+            session_maker = session_maker
+            is_async = False
+
+        model_view = UserAdmin()
+
+        # Test with list value in relation
+        result = await PrettyExport._base_export_cell(
+            model_view, "test_relation", ["item1", "item2"], ["Item 1", "Item 2"]
+        )
+        assert "Item 1,Item 2" in result or result == ["Item 1", "Item 2"]
+
+    async def test_base_export_cell_with_related_model_relations(self):
+        class UserAdmin(ModelView, model=User):
+            column_list = ["id", "name"]
+            session_maker = session_maker
+            is_async = False
+            related_model_relations = ["custom_relation"]
+
+        model_view = UserAdmin()
+
+        # Test with custom related_model_relations
+        result = await PrettyExport._base_export_cell(
+            model_view, "custom_relation", ["a", "b"], ["A", "B"]
+        )
+        assert result is not None
+
+
+@pytest.mark.anyio
+async def test_base_export_cell_list_value_in_relation():
+    class UserAdmin(ModelView, model=User):
+        session_maker = session_maker
+        is_async = False
+
+    model_view = UserAdmin()
+    model_view._relation_names = ["test_relation"]
+
+    # Test list value formatting
+    result = await PrettyExport._base_export_cell(
+        model_view, "test_relation", ["a", "b"], ["A", "B"]
+    )
+
+    assert "A,B" == result or result == ["A", "B"]
+
+
+@pytest.mark.anyio
+async def test_base_export_cell_non_list_relation():
+    class UserAdmin(ModelView, model=User):
+        session_maker = session_maker
+        is_async = False
+
+    model_view = UserAdmin()
+    model_view._relation_names = ["single_relation"]
+
+    # Test non-list value in relation (lines 21-22)
+    result = await PrettyExport._base_export_cell(
+        model_view, "single_relation", "single_value", "Formatted Value"
+    )
+
+    assert result == "Formatted Value"

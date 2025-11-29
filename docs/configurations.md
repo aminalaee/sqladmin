@@ -251,6 +251,157 @@ The filter UI provides a dropdown for operation selection and a text input for t
     
     Choose OperationColumnFilter when you want users to type custom search terms with operation flexibility, and AllUniqueStringValuesFilter when you want to show all available options as clickable links.
 
+## Advanced Filters
+
+SQLAdmin provides several advanced filter types for complex filtering scenarios:
+
+### UniqueValuesFilter
+
+Enhanced filter for unique column values with support for numeric types and custom formatting:
+
+!!! example
+
+    ```python
+    import math
+    from sqladmin.filters import UniqueValuesFilter
+
+    class ProductAdmin(ModelView, model=Product):
+        column_filters = [
+            # Basic usage
+            UniqueValuesFilter(Product.name),
+            
+            # With custom formatting for floats
+            UniqueValuesFilter(
+                Product.price,
+                lookups_ui_method=lambda value: f"${value:.2f}",  # Display as "$10.99"
+                float_round_method=lambda value: math.floor(value),  # Round for filtering
+                lookups_order=Product.price  # Custom sorting
+            ),
+            
+            # Integer columns
+            UniqueValuesFilter(Product.quantity, title="Stock Quantity")
+        ]
+    ```
+
+### ManyToManyFilter
+
+Filter through many-to-many relationships using a link/junction table:
+
+!!! example
+
+    ```python
+    from sqladmin.filters import ManyToManyFilter
+
+    class UserAdmin(ModelView, model=User):
+        column_filters = [
+            ManyToManyFilter(
+                column=User.id,
+                link_model=UserRole,  # Junction table
+                local_field="user_id",
+                foreign_field="role_id",
+                foreign_model=Role,
+                foreign_display_field=Role.name,
+                title="Role",
+                lookups_order=Role.name  # Sort roles alphabetically
+            )
+        ]
+    ```
+
+### RelatedModelFilter
+
+Filter by columns in related models through JOIN operations:
+
+!!! example
+
+    ```python
+    from sqladmin.filters import RelatedModelFilter
+
+    class UserAdmin(ModelView, model=User):
+        column_filters = [
+            RelatedModelFilter(
+                column=User.address,  # Relationship for joining
+                foreign_column=Address.city,  # Column to filter by
+                foreign_model=Address,
+                title="City",
+                lookups_order=Address.city
+            ),
+            # Filter by boolean in related model
+            RelatedModelFilter(
+                column=User.company,
+                foreign_column=Company.is_active,
+                foreign_model=Company,
+                title="Active Company"
+            )
+        ]
+    ```
+
+### Enhanced ForeignKeyFilter
+
+The `ForeignKeyFilter` now supports multiple value selection and custom ordering:
+
+!!! example
+
+    ```python
+    from sqladmin.filters import ForeignKeyFilter
+
+    class ProductAdmin(ModelView, model=Product):
+        column_filters = [
+            ForeignKeyFilter(
+                foreign_key=Product.category_id,
+                foreign_display_field=Category.name,
+                foreign_model=Category,
+                lookups_order=Category.name  # Sort alphabetically
+            )
+        ]
+    ```
+
+### DateRangeFilter
+
+Filter by date or datetime ranges with start and end values:
+
+!!! example
+
+    ```python
+    from sqladmin.filters import DateRangeFilter
+
+    class OrderAdmin(ModelView, model=Order):
+        column_filters = [
+            DateRangeFilter(
+                Order.created_at,
+                title="Order Date"
+            ),
+            DateRangeFilter(
+                Order.shipped_at,
+                title="Shipped Date"
+            )
+        ]
+    ```
+
+!!! tip "Multiple Values"
+
+    All new filter types support selecting multiple values. Users can select multiple filter options, and the query will return rows matching any of the selected values.
+
+See [Advanced Filtering Cookbook](cookbook/advanced_filtering.md) for more detailed examples and best practices.
+
+## Async Search
+
+For custom asynchronous search implementations, you can enable async search:
+
+!!! example
+
+    ```python
+    class UserAdmin(ModelView, model=User):
+        async_search = True  # Enable async search
+        column_searchable_list = [User.name, User.email]
+        
+        async def async_search_query(self, stmt: Select, term: str, request: Request) -> Select:
+            """Custom async search implementation."""
+            # Your custom async search logic here
+            # For example, search in external service or complex async operations
+            return stmt.filter(User.name.ilike(f"%{term}%"))
+    ```
+
+By default, `async_search` is `False` and the synchronous `search_query` method is used.
 
 ## Details page
 
