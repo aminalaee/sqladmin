@@ -1,3 +1,4 @@
+import json
 from typing import TYPE_CHECKING, Any, AsyncGenerator, List
 
 from starlette.responses import StreamingResponse
@@ -21,16 +22,18 @@ class PrettyExport:
 
         Only used when `use_pretty_export = True`.
         """
-        if name in model_view._relation_names:
+        # Check if this is a related field
+        related_model_relations = getattr(model_view, "related_model_relations", [])
+        if name in model_view._relation_names or name in related_model_relations:
             if isinstance(value, list):
-                cell_value = ",".join(formatted_value)
+                cell_value = ",".join(str(v) for v in formatted_value)
             else:
-                cell_value = formatted_value
+                cell_value = str(formatted_value)
         else:
             if isinstance(value, bool):
                 cell_value = "TRUE" if value else "FALSE"
             else:
-                cell_value = formatted_value
+                cell_value = str(formatted_value)
         return cell_value
 
     @classmethod
@@ -71,5 +74,38 @@ class PrettyExport:
         return StreamingResponse(
             content=stream_to_csv(generate),
             media_type="text/csv",
+            headers={"Content-Disposition": f"attachment;filename={filename}"},
+        )
+
+    @classmethod
+    async def pretty_export_json(
+        cls, model_view: "ModelView", rows: List[Any]
+    ) -> StreamingResponse:
+        """Export data as JSON with pretty formatting applied."""
+
+        async def generate() -> AsyncGenerator[str, None]:
+            yield "["
+            column_names = model_view.get_export_columns()
+            len_data = len(rows)
+            last_idx = len_data - 1
+            separator = "," if len_data > 1 else ""
+
+            for idx, row in enumerate(rows):
+                vals = await cls._get_export_row_values(model_view, row, column_names)
+                # Create dict with labeled keys
+                row_dict = {
+                    model_view._column_labels.get(name, name): val
+                    for name, val in zip(column_names, vals)
+                }
+                yield json.dumps(row_dict, ensure_ascii=False) + (
+                    separator if idx < last_idx else ""
+                )
+
+            yield "]"
+
+        filename = secure_filename(model_view.get_export_name(export_type="json"))
+        return StreamingResponse(
+            content=generate(),
+            media_type="application/json",
             headers={"Content-Disposition": f"attachment;filename={filename}"},
         )

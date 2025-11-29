@@ -35,6 +35,7 @@ Main features include:
 * [FastAPI](https://github.com/tiangolo/fastapi) integration
 * [WTForms](https://github.com/wtforms/wtforms) form building
 * [SQLModel](https://github.com/tiangolo/sqlmodel) support
+* Advanced filtering with support for relationships and many-to-many
 * UI using [Tabler](https://github.com/tabler/tabler)
 
 ---

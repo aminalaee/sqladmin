@@ -782,6 +782,23 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
         else:
             return await anyio.to_thread.run_sync(self._run_query_sync, stmt)
 
+    def _safe_join(self, stmt: Select, target_model: Any) -> Select:
+        """Safely join a model to the statement, avoiding duplicate joins."""
+        for from_obj in stmt.get_final_froms():
+            target_table = target_model.__tablename__
+            is_table_already_joined = (
+                from_obj._is_join and from_obj.right.fullname == target_table  # type: ignore[attr-defined]
+            )
+            if is_table_already_joined:
+                return stmt
+        return stmt.join(target_model)
+
+    def add_relation_loads(self, stmt: Select) -> Select:
+        """Add selectinload options for all list relations to optimize queries."""
+        for relation in self._list_relations:
+            stmt = stmt.options(selectinload(relation))
+        return stmt
+
     def _url_for_delete(self, request: Request, obj: Any) -> str:
         pk = get_object_identifier(obj)
         query_params = urlencode({"pks": pk})
@@ -851,11 +868,12 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
         search = request.query_params.get("search", None)
 
         stmt = self.list_query(request)
-        for relation in self._list_relations:
-            stmt = stmt.options(selectinload(relation))
+        stmt = self.add_relation_loads(stmt)
 
         for filter in self.get_filters():
             filter_param_name = filter.parameter_name
+            # Support both single value and multiple values
+            filter_value_list = request.query_params.getlist(filter_param_name)
             filter_value = request.query_params.get(filter_param_name)
 
             if filter_value:
@@ -871,15 +889,28 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
                         )
                 else:
                     # Use simple filtering for filters without operators
+                    # Pass list if multiple values, otherwise single value
                     simple_filter = typing_cast(SimpleColumnFilter, filter)
+                    value_to_pass = (
+                        filter_value_list
+                        if len(filter_value_list) > 1
+                        else filter_value
+                    )
                     stmt = await simple_filter.get_filtered_query(
-                        stmt, filter_value, self.model
+                        stmt, value_to_pass, self.model
                     )
 
         stmt = self.sort_query(stmt, request)
 
         if search:
-            stmt = self.search_query(stmt=stmt, term=search)
+            # Support async search if enabled
+            async_search = getattr(self, "async_search", False)
+            if async_search:
+                stmt = await self.async_search_query(
+                    stmt=stmt, term=search, request=request
+                )
+            else:
+                stmt = self.search_query(stmt=stmt, term=search)
 
         count = await self.count(request, select(func.count()).select_from(stmt))
 
@@ -902,8 +933,7 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
         limit = None if limit == 0 else limit
         stmt = self.list_query(request).limit(limit)
 
-        for relation in self._list_relations:
-            stmt = stmt.options(selectinload(relation))
+        stmt = self.add_relation_loads(stmt)
 
         rows = await self._run_query(stmt)
         return rows
@@ -1150,12 +1180,18 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
             parts = field.split(".")
             for part in parts[:-1]:
                 model = getattr(model, part).mapper.class_
-                stmt = stmt.join(model)
+                stmt = self._safe_join(stmt, model)
 
             field = getattr(model, parts[-1])
             expressions.append(cast(field, String).ilike(f"%{term}%"))
 
         return stmt.filter(or_(*expressions))
+
+    async def async_search_query(
+        self, stmt: Select, term: str, request: Request
+    ) -> Select:
+        """Override for custom async search. Set async_search = True to enable."""
+        return self.search_query(stmt, term)
 
     def list_query(self, request: Request) -> Select:
         """
@@ -1223,7 +1259,7 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
             parts = self._get_prop_name(sort_field).split(".")
             for part in parts[:-1]:
                 model = getattr(model, part).mapper.class_
-                stmt = stmt.join(model)
+                stmt = self._safe_join(stmt, model)
 
             if is_desc:
                 stmt = stmt.order_by(desc(getattr(model, parts[-1])))
@@ -1250,6 +1286,8 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
             )
             return await export_method
         elif export_type == "json":
+            if self.use_pretty_export:
+                return await PrettyExport.pretty_export_json(self, data)
             return await self._export_json(data)
         raise NotImplementedError("Only export_type='csv' or 'json' is implemented.")
 
@@ -1345,14 +1383,22 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
         for field_name in missing_fields:
             delattr(form_class, field_name)
 
-    async def perform_list_context(self, context: dict | None = None) -> dict:
-        pass
+    async def perform_list_context(
+        self, request: Request, context: dict | None = None
+    ) -> dict:
+        return context or {}
 
-    async def perform_details_context(self, context: dict | None = None) -> dict:
-        pass
+    async def perform_details_context(
+        self, request: Request, context: dict | None = None
+    ) -> dict:
+        return context or {}
 
-    async def perform_create_context(self, context: dict | None = None) -> dict:
-        pass
+    async def perform_create_context(
+        self, request: Request, context: dict | None = None
+    ) -> dict:
+        return context or {}
 
-    async def perform_edit_context(self, context: dict | None = None) -> dict:
-        pass
+    async def perform_edit_context(
+        self, request: Request, context: dict | None = None
+    ) -> dict:
+        return context or {}

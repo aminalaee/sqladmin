@@ -46,6 +46,26 @@ If you need to change one of the existing default templates in SQLAdmin such tha
 
     ```
 
+## Perform template context before rendering
+
+If you need to change some of the template context variables or add some additional information, you can add one of these functions to your model view
+
+```python
+class YourModelAdmin(ModelView, model=YourModel):
+
+    async def _load_additional_states_data(self, request: Request) -> None:
+        self.all_events = await SomeService.fetch_events()
+        self.all_state_names = await SomeStateService.fetch_additional_state_names()
+    
+    async def perform_list_context(self, request, context: dict | None = None) -> dict:
+        await self._load_additional_states_data(request)
+        return await super().perform_list_context(request, context)
+    
+    async def perform_details_context(self, request, context: dict | None = None) -> dict:
+        await self._load_additional_states_data(request)
+        return await super().perform_details_context(request, context)
+```
+
 ## Customizing Jinja2 environment
 
 You can add custom environment options to use it on your custom templates. First set up a project:
