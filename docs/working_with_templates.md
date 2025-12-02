@@ -26,6 +26,33 @@ SQLAdmin and in the `content` block it adds custom HTML tags:
         details_template = "custom_details.html"
     ```
 
+### Customizing column filter templates
+
+Each built-in column filter declares a `template` attribute which defaults to one of
+`sqladmin/filters/lookup_filter.html` or `sqladmin/filters/operation_filter.html`.
+You can point a filter to your own template for full control over its UI:
+
+!!! example
+
+    ```python title="admin.py"
+    from sqladmin.filters import OperationColumnFilter
+
+
+    class SliderFilter(OperationColumnFilter):
+        template = "filters/slider_filter.html"
+    ```
+
+    ```html title="templates/filters/slider_filter.html"
+    {% extends "sqladmin/filters/operation_filter.html" %}
+    {% block filter_body %}
+    {{ super() }}
+    <small class="text-muted">Drag to search quickly</small>
+    {% endblock %}
+    ```
+
+This makes it possible to ship custom filter widgets by subclassing an existing filter
+and only overriding its template.
+
 ## Overriding default templates
 
 If you need to change one of the existing default templates in SQLAdmin such that it affects multiple pages, you can do so by copying the existing template from `templates/sqladmin` into your `templates/sqladmin` directory. It will then be used instead of the one in the package. For example if there is some Javascript you want to run on every page you may want to do it in layout.html like so:
