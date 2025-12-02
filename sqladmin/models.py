@@ -1199,7 +1199,7 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
         By default it will select all objects without any filters.
         """
 
-        return select(func.count(self.pk_columns[0]))
+        return select(func.count(self.pk_columns[0])).select_from(self.model)
 
     def sort_query(self, stmt: Select, request: Request) -> Select:
         """
