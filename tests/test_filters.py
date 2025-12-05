@@ -31,7 +31,7 @@ Base = declarative_base()  # type: Any
 session_maker = sessionmaker(bind=engine, class_=AsyncSession, expire_on_commit=False)
 
 app = Starlette()
-admin = Admin(app=app, engine=engine)
+admin = Admin(app=app, engine=engine, templates_dir="tests/templates")
 
 
 def create_user_table():
@@ -73,6 +73,22 @@ class Office(Base):
     name = Column(String)
 
 
+class Project(Base):
+    __tablename__ = "projects"
+
+    id = Column(Integer, primary_key=True)
+    name = Column(String)
+    priority = Column(Integer)
+
+
+class CustomLookupFilter(StaticValuesFilter):
+    template = "sqladmin/filters/custom_lookup_filter.html"
+
+
+class CustomOperationFilter(OperationColumnFilter):
+    template = "sqladmin/filters/custom_operation_filter.html"
+
+
 class UserAdmin(ModelView, model=User):
     column_list = [User.name, User.title, User.age, User.salary, User.description]
     can_create = True
@@ -108,8 +124,25 @@ class AddressAdmin(ModelView, model=Address):
     # This admin will NOT have filters defined
 
 
+class ProjectAdmin(ModelView, model=Project):
+    column_list = [Project.name, Project.priority]
+    can_create = True
+    can_edit = True
+    can_delete = True
+    can_view_details = True
+    column_filters = [
+        CustomLookupFilter(
+            Project.name,
+            [("Alpha", "Alpha"), ("Beta", "Beta")],
+            parameter_name="project_name",
+        ),
+        CustomOperationFilter(Project.priority),
+    ]
+
+
 admin.add_view(UserAdmin)
 admin.add_view(AddressAdmin)
+admin.add_view(ProjectAdmin)
 
 
 @pytest.fixture
@@ -161,6 +194,11 @@ async def prepare_data(prepare_database: Any) -> AsyncGenerator[None, None]:
         session.add_all([user1, user2, user3])
         await session.commit()
 
+        project1 = Project(name="Alpha", priority=1)
+        project2 = Project(name="Beta", priority=2)
+        session.add_all([project1, project2])
+        await session.commit()
+
     yield
 
 
@@ -205,6 +243,15 @@ async def test_column_filters_sidebar_existence(client: AsyncClient) -> None:
 
     # Verify filter sidebar does not appear
     assert '<div id="filter-sidebar"' not in response.text
+
+
+@pytest.mark.anyio
+async def test_column_filter_custom_templates(client: AsyncClient) -> None:
+    """Custom templates set on filters should be rendered instead of defaults."""
+    response = await client.get("/admin/project/list")
+    assert response.status_code == 200
+    assert 'data-testid="custom-lookup-filter"' in response.text
+    assert 'data-testid="custom-operation-filter"' in response.text
 
 
 @pytest.mark.anyio
