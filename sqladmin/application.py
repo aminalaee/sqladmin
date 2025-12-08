@@ -115,6 +115,7 @@ class BaseAdmin:
         templates.env.globals["admin"] = self
         templates.env.globals["is_list"] = lambda x: isinstance(x, list)
         templates.env.globals["get_object_identifier"] = get_object_identifier
+        templates.env.globals["hasattr"] = hasattr
 
         return templates
 

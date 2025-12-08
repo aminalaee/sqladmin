@@ -262,8 +262,39 @@
                   </form>
                 </div>
               </div>
+              {% elif hasattr(filter, 'is_date_filter') and filter.is_date_filter %}
+              <!-- DateRangeFilter UI -->
+              <div class="mb-3">
+                <div class="fw-bold text-truncate fs-3 mb-2">{{ filter.title }}</div>
+                <form method="get" class="d-flex flex-column" style="gap: 8px;">
+                  <!-- Preserve existing query parameters -->
+                  {% for key, value in request.query_params.items() %}
+                    {% if key != filter.parameter_name + '_start' and key != filter.parameter_name + '_end' %}
+                    <input type="hidden" name="{{ key }}" value="{{ value }}">
+                    {% endif %}
+                  {% endfor %}
+                  
+                  <label class="form-label mb-1" style="font-size: 0.875rem;">From:</label>
+                  <input type="datetime-local" 
+                         name="{{ filter.parameter_name }}_start"
+                         class="form-control form-control-sm"
+                         value="{{ request.query_params.get(filter.parameter_name + '_start', '') }}">
+                  
+                  <label class="form-label mb-1" style="font-size: 0.875rem;">To:</label>
+                  <input type="datetime-local" 
+                         name="{{ filter.parameter_name }}_end"
+                         class="form-control form-control-sm"
+                         value="{{ request.query_params.get(filter.parameter_name + '_end', '') }}">
+                  
+                  <div class="d-flex gap-2">
+                    <a href="{{ request.url.remove_query_params(filter.parameter_name + '_start').remove_query_params(filter.parameter_name + '_end') }}" 
+                       class="btn btn-sm btn-outline-secondary flex-fill">Clear</a>
+                    <button type="submit" class="btn btn-sm btn-outline-primary flex-fill">Apply</button>
+                  </div>
+                </form>
+              </div>
               {% else %}
-              <!-- Fallback for other filter types -->
+              <!-- Standard filter types (links for backward compatibility) -->
               <div class="mb-3">
                 <div class="fw-bold text-truncate fs-3 mb-2">{{ filter.title }}</div>
                 <div>
@@ -307,4 +338,5 @@
   {% endif %}
   {% endfor %}
 </div>
+
 {% endblock %}

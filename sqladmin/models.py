@@ -872,33 +872,45 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
 
         for filter in self.get_filters():
             filter_param_name = filter.parameter_name
-            # Support both single value and multiple values
-            filter_value_list = request.query_params.getlist(filter_param_name)
-            filter_value = request.query_params.get(filter_param_name)
 
-            if filter_value:
-                if hasattr(filter, "has_operator") and filter.has_operator:
-                    # Use operation-based filtering
-                    operation_filter = typing_cast(OperationColumnFilter, filter)
-                    operation_param = request.query_params.get(
-                        f"{filter_param_name}_op"
-                    )
-                    if operation_param:
-                        stmt = await operation_filter.get_filtered_query(
-                            stmt, operation_param, filter_value, self.model
-                        )
-                else:
-                    # Use simple filtering for filters without operators
-                    # Pass list if multiple values, otherwise single value
+            # Handle DateRangeFilter specially
+            if hasattr(filter, "is_date_filter") and filter.is_date_filter:
+                start_param = request.query_params.get(f"{filter_param_name}_start")
+                end_param = request.query_params.get(f"{filter_param_name}_end")
+                if start_param or end_param:
+                    date_range = {"start": start_param, "end": end_param}
                     simple_filter = typing_cast(SimpleColumnFilter, filter)
-                    value_to_pass = (
-                        filter_value_list
-                        if len(filter_value_list) > 1
-                        else filter_value
-                    )
                     stmt = await simple_filter.get_filtered_query(
-                        stmt, value_to_pass, self.model
+                        stmt, date_range, self.model
                     )
+            else:
+                # Support both single value and multiple values
+                filter_value_list = request.query_params.getlist(filter_param_name)
+                filter_value = request.query_params.get(filter_param_name)
+
+                if filter_value:
+                    if hasattr(filter, "has_operator") and filter.has_operator:
+                        # Use operation-based filtering
+                        operation_filter = typing_cast(OperationColumnFilter, filter)
+                        operation_param = request.query_params.get(
+                            f"{filter_param_name}_op"
+                        )
+                        if operation_param:
+                            stmt = await operation_filter.get_filtered_query(
+                                stmt, operation_param, filter_value, self.model
+                            )
+                    else:
+                        # Use simple filtering for filters without operators
+                        # Pass list if multiple values, otherwise single value
+                        simple_filter = typing_cast(SimpleColumnFilter, filter)
+                        value_to_pass = (
+                            filter_value_list
+                            if len(filter_value_list) > 1
+                            else filter_value
+                        )
+                        stmt = await simple_filter.get_filtered_query(
+                            stmt, value_to_pass, self.model
+                        )
 
         stmt = self.sort_query(stmt, request)
 
