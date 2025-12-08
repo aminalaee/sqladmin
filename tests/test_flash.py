@@ -37,12 +37,7 @@ def test_flash_success_with_defaults(mock_request_with_session):
 def test_flash_success_with_custom_values(mock_request_with_session):
     request = mock_request_with_session
 
-    result = flash(
-        request,
-        message="Custom message",
-        category="danger",
-        title="Error"
-    )
+    result = flash(request, message="Custom message", category="danger", title="Error")
 
     assert result is True
 
