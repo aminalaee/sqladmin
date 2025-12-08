@@ -475,7 +475,7 @@ To add custom action on models to the Admin, you can use the `action` decorator.
 !!! example
 
     ```python
-    from sqladmin import BaseView, action
+    from sqladmin import BaseView, action, flash
     from starlette.responses import RedirectResponse
 
     class UserAdmin(ModelView, model=User):
@@ -494,6 +494,7 @@ To add custom action on models to the Admin, you can use the `action` decorator.
                     ...
 
             referer = request.headers.get("Referer")
+            flash("Users approved successfully", category="success")
             if referer:
                 return RedirectResponse(referer)
             else:
@@ -509,3 +510,5 @@ The available options for `action` are:
 - `add_in_list`: A boolean indicating if this action should be available in list page.
 - `add_in_detail`: A boolean indicating if this action should be available in detail page.
 - `confirmation_message`: A string message that if defined, will open a modal to ask for confirmation before calling the action method.
+
+You can use `flash` function to notify results to the custom action. Title and category parameters are optionally.

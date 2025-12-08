@@ -32,6 +32,7 @@ from sqladmin._menu import CategoryMenu, Menu, ViewMenu
 from sqladmin._types import ENGINE_TYPE
 from sqladmin.ajax import QueryAjaxModelLoader
 from sqladmin.authentication import AuthenticationBackend, login_required
+from sqladmin.flash import get_flashed_messages
 from sqladmin.forms import WTFORMS_ATTRS, WTFORMS_ATTRS_REVERSED
 from sqladmin.helpers import (
     get_object_identifier,
@@ -115,6 +116,7 @@ class BaseAdmin:
         templates.env.globals["admin"] = self
         templates.env.globals["is_list"] = lambda x: isinstance(x, list)
         templates.env.globals["get_object_identifier"] = get_object_identifier
+        templates.env.globals["get_flashed_messages"] = get_flashed_messages
 
         return templates
 
