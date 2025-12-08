@@ -4,7 +4,7 @@ from starlette.requests import Request
 
 
 def get_flashed_messages(request: Request) -> List[Dict[str, str]]:
-    messages = []
+    messages: List[Dict[str, str]] = []
     if "session" not in request.scope:
         return messages
 
