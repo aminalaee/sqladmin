@@ -5,6 +5,9 @@ from starlette.requests import Request
 
 def get_flashed_messages(request: Request) -> List[Dict[str, str]]:
     messages = []
+    if "session" not in request.scope:
+        return messages
+
     if "_messages" in request.session:
         messages = request.session.pop("_messages")
 
@@ -13,7 +16,10 @@ def get_flashed_messages(request: Request) -> List[Dict[str, str]]:
 
 def flash(
     request: Request, message: str, category: str = "primary", title: str = ""
-) -> None:
+) -> bool:
+    if "session" not in request.scope:
+        return False
+
     if "_messages" not in request.session:
         request.session["_messages"] = []
 
@@ -24,3 +30,5 @@ def flash(
             "message": message,
         }
     )
+
+    return True
