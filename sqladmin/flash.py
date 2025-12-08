@@ -1,7 +1,9 @@
+from typing import List, Dict
+
 from starlette.requests import Request
 
 
-def get_flashed_messages(request: Request):
+def get_flashed_messages(request: Request) -> List[Dict[str, str]]:
     messages = []
     if "_messages" in request.session:
         messages = request.session.pop("_messages")
