@@ -307,6 +307,7 @@
   {% endif %}
   {% endfor %}
 </div>
+	{% block flash %}
 	{% with messages = get_flashed_messages(request) %}
      {% if messages %}
        <div class="toast-container position-fixed bottom-0 end-0 p-3">
@@ -335,4 +336,5 @@
         </script>
      {% endif %}
    {% endwith %}
+   {% endblock %}
 {% endblock %}
