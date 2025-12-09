@@ -223,16 +223,7 @@
             </div>
             <div class="card-body">
               {% for filter in model_view.get_filters() %}
-              {% set filter_template = (
-                filter.template
-                if filter.template is defined and filter.template
-                else (
-                  "sqladmin/filters/operation_filter.html"
-                  if filter.has_operator
-                  else "sqladmin/filters/lookup_filter.html"
-                )
-              ) %}
-              {% include filter_template %}
+              {% include filter.template %}
               {% endfor %}
             </div>
           </div>
