@@ -29,7 +29,7 @@ class Flash:
         message: str,
         level: FlashLevel = FlashLevel.info,
         title: str = "",
-    ):
+    ) -> bool:
         """
         Adds a custom flash message in any custom level.
 
@@ -39,7 +39,7 @@ class Flash:
             level: The custom flash level.
             title: An optional title.
         """
-        flash(
+        return flash(
             request,
             message,
             level.value,
@@ -47,7 +47,7 @@ class Flash:
         )
 
     @classmethod
-    def info(cls, request: Request, message: str, title: str = ""):
+    def info(cls, request: Request, message: str, title: str = "") -> bool:
         """
         Adds an informational flash message (level: INFO).
 
@@ -56,7 +56,7 @@ class Flash:
             message: The message content.
             title: An optional title.
         """
-        cls.flash(
+        return cls.flash(
             request,
             message,
             FlashLevel.info,
@@ -64,7 +64,7 @@ class Flash:
         )
 
     @classmethod
-    def error(cls, request: Request, message: str, title: str = ""):
+    def error(cls, request: Request, message: str, title: str = "") -> bool:
         """
         Adds an error flash message (level: ERROR).
 
@@ -73,7 +73,7 @@ class Flash:
             message: The message content.
             title: An optional title.
         """
-        cls.flash(
+        return cls.flash(
             request,
             message,
             FlashLevel.error,
@@ -81,7 +81,7 @@ class Flash:
         )
 
     @classmethod
-    def warning(cls, request: Request, message: str, title: str = ""):
+    def warning(cls, request: Request, message: str, title: str = "") -> bool:
         """
         Adds a warning flash message (level: WARNING).
 
@@ -90,7 +90,7 @@ class Flash:
             message: The message content.
             title: An optional title.
         """
-        cls.flash(
+        return cls.flash(
             request,
             message,
             FlashLevel.warning,
@@ -98,7 +98,7 @@ class Flash:
         )
 
     @classmethod
-    def success(cls, request: Request, message: str, title: str = ""):
+    def success(cls, request: Request, message: str, title: str = "") -> bool:
         """
         Adds a successful action flash message (level: SUCCESS).
 
@@ -107,7 +107,7 @@ class Flash:
             message: The message content.
             title: An optional title.
         """
-        cls.flash(
+        return cls.flash(
             request,
             message,
             FlashLevel.success,
