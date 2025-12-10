@@ -1,7 +1,7 @@
 import pytest
 from starlette.requests import Request
 
-from sqladmin.flash import flash, get_flashed_messages
+from sqladmin.flash import Flash, FlashLevel, flash, get_flashed_messages
 
 
 @pytest.fixture
@@ -116,3 +116,33 @@ def test_get_flashed_messages_idempotency(mock_request_with_session):
     assert len(first_retrieval) == 1
     assert second_retrieval == []
     assert "_messages" not in request.session
+
+
+@pytest.mark.parametrize(
+    "method_name, expected_level",
+    [
+        ("info", FlashLevel.info.value),
+        ("error", FlashLevel.error.value),
+        ("warning", FlashLevel.warning.value),
+        ("success", FlashLevel.success.value),
+    ],
+)
+def test_flash_shortcuts(
+    mock_request_with_session, method_name: str, expected_level: str
+):
+    request = mock_request_with_session
+    message = f"Message for {method_name}"
+    title = f"Title for {method_name}"
+
+    flash_method = getattr(Flash, method_name)
+    flash_method(request, message, title)
+
+    messages = request.session.get("_messages")
+    assert len(messages) == 1
+
+    # Comprobamos los contenidos del mensaje añadido
+    assert messages[0] == {
+        "category": expected_level,
+        "title": title,
+        "message": message,
+    }
