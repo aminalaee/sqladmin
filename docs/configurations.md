@@ -530,7 +530,7 @@ The general-purpose method for adding any message with an explicitly defined `Fl
 !!! example
 
     ```python
-    from my_app.flashes import Flash, FlashLevel
+    from sqladmin import Flash, FlashLevel
     
     # Explicitly setting the level
     Flash.flash(request, "A crucial server process has started.", FlashLevel.warning, "System Alert")
@@ -551,7 +551,7 @@ They accept the same `request`, `message`, and optional `title` parameters.
 !!! example
 
     ```python
-    from my_app.flashes import Flash, FlashLevel
+    from sqladmin import Flash, FlashLevel
     
     # Using the success shortcut
     Flash.success(request, "Your profile was updated successfully.", "Update Complete")
