@@ -1,9 +1,10 @@
 [build-system]
-requires = ["hatchling"]
-build-backend = "hatchling.build"
+requires = ["uv_build>=0.9.17,<0.10.0"]
+build-backend = "uv_build"
 
 [project]
 name = "sqladmin"
+version = "0.22.0"
 description = 'SQLAlchemy admin for FastAPI and Starlette'
 readme = "README.md"
 requires-python = ">=3.10"
@@ -34,7 +35,7 @@ dependencies = [
   "jinja2",
   "python-multipart",
 ]
-dynamic = ["version"]
+
 
 [project.optional-dependencies]
 full = [
@@ -46,22 +47,9 @@ Documentation = "https://aminalaee.github.io/sqladmin/"
 Issues = "https://github.com/aminalaee/sqladmin/issues"
 Source = "https://github.com/aminalaee/sqladmin"
 
-[tool.hatch.version]
-path = "sqladmin/__init__.py"
 
-[tool.hatch.build.targets.wheel]
-[tool.hatch.build.targets.sdist]
-include = [
-    "/sqladmin",
-]
-
-[tool.hatch.build]
-exclude = [
-  "tests/*",
-]
-
-[tool.hatch.envs.test]
-dependencies = [
+[dependency-groups]
+dev = [
   "aiosqlite",
   "arrow",
   "asyncpg",
@@ -82,42 +70,24 @@ dependencies = [
   "sqlalchemy_utils",
 ]
 
-[tool.hatch.envs.lint]
-dependencies = [
+lint = [
   "mypy==1.8.0",
   "ruff==0.1.5",
-  "sqlalchemy~=1.4", # MyPy issues with SQLAlchemy V2
+  "sqlalchemy~=1.4",
 ]
 
-[tool.hatch.envs.docs]
-dependencies = [
+docs = [
   "mkdocs-material==9.6.14",
   "mkdocs==1.6.1",
   "mkdocstrings[python]==0.26.1",
 ]
 
-[tool.hatch.envs.test.scripts]
-cov = [
-  "coverage report --show-missing --skip-covered --fail-under=99",
-  "coverage xml",
-]
-test = "coverage run -a --concurrency=thread,greenlet -m pytest {args}"
 
-[tool.hatch.envs.lint.scripts]
-check = [
-  "ruff .",
-  "ruff format --check .",
-  "mypy sqladmin",
-]
-format = [
-  "ruff format .",
-  "ruff --fix .",
-]
-
-[tool.hatch.envs.docs.scripts]
-build = "mkdocs build"
-serve = "mkdocs serve --dev-addr localhost:8080"
-deploy = "mkdocs gh-deploy --force"
+# -----------------------------
+# OTHER ORIGINAL TOOL CONFIG
+# -----------------------------
+[tool.uv.build-backend]
+module-root = ""
 
 [tool.mypy]
 disallow_untyped_defs = true

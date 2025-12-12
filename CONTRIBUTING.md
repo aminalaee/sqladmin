@@ -55,13 +55,16 @@ Ready to contribute? Here's how to set up `sqladmin` for local development.
     $ git clone git@github.com:your_name_here/sqladmin.git
     ```
 
-3. Install [`Hatch`](https://hatch.pypa.io/latest/install/) for project management:
+3. Install [`uv`](https://docs.astral.sh/uv/) for project management
+
+4. Install [`pre-commit`](https://pre-commit.com/) and apply it:
 
     ```
-    $ pip install hatch
+    $ pip install pre-commit
+    $ pre-commit install
     ```
 
-4. Create a branch for local development:
+5. Create a branch for local development:
 
     ```
     $ git checkout -b name-of-your-bugfix-or-feature
@@ -69,20 +72,20 @@ Ready to contribute? Here's how to set up `sqladmin` for local development.
 
     Now you can make your changes locally.
 
-5. Apply linting and formatting, if not already done:
+6. Apply linting and formatting, if not already done:
 
     ```
-    $ hatch run lint:format
+    $ make format
     ```
 
-6. When you're done making changes, check that your changes pass the tests:
+7. When you're done making changes, check that your changes pass the tests:
 
     ```
-    $ hatch run lint:check
-    $ hatch run test:test
+    $ make lint
+    $ make test
     ```
 
-7. Commit your changes and push your branch to GitHub:
+8. Commit your changes and push your branch to GitHub:
 
     ```
     $ git add .
@@ -90,7 +93,7 @@ Ready to contribute? Here's how to set up `sqladmin` for local development.
     $ git push origin name-of-your-bugfix-or-feature
     ```
 
-8. Submit a pull request through the GitHub website.
+9.  Submit a pull request through the GitHub website.
 
 ## Pull Request Guidelines
 
