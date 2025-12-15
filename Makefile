@@ -73,11 +73,11 @@ docs-deploy:
 # -----------------------------
 
 build:
-	$(UV) build
+	uv build
 
 
 publish:
-	$(UV) publish
+	uv publish
 
 
 .PHONY: setup test cov lint-check lint-format docs-build docs-serve docs-deploy build publish
