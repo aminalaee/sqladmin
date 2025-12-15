@@ -65,9 +65,11 @@ dev = [
   "phonenumbers",
   "pillow",
   "psycopg[binary]",
+  "pylint>=4.0.4",
   "pytest",
   "python-dateutil",
   "sqlalchemy_utils",
+  "ty>=0.0.1a34",
 ]
 
 lint = [
@@ -93,6 +95,22 @@ module-root = ""
 disallow_untyped_defs = true
 ignore_missing_imports = true
 show_error_codes = true
+
+[tool.pylint.MASTER]
+disable = [
+  "missing-module-docstring", # C0114
+  "missing-class-docstring", # C0115
+  "missing-function-docstring", # C0116
+  "too-many-instance-attributes", # R902
+  "too-few-public-methods",  # R0903
+  "too-many-public-methods", # RO904
+  "too-many-arguments", # R0913
+  "too-many-locals", # R0914
+  "too-many-positional-arguments", # R0917
+  "protected-access", # W0212
+  "fixme", # W0511
+]
+fail-under=9.50
 
 [tool.ruff]
 select = ["E", "F", "I"]

@@ -53,7 +53,7 @@ class IntervalField(fields.StringField):
         if not interval:
             raise ValueError("Invalide timedelta format.")
 
-        self.data = interval
+        self.data = interval  # pylint: disable=attribute-defined-outside-init
 
 
 class SelectField(fields.SelectField):
@@ -91,12 +91,14 @@ class SelectField(fields.SelectField):
     def process_formdata(self, valuelist: list[str]) -> None:
         if valuelist:
             if valuelist[0] == "__None":
-                self.data = None
+                self.data = None  # pylint: disable=attribute-defined-outside-init
             else:
                 try:
-                    self.data = self.coerce(valuelist[0])
-                except ValueError:
-                    raise ValueError(self.gettext("Invalid Choice: could not coerce"))
+                    self.data = self.coerce(valuelist[0])  # pylint: disable=attribute-defined-outside-init
+                except ValueError as exc:
+                    raise ValueError(
+                        self.gettext("Invalid Choice: could not coerce")
+                    ) from exc
 
     def pre_validate(self, form: Form) -> None:
         if self.allow_blank and self.data is None:
@@ -109,10 +111,11 @@ class JSONField(fields.TextAreaField):
     def _value(self) -> str:
         if self.raw_data:
             return self.raw_data[0]
-        elif self.data:
+
+        if self.data:
             return str(json.dumps(self.data, ensure_ascii=False))
-        else:
-            return "{}"
+
+        return "{}"
 
     def process_formdata(self, valuelist: list[str]) -> None:
         if valuelist:
@@ -120,16 +123,16 @@ class JSONField(fields.TextAreaField):
 
             # allow saving blank field as None
             if not value:
-                self.data = None
+                self.data = None  # pylint: disable=attribute-defined-outside-init
                 return
 
             try:
-                self.data = json.loads(valuelist[0])
-            except ValueError:
-                raise ValueError(self.gettext("Invalid JSON"))
+                self.data = json.loads(valuelist[0])  # pylint: disable=attribute-defined-outside-init
+            except ValueError as exc:
+                raise ValueError(self.gettext("Invalid JSON")) from exc
 
 
-class QuerySelectField(fields.SelectFieldBase):
+class QuerySelectField(fields.SelectFieldBase):  # pylint: disable=abstract-method
     widget = widgets.Select()
 
     def __init__(
@@ -208,7 +211,7 @@ class QuerySelectField(fields.SelectFieldBase):
             raise ValidationError(self.gettext("Not a valid choice"))
 
 
-class QuerySelectMultipleField(QuerySelectField):
+class QuerySelectMultipleField(QuerySelectField):  # pylint: disable=abstract-method
     """
     Very similar to QuerySelectField with the difference that this will
     display a multiple select. The data property will hold a list with ORM
@@ -234,7 +237,7 @@ class QuerySelectMultipleField(QuerySelectField):
         self._select_data = data or []
 
         if kwargs.get("allow_blank", False):
-            import warnings
+            import warnings  # pylint: disable=import-outside-toplevel # noqa: I001
 
             warnings.warn(
                 "allow_blank=True does not do anything for QuerySelectMultipleField."
@@ -251,7 +254,8 @@ class QuerySelectMultipleField(QuerySelectField):
             for pk, _ in self._select_data:
                 if not formdata:
                     break
-                elif pk in formdata:
+
+                if pk in formdata:
                     formdata.remove(pk)
                     data.append(pk)
             if formdata:
@@ -280,14 +284,15 @@ class QuerySelectMultipleField(QuerySelectField):
     def pre_validate(self, form: Form) -> None:
         if self._invalid_formdata:
             raise ValidationError(self.gettext("Not a valid choice"))
-        elif self.data:
+
+        if self.data:
             pk_list = [x[0] for x in self._select_data]
             for v in self.data:
                 if v not in pk_list:  # pragma: no cover
                     raise ValidationError(self.gettext("Not a valid choice"))
 
 
-class AjaxSelectField(fields.SelectFieldBase):
+class AjaxSelectField(fields.SelectFieldBase):  # pylint: disable=abstract-method
     widget = sqladmin_widgets.AjaxSelect2Widget()
     separator = ","
 
@@ -329,7 +334,7 @@ class AjaxSelectField(fields.SelectFieldBase):
             raise ValidationError("Not a valid choice")
 
 
-class AjaxSelectMultipleField(fields.SelectFieldBase):
+class AjaxSelectMultipleField(fields.SelectFieldBase):  # pylint: disable=abstract-method
     widget = sqladmin_widgets.AjaxSelect2Widget(multiple=True)
     separator = ","
 
@@ -377,10 +382,10 @@ class Select2TagsField(fields.SelectField):
         ...
 
     def process_formdata(self, valuelist: list) -> None:
-        self.data = valuelist
+        self.data = valuelist  # pylint: disable=attribute-defined-outside-init
 
     def process_data(self, value: list | None) -> None:
-        self.data = value or []
+        self.data = value or []  # pylint: disable=attribute-defined-outside-init
 
 
 class FileField(fields.FileField):

@@ -55,7 +55,10 @@ Ready to contribute? Here's how to set up `sqladmin` for local development.
     $ git clone git@github.com:your_name_here/sqladmin.git
     ```
 
-3. Install [`uv`](https://docs.astral.sh/uv/) for project management
+3. Install [`uv`](https://docs.astral.sh/uv/) for project management. Install dependencies
+   ```
+   $ make setup
+   ```
 
 4. Install [`pre-commit`](https://pre-commit.com/) and apply it:
 
@@ -103,6 +106,6 @@ Before you submit a pull request, check that it meets these guidelines:
 2. If the pull request adds functionality, the docs should be updated. Put
    your new functionality into a function with a docstring, and add the
    feature to the list in README.md.
-3. The pull request should work for Python 3.7, 3.8, 3.9 and 3.10. Check
+3. The pull request should work from Python 3.9 till 3.14. Check
    https://github.com/aminalaee/sqladmin/actions
    and make sure that the tests pass for all supported Python versions.

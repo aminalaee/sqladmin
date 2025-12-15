@@ -20,7 +20,7 @@ from sqladmin._types import MODEL_ATTR
 try:
     import uuid
 
-    from sqlalchemy import Uuid
+    from sqlalchemy import Uuid  # pylint: disable=ungrouped-imports
 
     HAS_UUID_SUPPORT = True
 except ImportError:
@@ -32,8 +32,8 @@ except ImportError:
 def get_parameter_name(column: MODEL_ATTR) -> str:
     if isinstance(column, str):
         return column
-    else:
-        return column.key
+
+    return column.key
 
 
 def prettify_attribute_name(name: str) -> str:
@@ -75,8 +75,11 @@ class BooleanFilter:
         self.title = title or get_title(column)
         self.parameter_name = parameter_name or get_parameter_name(column)
 
-    async def lookups(
-        self, request: Request, model: Any, run_query: Callable[[Select], Any]
+    async def lookups(  # pylint: disable=unused-argument
+        self,
+        request: Request,
+        model: Any,
+        run_query: Callable[[Select], Any],
     ) -> List[Tuple[str, str]]:
         return [
             ("all", "All"),
@@ -88,10 +91,11 @@ class BooleanFilter:
         column_obj = get_column_obj(self.column, model)
         if value == "true":
             return query.filter(column_obj.is_(True))
-        elif value == "false":
+
+        if value == "false":
             return query.filter(column_obj.is_(False))
-        else:
-            return query
+
+        return query
 
 
 class AllUniqueStringValuesFilter:
@@ -107,8 +111,11 @@ class AllUniqueStringValuesFilter:
         self.title = title or get_title(column)
         self.parameter_name = parameter_name or get_parameter_name(column)
 
-    async def lookups(
-        self, request: Request, model: Any, run_query: Callable[[Select], Any]
+    async def lookups(  # pylint: disable=unused-argument
+        self,
+        request: Request,
+        model: Any,
+        run_query: Callable[[Select], Any],
     ) -> List[Tuple[str, str]]:
         column_obj = get_column_obj(self.column, model)
 
@@ -140,8 +147,11 @@ class StaticValuesFilter:
         self.parameter_name = parameter_name or get_parameter_name(column)
         self.values = values
 
-    async def lookups(
-        self, request: Request, model: Any, run_query: Callable[[Select], Any]
+    async def lookups(  # pylint: disable=unused-argument
+        self,
+        request: Request,
+        model: Any,
+        run_query: Callable[[Select], Any],
     ) -> List[Tuple[str, str]]:
         return [("", "All")] + self.values
 
@@ -169,8 +179,11 @@ class ForeignKeyFilter:
         self.title = title or get_title(foreign_key)
         self.parameter_name = parameter_name or get_parameter_name(foreign_key)
 
-    async def lookups(
-        self, request: Request, model: Any, run_query: Callable[[Select], Any]
+    async def lookups(  # pylint: disable=unused-argument
+        self,
+        request: Request,
+        model: Any,
+        run_query: Callable[[Select], Any],
     ) -> List[Tuple[str, str]]:
         foreign_key_obj = get_column_obj(self.foreign_key, model)
         if self.foreign_model is None and isinstance(self.foreign_display_field, str):
@@ -227,22 +240,24 @@ class OperationColumnFilter:
                 ("starts_with", "Starts with"),
                 ("ends_with", "Ends with"),
             ]
-        elif self._is_numeric_type(column_obj):
+
+        if self._is_numeric_type(column_obj):
             return [
                 ("equals", "Equals"),
                 ("greater_than", "Greater than"),
                 ("less_than", "Less than"),
             ]
-        elif self._is_uuid_type(column_obj):
+
+        if self._is_uuid_type(column_obj):
             return [
                 ("equals", "Equals"),
                 ("contains", "Contains"),
                 ("starts_with", "Starts with"),
             ]
-        else:
-            return [
-                ("equals", "Equals"),
-            ]
+
+        return [
+            ("equals", "Equals"),
+        ]
 
     def get_operation_options_for_model(self, model: Any) -> List[Tuple[str, str]]:
         """Return operation options based on column type for given model"""
@@ -261,46 +276,54 @@ class OperationColumnFilter:
         # Check if UUID support is available and column is UUID type
         return HAS_UUID_SUPPORT and isinstance(column_obj.type, Uuid)
 
-    def _convert_value_for_column(
+    def _convert_value_for_column(  # pylint: disable=too-many-return-statements
         self, value: str, column_obj: Any, operation: str = "equals"
     ) -> Any:
         if not value:
             return None
 
         column_type = column_obj.type
+        value = value
+
+        converters = [
+            ((String, Text, _Binary), str),
+            ((Integer, BigInteger, SmallInteger), int),
+            ((Numeric, Float), float),
+        ]
 
         try:
-            if isinstance(column_type, (String, Text, _Binary)):
-                return str(value)
+            for types, converter in converters:
+                if isinstance(column_type, types):
+                    return converter(value)
 
-            if isinstance(column_type, (Integer, BigInteger, SmallInteger)):
-                return int(value)
-
-            if isinstance(column_type, (Numeric, Float)):
-                return float(value)
-
-            # UUID support for SQLAlchemy 2.0+
             if HAS_UUID_SUPPORT and isinstance(column_type, Uuid):
-                # For contains/starts_with operations, keep as string for LIKE queries
-                if operation in ("contains", "starts_with"):
-                    return str(value.strip())
-                # For equals operation, validate and convert to UUID
-                return uuid.UUID(value.strip())
+                return (
+                    str(value.strip())
+                    if operation in ("contains", "starts_with")
+                    else uuid.UUID(value.strip())
+                )
 
         except (ValueError, TypeError):
             return None
 
-        return str(value)
+        return value
 
-    async def lookups(
-        self, request: Request, model: Any, run_query: Callable[[Select], Any]
+    async def lookups(  # pylint: disable=unused-argument
+        self,
+        request: Request,
+        model: Any,
+        run_query: Callable[[Select], Any],
     ) -> List[Tuple[str, str]]:
         # This method is not used for has_operator=True filters
         # The UI uses get_operation_options_for_model instead
         return []
 
-    async def get_filtered_query(
-        self, query: Select, operation: str, value: Any, model: Any
+    async def get_filtered_query(  # pylint: disable=too-many-return-statements
+        self,
+        query: Select,
+        operation: str,
+        value: Any,
+        model: Any,
     ) -> Select:
         """Handle filtering with separate operation and value parameters"""
         if not value or value == "" or not operation:
@@ -308,7 +331,9 @@ class OperationColumnFilter:
 
         column_obj = get_column_obj(self.column, model)
         converted_value = self._convert_value_for_column(
-            str(value).strip(), column_obj, operation
+            str(value).strip(),
+            column_obj,
+            operation,
         )
 
         if converted_value is None:
@@ -319,22 +344,25 @@ class OperationColumnFilter:
                 # For UUID, cast to text for LIKE operations
                 search_value = f"%{str(value).strip()}%"
                 return query.filter(column_obj.cast(String).ilike(search_value))
-            else:
-                return query.filter(column_obj.ilike(f"%{str(value).strip()}%"))
-        elif operation == "equals":
+
+            return query.filter(column_obj.ilike(f"%{str(value).strip()}%"))
+
+        if operation == "equals":
             return query.filter(column_obj == converted_value)
-        elif operation == "starts_with":
+
+        if operation == "starts_with":
             if self._is_uuid_type(column_obj):
                 # For UUID, cast to text for LIKE operations
                 search_value = f"{str(value).strip()}%"
                 return query.filter(column_obj.cast(String).ilike(search_value))
-            else:
-                return query.filter(column_obj.startswith(str(value).strip()))
-        elif operation == "ends_with":
+
+            return query.filter(column_obj.startswith(str(value).strip()))
+
+        if operation == "ends_with":
             return query.filter(column_obj.endswith(str(value).strip()))
-        elif operation == "greater_than":
+        if operation == "greater_than":
             return query.filter(column_obj > converted_value)
-        elif operation == "less_than":
+        if operation == "less_than":
             return query.filter(column_obj < converted_value)
 
         return query

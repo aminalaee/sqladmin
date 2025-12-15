@@ -3,7 +3,7 @@ from typing import Any
 from markupsafe import Markup
 
 
-def empty_formatter(value: Any) -> str:
+def empty_formatter(value: Any) -> str:  # pylint: disable=unused-argument
     """Return empty string for `None` value"""
     return ""
 

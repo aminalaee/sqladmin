@@ -34,7 +34,7 @@ class DateTimePickerWidget(widgets.TextInput):
 
 
 class AjaxSelect2Widget(widgets.Select):
-    def __init__(self, multiple: bool = False):
+    def __init__(self, multiple: bool = False):  # pylint: disable=super-init-not-called
         self.multiple = multiple
         self.lookup_url = ""
 
@@ -56,7 +56,7 @@ class AjaxSelect2Widget(widgets.Select):
         else:
             try:
                 data = field.loader.format(field.data)
-            except Exception:
+            except Exception:  # pylint: disable=broad-except
                 data = None
             if data:
                 kwargs["data-json"] = json.dumps([data])
@@ -84,7 +84,8 @@ class FileInputWidget(widgets.FileInput):
                 f'<label class="form-check-label" for="{checkbox_id}">Clear</label>'
             )
             checkbox_input = Markup(
-                f'<input class="form-check-input" type="checkbox" id="{checkbox_id}" name="{checkbox_id}">'  # noqa: E501
+                f'<input class="form-check-input" type="checkbox" id="{checkbox_id}" '
+                'name="{checkbox_id}">'  # noqa: E501
             )
             checkbox = Markup(
                 f'<div class="form-check">{checkbox_input}{checkbox_label}</div>'
@@ -96,5 +97,5 @@ class FileInputWidget(widgets.FileInput):
             current_value = Markup(f"<p>Currently: {field.data}</p>")
             field.flags.required = False
             return current_value + checkbox + super().__call__(field, **kwargs)
-        else:
-            return super().__call__(field, **kwargs)
+
+        return super().__call__(field, **kwargs)

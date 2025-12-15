@@ -160,7 +160,7 @@ class BaseAdmin:
         for _, func in funcs[::-1]:
             handle_fn(func, view, view_instance)
 
-    def _handle_action_decorated_func(
+    def _handle_action_decorated_func(  # pylint: disable=unused-argument
         self,
         func: MethodType,
         view: type[BaseView | ModelView],
@@ -521,7 +521,7 @@ class Admin(BaseAdminView):
         identity = request.path_params["identity"]
         model_view = self._find_model_view(identity)
 
-        Form = await model_view.scaffold_form(model_view._form_create_rules)
+        Form = await model_view.scaffold_form(model_view._form_create_rules)  # pylint: disable=invalid-name
         form_data = await self._handle_form_data(request)
         form = Form(form_data)
 
@@ -543,7 +543,7 @@ class Admin(BaseAdminView):
         form_data_dict = self._denormalize_wtform_data(form.data, model_view.model)
         try:
             obj = await model_view.insert_model(request, form_data_dict)
-        except Exception as e:
+        except Exception as e:  # pylint: disable=broad-except
             logger.exception(e)
             context["error"] = str(e)
             return await self.templates.TemplateResponse(
@@ -571,7 +571,7 @@ class Admin(BaseAdminView):
         if not model:
             raise HTTPException(status_code=404)
 
-        Form = await model_view.scaffold_form(model_view._form_edit_rules)
+        Form = await model_view.scaffold_form(model_view._form_edit_rules)  # pylint: disable=invalid-name
         context = {
             "obj": model,
             "model_view": model_view,
@@ -599,7 +599,7 @@ class Admin(BaseAdminView):
                 obj = await model_view.update_model(
                     request, pk=request.path_params["pk"], data=form_data_dict
                 )
-        except Exception as e:
+        except Exception as e:  # pylint: disable=broad-except
             logger.exception(e)
             context["error"] = str(e)
             return await self.templates.TemplateResponse(
@@ -669,8 +669,8 @@ class Admin(BaseAdminView):
 
         try:
             loader: QueryAjaxModelLoader = model_view._form_ajax_refs[name]
-        except KeyError:
-            raise HTTPException(status_code=400)
+        except KeyError as exc:
+            raise HTTPException(status_code=400) from exc
 
         data = [loader.format(m) for m in await loader.get_list(term)]
         return JSONResponse({"results": data})
@@ -688,10 +688,12 @@ class Admin(BaseAdminView):
 
         if form.get("save") == "Save":
             return request.url_for("admin:list", identity=identity)
-        elif form.get("save") == "Save and continue editing" or (
+
+        if form.get("save") == "Save and continue editing" or (
             form.get("save") == "Save as new" and model_view.save_as_continue
         ):
             return request.url_for("admin:edit", identity=identity, pk=identifier)
+
         return request.url_for("admin:create", identity=identity)
 
     async def _handle_form_data(self, request: Request, obj: Any = None) -> FormData:
@@ -743,7 +745,7 @@ class Admin(BaseAdminView):
 def expose(
     path: str,
     *,
-    methods: list[str] = ["GET"],
+    methods: list[str] | None = None,
     identity: str | None = None,
     include_in_schema: bool = True,
 ) -> Callable[..., Any]:
@@ -753,7 +755,7 @@ def expose(
     def wrap(func):
         func._exposed = True
         func._path = path
-        func._methods = methods
+        func._methods = methods or ["GET"]
         func._identity = identity or func.__name__
         func._include_in_schema = include_in_schema
         return login_required(func)
