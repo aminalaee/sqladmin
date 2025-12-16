@@ -9,7 +9,7 @@ on:
 
 jobs:
   tests:
-    name: "Python ${{ matrix.python-version }}"
+    name: "Python ${{ matrix.python-version }} / SA ${{ matrix.sqlalchemy-version }}"
     runs-on: "ubuntu-latest"
 
     strategy:
@@ -40,7 +40,7 @@ jobs:
       - name: "Install dependencies"
         run: uv sync --all-groups
       - name: Force SQLAlchemy version
-        run: uv add sqlalchemy>=${{ matrix.sqlalchemy-version }}
+        run: uv pip install "sqlalchemy>=${{ matrix.sqlalchemy-version }}"
       - name: "Run linting checks"
         run: make lint
       - name: "Build package & docs"
