@@ -66,7 +66,7 @@ from sqladmin.pretty_export import PrettyExport
 from sqladmin.templating import Jinja2Templates
 
 if TYPE_CHECKING:
-    from sqlalchemy.ext.asyncio import async_sessionmaker
+    from sqlalchemy.ext.asyncio import async_sessionmaker  # type: ignore[attr-defined]
 
     from sqladmin.application import BaseAdmin
 
@@ -212,7 +212,12 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
 
     # Internals
     pk_columns: ClassVar[Tuple[Column]]
-    session_maker: ClassVar[Union[sessionmaker, "async_sessionmaker"]]
+    session_maker: ClassVar[  # type: ignore[no-any-unimported]
+        Union[
+            sessionmaker,
+            "async_sessionmaker",
+        ]
+    ]
     is_async: ClassVar[bool] = False
     is_model: ClassVar[bool] = True
     ajax_lookup_url: ClassVar[str] = ""
@@ -881,8 +886,12 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
         if search:
             stmt = self.search_query(stmt=stmt, term=search)
 
-        count = await self.count(request, select(func.count()).select_from(stmt))
-
+        count = await self.count(
+            request,
+            select(
+                func.count()  # pylint: disable=not-callable
+            ).select_from(stmt),
+        )
         stmt = stmt.limit(page_size).offset((page - 1) * page_size)
         rows = await self._run_query(stmt)
 
@@ -1101,7 +1110,7 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
 
         form = await get_model_form(
             model=self.model,
-            session_maker=self.session_maker,
+            session_maker=self.session_maker,  # type: ignore[arg-type]
             only=self._form_prop_names,
             column_labels=self._column_labels,
             form_args=self.form_args,
@@ -1201,7 +1210,7 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
         By default it will select all objects without any filters.
         """
 
-        return select(func.count(self.pk_columns[0]))
+        return select(func.count(self.pk_columns[0]))  # pylint: disable=not-callable
 
     def sort_query(self, stmt: Select, request: Request) -> Select:
         """
@@ -1310,7 +1319,7 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
             headers={"Content-Disposition": f"attachment;filename={filename}"},
         )
 
-    async def custom_export_cell(
+    async def custom_export_cell(  # pylint: disable=unused-argument
         self,
         row: Any,
         name: str,

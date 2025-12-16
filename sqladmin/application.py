@@ -42,7 +42,7 @@ from sqladmin.models import BaseView, ModelView
 from sqladmin.templating import Jinja2Templates
 
 if TYPE_CHECKING:
-    from sqlalchemy.ext.asyncio import async_sessionmaker
+    from sqlalchemy.ext.asyncio import async_sessionmaker  # type: ignore[attr-defined]
 
 __all__ = [
     "Admin",
@@ -83,10 +83,13 @@ class BaseAdmin:
 
         if session_maker:
             self.session_maker = session_maker
-        elif isinstance(engine, Engine):
+        elif isinstance(self.engine, Engine):
             self.session_maker = sessionmaker(bind=self.engine, class_=Session)
         else:
-            self.session_maker = sessionmaker(bind=self.engine, class_=AsyncSession)
+            self.session_maker = sessionmaker(  # type: ignore[arg-type]
+                bind=self.engine,
+                class_=AsyncSession,
+            )
 
         self.session_maker.configure(autoflush=False, autocommit=False)
         self.is_async = is_async_session_maker(self.session_maker)
@@ -345,7 +348,7 @@ class Admin(BaseAdminView):
         ```
     """
 
-    def __init__(
+    def __init__(  # type: ignore[no-any-unimported]
         self,
         app: Starlette,
         engine: ENGINE_TYPE | None = None,
@@ -373,7 +376,7 @@ class Admin(BaseAdminView):
         super().__init__(
             app=app,
             engine=engine,
-            session_maker=session_maker,
+            session_maker=session_maker,  # type: ignore[arg-type]
             base_url=base_url,
             title=title,
             logo_url=logo_url,

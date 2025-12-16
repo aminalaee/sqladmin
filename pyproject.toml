@@ -10,9 +10,7 @@ readme = "README.md"
 requires-python = ">=3.10"
 license = "BSD-3-Clause"
 keywords = ["sqlalchemy", "fastapi", "starlette", "admin"]
-authors = [
-  { name = "Amin Alaee", email = "me@aminalaee.dev" },
-]
+authors = [{ name = "Amin Alaee", email = "me@aminalaee.dev" }]
 classifiers = [
   "Development Status :: 4 - Beta",
   "Programming Language :: Python",
@@ -30,17 +28,15 @@ classifiers = [
 ]
 dependencies = [
   "starlette",
-  "sqlalchemy >=1.4",
   "wtforms >=3.1, <3.2",
   "jinja2",
   "python-multipart",
+  "sqlalchemy[mypy]>2",
 ]
 
 
 [project.optional-dependencies]
-full = [
-    "itsdangerous",
-]
+full = ["itsdangerous"]
 
 [project.urls]
 Documentation = "https://aminalaee.github.io/sqladmin/"
@@ -64,18 +60,18 @@ dev = [
   "itsdangerous",
   "phonenumbers",
   "pillow",
+  "psycopg2-binary",
   "psycopg[binary]",
-  "pylint>=4.0.4",
   "pytest",
   "python-dateutil",
   "sqlalchemy_utils",
-  "ty>=0.0.1a34",
 ]
 
 lint = [
-  "mypy==1.8.0",
+  "mypy==1.18.1",
   "ruff==0.1.5",
-  "sqlalchemy~=1.4",
+  "pylint>=4.0.4",
+  "types-wtforms>=3.2.1.20250809",
 ]
 
 docs = [
@@ -95,37 +91,41 @@ module-root = ""
 disallow_untyped_defs = true
 ignore_missing_imports = true
 show_error_codes = true
+check_untyped_defs = true
+disallow_any_unimported = true
+strict_optional = true
+no_implicit_optional = true
+disable_error_code = [
+  "var-annotated"
+]
 
 [tool.pylint.MASTER]
 disable = [
-  "missing-module-docstring", # C0114
-  "missing-class-docstring", # C0115
-  "missing-function-docstring", # C0116
-  "too-many-instance-attributes", # R902
-  "too-few-public-methods",  # R0903
-  "too-many-public-methods", # RO904
-  "too-many-arguments", # R0913
-  "too-many-locals", # R0914
+  "missing-module-docstring",      # C0114
+  "missing-class-docstring",       # C0115
+  "missing-function-docstring",    # C0116
+  "too-many-instance-attributes",  # R0902
+  "too-few-public-methods",        # R0903
+  "too-many-public-methods",       # RO904
+  "too-many-arguments",            # R0913
+  "too-many-locals",               # R0914
   "too-many-positional-arguments", # R0917
-  "protected-access", # W0212
-  "fixme", # W0511
+  "protected-access",              # W0212
+  "fixme",                         # W0511
 ]
-fail-under=9.50
+fail-under = 9.50
 
 [tool.ruff]
 select = ["E", "F", "I"]
 
 [tool.coverage.run]
-source_pkgs = [
-  "sqladmin",
-  "tests",
-]
+source_pkgs = ["sqladmin", "tests"]
 
 [tool.coverage.report]
 exclude_lines = [
-    "pragma: no cover",
-    "pragma: nocover",
-    "except NotImplementedError",
-    "raise NotImplementedError",
-    "if TYPE_CHECKING:",
+  "pragma: no cover",
+  "pragma: nocover",
+  "except NotImplementedError",
+  "raise NotImplementedError",
+  "if TYPE_CHECKING:",
 ]

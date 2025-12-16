@@ -1,7 +1,10 @@
+# mypy: disable-error-code="override"
+
 from __future__ import annotations
 
 import json
 import operator
+from enum import Enum
 from typing import Any, Callable, Generator
 
 from wtforms import Form, ValidationError, fields, widgets
@@ -29,7 +32,7 @@ class DateField(fields.DateField):
     Add custom DatePickerWidget for data-format and data-date-format fields
     """
 
-    widget = sqladmin_widgets.DatePickerWidget()
+    widget = sqladmin_widgets.DatePickerWidget()  # type: ignore[assignment]
 
 
 class DateTimeField(fields.DateTimeField):
@@ -37,7 +40,7 @@ class DateTimeField(fields.DateTimeField):
     Allows modifying the datetime format of a DateTimeField using form_args.
     """
 
-    widget = sqladmin_widgets.DateTimePickerWidget()
+    widget = sqladmin_widgets.DateTimePickerWidget()  # type: ignore[assignment]
 
 
 class IntervalField(fields.StringField):
@@ -53,7 +56,7 @@ class IntervalField(fields.StringField):
         if not interval:
             raise ValueError("Invalide timedelta format.")
 
-        self.data = interval  # pylint: disable=attribute-defined-outside-init
+        self.data = interval  # type: ignore[assignment] # pylint: disable=attribute-defined-outside-init
 
 
 class SelectField(fields.SelectField):
@@ -80,13 +83,15 @@ class SelectField(fields.SelectField):
         for choice in choices:
             if isinstance(choice, tuple):
                 yield (choice[0], choice[1], self.coerce(choice[0]) == self.data, {})
-            else:
+            elif isinstance(choice, Enum):
                 yield (
                     choice.value,
                     choice.name,
                     self.coerce(choice.value) == self.data,
                     {},
                 )
+            else:
+                yield (str(choice), str(choice), self.coerce(choice) == self.data, {})
 
     def process_formdata(self, valuelist: list[str]) -> None:
         if valuelist:
@@ -171,7 +176,7 @@ class QuerySelectField(fields.SelectFieldBase):  # pylint: disable=abstract-meth
         return self._data
 
     @data.setter
-    def data(self, data: tuple) -> None:
+    def data(self, data: tuple | None) -> None:
         self._data = data
         self._formdata = None
 
@@ -264,7 +269,7 @@ class QuerySelectMultipleField(QuerySelectField):  # pylint: disable=abstract-me
         return self._data
 
     @data.setter
-    def data(self, data: tuple) -> None:
+    def data(self, data: tuple | None) -> None:
         self._data = data
         self._formdata = None
 
@@ -335,7 +340,7 @@ class AjaxSelectField(fields.SelectFieldBase):  # pylint: disable=abstract-metho
 
 
 class AjaxSelectMultipleField(fields.SelectFieldBase):  # pylint: disable=abstract-method
-    widget = sqladmin_widgets.AjaxSelect2Widget(multiple=True)
+    widget = sqladmin_widgets.AjaxSelect2Widget(multiple=True)  # type: ignore[assignment]
     separator = ","
 
     def __init__(
@@ -376,7 +381,7 @@ class AjaxSelectMultipleField(fields.SelectFieldBase):  # pylint: disable=abstra
 
 
 class Select2TagsField(fields.SelectField):
-    widget = sqladmin_widgets.Select2TagsWidget()
+    widget = sqladmin_widgets.Select2TagsWidget()  # type: ignore[assignment]
 
     def pre_validate(self, form: Form) -> None:
         ...
@@ -393,4 +398,4 @@ class FileField(fields.FileField):
     File field which is clearable.
     """
 
-    widget = sqladmin_widgets.FileInputWidget()
+    widget = sqladmin_widgets.FileInputWidget()  # type: ignore[assignment]

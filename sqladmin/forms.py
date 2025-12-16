@@ -1,3 +1,5 @@
+# mypy: disable-error-code="return-value"
+
 """
 The converters are from Flask-Admin project.
 """
@@ -24,7 +26,6 @@ from sqlalchemy.orm import (
     sessionmaker,
 )
 from sqlalchemy.sql.elements import Label
-from sqlalchemy.sql.schema import Column
 from wtforms import (
     BooleanField,
     DecimalField,
@@ -213,7 +214,7 @@ class ModelConverterBase:
         loader: QueryAjaxModelLoader | None = None,
     ) -> dict:
         nullable = True
-        for pair in prop.local_remote_pairs:
+        for pair in prop.local_remote_pairs or []:
             if not pair[0].nullable:
                 nullable = False
 
@@ -334,9 +335,9 @@ class ModelConverter(ModelConverterBase):
     @staticmethod
     def _string_common(prop: ColumnProperty) -> list[Validator]:
         li = []
-        column: Column = prop.columns[0]
-        if isinstance(column.type.length, int) and column.type.length:
-            li.append(validators.Length(max=column.type.length))
+        column = prop.columns[0]
+        if isinstance(column.type.length, int) and column.type.length:  # type: ignore[attr-defined]
+            li.append(validators.Length(max=column.type.length))  # type: ignore[attr-defined]
         return li
 
     @converts("String", "CHAR")  # includes Unicode
@@ -414,7 +415,10 @@ class ModelConverter(ModelConverterBase):
         prop: ColumnProperty,
         kwargs: dict[str, Any],
     ) -> UnboundField:
-        available_choices = [(e, e) for e in prop.columns[0].type.enums]
+        available_choices = [
+            (e, e)  # type: ignore[attr-defined]
+            for e in prop.columns[0].type.enums
+        ]
         accepted_values = [choice[0] for choice in available_choices]
 
         if prop.columns[0].nullable:
@@ -567,7 +571,7 @@ class ModelConverter(ModelConverterBase):
         kwargs: dict[str, Any],
     ) -> UnboundField:
         kwargs.setdefault("validators", [])
-        kwargs["validators"].append(
+        kwargs["validators"].append(  # type: ignore[attr-defined]
             TimezoneValidator(coerce_function=prop.columns[0].type._coerce)
         )
         return StringField(**kwargs)

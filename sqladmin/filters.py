@@ -20,13 +20,15 @@ from sqladmin._types import MODEL_ATTR
 try:
     import uuid
 
-    from sqlalchemy import Uuid  # pylint: disable=ungrouped-imports
+    from sqlalchemy import (  # type: ignore[attr-defined]  # pylint: disable=ungrouped-imports
+        Uuid,
+    )
 
     HAS_UUID_SUPPORT = True
 except ImportError:
     # Fallback for SQLAlchemy < 2.0
     HAS_UUID_SUPPORT = False
-    Uuid = None
+    Uuid = None  # type: ignore[misc, assignment]
 
 
 def get_parameter_name(column: MODEL_ATTR) -> str:
@@ -283,7 +285,6 @@ class OperationColumnFilter:
             return None
 
         column_type = column_obj.type
-        value = value
 
         converters = [
             ((String, Text, _Binary), str),

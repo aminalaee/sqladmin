@@ -40,11 +40,13 @@ class Query:
         conditions = []
         for value in values:
             conditions.append(
-                and_(
-                    pk == value
-                    for pk, value in zip(
-                        target_pks,
-                        object_identifier_values(value, target),
+                and_(  # type: ignore[type-var]
+                    *(
+                        pk == value
+                        for pk, value in zip(
+                            target_pks,
+                            object_identifier_values(value, target),
+                        )
                     )
                 )
             )
@@ -67,8 +69,8 @@ class Query:
         # ensures we write the correct value to the fk fields
         pk_value = dict(zip(pks, values))
 
-        for fk, pk in relation.local_remote_pairs:
-            setattr(obj, fk.name, pk_value[pk])
+        for fk, pk in relation.local_remote_pairs or []:
+            setattr(obj, fk.name, pk_value[pk])  # type: ignore[index]
 
         return obj
 

@@ -1,9 +1,14 @@
+# mypy: disable-error-code="override"
+
 import json
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from markupsafe import Markup
-from wtforms import Field, widgets
+from wtforms import Field, SelectFieldBase, widgets
 from wtforms.widgets import html_params
+
+if TYPE_CHECKING:
+    from sqladmin.fields import AjaxSelectField
 
 __all__ = [
     "AjaxSelect2Widget",
@@ -38,7 +43,7 @@ class AjaxSelect2Widget(widgets.Select):
         self.multiple = multiple
         self.lookup_url = ""
 
-    def __call__(self, field: Field, **kwargs: Any) -> Markup:
+    def __call__(self, field: "AjaxSelectField", **kwargs: Any) -> Markup:
         kwargs.setdefault("data-role", "select2-ajax")
         kwargs.setdefault("data-url", field.loader.model_admin.ajax_lookup_url)
 
@@ -65,7 +70,7 @@ class AjaxSelect2Widget(widgets.Select):
 
 
 class Select2TagsWidget(widgets.Select):
-    def __call__(self, field: Field, **kwargs: Any) -> str:
+    def __call__(self, field: SelectFieldBase, **kwargs: Any) -> str:
         kwargs.setdefault("data-role", "select2-tags")
         kwargs.setdefault("data-json", json.dumps(field.data))
         kwargs.setdefault("multiple", "multiple")
