@@ -44,7 +44,7 @@ class ItemMenu:
 class CategoryMenu(ItemMenu):
     def is_active(self, request: Request) -> bool:
         return any(
-            c.is_visible(request) and c.is_accessible(request) for c in self.children
+            c.is_active(request) and c.is_accessible(request) for c in self.children
         )
 
     @property
@@ -93,6 +93,6 @@ class Menu:
         # Only works for one-level menu
         for root in self.items:
             if root.name == item.name:
-                root.children.append(*item.children)
+                root.children.extend(item.children)
                 return
         self.items.append(item)

@@ -1,8 +1,8 @@
-from datetime import timedelta
+from datetime import date, datetime, time, timedelta, timezone
 from typing import Any
 
 import pytest
-from sqlalchemy import Column, ForeignKey, Integer, String
+from sqlalchemy import Column, Date, DateTime, ForeignKey, Integer, String, Time
 from sqlalchemy.orm import declarative_base
 
 from sqladmin.helpers import (
@@ -71,6 +71,15 @@ class Profile(Base):
     id = Column(Integer, primary_key=True)
 
 
+class Anniversary(Base):
+    # Synthetic example of a composite PK with unusual key types
+    __tablename__ = "anniversary"
+    person_id = Column(Integer, ForeignKey("person.id"), primary_key=True)
+    anniversary_date = Column(Date, primary_key=True)
+    anniversary_time = Column(Time, primary_key=True)
+    anniversary_timestamp = Column(DateTime, primary_key=True)
+
+
 def test_single_pk_identifier():
     assert get_object_identifier(Family(id="test")) == "test"
     assert get_object_identifier(Family(id="C:\\Files\\")) == "C:\\Files\\"
@@ -97,6 +106,19 @@ def test_multi_pk_identifier():
     assert get_object_identifier(person(r"1;2\;3", 201, "S")) == r"1\;2\\\;3;201;S"
     assert get_object_identifier(person("Doe", 3, "\\")) == "Doe;3;\\\\"
     assert get_object_identifier(person("", 1, "")) == ";1;"
+    assert (
+        get_object_identifier(
+            Anniversary(
+                person_id=1,
+                anniversary_date=date(2025, 10, 29),
+                anniversary_time=time(12, 30),
+                anniversary_timestamp=datetime(
+                    2025, 10, 29, 12, 30, tzinfo=timezone.utc
+                ),
+            )
+        )
+        == "1;2025-10-29;12:30:00;2025-10-29 12:30:00+00:00"
+    )
 
 
 def test_multi_pk_id_values():
@@ -108,6 +130,14 @@ def test_multi_pk_id_values():
     assert id_values(r"1\;2\\\;3;201;S") == (r"1;2\;3", 201, "S")
     assert id_values("Doe;3;\\\\") == ("Doe", 3, "\\")
     assert id_values(";1;") == ("", 1, "")
+    assert object_identifier_values(
+        "1;2025-10-29;12:30:00;2025-10-29 12:30:00+00:00", Anniversary
+    ) == (
+        1,
+        date(2025, 10, 29),
+        time(12, 30),
+        datetime(2025, 10, 29, 12, 30, tzinfo=timezone.utc),
+    )
 
 
 def test_catch_malformed_id():

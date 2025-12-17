@@ -110,6 +110,14 @@ class Movie(Base):
     id = Column(Integer, primary_key=True)
 
 
+class Product(Base):
+    __tablename__ = "product"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    name = Column(String, nullable=False)
+    price = Column(Integer)
+
+
 @pytest.fixture
 def prepare_database() -> Generator[None, None, None]:
     Base.metadata.create_all(engine)
@@ -177,10 +185,15 @@ class MovieAdmin(ModelView, model=Movie):
         return False
 
 
+class ProductAdmin(ModelView, model=Product):
+    pass
+
+
 admin.add_view(UserAdmin)
 admin.add_view(AddressAdmin)
 admin.add_view(ProfileAdmin)
 admin.add_view(MovieAdmin)
+admin.add_view(ProductAdmin)
 
 
 def test_root_view(client: TestClient) -> None:
@@ -446,6 +459,20 @@ def test_create_endpoint_get_form(client: TestClient) -> None:
         in response.text
     )
     assert '<select class="form-control" id="status" name="status">' in response.text
+
+
+def test_create_endpoint_with_required_fields(client: TestClient) -> None:
+    response = client.get("/admin/product/create")
+
+    assert response.status_code == 200
+    assert (
+        '<label class="form-label col-sm-2 col-form-label required-label" for="name" '
+        'title="This is a required field">Name</label>' in response.text
+    )
+    assert (
+        '<label class="form-label col-sm-2 col-form-label" for="price">Price</label>'
+        in response.text
+    )
 
 
 def test_create_endpoint_post_form(client: TestClient) -> None:
@@ -732,6 +759,25 @@ def test_export_csv(client: TestClient) -> None:
     assert response.text == "name,status\r\nDaniel,ACTIVE\r\n"
 
 
+def test_export_csv_utf8(client: TestClient) -> None:
+    with session_maker() as session:
+        user_1 = User(name="Daniel", status="ACTIVE")
+        user_2 = User(name="دانيال", status="ACTIVE")
+        user_3 = User(name="積極的", status="ACTIVE")
+        user_4 = User(name="Даниэль", status="ACTIVE")
+        session.add(user_1)
+        session.add(user_2)
+        session.add(user_3)
+        session.add(user_4)
+        session.commit()
+
+    response = client.get("/admin/user/export/csv")
+    assert response.text == (
+        "name,status\r\nDaniel,ACTIVE\r\nدانيال,ACTIVE\r\n"
+        "積極的,ACTIVE\r\nДаниэль,ACTIVE\r\n"
+    )
+
+
 def test_export_json(client: TestClient) -> None:
     with session_maker() as session:
         user = User(name="Daniel", status="ACTIVE")
@@ -740,6 +786,27 @@ def test_export_json(client: TestClient) -> None:
 
     response = client.get("/admin/user/export/json")
     assert response.text == '[{"name": "Daniel", "status": "ACTIVE"}]'
+
+
+def test_export_json_utf8(client: TestClient) -> None:
+    with session_maker() as session:
+        user_1 = User(name="Daniel", status="ACTIVE")
+        user_2 = User(name="دانيال", status="ACTIVE")
+        user_3 = User(name="積極的", status="ACTIVE")
+        user_4 = User(name="Даниэль", status="ACTIVE")
+        session.add(user_1)
+        session.add(user_2)
+        session.add(user_3)
+        session.add(user_4)
+        session.commit()
+
+    response = client.get("/admin/user/export/json")
+    assert response.text == (
+        '[{"name": "Daniel", "status": "ACTIVE"},'
+        '{"name": "دانيال", "status": "ACTIVE"},'
+        '{"name": "積極的", "status": "ACTIVE"},'
+        '{"name": "Даниэль", "status": "ACTIVE"}]'
+    )
 
 
 def test_export_json_complex_model(client: TestClient) -> None:
