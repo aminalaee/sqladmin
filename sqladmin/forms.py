@@ -26,7 +26,6 @@ from sqlalchemy.orm import (
 from sqlalchemy.sql.elements import Label
 from sqlalchemy.sql.schema import Column
 from wtforms import (
-    BooleanField,
     DecimalField,
     Field,
     Form,
@@ -50,6 +49,7 @@ from sqladmin.exceptions import NoConverterFound
 from sqladmin.fields import (
     AjaxSelectField,
     AjaxSelectMultipleField,
+    BooleanField,
     DateField,
     DateTimeField,
     FileField,
@@ -363,6 +363,7 @@ class ModelConverter(ModelConverterBase):
         if not prop.columns[0].nullable:
             kwargs.setdefault("render_kw", {})
             kwargs["render_kw"]["class"] = "form-check-input"
+            kwargs["validators"].append(validators.InputRequired())
             return BooleanField(**kwargs)
 
         kwargs["allow_blank"] = True

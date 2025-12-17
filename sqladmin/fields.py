@@ -389,3 +389,11 @@ class FileField(fields.FileField):
     """
 
     widget = sqladmin_widgets.FileInputWidget()
+
+
+class BooleanField(fields.BooleanField):
+    """
+    Boolean checkbox field.
+    """
+
+    widget = sqladmin_widgets.BooleanInputWidget()
