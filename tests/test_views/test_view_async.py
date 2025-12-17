@@ -521,7 +521,7 @@ async def test_update_endpoint_with_checkbox_widget(client: AsyncClient) -> None
         result = await s.execute(stmt)
     assert result.scalar_one() == 2
 
-    response = await client.get(f"/admin/product/edit/1")
+    response = await client.get("/admin/product/edit/1")
 
     assert response.status_code == 200
 
@@ -532,7 +532,7 @@ async def test_update_endpoint_with_checkbox_widget(client: AsyncClient) -> None
         in response.text
     )
 
-    response = await client.get(f"/admin/product/edit/2")
+    response = await client.get("/admin/product/edit/2")
 
     assert response.status_code == 200
 
