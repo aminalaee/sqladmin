@@ -304,15 +304,50 @@ class BaseAdminView(BaseAdmin):
         if not model_view.can_view_details or not model_view.is_accessible(request):
             raise HTTPException(status_code=403)
 
+        if hasattr(model_view, "check_can_view_details"):
+            pk = request.path_params.get("pk")
+            assert pk is not None and isinstance(
+                pk, str
+            ), f'pk not found in request.path_params "{request.path_params}"'
+            model = await model_view.get_object_for_details(request)
+            can_view_details_row = await model_view.check_can_view_details(
+                request, model
+            )
+            if can_view_details_row is not True:
+                raise HTTPException(status_code=403)
+
     async def _delete(self, request: Request) -> None:
         model_view = self._find_model_view(request.path_params["identity"])
+
         if not model_view.can_delete or not model_view.is_accessible(request):
             raise HTTPException(status_code=403)
+
+        if hasattr(model_view, "check_can_delete"):
+            pks = request.query_params.get("pks")
+            assert pks is not None and isinstance(
+                pks, str
+            ), f'pks not found in request.query_params "{request.query_params}"'
+            for pk in pks.split(","):
+                request.path_params["pk"] = pk
+                model = await model_view.get_object_for_details(request)
+                can_delete_row = await model_view.check_can_delete(request, model)
+                if can_delete_row is not True:
+                    raise HTTPException(status_code=403)
 
     async def _edit(self, request: Request) -> None:
         model_view = self._find_model_view(request.path_params["identity"])
         if not model_view.can_edit or not model_view.is_accessible(request):
             raise HTTPException(status_code=403)
+
+        if hasattr(model_view, "check_can_edit"):
+            pk = request.path_params.get("pk")
+            assert pk is not None and isinstance(
+                pk, str
+            ), f'pk not found in request.path_params "{request.path_params}"'
+            model = await model_view.get_object_for_details(request)
+            can_edit_row = await model_view.check_can_edit(request, model)
+            if can_edit_row is not True:
+                raise HTTPException(status_code=403)
 
     async def _export(self, request: Request) -> None:
         model_view = self._find_model_view(request.path_params["identity"])
