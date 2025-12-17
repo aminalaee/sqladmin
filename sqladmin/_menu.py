@@ -20,16 +20,16 @@ class ItemMenu:
         item.parent = self
         self.children.append(item)
 
-    def is_visible(self, request: Request) -> bool:
+    def is_visible(self, request: Request) -> bool:  # pylint: disable=unused-argument
         return True
 
-    def is_accessible(self, request: Request) -> bool:
+    def is_accessible(self, request: Request) -> bool:  # pylint: disable=unused-argument
         return True
 
-    def is_active(self, request: Request) -> bool:
+    def is_active(self, request: Request) -> bool:  # pylint: disable=unused-argument
         return False
 
-    def url(self, request: Request) -> str | URL:
+    def url(self, request: Request) -> str | URL:  # pylint: disable=unused-argument
         return "#"
 
     @property
@@ -85,7 +85,7 @@ class ViewMenu(ItemMenu):
         return "View"
 
 
-class Menu:
+class Menu:  # pylint: disable=too-few-public-methods
     def __init__(self) -> None:
         self.items: list[ItemMenu] = []
 

@@ -123,7 +123,11 @@ def secure_filename(filename: str) -> str:
     if (
         os.name == "nt"
         and filename
-        and filename.split(".")[0].upper() in _windows_device_files
+        and filename.split(
+            ".",
+            maxsplit=1,
+        )[0].upper()
+        in _windows_device_files
     ):
         filename = f"_{filename}"  # pragma: no cover
 
@@ -285,14 +289,15 @@ def parse_interval(value: str) -> timedelta | None:
 def is_falsy_value(value: Any) -> bool:
     if value is None:
         return True
-    elif not value and isinstance(value, str):
+
+    if not value and isinstance(value, str):
         return True
-    else:
-        return False
+
+    return False
 
 
 def choice_type_coerce_factory(type_: Any) -> Callable[[Any], Any]:
-    from sqlalchemy_utils import Choice
+    from sqlalchemy_utils import Choice  # pylint: disable=import-outside-toplevel # noqa: I001
 
     choices = type_.choices
     if isinstance(choices, type) and issubclass(choices, enum.Enum):

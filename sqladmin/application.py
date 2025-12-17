@@ -42,7 +42,7 @@ from sqladmin.models import BaseView, ModelView
 from sqladmin.templating import Jinja2Templates
 
 if TYPE_CHECKING:
-    from sqlalchemy.ext.asyncio import async_sessionmaker
+    from sqlalchemy.ext.asyncio import async_sessionmaker  # type: ignore[attr-defined]
 
 __all__ = [
     "Admin",
@@ -83,10 +83,13 @@ class BaseAdmin:
 
         if session_maker:
             self.session_maker = session_maker
-        elif isinstance(engine, Engine):
+        elif isinstance(self.engine, Engine):
             self.session_maker = sessionmaker(bind=self.engine, class_=Session)
         else:
-            self.session_maker = sessionmaker(bind=self.engine, class_=AsyncSession)
+            self.session_maker = sessionmaker(  # type: ignore[arg-type]
+                bind=self.engine,
+                class_=AsyncSession,
+            )
 
         self.session_maker.configure(autoflush=False, autocommit=False)
         self.is_async = is_async_session_maker(self.session_maker)
@@ -160,7 +163,7 @@ class BaseAdmin:
         for _, func in funcs[::-1]:
             handle_fn(func, view, view_instance)
 
-    def _handle_action_decorated_func(
+    def _handle_action_decorated_func(  # pylint: disable=unused-argument
         self,
         func: MethodType,
         view: type[BaseView | ModelView],
@@ -345,7 +348,7 @@ class Admin(BaseAdminView):
         ```
     """
 
-    def __init__(
+    def __init__(  # type: ignore[no-any-unimported]
         self,
         app: Starlette,
         engine: ENGINE_TYPE | None = None,
@@ -373,7 +376,7 @@ class Admin(BaseAdminView):
         super().__init__(
             app=app,
             engine=engine,
-            session_maker=session_maker,
+            session_maker=session_maker,  # type: ignore[arg-type]
             base_url=base_url,
             title=title,
             logo_url=logo_url,
@@ -521,7 +524,7 @@ class Admin(BaseAdminView):
         identity = request.path_params["identity"]
         model_view = self._find_model_view(identity)
 
-        Form = await model_view.scaffold_form(model_view._form_create_rules)
+        Form = await model_view.scaffold_form(model_view._form_create_rules)  # pylint: disable=invalid-name
         form_data = await self._handle_form_data(request)
         form = Form(form_data)
 
@@ -543,7 +546,7 @@ class Admin(BaseAdminView):
         form_data_dict = self._denormalize_wtform_data(form.data, model_view.model)
         try:
             obj = await model_view.insert_model(request, form_data_dict)
-        except Exception as e:
+        except Exception as e:  # pylint: disable=broad-except
             logger.exception(e)
             context["error"] = str(e)
             return await self.templates.TemplateResponse(
@@ -571,7 +574,7 @@ class Admin(BaseAdminView):
         if not model:
             raise HTTPException(status_code=404)
 
-        Form = await model_view.scaffold_form(model_view._form_edit_rules)
+        Form = await model_view.scaffold_form(model_view._form_edit_rules)  # pylint: disable=invalid-name
         context = {
             "obj": model,
             "model_view": model_view,
@@ -599,7 +602,7 @@ class Admin(BaseAdminView):
                 obj = await model_view.update_model(
                     request, pk=request.path_params["pk"], data=form_data_dict
                 )
-        except Exception as e:
+        except Exception as e:  # pylint: disable=broad-except
             logger.exception(e)
             context["error"] = str(e)
             return await self.templates.TemplateResponse(
@@ -669,8 +672,8 @@ class Admin(BaseAdminView):
 
         try:
             loader: QueryAjaxModelLoader = model_view._form_ajax_refs[name]
-        except KeyError:
-            raise HTTPException(status_code=400)
+        except KeyError as exc:
+            raise HTTPException(status_code=400) from exc
 
         data = [loader.format(m) for m in await loader.get_list(term)]
         return JSONResponse({"results": data})
@@ -688,10 +691,12 @@ class Admin(BaseAdminView):
 
         if form.get("save") == "Save":
             return request.url_for("admin:list", identity=identity)
-        elif form.get("save") == "Save and continue editing" or (
+
+        if form.get("save") == "Save and continue editing" or (
             form.get("save") == "Save as new" and model_view.save_as_continue
         ):
             return request.url_for("admin:edit", identity=identity, pk=identifier)
+
         return request.url_for("admin:create", identity=identity)
 
     async def _handle_form_data(self, request: Request, obj: Any = None) -> FormData:
@@ -743,7 +748,7 @@ class Admin(BaseAdminView):
 def expose(
     path: str,
     *,
-    methods: list[str] = ["GET"],
+    methods: list[str] | None = None,
     identity: str | None = None,
     include_in_schema: bool = True,
 ) -> Callable[..., Any]:
@@ -753,7 +758,7 @@ def expose(
     def wrap(func):
         func._exposed = True
         func._path = path
-        func._methods = methods
+        func._methods = methods or ["GET"]
         func._identity = identity or func.__name__
         func._include_in_schema = include_in_schema
         return login_required(func)

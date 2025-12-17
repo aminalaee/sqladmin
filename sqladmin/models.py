@@ -1,3 +1,5 @@
+# pylint: disable=too-many-lines
+
 from __future__ import annotations
 
 import json
@@ -64,7 +66,7 @@ from sqladmin.pretty_export import PrettyExport
 from sqladmin.templating import Jinja2Templates
 
 if TYPE_CHECKING:
-    from sqlalchemy.ext.asyncio import async_sessionmaker
+    from sqlalchemy.ext.asyncio import async_sessionmaker  # type: ignore[attr-defined]
 
     from sqladmin.application import BaseAdmin
 
@@ -83,8 +85,8 @@ class ModelViewMeta(type):
     """
 
     @no_type_check
-    def __new__(mcls, name, bases, attrs: dict, **kwargs: Any):
-        cls: Type["ModelView"] = super().__new__(mcls, name, bases, attrs)
+    def __new__(mcs, name, bases, attrs: dict, **kwargs: Any):
+        cls: Type["ModelView"] = super().__new__(mcs, name, bases, attrs)
 
         model = kwargs.get("model")
 
@@ -93,10 +95,10 @@ class ModelViewMeta(type):
 
         try:
             inspect(model)
-        except NoInspectionAvailable:
+        except NoInspectionAvailable as exc:
             raise InvalidModelError(
                 f"Class {model.__name__} is not a SQLAlchemy model."
-            )
+            ) from exc
 
         cls.pk_columns = get_primary_keys(model)
         cls.identity = slugify_class_name(model.__name__)
@@ -105,27 +107,25 @@ class ModelViewMeta(type):
         cls.name = attrs.get("name", prettify_class_name(cls.model.__name__))
         cls.name_plural = attrs.get("name_plural", f"{cls.name}s")
 
-        mcls._check_conflicting_options(["column_list", "column_exclude_list"], attrs)
-        mcls._check_conflicting_options(
-            ["form_columns", "form_excluded_columns"], attrs
-        )
-        mcls._check_conflicting_options(
+        mcs._check_conflicting_options(["column_list", "column_exclude_list"], attrs)
+        mcs._check_conflicting_options(["form_columns", "form_excluded_columns"], attrs)
+        mcs._check_conflicting_options(
             ["column_details_list", "column_details_exclude_list"], attrs
         )
-        mcls._check_conflicting_options(
+        mcs._check_conflicting_options(
             ["column_export_list", "column_export_exclude_list"], attrs
         )
 
         return cls
 
     @classmethod
-    def _check_conflicting_options(mcls, keys: List[str], attrs: dict) -> None:
+    def _check_conflicting_options(mcs, keys: List[str], attrs: dict) -> None:
         if all(k in attrs for k in keys):
             raise AssertionError(f"Cannot use {' and '.join(keys)} together.")
 
 
 class BaseModelView:
-    def is_visible(self, request: Request) -> bool:
+    def is_visible(self, request: Request) -> bool:  # pylint: disable=unused-argument
         """Override this method if you want dynamically
         hide or show administrative views from SQLAdmin menu structure
         By default, item is visible in menu.
@@ -133,7 +133,7 @@ class BaseModelView:
         """
         return True
 
-    def is_accessible(self, request: Request) -> bool:
+    def is_accessible(self, request: Request) -> bool:  # pylint: disable=unused-argument
         """Override this method to add permission checks.
         SQLAdmin does not make any assumptions about the authentication system
         used in your application, so it is up to you to implement it.
@@ -212,7 +212,12 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
 
     # Internals
     pk_columns: ClassVar[Tuple[Column]]
-    session_maker: ClassVar[Union[sessionmaker, "async_sessionmaker"]]
+    session_maker: ClassVar[  # type: ignore[no-any-unimported]
+        Union[
+            sessionmaker,
+            "async_sessionmaker",
+        ]
+    ]
     is_async: ClassVar[bool] = False
     is_model: ClassVar[bool] = True
     ajax_lookup_url: ClassVar[str] = ""
@@ -815,8 +820,8 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
                 return self.column_default_sort
             if isinstance(self.column_default_sort, tuple):
                 return [self.column_default_sort]
-            else:
-                return [(self.column_default_sort, False)]
+
+            return [(self.column_default_sort, False)]
 
         return [(pk.name, False) for pk in self.pk_columns]
 
@@ -833,10 +838,10 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
 
         try:
             return int(number)
-        except ValueError:
+        except ValueError as exc:
             raise HTTPException(
                 status_code=400, detail="Invalid page or pageSize parameter"
-            )
+            ) from exc
 
     async def count(self, request: Request, stmt: Optional[Select] = None) -> int:
         if stmt is None:
@@ -854,14 +859,14 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
         for relation in self._list_relations:
             stmt = stmt.options(selectinload(relation))
 
-        for filter in self.get_filters():
-            filter_param_name = filter.parameter_name
+        for filter_ in self.get_filters():
+            filter_param_name = filter_.parameter_name
             filter_value = request.query_params.get(filter_param_name)
 
             if filter_value:
-                if hasattr(filter, "has_operator") and filter.has_operator:
+                if hasattr(filter_, "has_operator") and filter_.has_operator:
                     # Use operation-based filtering
-                    operation_filter = typing_cast(OperationColumnFilter, filter)
+                    operation_filter = typing_cast(OperationColumnFilter, filter_)
                     operation_param = request.query_params.get(
                         f"{filter_param_name}_op"
                     )
@@ -871,7 +876,7 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
                         )
                 else:
                     # Use simple filtering for filters without operators
-                    simple_filter = typing_cast(SimpleColumnFilter, filter)
+                    simple_filter = typing_cast(SimpleColumnFilter, filter_)
                     stmt = await simple_filter.get_filtered_query(
                         stmt, filter_value, self.model
                     )
@@ -881,8 +886,12 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
         if search:
             stmt = self.search_query(stmt=stmt, term=search)
 
-        count = await self.count(request, select(func.count()).select_from(stmt))
-
+        count = await self.count(
+            request,
+            select(
+                func.count()  # pylint: disable=not-callable
+            ).select_from(stmt),
+        )
         stmt = stmt.limit(page_size).offset((page - 1) * page_size)
         rows = await self._run_query(stmt)
 
@@ -983,14 +992,16 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
         """This function generalizes constructing a list of columns
         for any sequence of inclusions or exclusions.
         """
-
         if include == "__all__":
             return self._prop_names
-        elif include:
+
+        if include:
             return [self._get_prop_name(item) for item in include]
-        elif exclude:
+
+        if exclude:
             exclude = [self._get_prop_name(item) for item in exclude]
             return [prop for prop in self._prop_names if prop not in exclude]
+
         return defaults
 
     def get_list_columns(self) -> List[str]:
@@ -1099,7 +1110,7 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
 
         form = await get_model_form(
             model=self.model,
-            session_maker=self.session_maker,
+            session_maker=self.session_maker,  # type: ignore[arg-type]
             only=self._form_prop_names,
             column_labels=self._column_labels,
             form_args=self.form_args,
@@ -1157,7 +1168,7 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
 
         return stmt.filter(or_(*expressions))
 
-    def list_query(self, request: Request) -> Select:
+    def list_query(self, request: Request) -> Select:  # pylint: disable=unused-argument
         """
         The SQLAlchemy select expression used for the list page which can be customized.
         By default it will select all objects without any filters.
@@ -1192,14 +1203,14 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
             stmt = stmt.options(selectinload(relation))
         return stmt
 
-    def count_query(self, request: Request) -> Select:
+    def count_query(self, request: Request) -> Select:  # pylint: disable=unused-argument
         """
         The SQLAlchemy select expression used for the count query
         which can be customized.
         By default it will select all objects without any filters.
         """
 
-        return select(func.count(self.pk_columns[0]))
+        return select(func.count(self.pk_columns[0]))  # pylint: disable=not-callable
 
     def sort_query(self, stmt: Select, request: Request) -> Select:
         """
@@ -1249,8 +1260,10 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
                 else self._export_csv(data)
             )
             return await export_method
-        elif export_type == "json":
+
+        if export_type == "json":
             return await self._export_json(data)
+
         raise NotImplementedError("Only export_type='csv' or 'json' is implemented.")
 
     async def _export_csv(
@@ -1306,7 +1319,7 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
             headers={"Content-Disposition": f"attachment;filename={filename}"},
         )
 
-    async def custom_export_cell(
+    async def custom_export_cell(  # pylint: disable=unused-argument
         self,
         row: Any,
         name: str,

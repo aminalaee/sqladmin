@@ -66,7 +66,8 @@ class QueryAjaxModelLoader:
 
         # no type casting to string if a ColumnAssociationProxyInstance is given
         filters = [
-            cast(field, String).ilike("%%%s%%" % term) for field in self._cached_fields
+            cast(field, String).ilike("%%%s%%" % term)  # pylint: disable=consider-using-f-string
+            for field in self._cached_fields
         ]
 
         stmt = stmt.filter(or_(*filters))
@@ -93,8 +94,8 @@ def create_ajax_loader(
 
     try:
         attr = mapper.relationships[name]
-    except KeyError:
-        raise ValueError(f"{model_admin.model}.{name} is not a relation.")
+    except KeyError as exc:
+        raise ValueError(f"{model_admin.model}.{name} is not a relation.") from exc
 
     remote_model = attr.mapper.class_
     return QueryAjaxModelLoader(name, remote_model, model_admin, **options)

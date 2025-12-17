@@ -14,9 +14,9 @@ from sqlalchemy.orm import ColumnProperty, InstrumentedAttribute, RelationshipPr
 from sqlalchemy.sql.expression import Select
 from starlette.requests import Request
 
-MODEL_PROPERTY = Union[ColumnProperty, RelationshipProperty]
-ENGINE_TYPE = Union[Engine, AsyncEngine]
-MODEL_ATTR = Union[str, InstrumentedAttribute]
+MODEL_PROPERTY = Union[ColumnProperty, RelationshipProperty]  # pylint: disable=invalid-name
+ENGINE_TYPE = Union[Engine, AsyncEngine]  # pylint: disable=invalid-name
+MODEL_ATTR = Union[str, InstrumentedAttribute]  # pylint: disable=invalid-name
 
 
 @runtime_checkable
