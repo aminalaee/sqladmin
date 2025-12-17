@@ -6,6 +6,7 @@ from httpx import ASGITransport, AsyncClient
 from sqlalchemy import (
     JSON,
     BigInteger,
+    Boolean,
     Column,
     Date,
     Enum,
@@ -121,6 +122,16 @@ class Product(Base):
     price = Column(BigInteger)
 
 
+class EachRowAction(Base):
+    __tablename__ = "each_row_actions"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    name = Column(String, default="Name")
+    can_view_details = Column(Boolean, nullable=True, default=True)
+    can_edit = Column(Boolean, nullable=True, default=True)
+    can_delete = Column(Boolean, nullable=True, default=True)
+
+
 @pytest.fixture
 async def prepare_database() -> AsyncGenerator[None, None]:
     async with engine.begin() as conn:
@@ -193,6 +204,26 @@ class MovieAdmin(ModelView, model=Movie):
         return False
 
 
+class EachRowActionAdmin(ModelView, model=EachRowAction):
+    column_list = [
+        "name",
+        "can_view_details",
+        "can_edit",
+        "can_delete",
+    ]
+
+    async def check_can_view_details(
+        self, request: Request, model: EachRowAction
+    ) -> bool:
+        return model.can_view_details
+
+    async def check_can_edit(self, request: Request, model: EachRowAction) -> bool:
+        return model.can_edit
+
+    async def check_can_delete(self, request: Request, model: EachRowAction) -> bool:
+        return model.can_delete
+
+
 class ProductAdmin(ModelView, model=Product):
     pass
 
@@ -201,6 +232,7 @@ admin.add_view(UserAdmin)
 admin.add_view(AddressAdmin)
 admin.add_view(ProfileAdmin)
 admin.add_view(MovieAdmin)
+admin.add_view(EachRowActionAdmin)
 admin.add_view(ProductAdmin)
 
 
@@ -492,6 +524,60 @@ async def test_create_endpoint_with_required_fields(client: AsyncClient) -> None
         '<label class="form-label col-sm-2 col-form-label" for="price">Price</label>'
         in response.text
     )
+
+
+async def test_check_can_view_details(client: AsyncClient) -> None:
+    async with session_maker() as session:
+        session.add_all(
+            [
+                EachRowAction(
+                    name="Cannot view details",
+                    can_view_details=False,
+                ),
+                EachRowAction(
+                    name="Cannot edit",
+                    can_edit=False,
+                ),
+                EachRowAction(
+                    name="Cannot delete",
+                    can_delete=False,
+                ),
+            ]
+        )
+        await session.commit()
+
+    stmt = select(func.count(EachRowAction.id))
+    async with session_maker() as s:
+        result = await s.execute(stmt)
+    assert result.scalar_one() == 3
+
+    response = await client.get("admin/each-row-action/list")
+
+    assert 'href="http://testserver/admin/each-row-action/edit/1"' in response.text
+    assert (
+        'data-url="http://testserver/admin/each-row-action/delete?pks=1"'
+        in response.text
+    )
+
+    assert 'href="http://testserver/admin/each-row-action/details/2"' in response.text
+    assert (
+        'data-url="http://testserver/admin/each-row-action/delete?pks=2"'
+        in response.text
+    )
+
+    assert 'href="http://testserver/admin/each-row-action/details/3"' in response.text
+    assert 'href="http://testserver/admin/each-row-action/edit/3"' in response.text
+
+    assert response.status_code == 200
+
+    response = await client.get("admin/each-row-action/details/1")
+    assert response.status_code == 403
+
+    response = await client.get("admin/each-row-action/edit/2")
+    assert response.status_code == 403
+
+    response = await client.delete("admin/each-row-action/delete?pks=3")
+    assert response.status_code == 403
 
 
 async def test_create_endpoint_post_form(client: AsyncClient) -> None:

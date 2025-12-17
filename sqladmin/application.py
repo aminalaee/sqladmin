@@ -309,7 +309,7 @@ class BaseAdminView(BaseAdmin):
             assert pk is not None and isinstance(
                 pk, str
             ), f'pk not found in request.path_params "{request.path_params}"'
-            model = await model_view.get_object_for_details(pk)
+            model = await model_view.get_object_for_details(request)
             can_view_details_row = await model_view.check_can_view_details(
                 request, model
             )
@@ -328,7 +328,8 @@ class BaseAdminView(BaseAdmin):
                 pks, str
             ), f'pks not found in request.query_params "{request.query_params}"'
             for pk in pks.split(","):
-                model = await model_view.get_object_for_details(pk)
+                request.path_params["pk"] = pk
+                model = await model_view.get_object_for_details(request)
                 can_delete_row = await model_view.check_can_delete(request, model)
                 if can_delete_row is not True:
                     raise HTTPException(status_code=403)
@@ -343,7 +344,7 @@ class BaseAdminView(BaseAdmin):
             assert pk is not None and isinstance(
                 pk, str
             ), f'pk not found in request.path_params "{request.path_params}"'
-            model = await model_view.get_object_for_details(pk)
+            model = await model_view.get_object_for_details(request)
             can_edit_row = await model_view.check_can_edit(request, model)
             if can_edit_row is not True:
                 raise HTTPException(status_code=403)
