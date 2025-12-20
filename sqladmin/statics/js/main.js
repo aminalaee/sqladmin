@@ -151,63 +151,23 @@ $(':input[data-role="select2-tags"]').each(function () {
   }
 });
 
-// Add sort icons dynamically to the table headers
-$('th').not('.w-1').each(function () {
-  const columnName = $(this).text().trim(); // Get the column name
-  $(this). prepend(`<span data-sortable="true" class="sort-icon" data-column="${columnName}" data-order="asc" style="cursor: pointer; margin-right: 5px;">⇅</span>`);
-});
 
-// Table sorting
 $(document).on('click', '.sort-icon', function () {
   let $icon = $(this);
-
-  const table = $(this).closest('table');
-  console.log("table = ", table);
-
-  const tbody = table.find('tbody');
-  console.log("tbody = ", tbody);
-
-  const thead = table.find('thead');
-  console.log("head = ", thead);
+  console.log("icon = ", $icon);
 
   const th = $icon.closest('th');
-  console.log($icon);
-  console.log("th = ", th);
 
   const buttonText = $icon.next('a');
-  console.log(typeof(buttonText));
-  console.log(Object.values(buttonText)[0]);
-  console.log("buttonText = ", buttonText[0].innerText);
-
-  console.log("current url = ", window.location.href);
   const parsedUrl = new URL(window.location.href);
 
-  console.log("parsed URL = ", parsedUrl);
+  parsedUrl.searchParams.set("sortBy", String(buttonText[0].innerText).trim());
 
-  parsedUrl.searchParams.append("sortBy", buttonText[0].innerText);
-  
-  console.log(parsedUrl.href);
+  const isAscending = $icon.data('sort-order') !== 'asc';
+  $icon.data('sort-order', isAscending ? 'asc' : 'desc');
+  parsedUrl.searchParams.set("sort", String($icon.data('sort-order')).trim());
 
+  $icon.text(isAscending ? '▲' : '▼');
   window.location.href = parsedUrl.href;
-
-  // const isAscending = $icon.data('sort-order') !== 'asc';
-  // $icon.data('sort-order', isAscending ? 'asc' : 'desc');
-
-  const rows = tbody.find('tr').toArray();
-  // console.log("rows = ", rows)
-
-  
-
-  // rows.sort((rowA, rowB) => {
-  //   const cellA = $(rowA).find('td').eq(columnIndex).text().trim();
-  //   const cellB = $(rowB).find('td').eq(columnIndex).text().trim();
-
-  //   return isAscending
-  //     ? cellA.localeCompare(cellB, undefined, { numeric: true })
-  //     : cellB.localeCompare(cellA, undefined, { numeric: true });
-  // });
-
-  // rows.forEach(row => tbody.append(row));
-  // $icon.text(isAscending ? '▲' : '▼');
 });
 
