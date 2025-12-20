@@ -84,7 +84,7 @@
       </div>
     </div>
     <div class="table-responsive">
-      <table class="table card-table table-vcenter text-nowrap">
+      <table class="table card-table table-vcenter text-nowrap" data-is-single-page="{{ pagination.count <= pagination.page_size }}">
         <thead>
           <tr>
             <th class="w-1"><input class="form-check-input m-0 align-middle" type="checkbox" aria-label="Select all"

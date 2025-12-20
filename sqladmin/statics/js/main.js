@@ -162,24 +162,44 @@ $(document).on('click', '.sort-icon', function () {
   let $icon = $(this);
 
   const table = $(this).closest('table');
-  const tbody = table.find('tbody');
+  console.log("table = ", table);
 
-  const columnIndex = $icon.closest('th').index();
-  const isAscending = $icon.data('sort-order') !== 'asc';
-  $icon.data('sort-order', isAscending ? 'asc' : 'desc');
+  const tbody = table.find('tbody');
+  console.log("tbody = ", tbody);
+
+  const thead = table.find('thead');
+  console.log("head = ", thead);
+
+  const th = $icon.closest('th');
+  console.log($icon);
+  console.log("th = ", th);
+
+  const buttonText = $icon.siblings('a');
+  console.log("a = ", buttonText);
+
+  console.log("current url = ", window.location.href);
+  const parsedUrl = new URL(window.location.href);
+
+  console.log("parsed URL = ", parsedUrl);
+
+  // const isAscending = $icon.data('sort-order') !== 'asc';
+  // $icon.data('sort-order', isAscending ? 'asc' : 'desc');
 
   const rows = tbody.find('tr').toArray();
+  // console.log("rows = ", rows)
 
-  rows.sort((rowA, rowB) => {
-    const cellA = $(rowA).find('td').eq(columnIndex).text().trim();
-    const cellB = $(rowB).find('td').eq(columnIndex).text().trim();
+  
 
-    return isAscending
-      ? cellA.localeCompare(cellB, undefined, { numeric: true })
-      : cellB.localeCompare(cellA, undefined, { numeric: true });
-  });
+  // rows.sort((rowA, rowB) => {
+  //   const cellA = $(rowA).find('td').eq(columnIndex).text().trim();
+  //   const cellB = $(rowB).find('td').eq(columnIndex).text().trim();
 
-  rows.forEach(row => tbody.append(row));
-  $icon.text(isAscending ? '▲' : '▼');
+  //   return isAscending
+  //     ? cellA.localeCompare(cellB, undefined, { numeric: true })
+  //     : cellB.localeCompare(cellA, undefined, { numeric: true });
+  // });
+
+  // rows.forEach(row => tbody.append(row));
+  // $icon.text(isAscending ? '▲' : '▼');
 });
 
