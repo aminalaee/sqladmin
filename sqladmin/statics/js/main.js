@@ -174,13 +174,21 @@ $(document).on('click', '.sort-icon', function () {
   console.log($icon);
   console.log("th = ", th);
 
-  const buttonText = $icon.siblings('a');
-  console.log("a = ", buttonText);
+  const buttonText = $icon.next('a');
+  console.log(typeof(buttonText));
+  console.log(Object.values(buttonText)[0]);
+  console.log("buttonText = ", buttonText[0].innerText);
 
   console.log("current url = ", window.location.href);
   const parsedUrl = new URL(window.location.href);
 
   console.log("parsed URL = ", parsedUrl);
+
+  parsedUrl.searchParams.append("sortBy", buttonText[0].innerText);
+  
+  console.log(parsedUrl.href);
+
+  window.location.href = parsedUrl.href;
 
   // const isAscending = $icon.data('sort-order') !== 'asc';
   // $icon.data('sort-order', isAscending ? 'asc' : 'desc');
