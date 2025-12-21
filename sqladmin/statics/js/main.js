@@ -150,3 +150,23 @@ $(':input[data-role="select2-tags"]').each(function () {
     $(this).append(option).trigger('change');
   }
 });
+
+function copyToClipboard(element, value) {
+  navigator.clipboard.writeText(value)
+    .then(() => {
+      const alertElement = element.nextElementSibling;
+      if (
+        alertElement &&
+        alertElement.classList.contains('alert') &&
+        alertElement.classList.contains('alert-primary')
+      ) {
+        alertElement.classList.remove('fade');
+        setTimeout(() => {
+          alertElement.classList.add('fade');
+        }, 2000);
+      }
+    })
+    .catch(err => {
+        console.error('Failed to copy text: ', err);
+    });
+}

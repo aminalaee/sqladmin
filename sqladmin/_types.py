@@ -1,13 +1,18 @@
 from typing import (
     Any,
+    AnyStr,
     Callable,
+    Dict,
+    Iterable,
     List,
     Protocol,
     Tuple,
+    Type,
     Union,
     runtime_checkable,
 )
 
+from markupsafe import Markup
 from sqlalchemy.engine import Engine
 from sqlalchemy.ext.asyncio import AsyncEngine
 from sqlalchemy.orm import ColumnProperty, InstrumentedAttribute, RelationshipProperty
@@ -55,3 +60,7 @@ class OperationColumnFilter(Protocol):
 
 
 ColumnFilter = Union[SimpleColumnFilter, OperationColumnFilter]
+
+BASE_FORMATTERS_TYPE = Dict[
+    Type[Any], Callable[[Any], Markup | Iterable[Markup] | AnyStr | Iterable[AnyStr]]
+]
