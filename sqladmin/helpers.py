@@ -6,7 +6,7 @@ import os
 import re
 import unicodedata
 from abc import ABC, abstractmethod
-from datetime import timedelta
+from datetime import date, datetime, time, timedelta
 from typing import (
     Any,
     AsyncGenerator,
@@ -152,8 +152,10 @@ class _PseudoBuffer:
     interface.
     """
 
-    def write(self, value: T) -> T:
-        return value
+    encoding = "utf-8"
+
+    def write(self, value: T) -> bytes:
+        return str(value).encode(self.encoding)
 
 
 def stream_to_csv(
@@ -224,7 +226,13 @@ def object_identifier_values(id_string: str, model: Any) -> tuple:
     pks = get_primary_keys(model)
     for pk, part in zip(pks, _object_identifier_parts(id_string, model)):
         type_ = get_column_python_type(pk)
-        value = False if type_ is bool and part == "False" else type_(part)
+        value: Any
+        if issubclass(type_, (date, datetime, time)):
+            value = type_.fromisoformat(part)
+        elif issubclass(type_, bool):
+            value = False if part == "False" else type_(part)
+        else:
+            value = type_(part)  # type: ignore [call-arg]
         values.append(value)
     return tuple(values)
 

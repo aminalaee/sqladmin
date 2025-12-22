@@ -14,7 +14,7 @@ jobs:
 
     strategy:
       matrix:
-        python-version: ["3.8", "3.9", "3.10", "3.11", "3.12"]
+        python-version: ["3.9", "3.10", "3.11", "3.12", "3.13", "3.14"]
 
     services:
       postgres:
@@ -47,7 +47,7 @@ jobs:
         run: hatch run test:test
       - name: "Run tests with PostgreSQL"
         env:
-          TEST_DATABASE_URI_SYNC: "postgresql+psycopg2://username:password@localhost:5432/test_db"
+          TEST_DATABASE_URI_SYNC: "postgresql+psycopg://username:password@localhost:5432/test_db"
           TEST_DATABASE_URI_ASYNC: "postgresql+asyncpg://username:password@localhost:5432/test_db"
         run: hatch run test:test
       - name: "Enforce coverage"

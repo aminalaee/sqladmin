@@ -2,7 +2,7 @@ import enum
 from typing import Any, AsyncGenerator
 
 import pytest
-from httpx import AsyncClient
+from httpx import ASGITransport, AsyncClient
 from sqlalchemy import (
     JSON,
     BigInteger,
@@ -113,11 +113,21 @@ class Movie(Base):
     id = Column(Integer, primary_key=True)
 
 
+class Product(Base):
+    __tablename__ = "product"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    name = Column(String, nullable=False)
+    price = Column(BigInteger)
+
+
 @pytest.fixture
 async def prepare_database() -> AsyncGenerator[None, None]:
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
+
     yield
+
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.drop_all)
 
@@ -126,8 +136,9 @@ async def prepare_database() -> AsyncGenerator[None, None]:
 
 @pytest.fixture
 async def client(prepare_database: Any) -> AsyncGenerator[AsyncClient, None]:
-    async with AsyncClient(app=app, base_url="http://testserver") as c:
-        yield c
+    transport = ASGITransport(app=app)
+    async with AsyncClient(transport=transport, base_url="http://testserver") as client:
+        yield client
 
 
 class UserAdmin(ModelView, model=User):
@@ -182,10 +193,15 @@ class MovieAdmin(ModelView, model=Movie):
         return False
 
 
+class ProductAdmin(ModelView, model=Product):
+    pass
+
+
 admin.add_view(UserAdmin)
 admin.add_view(AddressAdmin)
 admin.add_view(ProfileAdmin)
 admin.add_view(MovieAdmin)
+admin.add_view(ProductAdmin)
 
 
 async def test_root_view(client: AsyncClient) -> None:
@@ -460,6 +476,20 @@ async def test_create_endpoint_get_form(client: AsyncClient) -> None:
     )
     assert (
         '<input class="form-control" id="email" name="email" type="text" value="">'
+        in response.text
+    )
+
+
+async def test_create_endpoint_with_required_fields(client: AsyncClient) -> None:
+    response = await client.get("/admin/product/create")
+
+    assert response.status_code == 200
+    assert (
+        '<label class="form-label col-sm-2 col-form-label required-label" for="name" '
+        'title="This is a required field">Name</label>' in response.text
+    )
+    assert (
+        '<label class="form-label col-sm-2 col-form-label" for="price">Price</label>'
         in response.text
     )
 
@@ -778,6 +808,25 @@ async def test_export_csv_row_count(client: AsyncClient) -> None:
     assert row_count(response) == 3
 
 
+async def test_export_csv_utf8(client: AsyncClient) -> None:
+    async with session_maker() as session:
+        user_1 = User(name="Daniel", status="ACTIVE")
+        user_2 = User(name="دانيال", status="ACTIVE")
+        user_3 = User(name="積極的", status="ACTIVE")
+        user_4 = User(name="Даниэль", status="ACTIVE")
+        session.add(user_1)
+        session.add(user_2)
+        session.add(user_3)
+        session.add(user_4)
+        await session.commit()
+
+    response = await client.get("/admin/user/export/csv")
+    assert response.text == (
+        "name,status\r\nDaniel,ACTIVE\r\nدانيال,ACTIVE\r\n"
+        "積極的,ACTIVE\r\nДаниэль,ACTIVE\r\n"
+    )
+
+
 async def test_export_json(client: AsyncClient) -> None:
     async with session_maker() as session:
         user = User(name="Daniel", status="ACTIVE")
@@ -786,6 +835,27 @@ async def test_export_json(client: AsyncClient) -> None:
 
     response = await client.get("/admin/user/export/json")
     assert response.text == '[{"name": "Daniel", "status": "ACTIVE"}]'
+
+
+async def test_export_json_utf8(client: AsyncClient) -> None:
+    async with session_maker() as session:
+        user_1 = User(name="Daniel", status="ACTIVE")
+        user_2 = User(name="دانيال", status="ACTIVE")
+        user_3 = User(name="積極的", status="ACTIVE")
+        user_4 = User(name="Даниэль", status="ACTIVE")
+        session.add(user_1)
+        session.add(user_2)
+        session.add(user_3)
+        session.add(user_4)
+        await session.commit()
+
+    response = await client.get("/admin/user/export/json")
+    assert response.text == (
+        '[{"name": "Daniel", "status": "ACTIVE"},'
+        '{"name": "دانيال", "status": "ACTIVE"},'
+        '{"name": "積極的", "status": "ACTIVE"},'
+        '{"name": "Даниэль", "status": "ACTIVE"}]'
+    )
 
 
 async def test_export_bad_type_is_404(client: AsyncClient) -> None:

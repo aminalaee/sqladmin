@@ -19,6 +19,7 @@ from typing import (
     Union,
     no_type_check,
 )
+from typing import cast as typing_cast
 from urllib.parse import urlencode
 
 import anyio
@@ -36,7 +37,12 @@ from wtforms import Field, Form
 from wtforms.fields.core import UnboundField
 
 from sqladmin._queries import Query
-from sqladmin._types import MODEL_ATTR
+from sqladmin._types import (
+    MODEL_ATTR,
+    ColumnFilter,
+    OperationColumnFilter,
+    SimpleColumnFilter,
+)
 from sqladmin.ajax import create_ajax_loader
 from sqladmin.exceptions import InvalidModelError
 from sqladmin.formatters import BASE_FORMATTERS
@@ -54,6 +60,7 @@ from sqladmin.helpers import (
 
 # stream_to_csv,
 from sqladmin.pagination import Pagination
+from sqladmin.pretty_export import PrettyExport
 from sqladmin.templating import Jinja2Templates
 
 if TYPE_CHECKING:
@@ -315,6 +322,17 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
         ```
     """
 
+    column_filters: ClassVar[Sequence[ColumnFilter]] = []
+    """Collection of the filterable columns for the list view.
+    Columns can either be string names or SQLAlchemy columns.
+
+    ???+ example
+        ```python
+        class UserAdmin(ModelView, model=User):
+            column_filters = [User.is_admin]
+        ```
+    """
+
     column_sortable_list: ClassVar[Sequence[MODEL_ATTR]] = []
     """Collection of the sortable columns for the list view.
 
@@ -401,7 +419,7 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
     """
 
     save_as: ClassVar[bool] = False
-    """Set `save_as` to enable a “save as new” feature on admin change forms.
+    """Set `save_as` to enable a "save as new" feature on admin change forms.
 
     Normally, objects have three save options:
     ``Save`, `Save and continue editing` and `Save and add another`.
@@ -435,6 +453,12 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
     edit_template: ClassVar[str] = "sqladmin/edit.html"
     """Edit view template. Default is `sqladmin/edit.html`."""
 
+    # Template configuration
+    show_compact_lists: ClassVar[bool] = True
+    """Show compact lists. Default is `True`. 
+    If False, when showing lists of objects, each object will be \
+    displayed in a separate line."""
+
     # Export
     column_export_list: ClassVar[List[MODEL_ATTR]] = []
     """List of columns to include when exporting.
@@ -466,6 +490,17 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
     export_max_rows: ClassVar[int] = 0
     """Maximum number of rows allowed for export.
     Unlimited by default.
+    """
+
+    use_pretty_export: ClassVar[bool] = False
+    """
+    Enable export of CSV files using column labels and column formatters.
+
+    If set to True, the export will apply column labels and formatting logic 
+    used in the list template.
+    Otherwise, raw database values and field names will be used.
+
+    You can override cell formatting per column by implementing `custom_export_cell`.
     """
 
     # Form
@@ -648,7 +683,7 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
         - None will be displayed as an empty string
         - bool will be displayed as a checkmark if it is True otherwise as an X.
 
-    If you don’t like the default behavior and don’t want any type formatters applied,
+    If you don't like the default behavior and don't want any type formatters applied,
     just override this property with an empty dictionary:
 
     ???+ example
@@ -720,6 +755,19 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
         self._custom_actions_in_list: Dict[str, str] = {}
         self._custom_actions_in_detail: Dict[str, str] = {}
         self._custom_actions_confirmation: Dict[str, str] = {}
+
+    def _run_arbitrary_query_sync(self, stmt: ClauseElement) -> Any:
+        with self.session_maker(expire_on_commit=False) as session:
+            result = session.execute(stmt)
+            return result.all()
+
+    async def _run_arbitrary_query(self, stmt: ClauseElement) -> Any:
+        if self.is_async:
+            async with self.session_maker(expire_on_commit=False) as session:
+                result = await session.execute(stmt)
+                return result.all()
+        else:
+            return self._run_arbitrary_query_sync(stmt)
 
     def _run_query_sync(self, stmt: ClauseElement) -> Any:
         with self.session_maker(expire_on_commit=False) as session:
@@ -806,13 +854,34 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
         for relation in self._list_relations:
             stmt = stmt.options(selectinload(relation))
 
+        for filter in self.get_filters():
+            filter_param_name = filter.parameter_name
+            filter_value = request.query_params.get(filter_param_name)
+
+            if filter_value:
+                if hasattr(filter, "has_operator") and filter.has_operator:
+                    # Use operation-based filtering
+                    operation_filter = typing_cast(OperationColumnFilter, filter)
+                    operation_param = request.query_params.get(
+                        f"{filter_param_name}_op"
+                    )
+                    if operation_param:
+                        stmt = await operation_filter.get_filtered_query(
+                            stmt, operation_param, filter_value, self.model
+                        )
+                else:
+                    # Use simple filtering for filters without operators
+                    simple_filter = typing_cast(SimpleColumnFilter, filter)
+                    stmt = await simple_filter.get_filtered_query(
+                        stmt, filter_value, self.model
+                    )
+
         stmt = self.sort_query(stmt, request)
 
         if search:
             stmt = self.search_query(stmt=stmt, term=search)
-            count = await self.count(request, select(func.count()).select_from(stmt))
-        else:
-            count = await self.count(request)
+
+        count = await self.count(request, select(func.count()).select_from(stmt))
 
         stmt = stmt.limit(page_size).offset((page - 1) * page_size)
         rows = await self._run_query(stmt)
@@ -843,12 +912,8 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
         rows = await self._run_query(stmt)
         return rows[0] if rows else None
 
-    async def get_object_for_details(self, value: Any) -> Any:
-        stmt = self._stmt_by_identifier(value)
-
-        for relation in self._details_relations:
-            stmt = stmt.options(selectinload(relation))
-
+    async def get_object_for_details(self, request: Request) -> Any:
+        stmt = self.details_query(request)
         return await self._get_object_by_pk(stmt)
 
     async def get_object_for_edit(self, request: Request) -> Any:
@@ -976,6 +1041,15 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
             defaults=self._list_prop_names,
         )
 
+    def get_filters(self) -> List[ColumnFilter]:
+        """Get list of filters."""
+
+        filters = getattr(self, "column_filters", None)
+        if not filters:
+            return []
+
+        return filters
+
     async def on_model_change(
         self, data: dict, model: Any, is_created: bool, request: Request
     ) -> None:
@@ -1091,6 +1165,14 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
 
         return select(self.model)
 
+    def details_query(self, request: Request) -> Select:
+        """
+        The SQLAlchemy select expression used for the details page which can be
+        customized. By default it will select all objects without any filters.
+        """
+
+        return self.form_edit_query(request)
+
     def edit_form_query(self, request: Request) -> Select:
         msg = (
             "Overriding 'edit_form_query' is deprecated. Use 'form_edit_query' instead."
@@ -1161,7 +1243,12 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
         export_type: str = "csv",
     ) -> StreamingResponse:
         if export_type == "csv":
-            return await self._export_csv(data)
+            export_method = (
+                PrettyExport.pretty_export_csv(self, data)
+                if self.use_pretty_export
+                else self._export_csv(data)
+            )
+            return await export_method
         elif export_type == "json":
             return await self._export_json(data)
         raise NotImplementedError("Only export_type='csv' or 'json' is implemented.")
@@ -1187,7 +1274,7 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
 
         return StreamingResponse(
             content=stream_to_csv(generate),
-            media_type="text/csv",
+            media_type="text/csv; charset=utf-8",
             headers={"Content-Disposition": f"attachment;filename={filename}"},
         )
 
@@ -1228,6 +1315,22 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
             media_type="application/json",
             headers={"Content-Disposition": f"attachment;filename={filename}"},
         )
+
+    async def custom_export_cell(
+        self,
+        row: Any,
+        name: str,
+        value: Any,
+    ) -> Optional[str]:
+        """
+        Override to provide custom formatting for a specific cell in pretty export.
+
+        Return a string to override the default formatting for the given field,
+        or return None to fall back to `base_export_cell`.
+
+        Only used when `use_pretty_export = True`.
+        """
+        return None
 
     def _refresh_form_rules_cache(self) -> None:
         if self.form_rules:
