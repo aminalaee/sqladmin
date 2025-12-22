@@ -5,7 +5,7 @@
     <div class="card-header">
       <h3 class="card-title">
         {% for pk in model_view.pk_columns -%}
-        {{ pk.name | upper }}
+        {{ pk.name | title }}
         {%- if not loop.last %};{% endif -%}
         {% endfor %}: {{ get_object_identifier(model) }}</h3>
     </div>
