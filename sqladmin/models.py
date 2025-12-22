@@ -1206,6 +1206,11 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
                 for name in self._export_prop_names:
                     value = await self.get_prop_value(row, name)
                     try:
+                        if hasattr(value, "isoformat"):      # datetime-like
+                            value = value.isoformat()
+                        from decimal import Decimal
+                        if isinstance(value, Decimal):
+                            value = float(value)
                         json.dumps(value)
                     except TypeError:
                         value = str(value)
