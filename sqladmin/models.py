@@ -881,7 +881,7 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
         if search:
             stmt = self.search_query(stmt=stmt, term=search)
 
-        count = await self.count(request, select(func.count()).select_from(stmt))
+        count = await self.count(request, select(func.count()).select_from(stmt.subquery()))
 
         stmt = stmt.limit(page_size).offset((page - 1) * page_size)
         rows = await self._run_query(stmt)
