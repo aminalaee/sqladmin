@@ -7,7 +7,7 @@ name = "sqladmin"
 version = "0.22.0"
 description = 'SQLAlchemy admin for FastAPI and Starlette'
 readme = "README.md"
-requires-python = ">=3.10"
+requires-python = ">=3.9"
 license = "BSD-3-Clause"
 keywords = ["sqlalchemy", "fastapi", "starlette", "admin"]
 authors = [{ name = "Amin Alaee", email = "me@aminalaee.dev" }]
