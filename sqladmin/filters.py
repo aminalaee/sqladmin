@@ -20,9 +20,7 @@ from sqladmin._types import MODEL_ATTR
 try:
     import uuid
 
-    from sqlalchemy import (  # type: ignore[attr-defined]  # pylint: disable=ungrouped-imports
-        Uuid,
-    )
+    from sqlalchemy import Uuid  # type: ignore[attr-defined]
 
     HAS_UUID_SUPPORT = True
 except ImportError:
@@ -77,7 +75,7 @@ class BooleanFilter:
         self.title = title or get_title(column)
         self.parameter_name = parameter_name or get_parameter_name(column)
 
-    async def lookups(  # pylint: disable=unused-argument
+    async def lookups(
         self,
         request: Request,
         model: Any,
@@ -113,7 +111,7 @@ class AllUniqueStringValuesFilter:
         self.title = title or get_title(column)
         self.parameter_name = parameter_name or get_parameter_name(column)
 
-    async def lookups(  # pylint: disable=unused-argument
+    async def lookups(
         self,
         request: Request,
         model: Any,
@@ -149,7 +147,7 @@ class StaticValuesFilter:
         self.parameter_name = parameter_name or get_parameter_name(column)
         self.values = values
 
-    async def lookups(  # pylint: disable=unused-argument
+    async def lookups(
         self,
         request: Request,
         model: Any,
@@ -181,7 +179,7 @@ class ForeignKeyFilter:
         self.title = title or get_title(foreign_key)
         self.parameter_name = parameter_name or get_parameter_name(foreign_key)
 
-    async def lookups(  # pylint: disable=unused-argument
+    async def lookups(
         self,
         request: Request,
         model: Any,
@@ -278,7 +276,7 @@ class OperationColumnFilter:
         # Check if UUID support is available and column is UUID type
         return HAS_UUID_SUPPORT and isinstance(column_obj.type, Uuid)
 
-    def _convert_value_for_column(  # pylint: disable=too-many-return-statements
+    def _convert_value_for_column(
         self, value: str, column_obj: Any, operation: str = "equals"
     ) -> Any:
         if not value:
@@ -309,7 +307,7 @@ class OperationColumnFilter:
 
         return value
 
-    async def lookups(  # pylint: disable=unused-argument
+    async def lookups(
         self,
         request: Request,
         model: Any,
@@ -319,7 +317,7 @@ class OperationColumnFilter:
         # The UI uses get_operation_options_for_model instead
         return []
 
-    async def get_filtered_query(  # pylint: disable=too-many-return-statements
+    async def get_filtered_query(
         self,
         query: Select,
         operation: str,

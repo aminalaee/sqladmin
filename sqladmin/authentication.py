@@ -16,7 +16,7 @@ class AuthenticationBackend:
     """
 
     def __init__(self, secret_key: str) -> None:
-        from starlette.middleware.sessions import SessionMiddleware  # pylint: disable=import-outside-toplevel # noqa: I001
+        from starlette.middleware.sessions import SessionMiddleware
 
         self.middlewares = [
             Middleware(SessionMiddleware, secret_key=secret_key),

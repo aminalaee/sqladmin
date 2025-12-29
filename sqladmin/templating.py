@@ -52,8 +52,7 @@ class Jinja2Templates:
         self.env = jinja2.Environment(loader=loader, autoescape=True, enable_async=True)
         self.env.globals["url_for"] = url_for
 
-    # FIXME: Rename function
-    async def TemplateResponse(  # pylint: disable=invalid-name
+    async def TemplateResponse(
         self,
         request: Request,
         name: str,

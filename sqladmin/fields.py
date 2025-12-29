@@ -56,7 +56,7 @@ class IntervalField(fields.StringField):
         if not interval:
             raise ValueError("Invalide timedelta format.")
 
-        self.data = interval  # type: ignore[assignment] # pylint: disable=attribute-defined-outside-init
+        self.data = interval  # type: ignore[assignment]
 
 
 class SelectField(fields.SelectField):
@@ -96,10 +96,10 @@ class SelectField(fields.SelectField):
     def process_formdata(self, valuelist: list[str]) -> None:
         if valuelist:
             if valuelist[0] == "__None":
-                self.data = None  # pylint: disable=attribute-defined-outside-init
+                self.data = None
             else:
                 try:
-                    self.data = self.coerce(valuelist[0])  # pylint: disable=attribute-defined-outside-init
+                    self.data = self.coerce(valuelist[0])
                 except ValueError as exc:
                     raise ValueError(
                         self.gettext("Invalid Choice: could not coerce")
@@ -128,16 +128,16 @@ class JSONField(fields.TextAreaField):
 
             # allow saving blank field as None
             if not value:
-                self.data = None  # pylint: disable=attribute-defined-outside-init
+                self.data = None
                 return
 
             try:
-                self.data = json.loads(valuelist[0])  # pylint: disable=attribute-defined-outside-init
+                self.data = json.loads(valuelist[0])
             except ValueError as exc:
                 raise ValueError(self.gettext("Invalid JSON")) from exc
 
 
-class QuerySelectField(fields.SelectFieldBase):  # pylint: disable=abstract-method
+class QuerySelectField(fields.SelectFieldBase):
     widget = widgets.Select()
 
     def __init__(
@@ -216,7 +216,7 @@ class QuerySelectField(fields.SelectFieldBase):  # pylint: disable=abstract-meth
             raise ValidationError(self.gettext("Not a valid choice"))
 
 
-class QuerySelectMultipleField(QuerySelectField):  # pylint: disable=abstract-method
+class QuerySelectMultipleField(QuerySelectField):
     """
     Very similar to QuerySelectField with the difference that this will
     display a multiple select. The data property will hold a list with ORM
@@ -242,7 +242,7 @@ class QuerySelectMultipleField(QuerySelectField):  # pylint: disable=abstract-me
         self._select_data = data or []
 
         if kwargs.get("allow_blank", False):
-            import warnings  # pylint: disable=import-outside-toplevel # noqa: I001
+            import warnings
 
             warnings.warn(
                 "allow_blank=True does not do anything for QuerySelectMultipleField."
@@ -297,7 +297,7 @@ class QuerySelectMultipleField(QuerySelectField):  # pylint: disable=abstract-me
                     raise ValidationError(self.gettext("Not a valid choice"))
 
 
-class AjaxSelectField(fields.SelectFieldBase):  # pylint: disable=abstract-method
+class AjaxSelectField(fields.SelectFieldBase):
     widget = sqladmin_widgets.AjaxSelect2Widget()
     separator = ","
 
@@ -339,7 +339,7 @@ class AjaxSelectField(fields.SelectFieldBase):  # pylint: disable=abstract-metho
             raise ValidationError("Not a valid choice")
 
 
-class AjaxSelectMultipleField(fields.SelectFieldBase):  # pylint: disable=abstract-method
+class AjaxSelectMultipleField(fields.SelectFieldBase):
     widget = sqladmin_widgets.AjaxSelect2Widget(multiple=True)  # type: ignore[assignment]
     separator = ","
 
@@ -383,14 +383,13 @@ class AjaxSelectMultipleField(fields.SelectFieldBase):  # pylint: disable=abstra
 class Select2TagsField(fields.SelectField):
     widget = sqladmin_widgets.Select2TagsWidget()  # type: ignore[assignment]
 
-    def pre_validate(self, form: Form) -> None:
-        ...
+    def pre_validate(self, form: Form) -> None: ...
 
     def process_formdata(self, valuelist: list) -> None:
-        self.data = valuelist  # pylint: disable=attribute-defined-outside-init
+        self.data = valuelist
 
     def process_data(self, value: list | None) -> None:
-        self.data = value or []  # pylint: disable=attribute-defined-outside-init
+        self.data = value or []
 
 
 class FileField(fields.FileField):

@@ -39,7 +39,7 @@ class DateTimePickerWidget(widgets.TextInput):
 
 
 class AjaxSelect2Widget(widgets.Select):
-    def __init__(self, multiple: bool = False):  # pylint: disable=super-init-not-called
+    def __init__(self, multiple: bool = False):
         self.multiple = multiple
         self.lookup_url = ""
 
@@ -61,7 +61,7 @@ class AjaxSelect2Widget(widgets.Select):
         else:
             try:
                 data = field.loader.format(field.data)
-            except Exception:  # pylint: disable=broad-except
+            except Exception:
                 data = None
             if data:
                 kwargs["data-json"] = json.dumps([data])

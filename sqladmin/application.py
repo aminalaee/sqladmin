@@ -116,7 +116,7 @@ class BaseAdmin:
         templates.env.globals["min"] = min
         templates.env.globals["zip"] = zip
         templates.env.globals["admin"] = self
-        templates.env.globals["is_list"] = lambda x: isinstance(x, list)
+        templates.env.globals["is_list"] = lambda x: isinstance(x, (list, set))
         templates.env.globals["get_object_identifier"] = get_object_identifier
 
         return templates
@@ -163,7 +163,7 @@ class BaseAdmin:
         for _, func in funcs[::-1]:
             handle_fn(func, view, view_instance)
 
-    def _handle_action_decorated_func(  # pylint: disable=unused-argument
+    def _handle_action_decorated_func(
         self,
         func: MethodType,
         view: type[BaseView | ModelView],
@@ -184,14 +184,14 @@ class BaseAdmin:
                     func, "_label"
                 )
             if getattr(func, "_add_in_detail"):
-                view_instance._custom_actions_in_detail[
-                    getattr(func, "_slug")
-                ] = getattr(func, "_label")
+                view_instance._custom_actions_in_detail[getattr(func, "_slug")] = (
+                    getattr(func, "_label")
+                )
 
             if getattr(func, "_confirmation_message"):
-                view_instance._custom_actions_confirmation[
-                    getattr(func, "_slug")
-                ] = getattr(func, "_confirmation_message")
+                view_instance._custom_actions_confirmation[getattr(func, "_slug")] = (
+                    getattr(func, "_confirmation_message")
+                )
 
     def _handle_expose_decorated_func(
         self,
@@ -524,7 +524,7 @@ class Admin(BaseAdminView):
         identity = request.path_params["identity"]
         model_view = self._find_model_view(identity)
 
-        Form = await model_view.scaffold_form(model_view._form_create_rules)  # pylint: disable=invalid-name
+        Form = await model_view.scaffold_form(model_view._form_create_rules)
         form_data = await self._handle_form_data(request)
         form = Form(form_data)
 
@@ -546,7 +546,7 @@ class Admin(BaseAdminView):
         form_data_dict = self._denormalize_wtform_data(form.data, model_view.model)
         try:
             obj = await model_view.insert_model(request, form_data_dict)
-        except Exception as e:  # pylint: disable=broad-except
+        except Exception as e:
             logger.exception(e)
             context["error"] = str(e)
             return await self.templates.TemplateResponse(
@@ -574,7 +574,7 @@ class Admin(BaseAdminView):
         if not model:
             raise HTTPException(status_code=404)
 
-        Form = await model_view.scaffold_form(model_view._form_edit_rules)  # pylint: disable=invalid-name
+        Form = await model_view.scaffold_form(model_view._form_edit_rules)
         context = {
             "obj": model,
             "model_view": model_view,
@@ -602,7 +602,7 @@ class Admin(BaseAdminView):
                 obj = await model_view.update_model(
                     request, pk=request.path_params["pk"], data=form_data_dict
                 )
-        except Exception as e:  # pylint: disable=broad-except
+        except Exception as e:
             logger.exception(e)
             context["error"] = str(e)
             return await self.templates.TemplateResponse(

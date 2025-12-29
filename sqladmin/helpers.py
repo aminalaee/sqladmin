@@ -297,7 +297,7 @@ def is_falsy_value(value: Any) -> bool:
 
 
 def choice_type_coerce_factory(type_: Any) -> Callable[[Any], Any]:
-    from sqlalchemy_utils import Choice  # pylint: disable=import-outside-toplevel # noqa: I001
+    from sqlalchemy_utils import Choice
 
     choices = type_.choices
     if isinstance(choices, type) and issubclass(choices, enum.Enum):

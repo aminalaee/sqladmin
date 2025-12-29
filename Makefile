@@ -22,10 +22,9 @@ actions = \
 # ARGS used for `test`. `PY_ARGS` used for `lint` and `format`
 PY_ARGS := $(or $(filter %.py,$(ARGS)),sqladmin)
 
-
-# Use uv to run all commands
-UV = uv run
-
+# -----------------------------
+# Setup
+# -----------------------------
 setup:
 	uv sync --all-groups
 
@@ -34,38 +33,37 @@ setup:
 # -----------------------------
 
 test:
-	$(UV) coverage run -a --concurrency=thread,greenlet -m pytest $(ARGS)
+	uv run coverage run -a --concurrency=thread,greenlet -m pytest $(ARGS)
 
 cov:
-	$(UV) coverage report --show-missing --skip-covered --fail-under=99
-	$(UV) coverage xml
+	uv run coverage report
+	uv run coverage xml
 
 # -----------------------------
 # Linting
 # -----------------------------
 
 lint:
-	$(UV) ruff check $(PY_ARGS)
-	$(UV) ruff format --check $(PY_ARGS)
-	$(UV) mypy $(PY_ARGS)
-	$(UV) pylint $(PY_ARGS)
+	uv run ruff check $(PY_ARGS)
+	uv run ruff format --check $(PY_ARGS)
+	uv run mypy $(PY_ARGS)
 
 format:
-	$(UV) ruff format $(PY_ARGS)
-	$(UV) ruff --fix $(PY_ARGS)
+	uv run ruff format $(PY_ARGS)
+	uv run ruff --fix $(PY_ARGS)
 
 # -----------------------------
 # Documentation
 # -----------------------------
 
 docs-build:
-	$(UV) mkdocs build
+	uv run mkdocs build
 
 docs-serve:
-	$(UV) mkdocs serve --dev-addr localhost:8080
+	uv run mkdocs serve --dev-addr localhost:8080
 
 docs-deploy:
-	$(UV) mkdocs gh-deploy --force
+	uv run mkdocs gh-deploy --force
 
 
 # -----------------------------

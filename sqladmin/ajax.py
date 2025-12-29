@@ -66,8 +66,7 @@ class QueryAjaxModelLoader:
 
         # no type casting to string if a ColumnAssociationProxyInstance is given
         filters = [
-            cast(field, String).ilike("%%%s%%" % term)  # pylint: disable=consider-using-f-string
-            for field in self._cached_fields
+            cast(field, String).ilike("%%%s%%" % term) for field in self._cached_fields
         ]
 
         stmt = stmt.filter(or_(*filters))

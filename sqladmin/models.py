@@ -1,5 +1,3 @@
-# pylint: disable=too-many-lines
-
 from __future__ import annotations
 
 import json
@@ -125,7 +123,7 @@ class ModelViewMeta(type):
 
 
 class BaseModelView:
-    def is_visible(self, request: Request) -> bool:  # pylint: disable=unused-argument
+    def is_visible(self, request: Request) -> bool:
         """Override this method if you want dynamically
         hide or show administrative views from SQLAdmin menu structure
         By default, item is visible in menu.
@@ -133,7 +131,7 @@ class BaseModelView:
         """
         return True
 
-    def is_accessible(self, request: Request) -> bool:  # pylint: disable=unused-argument
+    def is_accessible(self, request: Request) -> bool:
         """Override this method to add permission checks.
         SQLAdmin does not make any assumptions about the authentication system
         used in your application, so it is up to you to implement it.
@@ -887,11 +885,9 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
             stmt = self.search_query(stmt=stmt, term=search)
 
         count = await self.count(
-            request,
-            select(
-                func.count()  # pylint: disable=not-callable
-            ).select_from(stmt),
+            request, select(func.count()).select_from(stmt.subquery())
         )
+
         stmt = stmt.limit(page_size).offset((page - 1) * page_size)
         rows = await self._run_query(stmt)
 
@@ -1168,7 +1164,7 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
 
         return stmt.filter(or_(*expressions))
 
-    def list_query(self, request: Request) -> Select:  # pylint: disable=unused-argument
+    def list_query(self, request: Request) -> Select:
         """
         The SQLAlchemy select expression used for the list page which can be customized.
         By default it will select all objects without any filters.
@@ -1203,14 +1199,14 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
             stmt = stmt.options(selectinload(relation))
         return stmt
 
-    def count_query(self, request: Request) -> Select:  # pylint: disable=unused-argument
+    def count_query(self, request: Request) -> Select:
         """
         The SQLAlchemy select expression used for the count query
         which can be customized.
         By default it will select all objects without any filters.
         """
 
-        return select(func.count(self.pk_columns[0]))  # pylint: disable=not-callable
+        return select(func.count(self.pk_columns[0]))
 
     def sort_query(self, stmt: Select, request: Request) -> Select:
         """
@@ -1319,7 +1315,7 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
             headers={"Content-Disposition": f"attachment;filename={filename}"},
         )
 
-    async def custom_export_cell(  # pylint: disable=unused-argument
+    async def custom_export_cell(
         self,
         row: Any,
         name: str,
