@@ -181,3 +181,23 @@ def test_validate_page_and_page_size():
 
     response = client.get("/admin/user/list?page=aaaa")
     assert response.status_code == 400
+
+
+def test_is_list_template_global():
+    """Test that is_list correctly identifies list and set types."""
+    app = Starlette()
+    admin = Admin(app=app, engine=engine)
+
+    is_list = admin.templates.env.globals["is_list"]
+
+    # Should return True for list and set
+    assert is_list([1, 2, 3]) is True
+    assert is_list({1, 2, 3}) is True
+    assert is_list([]) is True
+    assert is_list(set()) is True
+
+    # Should return False for non-collection types
+    assert is_list("string") is False
+    assert is_list(123) is False
+    assert is_list(None) is False
+    assert is_list({"key": "value"}) is False

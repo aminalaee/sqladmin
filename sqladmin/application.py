@@ -113,7 +113,7 @@ class BaseAdmin:
         templates.env.globals["min"] = min
         templates.env.globals["zip"] = zip
         templates.env.globals["admin"] = self
-        templates.env.globals["is_list"] = lambda x: isinstance(x, list)
+        templates.env.globals["is_list"] = lambda x: isinstance(x, (list, set))
         templates.env.globals["get_object_identifier"] = get_object_identifier
 
         return templates
