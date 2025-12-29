@@ -418,8 +418,8 @@ class ModelConverter(ModelConverterBase):
         kwargs: dict[str, Any],
     ) -> UnboundField:
         available_choices = [
-            (e, e)  # type: ignore[attr-defined]
-            for e in prop.columns[0].type.enums
+            (e, e)
+            for e in prop.columns[0].type.enums  # type: ignore[attr-defined]
         ]
         accepted_values = [choice[0] for choice in available_choices]
 
@@ -573,8 +573,8 @@ class ModelConverter(ModelConverterBase):
         kwargs: dict[str, Any],
     ) -> UnboundField:
         kwargs.setdefault("validators", [])
-        kwargs["validators"].append(  # type: ignore[attr-defined]
-            TimezoneValidator(coerce_function=prop.columns[0].type._coerce)
+        kwargs["validators"].append(
+            TimezoneValidator(coerce_function=prop.columns[0].type._coerce)  # type: ignore[attr-defined]
         )
         return StringField(**kwargs)
 

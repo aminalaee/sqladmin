@@ -86,8 +86,8 @@ class BaseAdmin:
         elif isinstance(self.engine, Engine):
             self.session_maker = sessionmaker(bind=self.engine, class_=Session)
         else:
-            self.session_maker = sessionmaker(  # type: ignore[arg-type]
-                bind=self.engine,
+            self.session_maker = sessionmaker(
+                bind=self.engine,  # type: ignore[arg-type]
                 class_=AsyncSession,
             )
 

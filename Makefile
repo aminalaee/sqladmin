@@ -5,8 +5,6 @@ ARGS ?= $(filter-out $@,$(MAKECMDGOALS))
 %:
 	@:
 
-PY_ARGS := $(filter %.py,$(ARGS))
-
 actions = \
 	setup \
 	test \
@@ -19,8 +17,6 @@ actions = \
 	build \
 	publish
 
-# ARGS used for `test`. `PY_ARGS` used for `lint` and `format`
-PY_ARGS := $(or $(filter %.py,$(ARGS)),sqladmin)
 
 # -----------------------------
 # Setup
@@ -44,13 +40,16 @@ cov:
 # -----------------------------
 
 lint:
-	uv run ruff check $(PY_ARGS)
-	uv run ruff format --check $(PY_ARGS)
-	uv run mypy $(PY_ARGS)
+	uv run ruff check $(ARGS)
+	uv run ruff format --check $(ARGS)
+	uv run mypy $(ARGS)
 
 format:
-	uv run ruff format $(PY_ARGS)
-	uv run ruff --fix $(PY_ARGS)
+	uv run ruff format $(ARGS)
+	uv run ruff check --fix $(ARGS)
+
+secure:
+	uv run bandit -r sqladmin --config pyproject.toml
 
 # -----------------------------
 # Documentation

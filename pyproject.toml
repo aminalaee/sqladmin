@@ -66,6 +66,7 @@ dev = [
   "python-dateutil",
   "sqlalchemy_utils",
   "sqlmodel",
+  "bandit",
 ]
 
 lint = ["mypy==1.18.1", "ruff==0.14.10", "types-wtforms>=3.2.1.20250809"]
@@ -93,7 +94,10 @@ check_untyped_defs = true
 strict_optional = true
 no_implicit_optional = true
 disable_error_code = ["var-annotated"]
-exclude = "tests/*"
+
+[[tool.mypy.overrides]]
+module = "tests.*"
+ignore_errors = true
 
 [tool.ruff]
 lint.select = ["E", "F", "I"]

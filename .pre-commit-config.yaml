@@ -1,27 +1,22 @@
 repos:
-  - repo: https://github.com/pre-commit/mirrors-mypy
-    rev: v1.12.1
-    hooks:
-      - id: mypy
-        args: [--config-file=./pyproject.toml]
-        exclude: "tests/.*\\.py"
-  - repo: https://github.com/astral-sh/ruff-pre-commit
-    # Ruff version.
-    rev: v0.14.10
-    hooks:
-      # Run the linter.
-      - id: ruff-check
-        args: [ --fix ]
-      # Run the formatter.
-      - id: ruff-format
-  - repo: https://github.com/PyCQA/bandit
-    rev: '1.9.2'
-    hooks:
-    - id: bandit
-      args: ["-r", "sqladmin/", "--config", "pyproject.toml"]
-      pass_filenames: false
   - repo: local
     hooks:
+      - id: format
+        name: format
+        language: system
+        files: \.py
+        entry: make format
+        pass_filenames: false
+      - id: lint
+        name: lint
+        language: system
+        files: \.py
+        entry: make lint
+      - id: secure
+        name: secure
+        language: system
+        entry: make secure
+        pass_filenames: false
       - id: docs
         name: docs
         entry: make docs-build
