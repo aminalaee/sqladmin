@@ -115,6 +115,7 @@ class BaseAdmin:
         templates.env.globals["admin"] = self
         templates.env.globals["is_list"] = lambda x: isinstance(x, (list, set))
         templates.env.globals["get_object_identifier"] = get_object_identifier
+        templates.env.globals["hasattr"] = hasattr
 
         return templates
 
@@ -463,6 +464,8 @@ class Admin(BaseAdminView):
             )
 
         context = {"model_view": model_view, "pagination": pagination}
+        context = await model_view.perform_list_context(request, context)
+
         return await self.templates.TemplateResponse(
             request, model_view.list_template, context
         )
@@ -483,6 +486,7 @@ class Admin(BaseAdminView):
             "model": model,
             "title": model_view.name,
         }
+        context = await model_view.perform_details_context(request, context)
 
         return await self.templates.TemplateResponse(
             request, model_view.details_template, context
@@ -529,6 +533,7 @@ class Admin(BaseAdminView):
             "model_view": model_view,
             "form": form,
         }
+        context = await model_view.perform_create_context(request, context)
 
         if request.method == "GET":
             return await self.templates.TemplateResponse(
@@ -577,6 +582,8 @@ class Admin(BaseAdminView):
             "model_view": model_view,
             "form": Form(obj=model, data=self._normalize_wtform_data(model)),
         }
+
+        context = await model_view.perform_edit_context(request, context)
 
         if request.method == "GET":
             return await self.templates.TemplateResponse(

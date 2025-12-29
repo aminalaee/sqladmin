@@ -16,3 +16,6 @@ test.db
 coverage.xml
 dist/
 .idea/
+demo_app/*.db
+demo_app/*.db-*
+demo_app/venv/
