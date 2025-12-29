@@ -189,7 +189,9 @@ class ForeignKeyFilter:
         if self.foreign_model is None and isinstance(self.foreign_display_field, str):
             raise ValueError("foreign_model is required for string foreign key filters")
         if self.foreign_model is None:
-            assert not isinstance(self.foreign_display_field, str)
+            if isinstance(self.foreign_display_field, str):
+                raise ValueError("foreign_model should not be string")
+
             foreign_display_field_obj = self.foreign_display_field
         else:
             foreign_display_field_obj = get_column_obj(

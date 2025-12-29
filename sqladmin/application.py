@@ -391,7 +391,9 @@ class Admin(BaseAdminView):
         async def http_exception(
             request: Request, exc: Exception
         ) -> Response | Awaitable[Response]:
-            assert isinstance(exc, HTTPException)
+            if not isinstance(exc, HTTPException):
+                raise TypeError("Expected HTTPException, got %s" % type(exc))
+
             context = {
                 "status_code": exc.status_code,
                 "message": exc.detail,
@@ -633,7 +635,11 @@ class Admin(BaseAdminView):
         return await model_view.export_data(rows, export_type=export_type)
 
     async def login(self, request: Request) -> Response:
-        assert self.authentication_backend is not None
+        if self.authentication_backend is None:
+            raise HTTPException(
+                status_code=503,
+                detail="Authentication backend not configured.",
+            )
 
         context = {}
         if request.method == "GET":
@@ -649,7 +655,11 @@ class Admin(BaseAdminView):
         return RedirectResponse(request.url_for("admin:index"), status_code=302)
 
     async def logout(self, request: Request) -> Response:
-        assert self.authentication_backend is not None
+        if self.authentication_backend is None:
+            raise HTTPException(
+                status_code=503,
+                detail="Authentication backend not configured.",
+            )
 
         response = await self.authentication_backend.logout(request)
 

@@ -242,7 +242,9 @@ def object_identifier_values(id_string: str, model: Any) -> tuple:
 
 
 def get_direction(prop: MODEL_PROPERTY) -> str:
-    assert isinstance(prop, RelationshipProperty)
+    if not isinstance(prop, RelationshipProperty):
+        raise TypeError("Expected RelationshipProperty, got %s" % type(prop))
+
     name = prop.direction.name
     if name == "ONETOMANY" and not prop.uselist:
         return "ONETOONE"

@@ -66,7 +66,7 @@ class AjaxSelect2Widget(widgets.Select):
             if data:
                 kwargs["data-json"] = json.dumps([data])
 
-        return Markup(f"<select {html_params(name=field.name, **kwargs)}></select>")
+        return Markup(f"<select {html_params(name=field.name, **kwargs)}></select>")  # nosec: markupsafe_markup_xss
 
 
 class Select2TagsWidget(widgets.Select):
@@ -86,20 +86,20 @@ class FileInputWidget(widgets.FileInput):
         if not field.flags.required:
             checkbox_id = f"{field.id}_checkbox"
             checkbox_label = Markup(
-                f'<label class="form-check-label" for="{checkbox_id}">Clear</label>'
-            )
+                '<label class="form-check-label" for="{}">Clear</label>'
+            ).format(checkbox_id)
+
             checkbox_input = Markup(
-                f'<input class="form-check-input" type="checkbox" id="{checkbox_id}" '
-                'name="{checkbox_id}">'  # noqa: E501
-            )
-            checkbox = Markup(
-                f'<div class="form-check">{checkbox_input}{checkbox_label}</div>'
+                '<input class="form-check-input" type="checkbox" id="{}" name="{}">'  # noqa: E501
+            ).format(checkbox_id, checkbox_id)
+            checkbox = Markup('<div class="form-check">{}{}</div>').format(
+                checkbox_input, checkbox_label
             )
         else:
             checkbox = Markup()
 
         if field.data:
-            current_value = Markup(f"<p>Currently: {field.data}</p>")
+            current_value = Markup("<p>Currently: {}</p>").format(field.data)
             field.flags.required = False
             return current_value + checkbox + super().__call__(field, **kwargs)
 

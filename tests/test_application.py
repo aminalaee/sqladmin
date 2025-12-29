@@ -143,8 +143,7 @@ def test_normalize_wtform_fields() -> None:
     app = Starlette()
     admin = Admin(app=app, engine=engine)
 
-    class DataModelAdmin(ModelView, model=DataModel):
-        ...
+    class DataModelAdmin(ModelView, model=DataModel): ...
 
     datamodel = DataModel(id=1, data="abcdef")
     admin.add_view(DataModelAdmin)
@@ -155,8 +154,7 @@ def test_denormalize_wtform_fields() -> None:
     app = Starlette()
     admin = Admin(app=app, engine=engine)
 
-    class DataModelAdmin(ModelView, model=DataModel):
-        ...
+    class DataModelAdmin(ModelView, model=DataModel): ...
 
     datamodel = DataModel(id=1, data="abcdef")
     admin.add_view(DataModelAdmin)
@@ -169,8 +167,7 @@ def test_validate_page_and_page_size():
     app = Starlette()
     admin = Admin(app=app, engine=engine)
 
-    class UserAdmin(ModelView, model=User):
-        ...
+    class UserAdmin(ModelView, model=User): ...
 
     admin.add_view(UserAdmin)
 

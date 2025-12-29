@@ -167,7 +167,9 @@ class ModelConverterBase:
         form_include_pk: bool,
         kwargs: dict,
     ) -> Union[dict, None]:
-        assert len(prop.columns) == 1, "Multiple-column properties not supported"
+        if len(prop.columns) != 1:
+            raise NotImplementedError("Multiple-column properties are not supported")
+
         column = prop.columns[0]
 
         if (column.primary_key or column.foreign_keys) and not form_include_pk:
@@ -309,7 +311,9 @@ class ModelConverterBase:
             return None
 
         if override is not None:
-            assert issubclass(override, Field)
+            if not issubclass(override, Field):
+                raise TypeError("Expected Field, got %s" % type(override))
+
             return override(**kwargs)
 
         multiple = (

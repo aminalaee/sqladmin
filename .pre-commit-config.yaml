@@ -3,6 +3,8 @@ repos:
     rev: v1.12.1
     hooks:
       - id: mypy
+        args: [--config-file=./pyproject.toml]
+        exclude: "tests/.*\\.py"
   - repo: https://github.com/astral-sh/ruff-pre-commit
     # Ruff version.
     rev: v0.14.10
@@ -16,7 +18,7 @@ repos:
     rev: '1.9.2'
     hooks:
     - id: bandit
-      args: ["-r", "fromfolio/", "--config", "pyproject.toml"]
+      args: ["-r", "sqladmin/", "--config", "pyproject.toml"]
       pass_filenames: false
   - repo: local
     hooks:
