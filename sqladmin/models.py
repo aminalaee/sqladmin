@@ -25,7 +25,7 @@ from urllib.parse import urlencode
 import anyio
 from sqlalchemy import Column, String, asc, cast, desc, func, inspect, or_
 from sqlalchemy.exc import NoInspectionAvailable
-from sqlalchemy.orm import selectinload, sessionmaker
+from sqlalchemy.orm import class_mapper, selectinload, sessionmaker
 from sqlalchemy.orm.exc import DetachedInstanceError
 from sqlalchemy.sql.elements import ClauseElement
 from sqlalchemy.sql.expression import Select, select
@@ -1081,6 +1081,10 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
             pairs[self._get_prop_name(label)] = value
         return pairs
 
+    @staticmethod
+    def _get_joined_tables(stmt: Select) -> set[str]:
+        return {table.name for table, *_ in stmt._setup_joins}
+
     async def delete_model(self, request: Request, pk: Any) -> None:
         await Query(self).delete(pk, request)
 
@@ -1152,12 +1156,17 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
         """
 
         expressions = []
+        joined_tables = self._get_joined_tables(stmt)
         for field in self._search_fields:
             model = self.model
             parts = field.split(".")
             for part in parts[:-1]:
                 model = getattr(model, part).mapper.class_
-                stmt = stmt.join(model)
+
+                table_name = class_mapper(model).mapped_table.name
+                if table_name not in joined_tables:
+                    stmt = stmt.join(model)
+                    joined_tables.add(table_name)
 
             field = getattr(model, parts[-1])
             expressions.append(cast(field, String).ilike(f"%{term}%"))
@@ -1224,13 +1233,18 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
         else:
             sort_fields = self._get_default_sort()
 
+        joined_tables = self._get_joined_tables(stmt)
         for sort_field, is_desc in sort_fields:
             model = self.model
 
             parts = self._get_prop_name(sort_field).split(".")
             for part in parts[:-1]:
                 model = getattr(model, part).mapper.class_
-                stmt = stmt.join(model)
+
+                table_name = class_mapper(model).mapped_table.name
+                if table_name not in joined_tables:
+                    stmt = stmt.join(model)
+                    joined_tables.add(table_name)
 
             if is_desc:
                 stmt = stmt.order_by(desc(getattr(model, parts[-1])))
