@@ -22,15 +22,8 @@ actions = \
 # ARGS used for `test`. `PY_ARGS` used for `lint` and `format`
 PY_ARGS := $(or $(filter %.py,$(ARGS)),sqladmin)
 
-# -----------------------------
-# Setup
-# -----------------------------
 setup:
 	uv sync --all-groups
-
-# -----------------------------
-# Testing
-# -----------------------------
 
 test:
 	uv run coverage run -a --concurrency=thread,greenlet -m pytest $(ARGS)
@@ -38,10 +31,6 @@ test:
 cov:
 	uv run coverage report
 	uv run coverage xml
-
-# -----------------------------
-# Linting
-# -----------------------------
 
 lint:
 	uv run ruff check $(PY_ARGS)
@@ -55,10 +44,6 @@ format:
 secure:
 	uv run bandit -r sqladmin --config pyproject.toml
 
-# -----------------------------
-# Documentation
-# -----------------------------
-
 docs-build:
 	uv run mkdocs build
 
@@ -68,14 +53,8 @@ docs-serve:
 docs-deploy:
 	uv run mkdocs gh-deploy --force
 
-
-# -----------------------------
-# Publish
-# -----------------------------
-
 build:
 	uv build
-
 
 publish:
 	uv publish
