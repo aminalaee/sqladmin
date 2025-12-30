@@ -225,8 +225,7 @@ async def test_column_formatters_detail() -> None:
 
 
 async def test_column_formatters_default() -> None:
-    class ProfileAdmin(ModelView, model=Profile):
-        ...
+    class ProfileAdmin(ModelView, model=Profile): ...
 
     user = User(id=1, name="Long Name")
     profile = Profile(user=user, is_active=True)
@@ -416,8 +415,7 @@ def test_get_python_type_postgresql() -> None:
 
 
 def test_model_default_sort() -> None:
-    class UserAdmin(ModelView, model=User):
-        ...
+    class UserAdmin(ModelView, model=User): ...
 
     assert UserAdmin()._get_default_sort() == [("id", False)]
 
@@ -553,8 +551,7 @@ async def test_model_property_in_columns() -> None:
 
 
 def test_sort_query() -> None:
-    class AddressAdmin(ModelView, model=Address):
-        ...
+    class AddressAdmin(ModelView, model=Address): ...
 
     query = select(Address)
 

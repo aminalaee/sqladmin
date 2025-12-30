@@ -42,7 +42,7 @@ from sqladmin.models import BaseView, ModelView
 from sqladmin.templating import Jinja2Templates
 
 if TYPE_CHECKING:
-    from sqlalchemy.ext.asyncio import async_sessionmaker
+    from sqlalchemy.ext.asyncio import async_sessionmaker  # type: ignore[attr-defined]
 
 __all__ = [
     "Admin",
@@ -83,10 +83,13 @@ class BaseAdmin:
 
         if session_maker:
             self.session_maker = session_maker
-        elif isinstance(engine, Engine):
+        elif isinstance(self.engine, Engine):
             self.session_maker = sessionmaker(bind=self.engine, class_=Session)
         else:
-            self.session_maker = sessionmaker(bind=self.engine, class_=AsyncSession)
+            self.session_maker = sessionmaker(
+                bind=self.engine,  # type: ignore[arg-type]
+                class_=AsyncSession,
+            )
 
         self.session_maker.configure(autoflush=False, autocommit=False)
         self.is_async = is_async_session_maker(self.session_maker)
@@ -181,14 +184,14 @@ class BaseAdmin:
                     func, "_label"
                 )
             if getattr(func, "_add_in_detail"):
-                view_instance._custom_actions_in_detail[
-                    getattr(func, "_slug")
-                ] = getattr(func, "_label")
+                view_instance._custom_actions_in_detail[getattr(func, "_slug")] = (
+                    getattr(func, "_label")
+                )
 
             if getattr(func, "_confirmation_message"):
-                view_instance._custom_actions_confirmation[
-                    getattr(func, "_slug")
-                ] = getattr(func, "_confirmation_message")
+                view_instance._custom_actions_confirmation[getattr(func, "_slug")] = (
+                    getattr(func, "_confirmation_message")
+                )
 
     def _handle_expose_decorated_func(
         self,
@@ -345,7 +348,7 @@ class Admin(BaseAdminView):
         ```
     """
 
-    def __init__(
+    def __init__(  # type: ignore[no-any-unimported]
         self,
         app: Starlette,
         engine: ENGINE_TYPE | None = None,
@@ -373,7 +376,7 @@ class Admin(BaseAdminView):
         super().__init__(
             app=app,
             engine=engine,
-            session_maker=session_maker,
+            session_maker=session_maker,  # type: ignore[arg-type]
             base_url=base_url,
             title=title,
             logo_url=logo_url,
@@ -388,7 +391,9 @@ class Admin(BaseAdminView):
         async def http_exception(
             request: Request, exc: Exception
         ) -> Response | Awaitable[Response]:
-            assert isinstance(exc, HTTPException)
+            if not isinstance(exc, HTTPException):
+                raise TypeError("Expected HTTPException, got %s" % type(exc))
+
             context = {
                 "status_code": exc.status_code,
                 "message": exc.detail,
@@ -630,7 +635,11 @@ class Admin(BaseAdminView):
         return await model_view.export_data(rows, export_type=export_type)
 
     async def login(self, request: Request) -> Response:
-        assert self.authentication_backend is not None
+        if self.authentication_backend is None:
+            raise HTTPException(
+                status_code=503,
+                detail="Authentication backend not configured.",
+            )
 
         context = {}
         if request.method == "GET":
@@ -646,7 +655,11 @@ class Admin(BaseAdminView):
         return RedirectResponse(request.url_for("admin:index"), status_code=302)
 
     async def logout(self, request: Request) -> Response:
-        assert self.authentication_backend is not None
+        if self.authentication_backend is None:
+            raise HTTPException(
+                status_code=503,
+                detail="Authentication backend not configured.",
+            )
 
         response = await self.authentication_backend.logout(request)
 
@@ -669,8 +682,8 @@ class Admin(BaseAdminView):
 
         try:
             loader: QueryAjaxModelLoader = model_view._form_ajax_refs[name]
-        except KeyError:
-            raise HTTPException(status_code=400)
+        except KeyError as exc:
+            raise HTTPException(status_code=400) from exc
 
         data = [loader.format(m) for m in await loader.get_list(term)]
         return JSONResponse({"results": data})
@@ -688,10 +701,12 @@ class Admin(BaseAdminView):
 
         if form.get("save") == "Save":
             return request.url_for("admin:list", identity=identity)
-        elif form.get("save") == "Save and continue editing" or (
+
+        if form.get("save") == "Save and continue editing" or (
             form.get("save") == "Save as new" and model_view.save_as_continue
         ):
             return request.url_for("admin:edit", identity=identity, pk=identifier)
+
         return request.url_for("admin:create", identity=identity)
 
     async def _handle_form_data(self, request: Request, obj: Any = None) -> FormData:
@@ -743,7 +758,7 @@ class Admin(BaseAdminView):
 def expose(
     path: str,
     *,
-    methods: list[str] = ["GET"],
+    methods: list[str] | None = None,
     identity: str | None = None,
     include_in_schema: bool = True,
 ) -> Callable[..., Any]:
@@ -753,7 +768,7 @@ def expose(
     def wrap(func):
         func._exposed = True
         func._path = path
-        func._methods = methods
+        func._methods = methods or ["GET"]
         func._identity = identity or func.__name__
         func._include_in_schema = include_in_schema
         return login_required(func)
