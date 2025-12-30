@@ -82,7 +82,7 @@ class FileInputWidget(widgets.FileInput):
     File input widget with clear checkbox.
     """
 
-    def __call__(self, field: Field, **kwargs: Any) -> str:
+    def __call__(self, field: Field, **kwargs: Any) -> Markup:
         if not field.flags.required:
             checkbox_id = f"{field.id}_checkbox"
             checkbox_label = Markup(
