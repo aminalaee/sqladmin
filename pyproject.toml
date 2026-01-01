@@ -76,7 +76,7 @@ dev = [
 lint = ["mypy==1.18.1", "ruff==0.14.10", "types-wtforms>=3.2.1.20250809"]
 
 docs = [
-  "mkdocs-material==9.6.14",
+  "mkdocs-material==9.7.1",
   "mkdocs==1.6.1",
   "mkdocstrings[python]==0.26.1",
 ]
