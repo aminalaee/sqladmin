@@ -184,9 +184,9 @@ def assert_records_count(
         rf"{showing_records_to}\s*.*of\s*.*{total_records_count}"
     )
 
-    assert re.search(
-        pattern, response_text, re.DOTALL
-    ), f"Expected pattern not found in response text: {pattern}"
+    assert re.search(pattern, response_text, re.DOTALL), (
+        f"Expected pattern not found in response text: {pattern}"
+    )
 
 
 @pytest.mark.anyio
