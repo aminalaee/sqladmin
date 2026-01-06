@@ -1296,12 +1296,22 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
             len_data = len(data)
             last_idx = len_data - 1
             separator = "," if len_data > 1 else ""
+            row_dict = {}
 
             for idx, row in enumerate(data):
-                row_dict = {
-                    name: str(await self.get_prop_value(row, name))
-                    for name in self._export_prop_names
-                }
+                for name in self._export_prop_names:
+                    value = await self.get_prop_value(row, name)
+                    try:
+                        if hasattr(value, "isoformat"):  # datetime-like
+                            value = value.isoformat()
+                        from decimal import Decimal
+
+                        if isinstance(value, Decimal):
+                            value = float(value)
+                        json.dumps(value)
+                    except TypeError:
+                        value = str(value)
+                    row_dict[name] = value
                 yield json.dumps(row_dict, ensure_ascii=False) + (
                     separator if idx < last_idx else ""
                 )
