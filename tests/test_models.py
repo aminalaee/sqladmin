@@ -1,5 +1,6 @@
 import enum
 from typing import Generator
+from uuid import UUID as PyUUID
 
 import pytest
 from jinja2 import TemplateNotFound
@@ -7,8 +8,10 @@ from markupsafe import Markup
 from sqlalchemy import Boolean, Column, Enum, ForeignKey, Integer, String, select
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import (
+    Mapped,
     contains_eager,
     declarative_base,
+    mapped_column,
     relationship,
     sessionmaker,
 )
@@ -19,9 +22,7 @@ from starlette.testclient import TestClient
 
 from sqladmin import Admin, ModelView, expose
 from sqladmin.exceptions import InvalidModelError
-from sqladmin.filters import (
-    AllUniqueStringValuesFilter,
-)
+from sqladmin.filters import AllUniqueStringValuesFilter
 from sqladmin.helpers import get_column_python_type
 from tests.common import sync_engine as engine
 
@@ -410,6 +411,16 @@ def test_get_python_type_postgresql() -> None:
         __tablename__ = "postgres_model"
 
         uuid = Column(UUID, primary_key=True)
+
+    get_column_python_type(PostgresModel.uuid) is str
+
+
+@pytest.mark.skipif(engine.name != "postgresql", reason="PostgreSQL only")
+def test_get_python_annotated_type_postgresql() -> None:
+    class PostgresModel(Base):
+        __tablename__ = "postgres_model2"
+
+        uuid: Mapped[PyUUID] = mapped_column(primary_key=True)
 
     get_column_python_type(PostgresModel.uuid) is str
 
