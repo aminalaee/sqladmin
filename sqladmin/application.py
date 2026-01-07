@@ -149,8 +149,8 @@ class BaseAdmin:
         else:
             self.add_base_view(view)
 
+    @staticmethod
     def _find_decorated_funcs(
-        self,
         view: type[BaseView | ModelView],
         view_instance: BaseView | ModelView,
         handle_fn: Callable[
@@ -160,7 +160,11 @@ class BaseAdmin:
     ) -> None:
         funcs = inspect.getmembers(view_instance, predicate=inspect.ismethod)
 
-        for _, func in funcs[::-1]:
+        for _, func in sorted(
+            funcs,
+            key=lambda x: inspect.getsourcelines(x[1])[1],
+            reverse=True,
+        ):
             handle_fn(func, view, view_instance)
 
     def _handle_action_decorated_func(
