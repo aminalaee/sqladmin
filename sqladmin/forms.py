@@ -61,6 +61,7 @@ from sqladmin.fields import (
     QuerySelectMultipleField,
     Select2TagsField,
     SelectField,
+    UuidField,
 )
 from sqladmin.helpers import (
     choice_type_coerce_factory,
@@ -516,9 +517,7 @@ class ModelConverter(ModelConverterBase):
         prop: ColumnProperty,
         kwargs: dict[str, Any],
     ) -> UnboundField:
-        kwargs.setdefault("validators", [])
-        kwargs["validators"].append(validators.UUID())
-        return StringField(**kwargs)
+        return UuidField(**kwargs)
 
     @converts(
         "sqlalchemy.dialects.postgresql.base.ARRAY",
