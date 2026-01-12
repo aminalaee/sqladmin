@@ -468,6 +468,10 @@ class Admin(BaseAdminView):
             )
 
         context = {"model_view": model_view, "pagination": pagination}
+
+        if request.query_params.get("error"):
+            context["error"] = request.query_params["error"]
+
         return await self.templates.TemplateResponse(
             request, model_view.list_template, context
         )
@@ -504,15 +508,21 @@ class Admin(BaseAdminView):
 
         params = request.query_params.get("pks", "")
         pks = params.split(",") if params else []
-        for pk in pks:
-            model = await model_view.get_object_for_delete(pk)
-            if not model:
-                raise HTTPException(status_code=404)
-
-            await model_view.delete_model(request, pk)
 
         referer_url = URL(request.headers.get("referer", ""))
         referer_params = MultiDict(parse_qsl(referer_url.query))
+
+        try:
+            for pk in pks:
+                model = await model_view.get_object_for_delete(pk)
+                if not model:
+                    raise HTTPException(status_code=404, detail="Object not found")
+
+                await model_view.delete_model(request, pk)
+        except Exception as e:
+            logger.exception(e)
+            referer_params["error"] = str(e)
+
         url = URL(str(request.url_for("admin:list", identity=identity)))
         url = url.include_query_params(**referer_params)
         return Response(content=str(url))

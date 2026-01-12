@@ -425,7 +425,8 @@ async def test_delete_endpoint_unauthorized_response(client: AsyncClient) -> Non
 async def test_delete_endpoint_not_found_response(client: AsyncClient) -> None:
     response = await client.delete("/admin/user/delete?pks=1")
 
-    assert response.status_code == 404
+    assert response.status_code == 200
+    assert "error=404%3A+Object+not+found" in response.text
 
     stmt = select(func.count(User.id))
     async with session_maker() as s:
