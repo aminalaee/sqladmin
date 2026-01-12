@@ -16,7 +16,8 @@ from typing import (
     TypeVar,
 )
 
-from sqlalchemy import Column, inspect as sa_inspect
+from sqlalchemy import Column
+from sqlalchemy import inspect as sa_inspect
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import RelationshipProperty, sessionmaker
 
