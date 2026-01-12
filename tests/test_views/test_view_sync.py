@@ -416,7 +416,8 @@ def test_delete_endpoint_unauthorized_response(client: TestClient) -> None:
 def test_delete_endpoint_not_found_response(client: TestClient) -> None:
     response = client.delete("/admin/user/delete?pks=1")
 
-    assert response.status_code == 404
+    assert response.status_code == 200
+    assert "error=404%3A+Object+not+found" in response.text
 
     with session_maker() as s:
         assert s.query(User).count() == 0
