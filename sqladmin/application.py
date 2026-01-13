@@ -143,7 +143,6 @@ class BaseAdmin:
         This is a shortcut that will handle both `add_model_view` and `add_base_view`.
         """
 
-        view._admin_ref = self
         if view.is_model:
             self.add_model_view(view)  # type: ignore
         else:
@@ -230,6 +229,7 @@ class BaseAdmin:
             ```
         """
 
+        view._admin_ref = self
         # Set database engine from Admin instance
         view.session_maker = self.session_maker
         view.is_async = self.is_async
@@ -269,6 +269,7 @@ class BaseAdmin:
             ```
         """
 
+        view._admin_ref = self
         view.templates = self.templates
         view_instance = view()
 
