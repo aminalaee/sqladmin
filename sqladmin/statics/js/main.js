@@ -4,7 +4,7 @@ $(document).on('shown.bs.modal', '#modal-delete', function (event) {
 
   var name = element.data("name");
   var pk = element.data("pk");
-  $("#modal-delete-text").text("This will permanently delete " + name + " " + pk + " ?");
+  $("#modal-delete-text").text("This will permanently delete " + name + " " + pk + "?");
 
   $("#modal-delete-button").attr("data-url", element.data("url"));
 });
@@ -13,11 +13,22 @@ $(document).on('click', '#modal-delete-button', function () {
   $.ajax({
     url: $(this).attr('data-url'),
     method: 'DELETE',
+    headers: {
+      'Accept': 'text/html',
+    },
     success: function (result) {
       window.location.href = result;
     },
-    error: function (request, status, error) {
-      alert(request.responseText);
+    error: function (request) {
+      const contentType = request.getResponseHeader('Content-Type') || '';
+
+      if (contentType.includes('text/html')) {
+        document.open();
+        document.write(request.responseText);
+        document.close();
+      } else {
+        alert(request.responseText);
+      }
     }
   });
 });
