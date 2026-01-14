@@ -109,8 +109,9 @@ def test_expose_access_login_required_views(client: TestClient) -> None:
     assert response.url == "http://testserver/admin/login"
 
     response = client.post("/admin/login", data={"username": "a", "password": "b"})
+    client.cookies = response.cookies
 
-    response = client.get("/admin/custom", cookies=response.cookies)
+    response = client.get("/admin/custom")
     assert {"status": "ok"} == response.json()
 
 
@@ -119,6 +120,7 @@ def test_action_access_login_required_views(client: TestClient) -> None:
     assert response.url == "http://testserver/admin/login"
 
     response = client.post("/admin/login", data={"username": "a", "password": "b"})
+    client.cookies = response.cookies
 
-    response = client.get("/admin/movie/action/test", cookies=response.cookies)
+    response = client.get("/admin/movie/action/test")
     assert {"status": "ok"} == response.json()
