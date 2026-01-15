@@ -23,9 +23,9 @@
         </div>
       </nav>
       {% if admin.authentication_backend %}
-      <a href="{{ request.url_for('admin:logout') }}" class="btn btn-secondary btn-icon">
+      <a href="{{ request.url_for('admin:logout') }}" class="btn btn-secondary btn-icon m-2 px-2">
+        <span class="me-2">Logout</span>
         <i class="fa fa-sign-out"></i>
-        <span>Logout</span>
       </a>
       {% endif %}
     </div>
