@@ -140,7 +140,7 @@ The SQLAdmin templates use blocks to allow easy customization and extension of t
 | `tail_js `  | Various JavaScript includes before the closing `</body>` tag |
 | `create_form` | The form used in the create view containing fields |
 | `edit_form` | The form used in the edit view containing fields |
-| `details_view` | The details view div containing the the record's table |
+| `details_table` | The the div containing the records details table|
 | `submit_buttons_bottom` | The submit buttons at the bottom of create/edit views |
 | `action_buttons_bottom` | The action buttons at the bottom of details view |
 | `model_list_table` | The table displaying records in the list view |
