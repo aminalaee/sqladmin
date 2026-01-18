@@ -123,3 +123,28 @@ Usage in templates:
     {{ value }} is not file path
 {% endif %}
 ```
+
+# Template Blocks
+The SQLAdmin templates use blocks to allow easy customization and extension of the templates. Here is a list of the main blocks available SQLAdmin templates:
+
+| Block Name | Description |
+|------------|-------------|
+| `head_meta`  | Page metadata in the header |
+| `head_css`    | Various CSS includes in the header |
+| `head`     | Empty block in HTML head, in case you want to put something there |
+| `head_tail`  | Additional HTML elements before the closing `</head>` tag |
+| `body`     | The main body of the page |
+| `main`     | The main container for the page content |
+| `content`  | The main content area where page-specific content is rendered |
+| `tail`     | Additional HTML elements before the closing `</body>` tag |
+| `tail_js `  | Various JavaScript includes before the closing `</body>` tag |
+| `create_form` | The form used in the create view containing fields |
+| `edit_form` | The form used in the edit view containing fields |
+| `details_view` | The details view div containing the the record's table |
+| `submit_buttons_bottom` | The submit buttons at the bottom of create/edit views |
+| `action_buttons_bottom` | The action buttons at the bottom of details view |
+| `model_list_table` | The table displaying records in the list view |
+| `model_menu_bar` | The menu bar at the top of model list view |
+
+
+You can override these blocks in your custom templates to modify the layout and appearance of the admin interface as needed.

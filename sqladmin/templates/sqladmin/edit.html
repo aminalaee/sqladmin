@@ -7,6 +7,7 @@
       <h3 class="card-title">Edit {{ model_view.name }}</h3>
     </div>
     <div class="card-body border-bottom py-3">
+      {% block edit_form %}
       <form action="{{ model_view._build_url_for('admin:edit', request, obj) }}" method="POST"
         enctype="multipart/form-data">
         <div class="row">
@@ -40,6 +41,7 @@
           </div>
         </div>
       </form>
+      {% endblock %}
     </div>
   </div>
 </div>

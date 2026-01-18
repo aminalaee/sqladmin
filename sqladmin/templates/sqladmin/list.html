@@ -9,7 +9,7 @@
             <div class="card-header">
               <h3 class="card-title">{{ model_view.name_plural }}</h3>
               <div class="ms-auto">
-                {% block object_tools_items %}
+                {% block model_menu_bar %}
                   {% if model_view.can_export %}
                   {% if model_view.export_types | length > 1 %}
                   <div class="ms-3 d-inline-block dropdown">
@@ -89,6 +89,7 @@
                 {% endif %}
               </div>
             </div>
+            {% block model_list_table}
             <div class="table-responsive">
               <table class="table card-table table-vcenter text-nowrap">
                 <thead>
@@ -169,6 +170,7 @@
                 </tbody>
               </table>
             </div>
+            {% endblock %}
             <div class="card-footer d-flex justify-content-between align-items-center gap-2">
               <p class="m-0 text-muted">Showing <span>{{ ((pagination.page - 1) * pagination.page_size) + 1 }}</span> to
                 <span>{{ min(pagination.page * pagination.page_size, pagination.count) }}</span> of <span>{{ pagination.count
