@@ -704,6 +704,8 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
         ]
         self._relation_names = [relation.key for relation in self._mapper.relationships]
 
+        self._non_link_related_fields: Union[List[str], None] = None
+
         self._column_labels = self._build_column_pairs(self.column_labels)
         self._column_labels_value_by_key = {
             v: k for k, v in self._column_labels.items()

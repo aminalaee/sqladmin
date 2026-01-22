@@ -390,6 +390,66 @@ def test_detail_page(client: TestClient) -> None:
     assert response.text.count("Delete") == 2
 
 
+def test_detail_page_with_non_link_related_fields(client: TestClient) -> None:
+    with session_maker() as session:
+        user = User(name="Amin Alaee")
+        session.add(user)
+        session.flush()
+
+        for _ in range(2):
+            address = Address(user_id=user.id)
+            session.add(address)
+            address_formattable = AddressFormattable(user_id=user.id)
+            session.add(address_formattable)
+        profile = Profile(user_id=user.id)
+        session.add(profile)
+        profile_formattable = ProfileFormattable(user=user)
+        session.add(profile_formattable)
+        session.commit()
+
+    response = client.get("/admin/user/details/1")
+
+    assert response.status_code == 200
+    # link fields
+    assert (
+        '<a href="http://testserver/admin/address/details/1">(Address 1)</a>'
+        in response.text
+    )
+    assert (
+        '<a href="http://testserver/admin/profile/details/1">Profile 1</a>'
+        in response.text
+    )
+    # non-link fields
+    assert "(Formatted Address 1)</a>" not in response.text
+    assert "Formatted Profile 1</a>" not in response.text
+
+
+def test_list_page_with_non_link_related_fields(client: TestClient) -> None:
+    with session_maker() as session:
+        for _ in range(5):
+            user = User(name="John Doe")
+            user.addresses.append(Address())
+            user.addresses_formattable.append(AddressFormattable())
+            user.profile = Profile()
+            user.profile_formattable = ProfileFormattable()
+            session.add(user)
+        session.commit()
+
+    response = client.get("/admin/user/list")
+
+    assert response.status_code == 200
+    assert (
+        '<a href="http://testserver/admin/address/details/1">(Address 1)</a>'
+        in response.text
+    )
+    assert (
+        '<a href="http://testserver/admin/profile/details/1">Profile 1</a>'
+        in response.text
+    )
+    assert "(Formatted Address 1)</a>" not in response.text
+    assert "Formatted Profile 1</a>" not in response.text
+
+
 def test_column_labels(client: TestClient) -> None:
     with session_maker() as session:
         user = User(name="Foo")
