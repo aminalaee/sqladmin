@@ -1,10 +1,7 @@
 from typing import Generator
 
 import pytest
-from sqlalchemy import (
-    Column,
-    Integer,
-)
+from sqlalchemy import Column, Integer
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import declarative_base, sessionmaker
 from starlette.applications import Starlette
@@ -47,9 +44,6 @@ class CustomBackend(AuthenticationBackend):
 
 
 class CustomAdmin(BaseView):
-    name = "test"
-    icon = "fa fa-test"
-
     @expose("/custom", methods=["GET"])
     async def custom(self, request: Request):
         return JSONResponse({"status": "ok"})
