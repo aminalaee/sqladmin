@@ -12,8 +12,8 @@
                 {% if model_view.can_export %}
                 {% if model_view.export_types | length > 1 %}
                 <div class="ms-3 d-inline-block dropdown">
-                  <a href="#" class="btn btn-secondary dropdown-toggle" id="dropdownMenuButton1" data-bs-toggle="dropdown"
-                    aria-expanded="false">
+                  <a href="#" class="btn btn-secondary dropdown-toggle" id="dropdownMenuButton1"
+                    data-bs-toggle="dropdown" aria-expanded="false">
                     Export
                   </a>
                   <ul class="dropdown-menu" aria-labelledby="dropdownMenuButton1">
@@ -41,13 +41,19 @@
                 </div>
                 {% endif %}
               </div>
+
             </div>
             <div class="card-body border-bottom py-3">
+              <div class="row">
+                {% if error %}
+                <div class="alert alert-danger" role="alert">{{ error }}</div>
+                {% endif %}
+              </div>
               <div class="d-flex justify-content-between">
                 <div class="dropdown col-4">
-                  <button {% if not model_view.can_delete and not model_view._custom_actions_in_list %} disabled {% endif %}
-                    class="btn btn-light dropdown-toggle" type="button" id="dropdownMenuButton" data-toggle="dropdown"
-                    aria-haspopup="true" aria-expanded="false">
+                  <button {% if not model_view.can_delete and not model_view._custom_actions_in_list %} disabled {%
+                    endif %} class="btn btn-light dropdown-toggle" type="button" id="dropdownMenuButton"
+                    data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
                     Actions
                   </button>
                   {% if model_view.can_delete or model_view._custom_actions_in_list %}
@@ -59,8 +65,8 @@
                     {% endif %}
                     {% for custom_action, label in model_view._custom_actions_in_list.items() %}
                     {% if custom_action in model_view._custom_actions_confirmation %}
-                    <a class="dropdown-item" id="action-customconfirm-{{ custom_action }}" href="#" data-bs-toggle="modal"
-                      data-bs-target="#modal-confirmation-{{ custom_action }}">
+                    <a class="dropdown-item" id="action-customconfirm-{{ custom_action }}" href="#"
+                      data-bs-toggle="modal" data-bs-target="#modal-confirmation-{{ custom_action }}">
                       {{ label }}
                     </a>
                     {% else %}
@@ -91,18 +97,21 @@
               <table class="table card-table table-vcenter text-nowrap">
                 <thead>
                   <tr>
-                    <th class="w-1"><input class="form-check-input m-0 align-middle" type="checkbox" aria-label="Select all"
-                        id="select-all"></th>
+                    <th class="w-1"><input class="form-check-input m-0 align-middle" type="checkbox"
+                        aria-label="Select all" id="select-all"></th>
                     <th class="w-1"></th>
                     {% for name in model_view._list_prop_names %}
                     {% set label = model_view._column_labels.get(name, name) %}
                     <th>
                       {% if name in model_view._sort_fields %}
                       {% if request.query_params.get("sortBy") == name and request.query_params.get("sort") == "asc" %}
-                      <a href="{{ request.url.include_query_params(sort='desc') }}"><i class="fa-solid fa-arrow-up"></i> {{
+                      <a href="{{ request.url.include_query_params(sort='desc') }}"><i class="fa-solid fa-arrow-up"></i>
+                        {{
                         label }}</a>
-                      {% elif request.query_params.get("sortBy") == name and request.query_params.get("sort") == "desc" %}
-                      <a href="{{ request.url.include_query_params(sort='asc') }}"><i class="fa-solid fa-arrow-down"></i> {{ label
+                      {% elif request.query_params.get("sortBy") == name and request.query_params.get("sort") == "desc"
+                      %}
+                      <a href="{{ request.url.include_query_params(sort='asc') }}"><i
+                          class="fa-solid fa-arrow-down"></i> {{ label
                         }}</a>
                       {% else %}
                       <a href="{{ request.url.include_query_params(sortBy=name, sort='asc') }}">{{ label }}</a>
@@ -119,7 +128,8 @@
                   <tr>
                     <td>
                       <input type="hidden" value="{{ get_object_identifier(row) }}">
-                      <input class="form-check-input m-0 align-middle select-box" type="checkbox" aria-label="Select item">
+                      <input class="form-check-input m-0 align-middle select-box" type="checkbox"
+                        aria-label="Select item">
                     </td>
                     <td class="text-end">
                       {% if model_view.can_view_details %}
@@ -150,15 +160,18 @@
                     {% if is_list( value ) %}
                     <td>
                       {% for elem, formatted_elem in zip(value, formatted_value) %}
-                        {% if model_view.show_compact_lists %}
-                          <a href="{{ model_view._build_url_for('admin:details', request, elem) }}">({{ formatted_elem }})</a>
-                        {% else %}
-                          <a href="{{ model_view._build_url_for('admin:details', request, elem) }}">{{ formatted_elem }}</a><br/>
-                        {% endif %}
+                      {% if model_view.show_compact_lists %}
+                      <a href="{{ model_view._build_url_for('admin:details', request, elem) }}">({{ formatted_elem
+                        }})</a>
+                      {% else %}
+                      <a href="{{ model_view._build_url_for('admin:details', request, elem) }}">{{ formatted_elem
+                        }}</a><br />
+                      {% endif %}
                       {% endfor %}
                     </td>
                     {% else %}
-                    <td><a href="{{ model_view._url_for_details_with_prop(request, row, name) }}">{{ formatted_value }}</a></td>
+                    <td><a href="{{ model_view._url_for_details_with_prop(request, row, name) }}">{{ formatted_value
+                        }}</a></td>
                     {% endif %}
                     {% else %}
                     <td>{{ formatted_value }}</td>
@@ -171,7 +184,8 @@
             </div>
             <div class="card-footer d-flex justify-content-between align-items-center gap-2">
               <p class="m-0 text-muted">Showing <span>{{ ((pagination.page - 1) * pagination.page_size) + 1 }}</span> to
-                <span>{{ min(pagination.page * pagination.page_size, pagination.count) }}</span> of <span>{{ pagination.count
+                <span>{{ min(pagination.page * pagination.page_size, pagination.count) }}</span> of <span>{{
+                  pagination.count
                   }}</span> items
               </p>
               <ul class="pagination m-0 ms-auto">
@@ -186,8 +200,8 @@
                     </a>
                 </li>
                 {% for page_control in pagination.page_controls %}
-                <li class="page-item {% if page_control.number == pagination.page %}active{% endif %}"><a class="page-link"
-                    href="{{ page_control.url }}">{{ page_control.number }}</a></li>
+                <li class="page-item {% if page_control.number == pagination.page %}active{% endif %}"><a
+                    class="page-link" href="{{ page_control.url }}">{{ page_control.number }}</a></li>
                 {% endfor %}
                 <li class="page-item {% if not pagination.has_next %}disabled{% endif %}">
                   {% if pagination.has_next %}
@@ -208,7 +222,8 @@
                 </a>
                 <div class="dropdown-menu">
                   {% for page_size_option in model_view.page_size_options %}
-                  <a class="dropdown-item" href="{{ request.url.include_query_params(pageSize=page_size_option, page=pagination.resize(page_size_option).page) }}">
+                  <a class="dropdown-item"
+                    href="{{ request.url.include_query_params(pageSize=page_size_option, page=pagination.resize(page_size_option).page) }}">
                     {{ page_size_option }} / Page
                   </a>
                   {% endfor %}
@@ -234,32 +249,30 @@
                   {% set current_op = request.query_params.get(filter.parameter_name + '_op', '') %}
                   {% if current_filter %}
                   <div class="mb-2 text-muted small">
-                    Current: {{ current_op }} {{ current_filter }} 
-                    <a href="{{ request.url.remove_query_params(filter.parameter_name).remove_query_params(filter.parameter_name + '_op') }}" class="text-decoration-none">[Clear]</a>
+                    Current: {{ current_op }} {{ current_filter }}
+                    <a href="{{ request.url.remove_query_params(filter.parameter_name).remove_query_params(filter.parameter_name + '_op') }}"
+                      class="text-decoration-none">[Clear]</a>
                   </div>
                   {% endif %}
                   <!-- Single form with dropdown for operations -->
                   <form method="get" class="d-flex flex-column" style="gap: 8px;">
                     <!-- Preserve existing query parameters -->
                     {% for key, value in request.query_params.items() %}
-                      {% if key != filter.parameter_name and key != filter.parameter_name + '_op' %}
-                      <input type="hidden" name="{{ key }}" value="{{ value }}">
-                      {% endif %}
+                    {% if key != filter.parameter_name and key != filter.parameter_name + '_op' and key != 'error' %}
+                    <input type="hidden" name="{{ key }}" value="{{ value }}">
+                    {% endif %}
                     {% endfor %}
                     <!-- Operation dropdown -->
                     <select name="{{ filter.parameter_name }}_op" class="form-select form-select-sm" required>
                       <option value="">Select operation...</option>
                       {% for op_value, op_label in filter.get_operation_options_for_model(model_view.model) %}
-                      <option value="{{ op_value }}" {% if current_op == op_value %}selected{% endif %}>{{ op_label }}</option>
+                      <option value="{{ op_value }}" {% if current_op==op_value %}selected{% endif %}>{{ op_label }}
+                      </option>
                       {% endfor %}
                     </select>
                     <!-- Value input -->
-                    <input type="text" 
-                           name="{{ filter.parameter_name }}" 
-                           placeholder="Enter value"
-                           class="form-control form-control-sm"
-                           value="{{ current_filter }}"
-                           required>
+                    <input type="text" name="{{ filter.parameter_name }}" placeholder="Enter value"
+                      class="form-control form-control-sm" value="{{ current_filter }}" required>
                     <button type="submit" class="btn btn-sm btn-outline-primary">Apply Filter</button>
                   </form>
                 </div>
@@ -275,12 +288,14 @@
                     <span class="text-truncate fw-bold text-dark">
                       {{ lookup[1] }}
                     </span>
-                    <a href="{{ request.url.remove_query_params(filter.parameter_name) }}" class="text-decoration-none ms-2" title="Clear filter">
+                    <a href="{{ request.url.remove_query_params(filter.parameter_name) }}"
+                      class="text-decoration-none ms-2" title="Clear filter">
                       <i class="fa-solid fa-times"></i>
                     </a>
                   </div>
                   {% else %}
-                  <a href="{{ request.url.include_query_params(**{filter.parameter_name: lookup[0]}) }}" class="d-block text-decoration-none text-truncate px-2 py-1">
+                  <a href="{{ request.url.include_query_params(**{filter.parameter_name: lookup[0]}) }}"
+                    class="d-block text-decoration-none text-truncate px-2 py-1">
                     {{ lookup[1] }}
                   </a>
                   {% endif %}
