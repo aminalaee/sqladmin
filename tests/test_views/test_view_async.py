@@ -6,6 +6,7 @@ from httpx import ASGITransport, AsyncClient
 from sqlalchemy import (
     JSON,
     BigInteger,
+    Boolean,
     Column,
     Date,
     Enum,
@@ -119,6 +120,7 @@ class Product(Base):
     id = Column(Integer, primary_key=True, autoincrement=True)
     name = Column(String, nullable=False)
     price = Column(BigInteger)
+    is_sold = Column(Boolean, nullable=False)
 
 
 @pytest.fixture
@@ -490,6 +492,54 @@ async def test_create_endpoint_with_required_fields(client: AsyncClient) -> None
     )
     assert (
         '<label class="form-label col-sm-2 col-form-label" for="price">Price</label>'
+        in response.text
+    )
+
+
+async def test_update_endpoint_with_checkbox_widget(client: AsyncClient) -> None:
+    async with session_maker() as session:
+        session.add_all(
+            [
+                Product(
+                    id=1,
+                    name="RAM",
+                    price=99_999,
+                    is_sold=False,
+                ),
+                Product(
+                    id=2,
+                    name="RAM second",
+                    price=12421,
+                    is_sold=True,
+                ),
+            ]
+        )
+        await session.commit()
+
+    stmt = select(func.count(Product.id))
+    async with session_maker() as s:
+        result = await s.execute(stmt)
+    assert result.scalar_one() == 2
+
+    response = await client.get("/admin/product/edit/1")
+
+    assert response.status_code == 200
+
+    assert (
+        '<div class="form-switch d-flex align-items-center h-100">'
+        f'<input class="form-check-input" id="{Product.is_sold.key}" '
+        f'name="{Product.is_sold.key}" required type="checkbox" value="y"></div>'
+        in response.text
+    )
+
+    response = await client.get("/admin/product/edit/2")
+
+    assert response.status_code == 200
+
+    assert (
+        '<div class="form-switch d-flex align-items-center h-100">'
+        f'<input checked class="form-check-input" id="{Product.is_sold.key}" '
+        f'name="{Product.is_sold.key}" required type="checkbox" value="y"></div>'
         in response.text
     )
 

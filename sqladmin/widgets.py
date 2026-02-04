@@ -82,7 +82,7 @@ class FileInputWidget(widgets.FileInput):
     File input widget with clear checkbox.
     """
 
-    def __call__(self, field: Field, **kwargs: Any) -> str:
+    def __call__(self, field: Field, **kwargs: Any) -> Markup:
         if not field.flags.required:
             checkbox_id = f"{field.id}_checkbox"
             checkbox_label = Markup(
@@ -102,5 +102,24 @@ class FileInputWidget(widgets.FileInput):
             current_value = Markup("<p>Currently: {}</p>").format(field.data)
             field.flags.required = False
             return current_value + checkbox + super().__call__(field, **kwargs)
+        else:
+            return super().__call__(field, **kwargs)
 
-        return super().__call__(field, **kwargs)
+
+class BooleanInputWidget(widgets.Input):
+    """
+    Render a checkbox.
+
+    The ``checked`` HTML attribute is set if the field's data is a non-false value.
+    """
+
+    input_type = "checkbox"
+
+    def __call__(self, field: Field, **kwargs: Any) -> Markup:
+        kwargs["checked"] = field.object_data
+
+        return Markup(
+            '<div class="form-switch d-flex align-items-center h-100">'
+            + str(Markup.escape(super().__call__(field, **kwargs)))
+            + "</div>"
+        )
