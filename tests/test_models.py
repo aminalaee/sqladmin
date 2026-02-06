@@ -568,6 +568,30 @@ def test_sort_query() -> None:
     assert "ORDER BY profiles.role ASC" in str(stmt)
 
 
+def test_count_query() -> None:
+    class AddressAdmin(ModelView, model=Address):
+        ...
+
+    request = Request({"type": "http"})
+    stmt = AddressAdmin().count_query(request)
+    assert "SELECT count(addresses.id) AS count_1" in str(stmt)
+
+
+async def test_count_multi_bind() -> None:
+    class AddressAdmin(ModelView, model=Address):
+        ...
+
+    class UserAdmin(ModelView, model=User):
+        ...
+
+    admin = AddressAdmin()
+    admin.session_maker = sessionmaker(binds={Base: engine})
+
+    request = Request({"type": "http"})
+    count = await admin.count(request)
+    assert count == 0
+
+
 def test_search_query() -> None:
     class AddressAdmin(ModelView, model=Address):
         column_searchable_list = ["user.name", "user.profile.role"]
