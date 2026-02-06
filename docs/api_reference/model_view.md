@@ -50,6 +50,7 @@
         - form_create_rules
         - form_edit_rules
         - column_type_formatters
+        - column_type_formatters_detail
         - list_query
         - count_query
         - search_query
