@@ -17,7 +17,7 @@ def bool_formatter(value: bool) -> Markup:
     """Return check icon if value is `True` or X otherwise."""
 
     icon_class = "fa-check text-success" if value else "fa-times text-danger"
-    return Markup(f"<i class='fa {icon_class}'></i>")
+    return Markup("<i class='fa {}'></i>").format(icon_class)
 
 
 def str_enum_formatter(value: StrEnum) -> Markup:
