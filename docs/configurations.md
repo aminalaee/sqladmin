@@ -114,6 +114,7 @@ The options available are:
 - `column_exclude_list`: List of columns or column names to be excluded in the list page.
 - `column_formatters`: Dictionary of column formatters in the list page.
 - `column_searchable_list`: List of columns or column names to be searchable in the list page.
+- `search_auto_submit`: Enable or disable automatic search submit while typing in the list page search input. Default is `True`.
 - `column_sortable_list`: List of columns or column names to be sortable in the list page.
 - `column_default_sort`: Default sorting if no sorting is applied, tuple of (column, is_descending)
   or list of the tuple for multiple columns.
@@ -129,6 +130,7 @@ The options available are:
     class UserAdmin(ModelView, model=User):
         column_list = [User.id, User.name, "address.zip_code"]
         column_searchable_list = [User.name]
+        search_auto_submit = False
         column_sortable_list = [User.id]
         column_formatters = {User.name: lambda m, a: m.name[:10]}
         column_default_sort = [(User.email, True), (User.name, False)]
