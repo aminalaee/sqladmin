@@ -860,8 +860,9 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
         for filter_ in self.get_filters():
             filter_param_name = filter_.parameter_name
             filter_value = request.query_params.get(filter_param_name)
+            default_value = getattr(filter_, "default_value", None)
 
-            if filter_value:
+            if filter_value or default_value is not None:
                 if hasattr(filter_, "has_operator") and filter_.has_operator:
                     # Use operation-based filtering
                     operation_filter = typing_cast(OperationColumnFilter, filter_)

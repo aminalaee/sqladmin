@@ -70,10 +70,12 @@ class BooleanFilter:
         column: MODEL_ATTR,
         title: Optional[str] = None,
         parameter_name: Optional[str] = None,
+        default_value: Optional[bool] = None,
     ):
         self.column = column
         self.title = title or get_title(column)
         self.parameter_name = parameter_name or get_parameter_name(column)
+        self.default_value = default_value
 
     async def lookups(
         self,
@@ -91,10 +93,10 @@ class BooleanFilter:
         column_obj = get_column_obj(self.column, model)
         if value == "true":
             return query.filter(column_obj.is_(True))
-
         if value == "false":
             return query.filter(column_obj.is_(False))
-
+        if value is None and self.default_value is not None:
+            return query.filter(column_obj.is_(self.default_value))
         return query
 
 
