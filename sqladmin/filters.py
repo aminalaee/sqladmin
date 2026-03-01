@@ -1,8 +1,11 @@
+import datetime as dt
 import re
 from typing import Any, Callable, List, Optional, Tuple, Type
 
 from sqlalchemy import (
     BigInteger,
+    Date,
+    DateTime,
     Float,
     Integer,
     Numeric,
@@ -250,6 +253,13 @@ class OperationColumnFilter:
                 ("less_than", "Less than"),
             ]
 
+        if self._is_date_type(column_obj):
+            return [
+                ("equals", "Equals"),
+                ("greater_than", "Greater than"),
+                ("less_than", "Less than"),
+            ]
+
         if self._is_uuid_type(column_obj):
             return [
                 ("equals", "Equals"),
@@ -274,6 +284,9 @@ class OperationColumnFilter:
             column_obj.type, (Integer, Numeric, Float, BigInteger, SmallInteger)
         )
 
+    def _is_date_type(self, column_obj: Any) -> bool:
+        return isinstance(column_obj.type, (Date, DateTime))
+
     def _is_uuid_type(self, column_obj: Any) -> bool:
         # Check if UUID support is available and column is UUID type
         return HAS_UUID_SUPPORT and isinstance(column_obj.type, Uuid)
@@ -290,6 +303,8 @@ class OperationColumnFilter:
             ((String, Text, _Binary), str),
             ((Integer, BigInteger, SmallInteger), int),
             ((Numeric, Float), float),
+            ((DateTime,), dt.datetime.fromisoformat),
+            ((Date,), dt.date.fromisoformat),
         ]
 
         try:
