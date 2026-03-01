@@ -1,5 +1,5 @@
 import re
-from typing import Any, Callable, List, Optional, Tuple
+from typing import Any, Callable, List, Optional, Tuple, Type
 
 from sqlalchemy import (
     BigInteger,
@@ -11,7 +11,7 @@ from sqlalchemy import (
     Text,
 )
 from sqlalchemy.sql.expression import Select, select
-from sqlalchemy.sql.sqltypes import _Binary
+from sqlalchemy.sql.sqltypes import TypeEngine, _Binary
 from starlette.requests import Request
 
 from sqladmin._types import MODEL_ATTR
@@ -286,7 +286,7 @@ class OperationColumnFilter:
 
         column_type = column_obj.type
 
-        converters = [
+        converters: List[Tuple[Tuple[Type[TypeEngine], ...], Callable[[str], Any]]] = [
             ((String, Text, _Binary), str),
             ((Integer, BigInteger, SmallInteger), int),
             ((Numeric, Float), float),
