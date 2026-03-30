@@ -1282,7 +1282,7 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
     async def _export_json(
         self,
         data: List[Any],
-        ensure_ascii: bool = True,
+        ensure_ascii: bool = False,
     ) -> StreamingResponse:
         async def generate() -> AsyncGenerator[str, None]:
             yield "["
