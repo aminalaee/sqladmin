@@ -146,11 +146,16 @@ class StaticValuesFilter:
         values: List[Tuple[str, str]],
         title: Optional[str] = None,
         parameter_name: Optional[str] = None,
+        default_value: Optional[Any] = None,
     ):
         self.column = column
         self.title = title or get_title(column)
         self.parameter_name = parameter_name or get_parameter_name(column)
         self.values = values
+        self.default_value = default_value
+
+        if default_value is not None and default_value not in [v[0] for v in values]:
+            raise ValueError("Default value must be one of the provided values")
 
     async def lookups(
         self,
@@ -163,7 +168,9 @@ class StaticValuesFilter:
     async def get_filtered_query(self, query: Select, value: Any, model: Any) -> Select:
         column_obj = get_column_obj(self.column, model)
         if value == "":
-            return query
+            if self.default_value is None:
+                return query
+            value = self.default_value
         return query.filter(column_obj == value)
 
 
