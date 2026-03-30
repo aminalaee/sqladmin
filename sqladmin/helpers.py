@@ -318,9 +318,10 @@ def is_async_session_maker(session_maker: sessionmaker) -> bool:
 
 
 def default_encoder(obj):
-    if hasattr(obj, "isoformat"):      # datetime-like
+    if hasattr(obj, "isoformat"):  # datetime-like
         return obj.isoformat()
     from decimal import Decimal
+
     if isinstance(obj, Decimal):
         return float(obj)
     return str(obj)  # last resort
