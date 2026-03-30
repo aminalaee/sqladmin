@@ -325,6 +325,13 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
         ```
     """
 
+    search_auto_submit: ClassVar[bool] = True
+    """Automatically submit search while typing in list view.
+
+    When set to `True`, typing in the search input triggers a delayed search.
+    Set to `False` to require pressing `Enter` or clicking the search button.
+    """
+
     column_filters: ClassVar[Sequence[ColumnFilter]] = []
     """Collection of the filterable columns for the list view.
     Columns can either be string names or SQLAlchemy columns.

@@ -167,6 +167,8 @@ class UserAdmin(ModelView, model=User):
 
 class AddressAdmin(ModelView, model=Address):
     column_list = ["id", "user_id", "user", "user.profile.id"]
+    column_searchable_list = [Address.id]
+    search_auto_submit = False
     name_plural = "Addresses"
     export_max_rows = 3
 
@@ -363,6 +365,7 @@ def test_detail_page(client: TestClient) -> None:
     assert response.status_code == 200
     assert '<th class="w-1">Column</th>' in response.text
     assert '<th class="w-1">Value</th>' in response.text
+    assert '<h3 class="card-title">\n        Id: 1' in response.text
     assert "<td>id</td>" in response.text
     assert "<td>1</td>" in response.text
     assert "<td>name</td>" in response.text
@@ -775,7 +778,11 @@ def test_searchable_list(client: TestClient) -> None:
 
     response = client.get("/admin/user/list")
     assert "Search: name" in response.text
+    assert 'data-search-auto-submit="true"' in response.text
     assert "/admin/user/details/1" in response.text
+
+    response = client.get("/admin/address/list")
+    assert 'data-search-auto-submit="false"' in response.text
 
     response = client.get("/admin/user/list?search=ro")
     assert "/admin/user/details/1" in response.text
