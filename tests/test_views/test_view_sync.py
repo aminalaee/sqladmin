@@ -361,6 +361,7 @@ def test_detail_page(client: TestClient) -> None:
     assert response.status_code == 200
     assert '<th class="w-1">Column</th>' in response.text
     assert '<th class="w-1">Value</th>' in response.text
+    assert '<h3 class="card-title">\n        Id: 1' in response.text
     assert "<td>id</td>" in response.text
     assert "<td>1</td>" in response.text
     assert "<td>name</td>" in response.text
