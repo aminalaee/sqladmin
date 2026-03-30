@@ -315,3 +315,12 @@ def choice_type_coerce_factory(type_: Any) -> Callable[[Any], Any]:
 
 def is_async_session_maker(session_maker: sessionmaker) -> bool:
     return AsyncSession in session_maker.class_.__mro__
+
+
+def default_encoder(obj):
+    if hasattr(obj, "isoformat"):      # datetime-like
+        return obj.isoformat()
+    from decimal import Decimal
+    if isinstance(obj, Decimal):
+        return float(obj)
+    return str(obj)  # last resort

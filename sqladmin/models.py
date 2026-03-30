@@ -49,6 +49,7 @@ from sqladmin.formatters import BASE_FORMATTERS
 from sqladmin.forms import ModelConverter, ModelConverterBase, get_model_form
 from sqladmin.helpers import (
     Writer,
+    default_encoder,
     get_object_identifier,
     get_primary_keys,
     object_identifier_values,
@@ -1279,8 +1280,7 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
         )
 
     async def _export_json(
-        self,
-        data: List[Any],
+        self, data: List[Any], ensure_ascii: bool = True
     ) -> StreamingResponse:
         async def generate() -> AsyncGenerator[str, None]:
             yield "["
@@ -1290,22 +1290,15 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
             row_dict = {}
 
             for idx, row in enumerate(data):
-                for name in self._export_prop_names:
-                    value = await self.get_prop_value(row, name)
-                    try:
-                        if hasattr(value, "isoformat"):  # datetime-like
-                            value = value.isoformat()
-                        from decimal import Decimal
-
-                        if isinstance(value, Decimal):
-                            value = float(value)
-                        json.dumps(value)
-                    except TypeError:
-                        value = str(value)
-                    row_dict[name] = value
-                yield json.dumps(row_dict, ensure_ascii=False) + (
-                    separator if idx < last_idx else ""
-                )
+                row_dict = {
+                    name: str(await self.get_prop_value(row, name))
+                    for name in self._export_prop_names
+                }
+                yield json.dumps(
+                    row_dict,
+                    default=default_encoder,
+                    ensure_ascii=ensure_ascii,
+                ) + (separator if idx < last_idx else "")
 
             yield "]"
 
