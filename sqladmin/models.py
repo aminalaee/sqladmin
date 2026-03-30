@@ -1280,7 +1280,9 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
         )
 
     async def _export_json(
-        self, data: List[Any], ensure_ascii: bool = True
+        self,
+        data: List[Any],
+        ensure_ascii: bool = True,
     ) -> StreamingResponse:
         async def generate() -> AsyncGenerator[str, None]:
             yield "["
