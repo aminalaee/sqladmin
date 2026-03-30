@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import csv
 import enum
+import json
 import os
 import re
 import unicodedata
@@ -324,4 +325,8 @@ def default_encoder(obj: Any) -> Any:
 
     if isinstance(obj, Decimal):
         return float(obj)
-    return str(obj)  # last resort
+
+    try:
+        return json.dumps(obj)
+    except TypeError:
+        return str(obj)  # last resort
