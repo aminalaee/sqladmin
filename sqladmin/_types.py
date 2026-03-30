@@ -26,7 +26,7 @@ class SimpleColumnFilter(Protocol):
 
     title: str
     parameter_name: str
-    default_value: Optional[Any]
+    default_value: Optional[Any] = None
 
     async def lookups(
         self, request: Request, model: Any, run_query: Callable[[Select], Any]
