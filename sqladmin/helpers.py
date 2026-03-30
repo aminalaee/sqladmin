@@ -334,6 +334,7 @@ def default_encoder(obj: Any) -> Any:
         return float(obj)
 
     try:
-        return json.dumps(obj)
+        json.dumps(obj)
+        return obj
     except TypeError:
         return str(obj)  # last resort
