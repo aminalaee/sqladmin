@@ -1287,7 +1287,6 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
             len_data = len(data)
             last_idx = len_data - 1
             separator = "," if len_data > 1 else ""
-            row_dict = {}
 
             for idx, row in enumerate(data):
                 row_dict = {
