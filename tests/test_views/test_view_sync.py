@@ -5,6 +5,7 @@ from typing import Any, Generator
 import pytest
 from sqlalchemy import (
     JSON,
+    Boolean,
     Column,
     Date,
     Enum,
@@ -116,6 +117,7 @@ class Product(Base):
     id = Column(Integer, primary_key=True, autoincrement=True)
     name = Column(String, nullable=False)
     price = Column(Integer)
+    is_sold = Column(Boolean, nullable=False)
 
 
 @pytest.fixture
@@ -471,6 +473,54 @@ def test_create_endpoint_with_required_fields(client: TestClient) -> None:
     )
     assert (
         '<label class="form-label col-sm-2 col-form-label" for="price">Price</label>'
+        in response.text
+    )
+
+
+def test_update_endpoint_with_checkbox_widget(client: TestClient) -> None:
+    with session_maker() as session:
+        session.add_all(
+            [
+                Product(
+                    id=1,
+                    name="RAM",
+                    price=99_999,
+                    is_sold=False,
+                ),
+                Product(
+                    id=2,
+                    name="RAM second",
+                    price=12421,
+                    is_sold=True,
+                ),
+            ]
+        )
+        session.commit()
+
+    stmt = select(func.count(Product.id))
+    with session_maker() as s:
+        result = s.execute(stmt)
+    assert result.scalar_one() == 2
+
+    response = client.get("/admin/product/edit/1")
+
+    assert response.status_code == 200
+
+    assert (
+        '<div class="form-switch d-flex align-items-center h-100">'
+        f'<input class="form-check-input" id="{Product.is_sold.key}" '
+        f'name="{Product.is_sold.key}" type="checkbox" value="y"></div>'
+        in response.text
+    )
+
+    response = client.get("/admin/product/edit/2")
+
+    assert response.status_code == 200
+
+    assert (
+        '<div class="form-switch d-flex align-items-center h-100">'
+        f'<input checked class="form-check-input" id="{Product.is_sold.key}" '
+        f'name="{Product.is_sold.key}" type="checkbox" value="y"></div>'
         in response.text
     )
 

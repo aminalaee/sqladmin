@@ -496,6 +496,7 @@ async def test_create_endpoint_with_required_fields(client: AsyncClient) -> None
     )
 
 
+@pytest.mark.anyio
 async def test_update_endpoint_with_checkbox_widget(client: AsyncClient) -> None:
     async with session_maker() as session:
         session.add_all(
@@ -528,7 +529,7 @@ async def test_update_endpoint_with_checkbox_widget(client: AsyncClient) -> None
     assert (
         '<div class="form-switch d-flex align-items-center h-100">'
         f'<input class="form-check-input" id="{Product.is_sold.key}" '
-        f'name="{Product.is_sold.key}" required type="checkbox" value="y"></div>'
+        f'name="{Product.is_sold.key}" type="checkbox" value="y"></div>'
         in response.text
     )
 
@@ -539,7 +540,7 @@ async def test_update_endpoint_with_checkbox_widget(client: AsyncClient) -> None
     assert (
         '<div class="form-switch d-flex align-items-center h-100">'
         f'<input checked class="form-check-input" id="{Product.is_sold.key}" '
-        f'name="{Product.is_sold.key}" required type="checkbox" value="y"></div>'
+        f'name="{Product.is_sold.key}" type="checkbox" value="y"></div>'
         in response.text
     )
 

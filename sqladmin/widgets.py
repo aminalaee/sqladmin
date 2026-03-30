@@ -102,8 +102,8 @@ class FileInputWidget(widgets.FileInput):
             current_value = Markup("<p>Currently: {}</p>").format(field.data)
             field.flags.required = False
             return current_value + checkbox + super().__call__(field, **kwargs)
-        else:
-            return super().__call__(field, **kwargs)
+
+        return super().__call__(field, **kwargs)
 
 
 class BooleanInputWidget(widgets.Input):
@@ -116,7 +116,8 @@ class BooleanInputWidget(widgets.Input):
     input_type = "checkbox"
 
     def __call__(self, field: Field, **kwargs: Any) -> Markup:
-        kwargs["checked"] = field.object_data
+        if field.data:
+            kwargs["checked"] = True
 
         return Markup(
             '<div class="form-switch d-flex align-items-center h-100">'

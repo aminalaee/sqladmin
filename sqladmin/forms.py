@@ -376,7 +376,6 @@ class ModelConverter(ModelConverterBase):
         if not prop.columns[0].nullable:
             kwargs.setdefault("render_kw", {})
             kwargs["render_kw"]["class"] = "form-check-input"
-            kwargs["validators"].append(validators.InputRequired())
             return BooleanField(**kwargs)
 
         kwargs["allow_blank"] = True
