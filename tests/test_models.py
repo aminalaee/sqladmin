@@ -581,17 +581,21 @@ def test_count_query() -> None:
 
 
 async def test_count_multi_bind() -> None:
+    from sqlalchemy import create_engine
+    from sqlalchemy.orm import declarative_base
+
+    OtherBase = declarative_base()
+    other_engine = create_engine("sqlite:///:memory:")
+
+    multi_bind_session_maker = sessionmaker(
+        binds={Base: engine, OtherBase: other_engine}
+    )
+
     class AddressAdmin(ModelView, model=Address):
-        ...
-
-    class UserAdmin(ModelView, model=User):
-        ...
-
-    admin = AddressAdmin()
-    admin.session_maker = sessionmaker(binds={Base: engine})
+        session_maker = multi_bind_session_maker
 
     request = Request({"type": "http"})
-    count = await admin.count(request)
+    count = await AddressAdmin().count(request)
     assert count == 0
 
 
