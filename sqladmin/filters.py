@@ -1,4 +1,4 @@
-import datetime as dt
+import datetime
 import re
 from typing import Any, Callable, List, Optional, Tuple, Type
 
@@ -303,8 +303,8 @@ class OperationColumnFilter:
             ((String, Text, _Binary), str),
             ((Integer, BigInteger, SmallInteger), int),
             ((Numeric, Float), float),
-            ((DateTime,), dt.datetime.fromisoformat),
-            ((Date,), dt.date.fromisoformat),
+            ((DateTime,), datetime.datetime.fromisoformat),
+            ((Date,), datetime.date.fromisoformat),
         ]
 
         try:

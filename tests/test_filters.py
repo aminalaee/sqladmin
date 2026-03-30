@@ -1,4 +1,4 @@
-import datetime as dt
+import datetime
 import re
 from typing import Any, AsyncGenerator
 
@@ -161,8 +161,8 @@ async def prepare_data(prepare_database: Any) -> AsyncGenerator[None, None]:
             age=35,
             salary=80000.50,
             description="Senior administrator with management responsibilities",
-            birthdate=dt.date(2001, 7, 14),
-            created_at=dt.datetime(2024, 11, 12, 3, 4, 5, tzinfo=dt.timezone.utc),
+            birthdate=datetime.date(2001, 7, 14),
+            created_at=datetime.datetime(2024, 11, 12, 3, 4, 5, tzinfo=datetime.timezone.utc),
         )
         user2 = User(
             name="Regular User",
@@ -172,8 +172,8 @@ async def prepare_data(prepare_database: Any) -> AsyncGenerator[None, None]:
             age=28,
             salary=55000.75,
             description="Software developer specializing in web applications",
-            birthdate=dt.date(1994, 5, 31),
-            created_at=dt.datetime(2024, 12, 31, 23, 59, 58, tzinfo=dt.timezone.utc),
+            birthdate=datetime.date(1994, 5, 31),
+            created_at=datetime.datetime(2024, 12, 31, 23, 59, 58, tzinfo=datetime.timezone.utc),
         )
         user3 = User(
             name="Test User",
@@ -183,8 +183,8 @@ async def prepare_data(prepare_database: Any) -> AsyncGenerator[None, None]:
             age=42,
             salary=65000.00,
             description="Data analyst working on business intelligence",
-            birthdate=dt.date(1998, 10, 31),
-            created_at=dt.datetime(2023, 3, 14, 12, 30, 0, tzinfo=dt.timezone.utc),
+            birthdate=datetime.date(1998, 10, 31),
+            created_at=datetime.datetime(2023, 3, 14, 12, 30, 0, tzinfo=datetime.timezone.utc),
         )
         session.add_all([user1, user2, user3])
         await session.commit()
@@ -487,7 +487,7 @@ async def test_column_filter_date_operations(client: AsyncClient) -> None:
 @pytest.mark.skipif(engine.name != "sqlite", reason="Sqlite only")
 @pytest.mark.anyio
 async def test_column_filter_naive_datetime_operations(client: AsyncClient) -> None:
-    """Test that ColumnFilter correctly handles naive date operations."""
+    """Test that ColumnFilter correctly handles naive datetime format."""
     # Test greater_than operation for created_at (datetime)
     url = "/admin/user/list?created_at=2024-04-22+12:30:00&created_at_op=greater_than"
     response = await client.get(url)
@@ -616,7 +616,8 @@ async def test_column_filter_invalid_values(client: AsyncClient) -> None:
     assert "Test User" in response.text
 
     # Test invalid datetime value for created_at
-    url = "/admin/user/list?created_at=not_a_datetime&created_at=less_than"
+    url = "/admin/user/list?created_at=not_a_datetime&created_at_op=less_than"
+    response = await client.get(url)
     assert response.status_code == 200
     # Should show all users when invalid value is provided
     assert "Admin User" in response.text
@@ -624,7 +625,8 @@ async def test_column_filter_invalid_values(client: AsyncClient) -> None:
     assert "Test User" in response.text
 
     # Test invalid date value for birthdate
-    url = "/admin/user/list?birthdate=not_a_date&birthdate=less_than"
+    url = "/admin/user/list?birthdate=not_a_date&birthdate_op=less_than"
+    response = await client.get(url)
     assert response.status_code == 200
     # Should show all users when invalid value is provided
     assert "Admin User" in response.text
@@ -916,14 +918,14 @@ async def test_column_filter_conversion_edge_cases():
     result = created_at_filter._convert_value_for_column(
         "2021-11-30T22:33:43+00:00", User.created_at.property.columns[0]
     )
-    assert result == dt.datetime(2021, 11, 30, 22, 33, 43, tzinfo=dt.timezone.utc)
+    assert result == datetime.datetime(2021, 11, 30, 22, 33, 43, tzinfo=datetime.timezone.utc)
 
     # Test valid date conversion
     birthdate_filter = OperationColumnFilter(User.birthdate)
     result = birthdate_filter._convert_value_for_column(
         "2021-11-30", User.birthdate.property.columns[0]
     )
-    assert result == dt.date(2021, 11, 30)
+    assert result == datetime.date(2021, 11, 30)
 
 
 @pytest.mark.skipif(
