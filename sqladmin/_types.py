@@ -2,6 +2,7 @@ from typing import (
     Any,
     Callable,
     List,
+    Optional,
     Protocol,
     Tuple,
     Union,
@@ -25,6 +26,7 @@ class SimpleColumnFilter(Protocol):
 
     title: str
     parameter_name: str
+    default_value: Optional[Any] = None
 
     async def lookups(
         self, request: Request, model: Any, run_query: Callable[[Select], Any]
