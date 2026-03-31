@@ -494,7 +494,7 @@ To add custom action on models to the Admin, you can use the `action` decorator.
                     ...
 
             referer = request.headers.get("Referer")
-            Flash.success("Users approved successfully")
+            Flash.success(request, "Users approved successfully")
             if referer:
                 return RedirectResponse(referer)
             else:
