@@ -1,5 +1,6 @@
 import datetime
 import enum
+import sys
 import uuid
 from typing import Generator
 
@@ -31,6 +32,16 @@ try:
 except ImportError:
     HAS_UUID_SUPPORT = False
     Uuid = None
+
+# Import StrEnum for python < 3.10 and > 3.11
+if sys.version_info < (3, 11):
+
+    class StrEnum(str, enum.Enum):
+        __str__ = str.__str__
+        __repr__ = enum.Enum.__repr__
+else:
+    from enum import StrEnum as StrEnum  # noqa: F401
+
 
 pytestmark = pytest.mark.anyio
 

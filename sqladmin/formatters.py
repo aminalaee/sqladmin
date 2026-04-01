@@ -1,10 +1,19 @@
 import datetime
-from enum import StrEnum
+import enum
+import sys
 from typing import Any
 
 from markupsafe import Markup
 
 from sqladmin._types import BASE_FORMATTERS_TYPE
+
+if sys.version_info < (3, 11):
+
+    class StrEnum(str, enum.Enum):
+        __str__ = str.__str__
+        __repr__ = enum.Enum.__repr__
+else:
+    from enum import StrEnum as StrEnum  # noqa: F401
 
 
 def empty_formatter(value: Any) -> Markup:
