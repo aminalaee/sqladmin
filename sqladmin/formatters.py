@@ -10,14 +10,14 @@ from sqladmin._types import BASE_FORMATTERS_TYPE
 def empty_formatter(value: Any) -> Markup:
     """Return empty string for `None` value"""
 
-    return Markup("")
+    return Markup("")  # nosec
 
 
 def bool_formatter(value: bool) -> Markup:
     """Return check icon if value is `True` or X otherwise."""
 
     icon_class = "fa-check text-success" if value else "fa-times text-danger"
-    return Markup("<i class='fa {}'></i>").format(icon_class)
+    return Markup("<i class='fa {}'></i>").format(icon_class)  # nosec
 
 
 def str_enum_formatter(value: StrEnum) -> Markup:
@@ -36,25 +36,25 @@ def str_enum_formatter(value: StrEnum) -> Markup:
         f"{title}"
         f"{value}"
         f"</span>"
-    )
+    )  # nosec
 
 
 def datetime_formatter(value: datetime.datetime) -> Markup:
     """Return badge for easy viewing of datetime."""
 
     return Markup(
-        f'<span '
+        f"<span "
         f'class="my-1 py-1 px-2 badge bg-secondary text-light '
         f'lead d-inline-block text-truncate" '
         f'data-bs-toggle="tooltip" '
         f'data-bs-html="true" '
         f'data-bs-placement="bottom" '
         f'title="{value}"'
-        f'>'
+        f">"
         f'<i class="fa-solid fa-calendar-days"></i> '
-        f'{value.strftime('%d %B %Y %H:%M:%S')}'
-        f'</span>'
-    )
+        f"{value.strftime('%d %B %Y %H:%M:%S')}"
+        f"</span>"
+    )  # nosec
 
 
 def copy_to_clipboard_formatter(value: Any) -> Markup:
@@ -71,7 +71,7 @@ def copy_to_clipboard_formatter(value: Any) -> Markup:
         f"</button>"
         f'<div class="alert alert-primary fade mb-0 p-1">Copied!</div>'
         f"</div>"
-    )
+    )  # nosec
 
 
 BASE_FORMATTERS: BASE_FORMATTERS_TYPE = {

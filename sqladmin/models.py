@@ -26,6 +26,7 @@ import anyio
 from sqlalchemy import Column, String, asc, cast, desc, func, inspect, or_
 from sqlalchemy.exc import NoInspectionAvailable
 from sqlalchemy.orm import selectinload, sessionmaker
+from sqlalchemy.orm.collections import InstrumentedList, InstrumentedSet
 from sqlalchemy.orm.exc import DetachedInstanceError
 from sqlalchemy.sql.elements import ClauseElement
 from sqlalchemy.sql.expression import Select, select
@@ -862,28 +863,46 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
         return [(pk.name, False) for pk in self.pk_columns]
 
     def _default_formatter(self, value: Any) -> Any:
-        if type(value) in self._column_type_formatters:
-            formatter = self._column_type_formatters[type(value)]
+        value_class = type(value)
+
+        if value_class in self._column_type_formatters:
+            formatter = self._column_type_formatters[value_class]
             return formatter(value)
 
-        parents = value.__class__.__bases__
-        for parent_class in parents:
-            if parent_class in self._column_type_formatters_detail:
-                formatter = self._column_type_formatters_detail[parent_class]
-                return formatter(value)
+        elif value_class is InstrumentedList:
+            return [self._default_formatter(item) for item in value]
+
+        elif value_class is InstrumentedSet:
+            return {self._default_formatter(item) for item in value}
+
+        if hasattr(value, "__class__") and hasattr(value.__class__, "__bases__"):
+            parents = value.__class__.__bases__
+            for parent_class in parents:
+                if parent_class in self._column_type_formatters_detail:
+                    formatter = self._column_type_formatters_detail[parent_class]
+                    return formatter(value)
 
         return value
 
     def _default_formatter_detail(self, value: Any) -> Any:
-        if type(value) in self._column_type_formatters_detail:
-            formatter = self._column_type_formatters_detail[type(value)]
+        value_class = type(value)
+
+        if value_class in self._column_type_formatters_detail:
+            formatter = self._column_type_formatters_detail[value_class]
             return formatter(value)
 
-        parents = value.__class__.__bases__
-        for parent_class in parents:
-            if parent_class in self._column_type_formatters_detail:
-                formatter = self._column_type_formatters_detail[parent_class]
-                return formatter(value)
+        elif value_class is InstrumentedList:
+            return [self._default_formatter_detail(item) for item in value]
+
+        elif value_class is InstrumentedSet:
+            return {self._default_formatter_detail(item) for item in value}
+
+        if hasattr(value, "__class__") and hasattr(value.__class__, "__bases__"):
+            parents = value.__class__.__bases__
+            for parent_class in parents:
+                if parent_class in self._column_type_formatters_detail:
+                    formatter = self._column_type_formatters_detail[parent_class]
+                    return formatter(value)
 
         return value
 

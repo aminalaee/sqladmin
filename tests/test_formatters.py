@@ -92,17 +92,17 @@ class Profile(Base):
 
 NOW = datetime.datetime.now()
 VALID_DATETIME_HTML = (
-    f'<span '
+    f"<span "
     f'class="my-1 py-1 px-2 badge bg-secondary text-light '
     f'lead d-inline-block text-truncate" '
     f'data-bs-toggle="tooltip" '
     f'data-bs-html="true" '
     f'data-bs-placement="bottom" '
     f'title="{NOW}"'
-    f'>'
+    f">"
     f'<i class="fa-solid fa-calendar-days"></i> '
-    f'{NOW.strftime('%d %B %Y %H:%M:%S')}'
-    f'</span>'
+    f"{NOW.strftime('%d %B %Y %H:%M:%S')}"
+    f"</span>"
 )
 
 VALID_STR_ENUM_HTML = Markup(
@@ -151,8 +151,7 @@ async def test_column_formatters_different_details_and_list() -> None:
 
 
 async def test_column_formatters_list_with_inheritance_type() -> None:
-    class CustomStr(str):
-        ...
+    class CustomStr(str): ...
 
     custom_column_type_formatters = BASE_FORMATTERS.copy()
     custom_column_type_formatters.update(
@@ -171,8 +170,7 @@ async def test_column_formatters_list_with_inheritance_type() -> None:
 
 
 async def test_column_formatters_list_with_inheritance_type_and_parent() -> None:
-    class CustomStr(str):
-        ...
+    class CustomStr(str): ...
 
     custom_column_type_formatters = BASE_FORMATTERS.copy()
     custom_column_type_formatters.update(
