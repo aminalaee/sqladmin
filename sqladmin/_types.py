@@ -18,6 +18,7 @@ from sqlalchemy.ext.asyncio import AsyncEngine
 from sqlalchemy.orm import ColumnProperty, InstrumentedAttribute, RelationshipProperty
 from sqlalchemy.sql.expression import Select
 from starlette.requests import Request
+from typing_extensions import TypeAlias
 
 MODEL_PROPERTY = Union[ColumnProperty, RelationshipProperty]
 ENGINE_TYPE = Union[Engine, AsyncEngine]
@@ -59,6 +60,7 @@ class OperationColumnFilter(Protocol):
 
 ColumnFilter = Union[SimpleColumnFilter, OperationColumnFilter]
 
-BASE_FORMATTERS_TYPE = Dict[
-    Type[Any], Callable[[Any], Markup | Iterable[Markup] | AnyStr | Iterable[AnyStr]]
+BASE_FORMATTERS_TYPE: TypeAlias = Dict[
+    Type[Any],
+    Callable[[Any], Union[Markup, Iterable[Markup], AnyStr, Iterable[AnyStr]]],
 ]
