@@ -1,18 +1,24 @@
 from typing import (
     Any,
+    AnyStr,
     Callable,
+    Dict,
+    Iterable,
     List,
     Protocol,
     Tuple,
+    Type,
     Union,
     runtime_checkable,
 )
 
+from markupsafe import Markup
 from sqlalchemy.engine import Engine
 from sqlalchemy.ext.asyncio import AsyncEngine
 from sqlalchemy.orm import ColumnProperty, InstrumentedAttribute, RelationshipProperty
 from sqlalchemy.sql.expression import Select
 from starlette.requests import Request
+from typing_extensions import TypeAlias
 
 MODEL_PROPERTY = Union[ColumnProperty, RelationshipProperty]
 ENGINE_TYPE = Union[Engine, AsyncEngine]
@@ -53,3 +59,8 @@ class OperationColumnFilter(Protocol):
 
 
 ColumnFilter = Union[SimpleColumnFilter, OperationColumnFilter]
+
+BASE_FORMATTERS_TYPE: TypeAlias = Dict[
+    Type[Any],
+    Callable[[Any], Union[Markup, Iterable[Markup], AnyStr, Iterable[AnyStr]]],
+]

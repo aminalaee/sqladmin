@@ -123,4 +123,4 @@ class BooleanInputWidget(widgets.Input):
             '<div class="form-switch d-flex align-items-center h-100">'
             + str(Markup.escape(super().__call__(field, **kwargs)))
             + "</div>"
-        )
+        )  # nosec

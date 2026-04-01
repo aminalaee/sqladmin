@@ -569,8 +569,7 @@ def test_sort_query() -> None:
 
 
 def test_count_query() -> None:
-    class AddressAdmin(ModelView, model=Address):
-        ...
+    class AddressAdmin(ModelView, model=Address): ...
 
     request = Request({"type": "http"})
     stmt = AddressAdmin().count_query(request)
