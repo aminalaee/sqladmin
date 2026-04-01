@@ -70,7 +70,7 @@ class Status(enum.Enum):
     DEACTIVE = "DEACTIVE"
 
 
-class Role(enum.StrEnum):
+class Role(StrEnum):
     ADMIN = "ADMIN"
     USER = "USER"
 
@@ -210,7 +210,7 @@ async def test_column_formatters_list_with_inheritance_type_and_parent() -> None
 
 async def test_column_formatters_str_enum() -> None:
     custom_column_type_formatters = BASE_FORMATTERS.copy()
-    custom_column_type_formatters.update({enum.StrEnum: str_enum_formatter})
+    custom_column_type_formatters.update({StrEnum: str_enum_formatter})
 
     class ProfileAdmin(ModelView, model=Profile):
         column_type_formatters = custom_column_type_formatters
@@ -231,7 +231,7 @@ async def test_column_formatters_str_enum() -> None:
 
 async def test_column_formatters_list_page_str_enum(client: TestClient) -> None:
     custom_column_type_formatters = BASE_FORMATTERS.copy()
-    custom_column_type_formatters.update({enum.StrEnum: str_enum_formatter})
+    custom_column_type_formatters.update({StrEnum: str_enum_formatter})
 
     class ProfileAdmin(ModelView, model=Profile):
         column_list = [Profile.id, Profile.role]
@@ -253,7 +253,7 @@ async def test_column_formatters_list_page_str_enum(client: TestClient) -> None:
 
 async def test_column_formatters_details_page_str_enum(client: TestClient) -> None:
     custom_column_type_formatters = BASE_FORMATTERS.copy()
-    custom_column_type_formatters.update({enum.StrEnum: str_enum_formatter})
+    custom_column_type_formatters.update({StrEnum: str_enum_formatter})
 
     class ProfileAdmin(ModelView, model=Profile):
         column_details_list = [Profile.id, Profile.role]
