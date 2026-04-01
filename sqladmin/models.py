@@ -1,9 +1,10 @@
 from __future__ import annotations
 
 import json
+import sys
 import time
 import warnings
-from enum import Enum, StrEnum
+from enum import Enum
 from typing import (
     TYPE_CHECKING,
     Any,
@@ -64,6 +65,16 @@ from sqladmin.helpers import (
 from sqladmin.pagination import Pagination
 from sqladmin.pretty_export import PrettyExport
 from sqladmin.templating import Jinja2Templates
+
+# Import StrEnum for python < 3.10 and > 3.11
+if sys.version_info < (3, 11):
+
+    class StrEnum(str, Enum):
+        __str__ = str.__str__
+        __repr__ = Enum.__repr__
+else:
+    from enum import StrEnum as StrEnum  # noqa: F401
+
 
 if TYPE_CHECKING:
     from sqlalchemy.ext.asyncio import async_sessionmaker  # type: ignore[attr-defined]
