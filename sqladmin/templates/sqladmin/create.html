@@ -26,7 +26,9 @@
           <div class="col-md-6">
             <div class="btn-group flex-wrap" data-toggle="buttons">
               <input type="submit" name="save" value="Save" class="btn">
+              {% if model_view.can_edit %}
               <input type="submit" name="save" value="Save and continue editing" class="btn">
+              {% endif %}
               <input type="submit" name="save" value="Save and add another" class="btn">
             </div>
           </div>
