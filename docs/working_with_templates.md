@@ -28,23 +28,26 @@ SQLAdmin and in the `content` block it adds custom HTML tags:
 
 ## Overriding default templates
 
-If you need to change one of the existing default templates in SQLAdmin such that it affects multiple pages, you can do so by copying the existing template from `templates/sqladmin` into your `templates/sqladmin` directory. It will then be used instead of the one in the package. For example if there is some Javascript you want to run on every page you may want to do it in layout.html like so:
+The recommended way to customize existing default templates (like adding a script to every page) without redefining the entire HTML structure is to extend the original template using the `sqladmin_original/` prefix. This allows you to selectively override or append to specific Jinja blocks using `{{ super() }}` while preserving the rest of the template.
+
+For example, if there is some Javascript you want to run on every page, you can extend the original `layout.html` and append to the `tail` or `tail_js` block like so:
 
 !!! example
 
     ```html title="myproject/templates/sqladmin/layout.html"
-    ...
-    </div>
-    </div>
-    {% endblock %}
+    {% extends "sqladmin_original/layout.html" %}
 
-    {% block tail %}
+    {% block tail_js %}
+    {{ super() }}
     <script type="text/javascript">
         console.log('hello world');
     </script>
     {% endblock %}
-
     ```
+
+**Alternative method (Full override):**
+
+If your customizations are so extensive that using blocks isn't sufficient, you can completely replace a default template. To do this, copy the existing template from SQLAdmin's `templates/sqladmin` into your project's `templates/sqladmin` directory without using `extends`. It will then be loaded instead of the one in the package, bypassing the original entirely.
 
 ## Customizing Jinja2 environment
 
