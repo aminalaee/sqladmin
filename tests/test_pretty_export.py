@@ -13,7 +13,7 @@ from tests.common import sync_engine as engine
 
 pytestmark = pytest.mark.anyio
 
-Base = declarative_base()  # type: ignore
+Base = declarative_base()
 session_maker = sessionmaker(bind=engine)
 
 

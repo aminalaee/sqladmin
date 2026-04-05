@@ -5,7 +5,6 @@ import io
 import logging
 from types import MethodType
 from typing import (
-    TYPE_CHECKING,
     Any,
     Awaitable,
     Callable,
@@ -17,7 +16,7 @@ from urllib.parse import parse_qsl, urljoin
 
 from jinja2 import ChoiceLoader, FileSystemLoader, PackageLoader
 from sqlalchemy.engine import Engine
-from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 from sqlalchemy.orm import Session, sessionmaker
 from starlette.applications import Starlette
 from starlette.datastructures import URL, FormData, MultiDict, UploadFile
@@ -34,7 +33,7 @@ from starlette.routing import Mount, Route
 from starlette.staticfiles import StaticFiles
 
 from sqladmin._menu import CategoryMenu, Menu, ViewMenu
-from sqladmin._types import ENGINE_TYPE
+from sqladmin._types import ENGINE_TYPE, SESSION_MAKER
 from sqladmin.ajax import QueryAjaxModelLoader
 from sqladmin.authentication import AuthenticationBackend, login_required
 from sqladmin.forms import WTFORMS_ATTRS, WTFORMS_ATTRS_REVERSED
@@ -45,9 +44,6 @@ from sqladmin.helpers import (
 )
 from sqladmin.models import BaseView, ModelView
 from sqladmin.templating import Jinja2Templates
-
-if TYPE_CHECKING:
-    from sqlalchemy.ext.asyncio import async_sessionmaker  # type: ignore[attr-defined]
 
 __all__ = [
     "Admin",
@@ -69,7 +65,7 @@ class BaseAdmin:
         self,
         app: Starlette,
         engine: ENGINE_TYPE | None = None,
-        session_maker: sessionmaker | None = None,
+        session_maker: SESSION_MAKER | None = None,
         base_url: str = "/admin",
         title: str = "Admin",
         logo_url: str | None = None,
@@ -91,8 +87,8 @@ class BaseAdmin:
         elif isinstance(self.engine, Engine):
             self.session_maker = sessionmaker(bind=self.engine, class_=Session)
         else:
-            self.session_maker = sessionmaker(
-                bind=self.engine,  # type: ignore[arg-type]
+            self.session_maker = async_sessionmaker(
+                bind=self.engine,
                 class_=AsyncSession,
             )
 
@@ -358,7 +354,7 @@ class Admin(BaseAdminView):
         self,
         app: Starlette,
         engine: ENGINE_TYPE | None = None,
-        session_maker: sessionmaker | "async_sessionmaker" | None = None,
+        session_maker: SESSION_MAKER | None = None,
         base_url: str = "/admin",
         title: str = "Admin",
         logo_url: str | None = None,
