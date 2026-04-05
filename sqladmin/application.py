@@ -33,12 +33,11 @@ from starlette.routing import Mount, Route
 from starlette.staticfiles import StaticFiles
 
 from sqladmin._menu import CategoryMenu, Menu, ViewMenu
-from sqladmin._types import ENGINE_TYPE
+from sqladmin._types import ENGINE_TYPE, SESSION_MAKER
 from sqladmin.ajax import QueryAjaxModelLoader
 from sqladmin.authentication import AuthenticationBackend, login_required
 from sqladmin.forms import WTFORMS_ATTRS, WTFORMS_ATTRS_REVERSED
 from sqladmin.helpers import (
-    _SessionMaker,
     get_object_identifier,
     is_async_session_maker,
     slugify_action_name,
@@ -66,7 +65,7 @@ class BaseAdmin:
         self,
         app: Starlette,
         engine: ENGINE_TYPE | None = None,
-        session_maker: _SessionMaker | None = None,
+        session_maker: SESSION_MAKER | None = None,
         base_url: str = "/admin",
         title: str = "Admin",
         logo_url: str | None = None,
@@ -355,7 +354,7 @@ class Admin(BaseAdminView):
         self,
         app: Starlette,
         engine: ENGINE_TYPE | None = None,
-        session_maker: _SessionMaker | None = None,
+        session_maker: SESSION_MAKER | None = None,
         base_url: str = "/admin",
         title: str = "Admin",
         logo_url: str | None = None,

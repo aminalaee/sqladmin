@@ -39,6 +39,7 @@ from wtforms.fields.core import UnboundField
 from sqladmin._queries import Query
 from sqladmin._types import (
     MODEL_ATTR,
+    SESSION_MAKER,
     ColumnFilter,
     OperationColumnFilter,
     SimpleColumnFilter,
@@ -49,7 +50,6 @@ from sqladmin.formatters import BASE_FORMATTERS
 from sqladmin.forms import ModelConverter, ModelConverterBase, get_model_form
 from sqladmin.helpers import (
     Writer,
-    _SessionMaker,
     get_object_identifier,
     get_primary_keys,
     object_identifier_values,
@@ -209,7 +209,7 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
 
     # Internals
     pk_columns: ClassVar[Tuple[Column]]
-    session_maker: ClassVar[_SessionMaker]
+    session_maker: ClassVar[SESSION_MAKER]
     is_async: ClassVar[bool] = False
     is_model: ClassVar[bool] = True
     ajax_lookup_url: ClassVar[str] = ""
