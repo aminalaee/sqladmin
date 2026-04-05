@@ -21,11 +21,7 @@ from typing import (
 import anyio
 from sqlalchemy import Boolean, select
 from sqlalchemy import inspect as sqlalchemy_inspect
-from sqlalchemy.orm import (
-    ColumnProperty,
-    RelationshipProperty,
-    sessionmaker,
-)
+from sqlalchemy.orm import ColumnProperty, RelationshipProperty
 from sqlalchemy.sql.elements import Label
 from wtforms import (
     DecimalField,
@@ -63,6 +59,7 @@ from sqladmin.fields import (
     SelectField,
 )
 from sqladmin.helpers import (
+    _SessionMaker,
     choice_type_coerce_factory,
     get_direction,
     get_object_identifier,
@@ -128,7 +125,7 @@ class ModelConverterBase:
     async def _prepare_kwargs(
         self,
         prop: MODEL_PROPERTY,
-        session_maker: sessionmaker,
+        session_maker: _SessionMaker,
         field_args: dict[str, Any],
         field_widget_args: dict[str, Any],
         form_include_pk: bool,
@@ -210,7 +207,7 @@ class ModelConverterBase:
         self,
         prop: RelationshipProperty,
         kwargs: dict,
-        session_maker: sessionmaker,
+        session_maker: _SessionMaker,
         loader: QueryAjaxModelLoader | None = None,
     ) -> dict:
         nullable = True
@@ -230,7 +227,7 @@ class ModelConverterBase:
     async def _prepare_select_options(
         self,
         prop: RelationshipProperty,
-        session_maker: sessionmaker,
+        session_maker: _SessionMaker,
     ) -> list[tuple[str, Any]]:
         target_model = prop.mapper.class_
         stmt = select(target_model)
@@ -288,7 +285,7 @@ class ModelConverterBase:
         self,
         model: type,
         prop: MODEL_PROPERTY,
-        session_maker: sessionmaker,
+        session_maker: _SessionMaker,
         field_args: dict[str, Any],
         field_widget_args: dict[str, Any],
         form_include_pk: bool,
@@ -682,7 +679,7 @@ class ModelConverter(ModelConverterBase):
 
 async def get_model_form(
     model: type,
-    session_maker: sessionmaker,
+    session_maker: _SessionMaker,
     only: Sequence[str] | None = None,
     exclude: Sequence[str] | None = None,
     column_labels: dict[str, str] | None = None,

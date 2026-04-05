@@ -16,14 +16,14 @@ from typing import (
 )
 
 from sqlalchemy import Column, inspect
-from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 from sqlalchemy.orm import RelationshipProperty, sessionmaker
 
 from sqladmin._types import MODEL_PROPERTY
 
 T = TypeVar("T")
 
-
+_SessionMaker = sessionmaker | async_sessionmaker
 _filename_ascii_strip_re = re.compile(r"[^A-Za-z0-9_.-]")
 _windows_device_files = (
     "CON",
@@ -320,5 +320,5 @@ def choice_type_coerce_factory(type_: Any) -> Callable[[Any], Any]:
     return choice_coerce
 
 
-def is_async_session_maker(session_maker: sessionmaker) -> bool:
+def is_async_session_maker(session_maker: _SessionMaker) -> bool:
     return AsyncSession in session_maker.class_.__mro__
