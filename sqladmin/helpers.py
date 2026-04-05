@@ -13,6 +13,7 @@ from typing import (
     Callable,
     Generator,
     TypeVar,
+    Union,
 )
 
 from sqlalchemy import Column, inspect
@@ -23,7 +24,7 @@ from sqladmin._types import MODEL_PROPERTY
 
 T = TypeVar("T")
 
-_SessionMaker = sessionmaker | async_sessionmaker
+_SessionMaker = Union[sessionmaker, async_sessionmaker]
 _filename_ascii_strip_re = re.compile(r"[^A-Za-z0-9_.-]")
 _windows_device_files = (
     "CON",
