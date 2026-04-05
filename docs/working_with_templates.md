@@ -23,28 +23,31 @@ SQLAdmin and in the `content` block it adds custom HTML tags:
 
     ```python title="admin.py"
     class UserAdmin(ModelView, model=User):
-        details_template = "custom_details.html"
+        details_template = "sqladmin/custom_details.html"
     ```
 
 ## Overriding default templates
 
-If you need to change one of the existing default templates in SQLAdmin such that it affects multiple pages, you can do so by copying the existing template from `templates/sqladmin` into your `templates/sqladmin` directory. It will then be used instead of the one in the package. For example if there is some Javascript you want to run on every page you may want to do it in layout.html like so:
+The recommended way to customize existing default templates (like adding a script to every page) without redefining the entire HTML structure is to extend the original template using the `sqladmin_original/` prefix. This allows you to selectively override or append to specific Jinja blocks using `{{ super() }}` while preserving the rest of the template.
+
+For example, if there is some Javascript you want to run on every page, you can extend the original `layout.html` and append to the `tail` or `tail_js` block like so:
 
 !!! example
 
     ```html title="myproject/templates/sqladmin/layout.html"
-    ...
-    </div>
-    </div>
-    {% endblock %}
+    {% extends "sqladmin_original/layout.html" %}
 
-    {% block tail %}
+    {% block tail_js %}
+    {{ super() }}
     <script type="text/javascript">
         console.log('hello world');
     </script>
     {% endblock %}
-
     ```
+
+**Alternative method (Full override):**
+
+If your customizations are so extensive that using blocks isn't sufficient, you can completely replace a default template. To do this, copy the existing template from SQLAdmin's `templates/sqladmin` into your project's `templates/sqladmin` directory without using `extends`. It will then be loaded instead of the one in the package, bypassing the original entirely.
 
 ## Customizing Jinja2 environment
 
@@ -123,3 +126,28 @@ Usage in templates:
     {{ value }} is not file path
 {% endif %}
 ```
+
+# Template Blocks
+The SQLAdmin templates use blocks to allow easy customization and extension of the templates. Here is a list of the main blocks available SQLAdmin templates:
+
+| Block Name | Description |
+|------------|-------------|
+| `head_meta`  | Page metadata in the header |
+| `head_css`    | Various CSS includes in the header |
+| `head`     | Empty block in HTML head, in case you want to put something there |
+| `head_tail`  | Additional HTML elements before the closing `</head>` tag |
+| `body`     | The main body of the page |
+| `main`     | The main container for the page content |
+| `content`  | The main content area where page-specific content is rendered |
+| `tail`     | Additional HTML elements before the closing `</body>` tag |
+| `tail_js `  | Various JavaScript includes before the closing `</body>` tag |
+| `create_form` | The form used in the create view containing fields |
+| `edit_form` | The form used in the edit view containing fields |
+| `details_table` | The the div containing the records details table|
+| `submit_buttons_bottom` | The submit buttons at the bottom of create/edit views |
+| `action_buttons_bottom` | The action buttons at the bottom of details view |
+| `model_list_table` | The table displaying records in the list view |
+| `model_menu_bar` | The menu bar at the top of model list view |
+
+
+You can override these blocks in your custom templates to modify the layout and appearance of the admin interface as needed.
