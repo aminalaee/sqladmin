@@ -408,27 +408,29 @@ async def test_middleware_passes_through_non_http_scope() -> None:
 def test_fallback_without_babel() -> None:
     import sqladmin.i18n as i18n_module
 
-    with mock.patch.dict(sys.modules):
-        for name in list(sys.modules):
-            if name == "babel" or name.startswith("babel."):
-                sys.modules[name] = None  # force ImportError on reload
+    try:
+        with mock.patch.dict(sys.modules):
+            for name in list(sys.modules):
+                if name == "babel" or name.startswith("babel."):
+                    sys.modules[name] = None  # force ImportError on reload
+            importlib.reload(i18n_module)
+
+            assert i18n_module.gettext("Logout") == "Logout"
+            assert i18n_module.ngettext("a", "b", 1) == "a"
+            assert i18n_module.ngettext("a", "b", 2) == "b"
+            assert i18n_module.lazy_gettext("Save") == "Save"
+            assert i18n_module.get_locale() == DEFAULT_LOCALE
+            i18n_module.set_locale("az")  # no-op, must not raise
+            assert i18n_module.get_locale_display_name("az") == "az"
+            assert i18n_module.format_date(datetime.date(2026, 6, 15))
+            assert i18n_module.format_time(datetime.time(9, 30))
+            tz = datetime.timezone(datetime.timedelta(hours=4))
+            assert i18n_module.format_datetime(
+                datetime.datetime(2026, 6, 15, 9, 30), tzinfo=tz
+            )
+            assert i18n_module._negotiate_from_header("de", ["en", "de"]) == "de"
+            assert i18n_module._negotiate_from_header("zz", ["en", "de"]) is None
+    finally:
+        # Always restore the real, babel-backed module for the rest of the
+        # suite, even if an assertion above fails.
         importlib.reload(i18n_module)
-
-        assert i18n_module.gettext("Logout") == "Logout"
-        assert i18n_module.ngettext("a", "b", 1) == "a"
-        assert i18n_module.ngettext("a", "b", 2) == "b"
-        assert i18n_module.lazy_gettext("Save") == "Save"
-        assert i18n_module.get_locale() == DEFAULT_LOCALE
-        i18n_module.set_locale("az")  # no-op, must not raise
-        assert i18n_module.get_locale_display_name("az") == "az"
-        assert i18n_module.format_date(datetime.date(2026, 6, 15))
-        assert i18n_module.format_time(datetime.time(9, 30))
-        tz = datetime.timezone(datetime.timedelta(hours=4))
-        assert i18n_module.format_datetime(
-            datetime.datetime(2026, 6, 15, 9, 30), tzinfo=tz
-        )
-        assert i18n_module._negotiate_from_header("de", ["en", "de"]) == "de"
-        assert i18n_module._negotiate_from_header("zz", ["en", "de"]) is None
-
-    # Restore the real, babel-backed module for the rest of the suite.
-    importlib.reload(i18n_module)
