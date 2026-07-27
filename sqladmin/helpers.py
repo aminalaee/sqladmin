@@ -294,10 +294,24 @@ def get_primary_keys(model: Any) -> tuple[Column, ...]:
     return tuple(sa_inspect(model).mapper.primary_key)
 
 
+def _coerce_pk_value(value: Any) -> Any:
+    """Unwrap an Enum primary key to its underlying value.
+
+    SQLAlchemy returns the Enum member itself (e.g. ``Color.RED``) for a
+    column typed as an Enum, not its underlying value (e.g. ``"red"``).
+    Object identifiers are embedded in admin URLs, so the raw member's
+    ``str()`` (``"Color.RED"``) would produce a broken, non-round-trippable
+    path. Non-Enum values pass through unchanged.
+    """
+    if isinstance(value, enum.Enum):
+        return value.value
+    return value
+
+
 def get_object_identifier(obj: Any) -> Any:
     """Returns a value that uniquely identifies this object."""
     primary_keys = get_primary_keys(obj)
-    values = [getattr(obj, pk.name) for pk in primary_keys]
+    values = [_coerce_pk_value(getattr(obj, pk.name)) for pk in primary_keys]
 
     # Unaltered value for tables with a single primary key
     if len(values) == 1:
