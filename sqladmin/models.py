@@ -1374,6 +1374,27 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
         * ``Response`` -- return a custom Starlette ``Response`` directly.
         """
 
+    async def list_context(self, request: Request) -> dict[str, Any]:
+        """Extra template context for the list page.
+
+        Return a mapping that is merged into the base context for the list
+        template. Returns ``{}`` by default. Core keys (``model_view``,
+        ``pagination``, ...) always take precedence, so this can only add keys.
+        """
+        return {}
+
+    async def create_context(self, request: Request) -> dict[str, Any]:
+        """Extra template context for the create page. See :meth:`list_context`."""
+        return {}
+
+    async def edit_context(self, request: Request) -> dict[str, Any]:
+        """Extra template context for the edit page. See :meth:`list_context`."""
+        return {}
+
+    async def details_context(self, request: Request) -> dict[str, Any]:
+        """Extra template context for the details page. See :meth:`list_context`."""
+        return {}
+
     def _build_column_pairs(
         self,
         pair: dict[Any, Any],
