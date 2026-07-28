@@ -4,7 +4,7 @@ import datetime
 import pathlib
 from contextvars import ContextVar
 from dataclasses import dataclass
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from starlette.datastructures import MutableHeaders
 from starlette.requests import HTTPConnection
@@ -52,7 +52,7 @@ try:
 
     BABEL_INSTALLED = True
 
-    translations: Dict[str, NullTranslations] = {
+    translations: dict[str, NullTranslations] = {
         locale: Translations.load(
             dirname=pathlib.Path(__file__).parent.joinpath("translations"),
             locales=[locale],
@@ -175,7 +175,7 @@ try:
 
     def format_datetime(
         value: datetime.datetime,
-        format: Optional[str] = None,
+        format: str | None = None,
         tzinfo: Any = None,
     ) -> str:
         """Format a datetime for the active locale using Babel.
@@ -190,7 +190,7 @@ try:
         """
         return dates.format_datetime(value, format or "medium", tzinfo, get_locale())
 
-    def format_date(value: datetime.date, format: Optional[str] = None) -> str:
+    def format_date(value: datetime.date, format: str | None = None) -> str:
         """Format a date for the active locale using Babel.
 
         Args:
@@ -204,7 +204,7 @@ try:
 
     def format_time(
         value: datetime.time,
-        format: Optional[str] = None,
+        format: str | None = None,
         tzinfo: Any = None,
     ) -> str:
         """Format a time for the active locale using Babel.
@@ -267,19 +267,19 @@ except ImportError:
 
     def format_datetime(
         value: datetime.datetime,
-        format: Optional[str] = None,
+        format: str | None = None,
         tzinfo: Any = None,
     ) -> str:
         if tzinfo is not None:
             value = value.astimezone(tzinfo)
         return value.strftime(format or "%B %d, %Y %H:%M:%S")
 
-    def format_date(value: datetime.date, format: Optional[str] = None) -> str:
+    def format_date(value: datetime.date, format: str | None = None) -> str:
         return value.strftime(format or "%B %d, %Y")
 
     def format_time(
         value: datetime.time,
-        format: Optional[str] = None,
+        format: str | None = None,
         tzinfo: Any = None,
     ) -> str:
         return value.strftime(format or "%H:%M:%S")
@@ -321,19 +321,19 @@ class I18nConfig:
     """
 
     default_locale: str = DEFAULT_LOCALE
-    language_cookie_name: Optional[str] = "language"
-    language_header_name: Optional[str] = "Accept-Language"
-    language_switcher: Optional[List[str]] = None
+    language_cookie_name: str | None = "language"
+    language_header_name: str | None = "Accept-Language"
+    language_switcher: list[str] | None = None
 
 
-def _negotiate_from_header(header: str, available: List[str]) -> Optional[str]:
+def _negotiate_from_header(header: str, available: list[str]) -> str | None:
     """Pick the best supported locale from an ``Accept-Language`` header."""
     try:
         from babel.core import negotiate_locale
     except ImportError:
         return header if header in available else None
 
-    preferred: List[tuple[float, str]] = []
+    preferred: list[tuple[float, str]] = []
     for part in header.split(","):
         token = part.strip()
         if not token:

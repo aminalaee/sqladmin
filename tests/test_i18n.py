@@ -1,7 +1,7 @@
 import datetime
 import importlib
 import sys
-from typing import Generator, Optional
+from collections.abc import Generator
 from unittest import mock
 
 import pytest
@@ -182,7 +182,7 @@ def test_format_date_and_time_run() -> None:
         ("", None),
     ],
 )
-def test_negotiate_from_header(header: str, expected: Optional[str]) -> None:
+def test_negotiate_from_header(header: str, expected: str | None) -> None:
     from sqladmin.i18n import _negotiate_from_header
 
     assert _negotiate_from_header(header, SUPPORTED_LOCALES) == expected

@@ -30,7 +30,6 @@ from __future__ import annotations
 import json
 import os
 import sys
-from typing import Dict
 
 from babel.messages.catalog import Catalog
 from babel.messages.mofile import write_mo
@@ -49,7 +48,7 @@ def build(mappings_path: str, output_root: str = OUTPUT_ROOT) -> None:
         output_root: Directory the ``gettext`` tree is written to.
     """
     with open(mappings_path, encoding="utf-8") as file:
-        mappings: Dict[str, Dict[str, str]] = json.load(file)
+        mappings: dict[str, dict[str, str]] = json.load(file)
 
     # The full source-string set is the union of every locale's keys, so a
     # partially translated locale still lists all messages.
