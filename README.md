@@ -29,7 +29,9 @@
 ## DEMO
 
 You can access [deployed demo](https://sqladmin-demo.vercel.app/admin)
+
 Creds: `superadmin`:`superadmin`
+
 More info: [Check repo](https://github.com/smithyhq/sqladmin-demo)
 
 ## General info
