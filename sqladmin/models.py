@@ -1417,9 +1417,7 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
 
     async def insert_model(self, request: Request, data: dict) -> Any:
         obj = await Query(self).insert(data, request)
-        await self._emit_audit(
-            request, "create", get_object_identifier(obj), data
-        )
+        await self._emit_audit(request, "create", get_object_identifier(obj), data)
         return obj
 
     async def update_model(self, request: Request, pk: str, data: dict) -> Any:

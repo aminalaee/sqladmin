@@ -4,7 +4,7 @@ import logging
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
-from typing import TYPE_CHECKING, Any, Dict, Optional
+from typing import TYPE_CHECKING, Any
 
 from sqladmin.helpers import is_async_session_maker
 
@@ -18,8 +18,6 @@ __all__ = [
     "LoggingAuditBackend",
     "DBAuditBackend",
 ]
-
-logger = logging.getLogger("sqladmin.audit")
 
 
 @dataclass
@@ -36,15 +34,13 @@ class AuditEntry:
     identity: str
     """The ``ModelView.identity`` the change happened on."""
 
-    pk: Optional[str] = None
+    pk: str | None = None
     """The affected object's identifier, if known."""
 
-    changes: Optional[Dict[str, Any]] = None
+    changes: dict[str, Any] | None = None
     """The submitted field values for the change (``None`` for deletes)."""
 
-    timestamp: datetime = field(
-        default_factory=lambda: datetime.now(timezone.utc)
-    )
+    timestamp: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
     """When the change happened, in UTC."""
 
 
@@ -56,14 +52,15 @@ class AuditBackend(ABC):
     """
 
     @abstractmethod
-    async def log(self, entry: "AuditEntry", request: "Request") -> None:
-        ...  # pragma: no cover
+    async def log(
+        self, entry: AuditEntry, request: Request
+    ) -> None: ...  # pragma: no cover
 
 
 class NullAuditBackend(AuditBackend):
     """The default backend: records nothing."""
 
-    async def log(self, entry: "AuditEntry", request: "Request") -> None:
+    async def log(self, entry: AuditEntry, request: Request) -> None:
         return None
 
 
@@ -82,7 +79,7 @@ class LoggingAuditBackend(AuditBackend):
         self.logger = logging.getLogger(logger_name)
         self.level = level
 
-    async def log(self, entry: "AuditEntry", request: "Request") -> None:
+    async def log(self, entry: AuditEntry, request: Request) -> None:
         self.logger.log(
             self.level,
             "audit action=%s identity=%s pk=%s changes=%s",
@@ -131,26 +128,26 @@ class DBAuditBackend(AuditBackend):
         self.session_maker = session_maker
         self.is_async = is_async_session_maker(session_maker)
 
-    async def get_actor(self, request: "Request") -> Any:
+    async def get_actor(self, request: Request) -> Any:
         """Resolve the actor (e.g. your user's PK) for this request.
 
         Override to read your authentication/session. Returns ``None`` by
-        default.
+        default. This value is passed to :meth:`build_row`
+        to be stored in the audit model.
         """
         return None
 
-    def build_row(
-        self, entry: "AuditEntry", actor: Any, request: "Request"
-    ) -> Any:
+    def build_row(self, entry: AuditEntry, actor: Any, request: Request) -> Any:
         """Return an instance of your audit model for ``entry``.
 
-        Must be overridden by subclasses.
+        Must be overridden by subclasses. This method is called with the actor value
+        returned by :meth:`get_actor`.
         """
         raise NotImplementedError(
             "Subclasses of DBAuditBackend must implement build_row()."
         )
 
-    async def log(self, entry: "AuditEntry", request: "Request") -> None:
+    async def log(self, entry: AuditEntry, request: Request) -> None:
         actor = await self.get_actor(request)
         row = self.build_row(entry, actor, request)
 
