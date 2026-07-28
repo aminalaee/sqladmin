@@ -117,6 +117,31 @@ def test_ckeditor5_field_init_template() -> None:
     assert CKEditor5Field.editor_init_template == "sqladmin/editors/ckeditor5.html"
 
 
+@pytest.mark.parametrize(
+    "field_class",
+    [CKEditor5Field, TinyMCEField, QuillField, SummernoteField],
+)
+def test_editor_fields_suppress_html5_required(field_class: type) -> None:
+    """Hidden required textareas block Chrome submit ("not focusable")."""
+    from wtforms.validators import InputRequired
+
+    field = _bind(field_class, validators=[InputRequired()])
+    assert field.flags.required
+    html = str(field())
+    assert "required" not in html
+
+
+def test_create_page_editor_textarea_not_html_required() -> None:
+    class PostAdmin(ModelView, model=Post):
+        form_overrides = {"content": CKEditor5Field}
+
+    with _make_client(PostAdmin) as c:
+        response = c.get("/admin/post/create")
+    assert 'id="content"' in response.text
+    assert 'id="content" name="content" required' not in response.text
+    assert "removeAttribute" in response.text
+
+
 def test_tinymce_field_media() -> None:
     field = _bind(TinyMCEField, api_key="my-key")
     assert any("tinymce.min.js" in url for url in field.media.js)
