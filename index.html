@@ -493,6 +493,32 @@
   
   
     <li class="md-nav__item">
+      <a href="./internationalization/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Internationalization
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="./model_convertors/" class="md-nav__link">
         
   
@@ -527,10 +553,10 @@
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_8" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_9" >
         
           
-          <label class="md-nav__link" for="__nav_8" id="__nav_8_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_9" id="__nav_9_label" tabindex="0">
             
   
   
@@ -547,8 +573,8 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_8_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_8">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_9_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_9">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -795,10 +821,10 @@
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_9" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_10" >
         
           
-          <label class="md-nav__link" for="__nav_9" id="__nav_9_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_10" id="__nav_10_label" tabindex="0">
             
   
   
@@ -815,8 +841,8 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_9_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_9">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_10_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_10">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -1068,6 +1094,9 @@
   
 
 
+<!-- The introduction page is the project README, included verbatim so the two
+     never drift apart. Edit README.md at the repository root instead. -->
+
 <p align="center">
 <a href="https://github.com/smithyhq/sqladmin">
     <img width="400px" src="https://raw.githubusercontent.com/smithyhq/sqladmin/main/docs/assets/images/banner.png" alt"SQLAdmin">
@@ -1109,8 +1138,39 @@
 <p><strong>Source Code</strong>: <a href="https://github.com/smithyhq/sqladmin">https://github.com/smithyhq/sqladmin</a></p>
 <hr />
 <h2 id="installation">Installation</h2>
+<p>Install using <code>pip</code>:</p>
 <div class="highlight"><pre><span></span><code>$<span class="w"> </span>pip<span class="w"> </span>install<span class="w"> </span>sqladmin
-$<span class="w"> </span>pip<span class="w"> </span>install<span class="w"> </span>sqladmin<span class="o">[</span>full<span class="o">]</span>
+</code></pre></div>
+<p>Some features need extra packages, which are grouped into optional extras:</p>
+<table>
+<thead>
+<tr>
+<th>Extra</th>
+<th>Installs</th>
+<th>Enables</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>auth</code></td>
+<td><code>itsdangerous</code></td>
+<td>Session-backed <a href="https://smithyhq.github.io/sqladmin/authentication/">authentication</a></td>
+</tr>
+<tr>
+<td><code>i18n</code></td>
+<td><code>babel</code></td>
+<td><a href="https://smithyhq.github.io/sqladmin/internationalization/">Internationalization</a> and localization</td>
+</tr>
+<tr>
+<td><code>full</code></td>
+<td>both of the above</td>
+<td>Everything</td>
+</tr>
+</tbody>
+</table>
+<div class="highlight"><pre><span></span><code>$<span class="w"> </span>pip<span class="w"> </span>install<span class="w"> </span><span class="s2">&quot;sqladmin[auth]&quot;</span>
+$<span class="w"> </span>pip<span class="w"> </span>install<span class="w"> </span><span class="s2">&quot;sqladmin[i18n]&quot;</span>
+$<span class="w"> </span>pip<span class="w"> </span>install<span class="w"> </span><span class="s2">&quot;sqladmin[full]&quot;</span>
 </code></pre></div>
 <hr />
 <h2 id="screenshots">Screenshots</h2>
