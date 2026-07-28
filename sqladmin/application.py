@@ -40,6 +40,7 @@ from sqladmin._types import ENGINE_TYPE, SESSION_MAKER
 from sqladmin.ajax import QueryAjaxModelLoader
 from sqladmin.authentication import AuthenticationBackend, login_required
 from sqladmin.editors import collect_form_media
+from sqladmin.fieldsets import group_form_fields
 from sqladmin.flash import get_flashed_messages
 from sqladmin.forms import WTFORMS_ATTRS, WTFORMS_ATTRS_REVERSED
 from sqladmin.helpers import (
@@ -162,6 +163,7 @@ class BaseAdmin:
         templates.env.globals["get_flashed_messages"] = get_flashed_messages
         templates.env.globals["Secret"] = Secret
         templates.env.globals["collect_form_media"] = collect_form_media
+        templates.env.globals["group_form_fields"] = group_form_fields
 
         templates.env.add_extension("jinja2.ext.i18n")
         if self.i18n_config is not None:
@@ -746,7 +748,9 @@ class Admin(BaseAdminView):
         identity = request.path_params["identity"]
         model_view = self._find_model_view(identity)
 
-        Form = await model_view.scaffold_form(model_view._form_create_rules)
+        Form = await model_view.scaffold_form(
+            model_view._form_create_rules, model_view.form_fieldsets
+        )
 
         if request.method == "GET":
             form = Form()
@@ -810,7 +814,9 @@ class Admin(BaseAdminView):
         identity = request.path_params["identity"]
         model_view = self._find_model_view(identity)
 
-        Form = await model_view.scaffold_form(model_view._form_edit_rules)
+        Form = await model_view.scaffold_form(
+            model_view._form_edit_rules, model_view.form_fieldsets
+        )
         model = await model_view.get_object_for_edit(request)
         if not model:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)

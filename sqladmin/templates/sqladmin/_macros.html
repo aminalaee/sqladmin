@@ -81,7 +81,38 @@
 </div>
 {% endmacro %}
 
-{% macro render_form_fields(form, form_opts=None, ajax_lookup_url="") %}
+{% macro render_form_fieldset(group, field_kwargs={}, ajax_lookup_url="") %}
+{% if group.title is none and not group.description %}
+{% for f in group.fields %}
+{{ render_field(f, field_kwargs, ajax_lookup_url=ajax_lookup_url) }}
+{% endfor %}
+{% else %}
+<div class="mb-4 sqladmin-fieldset{% for cls in group.classes %} {{ cls }}{% endfor %}">
+  {% if group.title %}
+  {% if group.collapsible %}
+  <a class="d-flex align-items-center text-reset text-decoration-none mb-2{% if group.collapsed %} collapsed{% endif %}"
+    data-bs-toggle="collapse" href="#{{ group.identifier }}" role="button"
+    aria-expanded="{{ 'false' if group.collapsed else 'true' }}" aria-controls="{{ group.identifier }}">
+    <h4 class="mb-0">{{ group.title }}</h4>
+    <i class="fa fa-chevron-down ms-2"></i>
+  </a>
+  {% else %}
+  <h4 class="mb-2">{{ group.title }}</h4>
+  {% endif %}
+  {% endif %}
+  <div class="{% if group.collapsible %}collapse{% if not group.collapsed %} show{% endif %}{% endif %}" id="{{ group.identifier }}">
+    {% if group.description %}
+    <p class="text-muted">{{ group.description }}</p>
+    {% endif %}
+    {% for f in group.fields %}
+    {{ render_field(f, field_kwargs, ajax_lookup_url=ajax_lookup_url) }}
+    {% endfor %}
+  </div>
+</div>
+{% endif %}
+{% endmacro %}
+
+{% macro render_form_fields(form, form_opts=None, ajax_lookup_url="", fieldsets=None) %}
 {% if form.hidden_tag is defined %}
 {{ form.hidden_tag() }}
 {% else %}
@@ -90,7 +121,13 @@
 {% endfor %}
 {% endif %}
 
+{% if not fieldsets %}
 {% for f in form if f.widget.input_type != 'hidden' %}
 {{ render_field(f, kwargs, ajax_lookup_url=ajax_lookup_url) }}
 {% endfor %}
+{% else %}
+{% for group in group_form_fields(form, fieldsets) %}
+{{ render_form_fieldset(group, kwargs, ajax_lookup_url) }}
+{% endfor %}
+{% endif %}
 {% endmacro %}

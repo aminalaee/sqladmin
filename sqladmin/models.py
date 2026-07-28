@@ -46,6 +46,7 @@ from sqladmin._types import (
 )
 from sqladmin.ajax import create_ajax_loader
 from sqladmin.exceptions import InvalidModelError
+from sqladmin.fieldsets import FieldsetConfig, validate_fieldsets
 from sqladmin.formatters import BASE_FORMATTERS
 from sqladmin.forms import (
     WTFORMS_ATTRS,
@@ -715,6 +716,33 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
 
     form_edit_rules: ClassVar[list[str]] = []
     """Customized rules for the edit form. Cannot be specified with `form_rules`."""
+
+    form_fieldsets: ClassVar[Sequence[FieldsetConfig]] = []
+    """Group the create and edit form fields into labelled sections.
+
+    Fields left out of every fieldset are rendered, ungrouped, after the
+    declared ones. Naming a field that the form does not have raises
+    `InvalidModelError`.
+
+    ???+ example
+        ```python
+        class UserAdmin(ModelView, model=User):
+            # Either the typed form...
+            form_fieldsets = [
+                Fieldset(None, [User.name, User.email]),
+                Fieldset("Permissions", [User.is_admin], collapsed=True),
+            ]
+
+            # ...or Django's (title, options) tuples.
+            form_fieldsets = [
+                (None, {"fields": [User.name, User.email]}),
+                ("Permissions", {
+                    "fields": [User.is_admin],
+                    "classes": ["collapse"],
+                }),
+            ]
+        ```
+    """
 
     # General options
     column_labels: ClassVar[dict[MODEL_ATTR, str]] = {}
@@ -1442,9 +1470,12 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
         """
 
     async def scaffold_form(
-        self, rules: builtins.list[str] | None = None
+        self,
+        rules: builtins.list[str] | None = None,
+        fieldsets: Sequence[FieldsetConfig] | None = None,
     ) -> type[Form]:
         if self.form is not None:
+            validate_fieldsets(fieldsets, self.form)
             return self.form
 
         self._ajax_relation_names = set(self._form_ajax_refs.keys())
@@ -1464,6 +1495,7 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
         )
         if rules:
             self._validate_form_class(rules, form)
+        validate_fieldsets(fieldsets, form)
         return form
 
     def search_placeholder(self) -> str:

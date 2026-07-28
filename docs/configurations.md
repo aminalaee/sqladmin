@@ -407,6 +407,42 @@ The forms are based on `WTForms` package and include the following options:
 - `form_rules`: List of form rules to manage rendering and behaviour of form.
 - `form_create_rules`: List of form rules to manage rendering and behaviour of form in create page.
 - `form_edit_rules`: List of form rules to manage rendering and behaviour of form in edit page.
+- `form_fieldsets`: Group the create and edit form fields into labelled sections. The same layout is used on both pages.
+
+!!! example
+
+    ```python
+    from sqladmin import Fieldset
+
+    class UserAdmin(ModelView, model=User):
+        form_fieldsets = [
+            Fieldset(None, [User.name, User.email]),
+            Fieldset(
+                "Permissions",
+                [User.is_admin, User.is_active],
+                description="What this user is allowed to reach.",
+                collapsed=True,
+            ),
+        ]
+    ```
+
+    Django's `(title, options)` tuples work too, so a `ModelAdmin` declaration can be
+    pasted across unchanged. `classes: ["collapse"]` is equivalent to `collapsed=True`,
+    and any other class is applied to the group's wrapper element.
+
+    ```python
+    class UserAdmin(ModelView, model=User):
+        form_fieldsets = [
+            (None, {"fields": [User.name, User.email]}),
+            (
+                "Permissions",
+                {"fields": [User.is_admin], "classes": ["collapse"]},
+            ),
+        ]
+    ```
+
+    Fields left out of every fieldset render, ungrouped, after the declared ones.
+    Naming a field the form does not have raises `InvalidModelError`.
 
 !!! example
 
