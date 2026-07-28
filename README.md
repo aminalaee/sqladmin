@@ -26,6 +26,14 @@
 
 # SQLAlchemy Admin for Starlette/FastAPI
 
+## DEMO
+
+You can access [deployed demo](https://sqladmin-demo.vercel.app/admin)
+Creds: `superadmin`:`superadmin`
+More info: [Check repo](https://github.com/smithyhq/sqladmin-demo)
+
+## General info
+
 SQLAdmin is a flexible Admin interface for SQLAlchemy models.
 
 Main features include:
@@ -55,11 +63,11 @@ $ pip install sqladmin
 
 Some features need extra packages, which are grouped into optional extras:
 
-| Extra | Installs | Enables |
-| --- | --- | --- |
-| `auth` | `itsdangerous` | Session-backed [authentication](https://smithyhq.github.io/sqladmin/authentication/) |
-| `i18n` | `babel` | [Internationalization](https://smithyhq.github.io/sqladmin/internationalization/) and localization |
-| `full` | both of the above | Everything |
+| Extra  | Installs          | Enables                                                                                            |
+| ------ | ----------------- | -------------------------------------------------------------------------------------------------- |
+| `auth` | `itsdangerous`    | Session-backed [authentication](https://smithyhq.github.io/sqladmin/authentication/)               |
+| `i18n` | `babel`           | [Internationalization](https://smithyhq.github.io/sqladmin/internationalization/) and localization |
+| `full` | both of the above | Everything                                                                                         |
 
 ```shell
 $ pip install "sqladmin[auth]"
