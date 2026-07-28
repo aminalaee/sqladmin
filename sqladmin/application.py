@@ -3,6 +3,7 @@ from __future__ import annotations
 import inspect
 import io
 import logging
+import warnings
 from collections.abc import Awaitable, Callable, Sequence
 from pathlib import Path
 from types import MethodType
@@ -17,6 +18,7 @@ from jinja2 import ChoiceLoader, FileSystemLoader, PackageLoader, PrefixLoader
 from sqlalchemy.engine import Engine
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 from sqlalchemy.orm import Session, sessionmaker
+from starlette import status
 from starlette.applications import Starlette
 from starlette.datastructures import URL, FormData, MultiDict, UploadFile
 from starlette.exceptions import HTTPException
@@ -44,6 +46,15 @@ from sqladmin.helpers import (
     get_object_identifier,
     is_async_session_maker,
     slugify_action_name,
+)
+from sqladmin.i18n import (
+    BABEL_INSTALLED,
+    I18nConfig,
+    LocaleMiddleware,
+    get_locale,
+    get_locale_display_name,
+    gettext,
+    ngettext,
 )
 from sqladmin.models import BaseView, ModelView
 from sqladmin.secret import Secret
@@ -79,6 +90,7 @@ class BaseAdmin:
         templates_dir: str = "templates",
         middlewares: Sequence[Middleware] | None = None,
         authentication_backend: AuthenticationBackend | None = None,
+        i18n_config: I18nConfig | None = None,
     ) -> None:
         self.app = app
         self.engine = engine
@@ -89,6 +101,15 @@ class BaseAdmin:
         self.logo_width = logo_width
         self.logo_height = logo_height
         self.favicon_url = favicon_url
+        self.i18n_config = i18n_config
+        if i18n_config is not None and not BABEL_INSTALLED:
+            warnings.warn(
+                "i18n_config was provided but the 'babel' package is not "
+                "installed; the interface will not be translated. Install it "
+                "with `pip install sqladmin[i18n]`.",
+                UserWarning,
+                stacklevel=3,
+            )
 
         if session_maker:
             self.session_maker = session_maker
@@ -107,6 +128,15 @@ class BaseAdmin:
         self.authentication_backend = authentication_backend
         if authentication_backend:
             middlewares.extend(authentication_backend.middlewares)
+
+        if self.i18n_config is not None:
+            middlewares.append(
+                Middleware(
+                    LocaleMiddleware,
+                    i18n_config=self.i18n_config,
+                    cookie_path=self.base_url or "/",
+                )
+            )
 
         self.admin = Starlette(middleware=middlewares)
         self.templates = self.init_templating_engine()
@@ -133,6 +163,20 @@ class BaseAdmin:
         templates.env.globals["Secret"] = Secret
         templates.env.globals["collect_form_media"] = collect_form_media
 
+        templates.env.add_extension("jinja2.ext.i18n")
+        if self.i18n_config is not None:
+            templates.env.globals["i18n_config"] = self.i18n_config
+            templates.env.globals["get_locale"] = get_locale
+            templates.env.globals["get_locale_display_name"] = get_locale_display_name
+            templates.env.install_gettext_callables(  # type: ignore[attr-defined]
+                gettext, ngettext, newstyle=True
+            )
+        else:
+            # No i18n configured: keep templates that use ``_("...")`` working
+            # by installing identity (null) translation callables.
+            templates.env.globals["i18n_config"] = I18nConfig()
+            templates.env.install_null_translations(newstyle=True)  # type: ignore[attr-defined]
+
         return templates
 
     @property
@@ -150,7 +194,7 @@ class BaseAdmin:
             if isinstance(view, ModelView) and view.identity == identity:
                 return view
 
-        raise HTTPException(status_code=404)
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
 
     def add_view(self, view: type[ModelView] | type[BaseView]) -> None:
         """Add ModelView or BaseView classes to Admin.
@@ -314,17 +358,21 @@ class BaseAdminView(BaseAdmin):
     async def _list(self, request: Request) -> None:
         model_view = self._find_model_view(request.path_params["identity"])
         if not model_view.is_accessible(request):
-            raise HTTPException(status_code=403)
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN)
 
     async def _create(self, request: Request) -> None:
         model_view = self._find_model_view(request.path_params["identity"])
         if not model_view.can_create or not model_view.is_accessible(request):
-            raise HTTPException(status_code=403)
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN)
+
+        can_create = await model_view.check_can_create(request)
+        if not can_create:
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN)
 
     async def _details(self, request: Request) -> None:
         model_view = self._find_model_view(request.path_params["identity"])
         if not model_view.can_view_details or not model_view.is_accessible(request):
-            raise HTTPException(status_code=403)
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN)
 
         if hasattr(model_view, "check_can_view_details"):
             pk = request.path_params.get("pk")
@@ -337,13 +385,13 @@ class BaseAdminView(BaseAdmin):
                 request, model
             )
             if can_view_details_row is not True:
-                raise HTTPException(status_code=403)
+                raise HTTPException(status_code=status.HTTP_403_FORBIDDEN)
 
     async def _delete(self, request: Request) -> None:
         model_view = self._find_model_view(request.path_params["identity"])
 
         if not model_view.can_delete or not model_view.is_accessible(request):
-            raise HTTPException(status_code=403)
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN)
 
         if hasattr(model_view, "check_can_delete"):
             pks = request.query_params.get("pks")
@@ -357,12 +405,12 @@ class BaseAdminView(BaseAdmin):
                 model = await model_view.get_object_for_details(request)
                 can_delete_row = await model_view.check_can_delete(request, model)
                 if can_delete_row is not True:
-                    raise HTTPException(status_code=403)
+                    raise HTTPException(status_code=status.HTTP_403_FORBIDDEN)
 
     async def _edit(self, request: Request) -> None:
         model_view = self._find_model_view(request.path_params["identity"])
         if not model_view.can_edit or not model_view.is_accessible(request):
-            raise HTTPException(status_code=403)
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN)
 
         if hasattr(model_view, "check_can_edit"):
             pk = request.path_params.get("pk")
@@ -373,30 +421,30 @@ class BaseAdminView(BaseAdmin):
             model = await model_view.get_object_for_details(request)
             can_edit_row = await model_view.check_can_edit(request, model)
             if can_edit_row is not True:
-                raise HTTPException(status_code=403)
+                raise HTTPException(status_code=status.HTTP_403_FORBIDDEN)
 
     async def _import(self, request: Request) -> None:
         model_view = self._find_model_view(request.path_params["identity"])
         if not model_view.is_accessible(request):
-            raise HTTPException(status_code=403)
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN)
 
         can_import = await model_view.check_can_import(request)
         if not can_import:
-            raise HTTPException(status_code=403)
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN)
 
     async def _export(self, request: Request) -> None:
         model_view = self._find_model_view(request.path_params["identity"])
         if not model_view.can_export or not model_view.is_accessible(request):
-            raise HTTPException(status_code=403)
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN)
         if request.path_params["export_type"] not in model_view.export_types:
-            raise HTTPException(status_code=404)
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
 
     async def _file_access(self, request: Request) -> ModelView:
         """Authorize file preview/download like the details view."""
 
         model_view = self._find_model_view(request.path_params["identity"])
         if not model_view.can_view_details or not model_view.is_accessible(request):
-            raise HTTPException(status_code=403)
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN)
 
         if hasattr(model_view, "check_can_view_details"):
             pk = request.path_params.get("pk")
@@ -409,7 +457,7 @@ class BaseAdminView(BaseAdmin):
                 request, model
             )
             if can_view_details_row is not True:
-                raise HTTPException(status_code=403)
+                raise HTTPException(status_code=status.HTTP_403_FORBIDDEN)
 
         return model_view
 
@@ -462,6 +510,7 @@ class Admin(BaseAdminView):
         templates_dir: str = "templates",
         authentication_backend: AuthenticationBackend | None = None,
         static_files_kwargs: dict[str, Any] | None = None,
+        i18n_config: I18nConfig | None = None,
     ) -> None:
         """
         Args:
@@ -475,6 +524,9 @@ class Admin(BaseAdminView):
             logo_height: Height of the logo image in pixels. Defaults to 64.
             favicon_url: URL of favicon to be displayed.
             static_files_kwargs: Extra keyword arguments for Starlette StaticFiles.
+            i18n_config: Internationalization configuration. When provided, the
+                interface is translated per request and, if
+                ``language_switcher`` is set, a language switcher is shown.
         """
 
         super().__init__(
@@ -490,6 +542,7 @@ class Admin(BaseAdminView):
             templates_dir=templates_dir,
             middlewares=middlewares,
             authentication_backend=authentication_backend,
+            i18n_config=i18n_config,
         )
 
         static_files_kwargs = {**(static_files_kwargs or {}), "packages": ["sqladmin"]}
@@ -589,7 +642,8 @@ class Admin(BaseAdminView):
 
         if request_page > pagination.page:
             return RedirectResponse(
-                request.url.include_query_params(page=pagination.page), status_code=302
+                request.url.include_query_params(page=pagination.page),
+                status_code=status.HTTP_302_FOUND,
             )
 
         context = {
@@ -614,7 +668,7 @@ class Admin(BaseAdminView):
         model = await model_view.get_object_for_details(request)
 
         if not model:
-            raise HTTPException(status_code=404)
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
 
         context = {
             "model_view": model_view,
@@ -645,7 +699,9 @@ class Admin(BaseAdminView):
             for pk in pks:
                 model = await model_view.get_object_for_delete(pk)
                 if not model:
-                    raise HTTPException(status_code=404, detail="Object not found")
+                    raise HTTPException(
+                        status_code=status.HTTP_404_NOT_FOUND, detail="Object not found"
+                    )
 
                 await model_view.delete_model(request, pk)
         except Exception as e:
@@ -712,7 +768,10 @@ class Admin(BaseAdminView):
 
         if not form.validate():
             return await self.templates.TemplateResponse(
-                request, model_view.create_template, context, status_code=400
+                request,
+                model_view.create_template,
+                context,
+                status_code=status.HTTP_400_BAD_REQUEST,
             )
 
         form_data_dict = self._denormalize_wtform_data(form.data, model_view.model)
@@ -722,7 +781,10 @@ class Admin(BaseAdminView):
             logger.exception(e)
             context["error"] = str(e)
             return await self.templates.TemplateResponse(
-                request, model_view.create_template, context, status_code=400
+                request,
+                model_view.create_template,
+                context,
+                status_code=status.HTTP_400_BAD_REQUEST,
             )
 
         override = await self._resolve_after_change_response(
@@ -737,7 +799,7 @@ class Admin(BaseAdminView):
             obj=obj,
             model_view=model_view,
         )
-        return RedirectResponse(url=url, status_code=302)
+        return RedirectResponse(url=url, status_code=status.HTTP_302_FOUND)
 
     @login_required
     async def edit(self, request: Request) -> Response:
@@ -751,7 +813,7 @@ class Admin(BaseAdminView):
         Form = await model_view.scaffold_form(model_view._form_edit_rules)
         model = await model_view.get_object_for_edit(request)
         if not model:
-            raise HTTPException(status_code=404)
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
         initial_data = await model_view.get_form_data_for_edit(model)
         context = {
             "obj": model,
@@ -770,7 +832,10 @@ class Admin(BaseAdminView):
 
         if not form.validate():
             return await self.templates.TemplateResponse(
-                request, model_view.edit_template, context, status_code=400
+                request,
+                model_view.edit_template,
+                context,
+                status_code=status.HTTP_400_BAD_REQUEST,
             )
 
         form_data_dict = self._denormalize_wtform_data(form.data, model)
@@ -785,7 +850,10 @@ class Admin(BaseAdminView):
             logger.exception(e)
             context["error"] = str(e)
             return await self.templates.TemplateResponse(
-                request, model_view.edit_template, context, status_code=400
+                request,
+                model_view.edit_template,
+                context,
+                status_code=status.HTTP_400_BAD_REQUEST,
             )
 
         override = await self._resolve_after_change_response(
@@ -800,7 +868,7 @@ class Admin(BaseAdminView):
             obj=obj,
             model_view=model_view,
         )
-        return RedirectResponse(url=url, status_code=302)
+        return RedirectResponse(url=url, status_code=status.HTTP_302_FOUND)
 
     @login_required
     async def export(self, request: Request) -> Response:
@@ -847,7 +915,7 @@ class Admin(BaseAdminView):
     async def login(self, request: Request) -> Response:
         if self.authentication_backend is None:
             raise HTTPException(
-                status_code=503,
+                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
                 detail="Authentication backend not configured.",
             )
 
@@ -859,30 +927,39 @@ class Admin(BaseAdminView):
         if not response:
             context["error"] = "Invalid credentials."
             return await self.templates.TemplateResponse(
-                request, "sqladmin/login.html", context, status_code=400
+                request,
+                "sqladmin/login.html",
+                context,
+                status_code=status.HTTP_400_BAD_REQUEST,
             )
 
         if isinstance(response, Response):
             return response
 
-        return RedirectResponse(request.url_for("admin:index"), status_code=302)
+        return RedirectResponse(
+            request.url_for("admin:index"), status_code=status.HTTP_302_FOUND
+        )
 
     async def logout(self, request: Request) -> Response:
         if self.authentication_backend is None:
             raise HTTPException(
-                status_code=503,
+                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
                 detail="Authentication backend not configured.",
             )
 
         response = await self.authentication_backend.logout(request)
 
         if not response:
-            return RedirectResponse(request.url_for("admin:login"), status_code=302)
+            return RedirectResponse(
+                request.url_for("admin:login"), status_code=status.HTTP_302_FOUND
+            )
 
         if isinstance(response, Response):
             return response
 
-        return RedirectResponse(request.url_for("admin:index"), status_code=302)
+        return RedirectResponse(
+            request.url_for("admin:index"), status_code=status.HTTP_302_FOUND
+        )
 
     @login_required
     async def file_download(self, request: Request) -> Response:
@@ -906,18 +983,18 @@ class Admin(BaseAdminView):
         model_view = self._find_model_view(identity)
 
         if not model_view.is_accessible(request):
-            raise HTTPException(status_code=403)
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN)
 
         name = request.query_params.get("name")
         term = request.query_params.get("term")
 
         if not name or not term:
-            raise HTTPException(status_code=400)
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST)
 
         try:
             loader: QueryAjaxModelLoader = model_view._form_ajax_refs[name]
         except KeyError as exc:
-            raise HTTPException(status_code=400) from exc
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST) from exc
 
         data = [loader.format(m) for m in await loader.get_list(term)]
         return JSONResponse({"results": data})

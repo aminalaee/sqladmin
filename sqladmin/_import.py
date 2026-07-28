@@ -11,6 +11,7 @@ from sqlalchemy import inspect as sa_inspect
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import Session
+from starlette import status
 from starlette.datastructures import MultiDict, UploadFile
 from starlette.requests import Request
 from starlette.responses import Response, StreamingResponse
@@ -32,10 +33,12 @@ class ImportUploadResult(NamedTuple):
     content: bytes | None
     continue_on_error: bool
     error: str | None = None
-    status_code: int = 400
+    status_code: int = status.HTTP_400_BAD_REQUEST
 
 
-def import_error_response(message: str, status_code: int = 400) -> Response:
+def import_error_response(
+    message: str, status_code: int = status.HTTP_400_BAD_REQUEST
+) -> Response:
     return Response(
         content=message,
         status_code=status_code,
@@ -91,7 +94,7 @@ async def handle_import_upload(
                 None,
                 continue_on_error,
                 "CSV file is too large.",
-                413,
+                status.HTTP_413_CONTENT_TOO_LARGE,
             )
     return ImportUploadResult(csv_content, continue_on_error)
 
