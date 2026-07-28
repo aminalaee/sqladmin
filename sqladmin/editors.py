@@ -6,6 +6,8 @@ from typing import Any
 from wtforms import Form
 from wtforms.fields import TextAreaField
 
+from sqladmin.fields import JSONField
+
 
 class FieldMedia:
     """
@@ -203,4 +205,46 @@ class SummernoteField(TextAreaField):
                 f"https://cdn.jsdelivr.net/npm/summernote@{self._VERSION}/dist/summernote-bs4.min.css"
             ],
             js=js,
+        )
+
+
+class JSONEditorField(JSONField):
+    """
+    A field rendered with the `JSONEditor <https://github.com/josdejong/jsoneditor>`_
+    widget for editing ``JSON``/``JSONB`` columns.
+
+    Inherits the JSON serialisation of :class:`sqladmin.fields.JSONField`, so
+    the stored value is a real JSON value (dict/list), not a string. Use it
+    through ``form_overrides`` and configure it with ``form_args``::
+
+        class ConfigAdmin(ModelView, model=Config):
+            form_overrides = {"data": JSONEditorField}
+            form_args = {"data": {"mode": "code"}}
+
+    Assets are loaded from a CDN. Pass ``version`` to pin a release and
+    ``mode`` to pick the initial editor mode (one of ``"tree"``, ``"code"``,
+    ``"form"``, ``"text"`` or ``"view"``).
+    """
+
+    editor_init_template = "sqladmin/editors/jsoneditor.html"
+
+    def __init__(
+        self,
+        *args: Any,
+        version: str = "10.1.0",
+        mode: str = "tree",
+        min_height: int = 300,
+        **kwargs: Any,
+    ) -> None:
+        self.version = version
+        self.mode = mode
+        self.min_height = min_height
+        super().__init__(*args, **kwargs)
+
+    @property
+    def media(self) -> FieldMedia:
+        base = f"https://cdn.jsdelivr.net/npm/jsoneditor@{self.version}/dist"
+        return FieldMedia(
+            css=[f"{base}/jsoneditor.min.css"],
+            js=[f"{base}/jsoneditor.min.js"],
         )
