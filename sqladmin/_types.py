@@ -35,6 +35,13 @@ ENGINE_TYPE = Engine | AsyncEngine
 MODEL_ATTR = str | InstrumentedAttribute
 SESSION_MAKER = sessionmaker | async_sessionmaker
 
+# Signature of a user supplied column formatter. The first argument is the model
+# *instance* being rendered, the second is the name of the attribute and the
+# optional third one is the current request.
+COLUMN_FORMATTER_TYPE: TypeAlias = (
+    Callable[[Any, Any], Any] | Callable[[Any, Any, Request], Any]
+)
+
 T = TypeVar("T")
 
 

@@ -37,6 +37,7 @@ from sqladmin._queries import Query
 from sqladmin._types import (
     _UNSET,
     BASE_FORMATTERS_TYPE,
+    COLUMN_FORMATTER_TYPE,
     MODEL_ATTR,
     SESSION_MAKER,
     ColumnFilter,
@@ -291,7 +292,7 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
         ```
     """
 
-    column_formatters: ClassVar[dict[MODEL_ATTR, Callable[..., Any]]] = {}
+    column_formatters: ClassVar[dict[MODEL_ATTR, COLUMN_FORMATTER_TYPE]] = {}
     """Dictionary of list view column formatters.
     Columns can either be string names or SQLAlchemy columns.
 
@@ -305,9 +306,9 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
     ???+ formatter
         ```python
         def formatter(model, attribute, request):
-            # `model` is model instance
-            # `attribute` is a Union[ColumnProperty, RelationshipProperty]
-            # `request` is a starlette.requests.Request
+            # `model` is the model instance
+            # `attribute` is the name of the attribute being rendered
+            # `request` is a starlette.requests.Request, and is optional
             pass
         ```
     """
@@ -427,7 +428,7 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
         ```
     """
 
-    column_formatters_detail: ClassVar[dict[MODEL_ATTR, Callable[..., Any]]] = {}
+    column_formatters_detail: ClassVar[dict[MODEL_ATTR, COLUMN_FORMATTER_TYPE]] = {}
     """Dictionary of details view column formatters.
     Columns can either be string names or SQLAlchemy columns.
 
@@ -441,9 +442,9 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
     ???+ formatter
         ```python
         def formatter(model, attribute, request):
-            # `model` is model instance
-            # `attribute` is a Union[ColumnProperty, RelationshipProperty]
-            # `request` is a starlette.requests.Request
+            # `model` is the model instance
+            # `attribute` is the name of the attribute being rendered
+            # `request` is a starlette.requests.Request, and is optional
             pass
         ```
     """
