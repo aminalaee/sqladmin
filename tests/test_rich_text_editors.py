@@ -432,3 +432,25 @@ def test_edit_page_loads_jsoneditor() -> None:
         response = c.get(f"/admin/config/edit/{config_id}")
     assert response.status_code == 200
     assert "jsoneditor.min.js" in response.text
+
+
+def test_tinymce_field_default_content_style() -> None:
+    field = _bind(TinyMCEField)
+    assert field.content_style == ""
+
+
+def test_tinymce_field_content_style() -> None:
+    field = _bind(TinyMCEField, content_style="body { font-size: 14px; }")
+    assert field.content_style == "body { font-size: 14px; }"
+
+
+def test_create_page_tinymce_content_style() -> None:
+    class PostAdmin(ModelView, model=Post):
+        form_overrides = {"content": TinyMCEField}
+        form_args = {"content": {"content_style": "body { color: red; }"}}
+
+    with _make_client(PostAdmin) as c:
+        response = c.get("/admin/post/create")
+    assert response.status_code == 200
+    assert "content_style" in response.text
+    assert "color: red" in response.text

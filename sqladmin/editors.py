@@ -114,12 +114,14 @@ class TinyMCEField(TextAreaField):
         plugins: str = "lists link table code wordcount",
         toolbar: str = "bold italic | link | code",
         min_height: int = 200,
+        content_style: str = "",
         **kwargs: Any,
     ) -> None:
         self.api_key = api_key
         self.plugins = plugins
         self.toolbar = toolbar
         self.min_height = min_height
+        self.content_style = content_style
         super().__init__(*args, **kwargs)
 
     @property

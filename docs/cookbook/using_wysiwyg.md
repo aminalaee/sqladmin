@@ -59,6 +59,8 @@ class PostAdmin(ModelView, model=Post):
             "api_key": "your-api-key",
             "plugins": "lists link table code",
             "toolbar": "bold italic | link | code",
+            # CSS injected into the editor's editable area
+            "content_style": "body { font-family: Inter; }",
         }
     }
 ```
