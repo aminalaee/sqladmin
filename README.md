@@ -26,14 +26,6 @@
 
 # SQLAlchemy Admin for Starlette/FastAPI
 
-## DEMO
-
-You can access [deployed demo](https://sqladmin-demo.vercel.app/admin)
-
-Creds: `superadmin`:`superadmin`
-
-More info: [Check repo](https://github.com/smithyhq/sqladmin-demo)
-
 ## General info
 
 SQLAdmin is a flexible Admin interface for SQLAlchemy models.
@@ -52,6 +44,8 @@ Main features include:
 **Documentation**: [https://smithyhq.github.io/sqladmin](https://smithyhq.github.io/sqladmin)
 
 **Source Code**: [https://github.com/smithyhq/sqladmin](https://github.com/smithyhq/sqladmin)
+
+**Live Demo**: [https://sqladmin-demo.vercel.app/admin](https://sqladmin-demo.vercel.app/admin) (Username: `superadmin` Password: `superadmin`)
 
 ---
 
