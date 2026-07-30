@@ -88,9 +88,17 @@ As a filter, you can use:
   async def where_clause(request: Request, term: str) -> ColumnElement:
       return Children.id == 1
   ```
-
-
-
+- A function with required parameters that returns an iterable `ColumnElement` object
+  ```py
+  from starlette.requests import Request
+  from sqlalchemy.sql.elements import ColumnElement
+  
+  async def where_clause(request: Request, term: str) -> list[ColumnElement]:
+      return [
+          Children.id == 1,
+          Children.active.is_(True),
+      ]
+  ```
 
 This will allow you to search `Child` objects using the `id` field while also ordering the results.
 

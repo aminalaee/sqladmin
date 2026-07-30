@@ -536,6 +536,7 @@ class AjaxWhere(Base):
         (Team.id == 1,),
         where_clause_async_function,
         where_clause_sync_function,
+        lambda request, term: [Team.id == 1],
     ],
 )
 async def test_ajax_where_valid(client: AsyncClient, where_clause) -> None:
@@ -619,9 +620,13 @@ async def test_ajax_where_failed_validation(client: AsyncClient, where_clause) -
         model=model,
     )
 
-    error_msg = f'"where" option should be one of {AJAX_WHERE_CLAUSES_TYPE}'
-    with pytest.raises(ValueError, match=re.escape(error_msg)):
-        admin.add_view(view)
+    admin.add_view(view)
+
+    identity = view().identity
+
+    error = f'"where" option should be one of {AJAX_WHERE_CLAUSES_TYPE}'
+    with pytest.raises(ValueError, match=re.escape(error)):
+        await client.get(f"/admin/{identity}/ajax/lookup?name=team&term=1")
 
 
 @pytest.mark.parametrize(
@@ -629,28 +634,22 @@ async def test_ajax_where_failed_validation(client: AsyncClient, where_clause) -
     [
         (
             lambda request, term: True,
-            'Function "function" in "where" option should return ColumnElement. '
+            'Function <lambda> in "where" option should return ColumnElement. '
             "Got: bool",
         ),
         (
             lambda request, term: None,
-            'Function "function" in "where" option should return ColumnElement. '
+            'Function <lambda> in "where" option should return ColumnElement. '
             "Got: None",
         ),
         (
             lambda request, term: "id = 1",
-            'Function "function" in "where" option should return ColumnElement. '
-            "Got: str",
+            'Function <lambda> in "where" option should return ColumnElement. Got: str',
         ),
         (
             lambda request, term: b"id = 1",
-            'Function "function" in "where" option should return ColumnElement. '
+            'Function <lambda> in "where" option should return ColumnElement. '
             "Got: bytes",
-        ),
-        (
-            lambda request, term: [Team.id == 1],
-            'Function "function" in "where" option should return ColumnElement. '
-            "Got: list",
         ),
     ],
 )

@@ -47,12 +47,6 @@ class QueryAjaxModelLoader:
                 f"{self.model}.{self.name}"
             )
 
-        is_where_clauses_valid = self._check_where_clauses_valid()
-        if not is_where_clauses_valid:
-            raise ValueError(
-                f'"where" option should be one of {AJAX_WHERE_CLAUSES_TYPE}'
-            )
-
         self._cached_fields = self._process_fields()
         self._cached_fields_order_by = self._process_order_by_fields()
 
@@ -72,23 +66,6 @@ class QueryAjaxModelLoader:
 
         return remote_fields
 
-    def _check_where_clauses_valid(self) -> bool:
-        where = self.where
-
-        if where is None:
-            return True
-
-        if isinstance(where, ColumnElement):
-            return True
-
-        if callable(where):
-            return True
-
-        if isinstance(where, Iterable) and not isinstance(where, (str, bytes)):
-            return all(isinstance(item, ColumnElement) for item in where)  # type: ignore[union-attr]
-
-        return False
-
     async def _prepare_where_clauses(
         self, request: Request, term: str
     ) -> list[ColumnElement]:
@@ -101,14 +78,21 @@ class QueryAjaxModelLoader:
             if isinstance(clause, Awaitable):
                 clause = await clause  # type: ignore[union-attr]
 
-            if not isinstance(clause, ColumnElement):
-                raise ValueError(
-                    f'Function "{type(self.where).__name__}" '
-                    f'in "where" option should return ColumnElement. '
-                    f"Got: {type(clause).__name__}"
-                )
+            if isinstance(clause, ColumnElement):
+                return [clause]
 
-            return [clause]
+            if (
+                isinstance(clause, Iterable)
+                and not isinstance(clause, (str, bytes))
+                and all(isinstance(item, ColumnElement) for item in clause)  # type: ignore[union-attr]
+            ):
+                return list(clause)
+
+            raise ValueError(
+                f"Function {self.where.__name__} "
+                f'in "where" option should return ColumnElement. '
+                f"Got: {type(clause).__name__}"
+            )
 
         if (
             isinstance(self.where, Iterable)
@@ -175,7 +159,7 @@ class QueryAjaxModelLoader:
             return {}
 
         if len(values) != len(primary_keys):
-            return {}
+            return {}  # pragma: no cover
 
         conditions = [field == value for field, value in zip(primary_keys, values)]
         stmt = stmt.where(*conditions)

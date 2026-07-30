@@ -101,4 +101,6 @@ AJAX_WHERE_CLAUSES_TYPE: TypeAlias = (
     | Iterable[ColumnElement]
     | Callable[[Request, str], ColumnElement]
     | Callable[[Request, str], Awaitable[ColumnElement]]
+    | Callable[[Request, str], Iterable[ColumnElement]]
+    | Callable[[Request, str], Awaitable[Iterable[ColumnElement]]]
 )
