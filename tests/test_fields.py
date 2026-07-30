@@ -231,8 +231,35 @@ def test_boolean_field() -> None:
 
 def test_textarea_field() -> None:
     class F(Form):
-        text = TextAreaField()
+        text = TextAreaField(validators=[DataRequired()])
 
     form = F()
     assert "autoresize-textarea" in form.text()
     assert "chars-count-label" in form.text()
+
+
+def test_textarea_field_without_chars_count() -> None:
+    class F(Form):
+        text = TextAreaField(show_chars_count=False)
+
+    form = F()
+    assert "autoresize-textarea" in form.text()
+    assert "chars-count-label" not in form.text()
+
+
+def test_textarea_field_without_autoresize() -> None:
+    class F(Form):
+        text = TextAreaField(enable_autoresize=False)
+
+    form = F()
+    assert "autoresize-textarea" not in form.text()
+    assert "chars-count-label" in form.text()
+
+
+def test_textarea_field_all_bool_false() -> None:
+    class F(Form):
+        text = TextAreaField(enable_autoresize=False, show_chars_count=False)
+
+    form = F()
+    assert "autoresize-textarea" not in form.text()
+    assert "chars-count-label" not in form.text()

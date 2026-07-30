@@ -167,7 +167,7 @@ class AlwaysAuthBackend(AuthenticationBackend):
         return True
 
     async def authenticate(self, request: Request) -> bool:
-        return True
+        return await self.login(request)
 
 
 class FlashTriggerView(BaseView):

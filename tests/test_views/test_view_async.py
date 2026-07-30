@@ -129,7 +129,7 @@ class Worker(Base):
 
     @hybrid_property
     def person_name(self):
-        return self.person.name
+        return f"{self.person.name}Hybrid"
 
     @person_name.inplace.expression
     def _person_name_expression(cls):
@@ -313,7 +313,7 @@ def _parse_ndjson_events(content: str) -> list[dict]:
     for line in content.splitlines():
         line = line.strip()
         if not line:
-            continue
+            continue  # pragma: no cover
         events.append(json.loads(line))
     return events
 
@@ -1880,3 +1880,4 @@ async def test_hybrid_property(client: AsyncClient) -> None:
 
     response = await client.get("/admin/person/details/1")
     assert response.status_code == 200
+    assert "Hybrid" in response.text
