@@ -3,6 +3,7 @@ from enum import Enum
 from typing import (
     Any,
     AnyStr,
+    Awaitable,
     Callable,
     Dict,
     Iterable,
@@ -24,6 +25,7 @@ from sqlalchemy.orm import (
     RelationshipProperty,
     sessionmaker,
 )
+from sqlalchemy.sql.elements import ColumnElement
 from sqlalchemy.sql.expression import Select
 from starlette.requests import Request
 from typing_extensions import TypeAlias
@@ -99,4 +101,11 @@ ColumnFilter = Union[SimpleColumnFilter, OperationColumnFilter]
 BASE_FORMATTERS_TYPE: TypeAlias = Dict[
     Type[Any],
     Callable[[Any], Union[Markup, Iterable[Markup], AnyStr, Iterable[AnyStr]]],
+]
+
+AJAX_WHERE_CLAUSES_TYPE: TypeAlias = Union[
+    ColumnElement,
+    Iterable[ColumnElement],
+    Callable[[Request, str], ColumnElement],
+    Callable[[Request, str], Awaitable[ColumnElement]],
 ]

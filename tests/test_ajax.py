@@ -1,4 +1,5 @@
 import re
+import uuid
 from typing import AsyncGenerator
 
 import pytest
@@ -11,7 +12,8 @@ from starlette.applications import Starlette
 from starlette.requests import Request
 
 from sqladmin import Admin, ModelView
-from sqladmin.ajax import AjaxWhereClause, QueryAjaxModelLoader, create_ajax_loader
+from sqladmin._types import AJAX_WHERE_CLAUSES_TYPE
+from sqladmin.ajax import QueryAjaxModelLoader, create_ajax_loader
 from tests.common import async_engine as engine
 
 pytestmark = pytest.mark.anyio
@@ -175,16 +177,10 @@ class RoomAdmin(ModelView, model=Room):
     }
 
 
-class TeamAjaxWhereClause(AjaxWhereClause):
-    async def __call__(self, request: Request, term: str) -> ColumnElement:
-        return Team.name != "BB"
-
-
 class MemberAdmin(ModelView, model=Member):
     form_ajax_refs = {
         "team": {
             "fields": ("name",),
-            "where": TeamAjaxWhereClause(),
         }
     }
 
@@ -453,7 +449,10 @@ async def test_ajax_where_condition(
     response = await client.get("/admin/member/ajax/lookup?name=team&term=B")
 
     assert response.status_code == 200
-    assert '{"results":[{"id":"1","text":"Team 1"}]}' == response.text
+    assert (
+        '{"results":[{"id":"1","text":"Team 1"},{"id":"2","text":"Team 2"}]}'
+        == response.text
+    )
 
 
 async def test_format_by_pk_single_pk() -> None:
@@ -514,73 +513,186 @@ async def test_missed_field_in_ajax() -> None:
         admin.add_view(MissedFieldAdmin)
 
 
-async def test_ajax_where_clause_valid_override(client: AsyncClient) -> None:
-    class AjaxWhereClauseValidOverride(Base):
-        __tablename__ = "AjaxWhereClauseValidOverride"
-        id = Column(Integer, primary_key=True)
-        team_id = Column(Integer, ForeignKey("teams.id"))
-        team = relationship("Team")
+async def where_clause_async_function(request: Request, term: str) -> ColumnElement:
+    return Team.id == 1
 
-    class AjaxWhereClauseValidOverrideAdmin(
-        ModelView, model=AjaxWhereClauseValidOverride
-    ):
-        class WhereClause(AjaxWhereClause):
-            async def __call__(self, request: Request, term: str) -> ColumnElement:
-                return Team.id == 1
 
-        form_ajax_refs = {"team": {"fields": ("id",), "where": WhereClause()}}
+def where_clause_sync_function(request: Request, term: str) -> ColumnElement:
+    return Team.id == 1
 
-    admin.add_view(AjaxWhereClauseValidOverrideAdmin)
 
-    identity = AjaxWhereClauseValidOverrideAdmin().identity
-    response = await client.get(f"/admin/{identity}/ajax/lookup?name=team&term=abc")
+class AjaxWhere(Base):
+    __tablename__ = "ajax_where"
+    id = Column(Integer, primary_key=True)
+    team_id = Column(Integer, ForeignKey("teams.id"))
+    team = relationship("Team")
 
+
+@pytest.mark.parametrize(
+    "where_clause",
+    [
+        Team.id == 1,
+        [Team.id == 1],
+        (Team.id == 1,),
+        {Team.id == 1},
+        (Team.id == 1,),
+        where_clause_async_function,
+        where_clause_sync_function,
+    ],
+)
+async def test_ajax_where_valid(client: AsyncClient, where_clause) -> None:
+    async with session_maker() as s:
+        s.add_all([Team(id=1, name="1"), Team(id=2, name="2")])
+        await s.commit()
+
+    unique_suffix = uuid.uuid4().hex[:8]
+    dynamic_classname = f"AjaxWhereValid_{unique_suffix}"
+    dynamic_tablename = f"ajax_where_valid_{unique_suffix}"
+
+    model = type(
+        dynamic_classname,
+        (Base,),
+        {
+            "__tablename__": dynamic_tablename,
+            "id": Column(Integer, primary_key=True),
+            "team_id": Column(Integer, ForeignKey("teams.id")),
+            "team": relationship("Team"),
+        },
+    )
+
+    view = type(
+        f"{dynamic_classname}Admin",
+        (ModelView,),
+        {
+            "form_ajax_refs": {"team": {"fields": ("id",), "where": where_clause}},
+        },
+        model=model,
+    )
+
+    admin.add_view(view)
+
+    identity = view().identity
+
+    response = await client.get(f"/admin/{identity}/ajax/lookup?name=team&term=1")
+    assert response.status_code == 200
+    assert response.text == '{"results":[{"id":"1","text":"Team 1"}]}'
+
+    response = await client.get(f"/admin/{identity}/ajax/lookup?name=team&term=2")
     assert response.status_code == 200
     assert response.text == '{"results":[]}'
 
 
-async def test_ajax_where_clause_invalid_call_function_return(
-    client: AsyncClient,
-) -> None:
-    class AjaxWhereClauseInvalidCallFunctionReturn(Base):
-        __tablename__ = "AjaxWhereClauseInvalidCallFunctionReturn"
-        id = Column(Integer, primary_key=True)
-        team_id = Column(Integer, ForeignKey("teams.id"))
-        team = relationship("Team")
+@pytest.mark.parametrize(
+    "where_clause",
+    [
+        "id = 1",
+        "True",
+        b"id = 2",
+        True,
+        123,
+    ],
+)
+async def test_ajax_where_failed_validation(client: AsyncClient, where_clause) -> None:
+    async with session_maker() as s:
+        s.add_all([Team(id=1, name="1")])
+        await s.commit()
 
-    class AjaxWhereClauseInvalidCallFunctionReturnAdmin(
-        ModelView, model=AjaxWhereClauseInvalidCallFunctionReturn
-    ):
-        class WhereClause(AjaxWhereClause):
-            async def __call__(self, request: Request, term: str) -> ColumnElement:
-                return "id = 1"
+    unique_suffix = uuid.uuid4().hex[:8]
+    dynamic_classname = f"AjaxWhereFailedValidation_{unique_suffix}"
+    dynamic_tablename = f"ajax_where_failed_validation_{unique_suffix}"
 
-        form_ajax_refs = {"team": {"fields": ("id",), "where": WhereClause()}}
-
-    admin.add_view(AjaxWhereClauseInvalidCallFunctionReturnAdmin)
-    error_msg = (
-        "WhereClause.__call__ function should return value of type ColumnElement."
+    model = type(
+        dynamic_classname,
+        (Base,),
+        {
+            "__tablename__": dynamic_tablename,
+            "id": Column(Integer, primary_key=True),
+            "team_id": Column(Integer, ForeignKey("teams.id")),
+            "team": relationship("Team"),
+        },
     )
+
+    view = type(
+        f"{dynamic_classname}Admin",
+        (ModelView,),
+        {
+            "form_ajax_refs": {"team": {"fields": ("id",), "where": where_clause}},
+        },
+        model=model,
+    )
+
+    error_msg = f'"where" option should be one of {AJAX_WHERE_CLAUSES_TYPE}'
     with pytest.raises(ValueError, match=re.escape(error_msg)):
-        identity = AjaxWhereClauseInvalidCallFunctionReturnAdmin().identity
-        await client.get(f"/admin/{identity}/ajax/lookup?name=team&term=abc")
+        admin.add_view(view)
 
 
-async def test_ajax_where_clause_invalid_class() -> None:
-    class AjaxWhereClauseInvalidClass(Base):
-        __tablename__ = "AjaxWhereClauseInvalidClass"
-        id = Column(Integer, primary_key=True)
-        team_id = Column(Integer, ForeignKey("teams.id"))
-        team = relationship("Team")
+@pytest.mark.parametrize(
+    "where_clause, error",
+    [
+        (
+            lambda request, term: True,
+            'Function "function" in "where" option should return ColumnElement. '
+            "Got: bool",
+        ),
+        (
+            lambda request, term: None,
+            'Function "function" in "where" option should return ColumnElement. '
+            "Got: None",
+        ),
+        (
+            lambda request, term: "id = 1",
+            'Function "function" in "where" option should return ColumnElement. '
+            "Got: str",
+        ),
+        (
+            lambda request, term: b"id = 1",
+            'Function "function" in "where" option should return ColumnElement. '
+            "Got: bytes",
+        ),
+        (
+            lambda request, term: [Team.id == 1],
+            'Function "function" in "where" option should return ColumnElement. '
+            "Got: list",
+        ),
+    ],
+)
+async def test_ajax_where_invalid_function_return(
+    client: AsyncClient, where_clause, error: str
+) -> None:
+    async with session_maker() as s:
+        s.add_all([Team(id=1, name="1")])
+        await s.commit()
 
-    class AjaxWhereClauseInvalidClassAdmin(
-        ModelView, model=AjaxWhereClauseInvalidClass
-    ):
-        form_ajax_refs = {"team": {"fields": ("id",), "where": "error"}}
+    unique_suffix = uuid.uuid4().hex[:8]
+    dynamic_classname = f"AjaxWhereInvalidFunctionReturn_{unique_suffix}"
+    dynamic_tablename = f"ajax_where_invalid_function_return_{unique_suffix}"
 
-    error_msg = '"where" option should be is instance of subclass AjaxWhereClause'
-    with pytest.raises(ValueError, match=re.escape(error_msg)):
-        admin.add_view(AjaxWhereClauseInvalidClassAdmin)
+    model = type(
+        dynamic_classname,
+        (Base,),
+        {
+            "__tablename__": dynamic_tablename,
+            "id": Column(Integer, primary_key=True),
+            "team_id": Column(Integer, ForeignKey("teams.id")),
+            "team": relationship("Team"),
+        },
+    )
+
+    view = type(
+        f"{dynamic_classname}Admin",
+        (ModelView,),
+        {
+            "form_ajax_refs": {"team": {"fields": ("id",), "where": where_clause}},
+        },
+        model=model,
+    )
+
+    admin.add_view(view)
+
+    identity = view().identity
+
+    with pytest.raises(ValueError, match=re.escape(error)):
+        await client.get(f"/admin/{identity}/ajax/lookup?name=team&term=1")
 
 
 async def test_fields_not_str_in_ajax() -> None:
