@@ -6,6 +6,31 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## Version [0.30.0](https://github.com/smithyhq/sqladmin/releases/tag/0.30.0): 2026-07-28
+
+### Added
+
+* feat: add `check_can_create` permission hook by @maxim-f1 in [#1102](https://github.com/smithyhq/sqladmin/pull/1102)
+* feat: add internationalization and localization support by @vahidzhe in [#1095](https://github.com/smithyhq/sqladmin/pull/1095)
+
+### Changed
+
+* chore: apply ruff pyupgrade (UP) fixes across the codebase by @vahidzhe in [#1093](https://github.com/smithyhq/sqladmin/pull/1093)
+
+### Fixed
+
+* fix: unwrap Enum values in `get_object_identifier` by @pctablet505 in [#1092](https://github.com/smithyhq/sqladmin/pull/1092)
+* fix: display flash toast when the `bootstrap` global is undefined by @ebencollins in [#1100](https://github.com/smithyhq/sqladmin/pull/1100)
+* fix: support keyword arguments when rendering `TemplateResponse` by @haykeminyan in [#1094](https://github.com/smithyhq/sqladmin/pull/1094)
+
+### New Contributors
+
+* @ebencollins made their first contribution in [#1100](https://github.com/smithyhq/sqladmin/pull/1100)
+* @haykeminyan made their first contribution in [#1094](https://github.com/smithyhq/sqladmin/pull/1094)
+* @pctablet505 made their first contribution in [#1092](https://github.com/smithyhq/sqladmin/pull/1092)
+
+**Full Changelog**: [0.29.0...0.30.0](https://github.com/smithyhq/sqladmin/compare/0.29.0...0.30.0)
+
 ## Version [0.29.0](https://github.com/smithyhq/sqladmin/releases/tag/0.29.0): 2026-07-13
 
 ### DEPRECATIONS

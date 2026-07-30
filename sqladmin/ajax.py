@@ -1,6 +1,7 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Awaitable, Iterable
+from collections.abc import Awaitable, Iterable
+from typing import TYPE_CHECKING, Any
 
 from sqlalchemy import String, cast, inspect, or_, select
 from sqlalchemy.orm.attributes import InstrumentedAttribute
@@ -26,7 +27,7 @@ class QueryAjaxModelLoader:
         self,
         name: str,
         model: type,
-        model_admin: "ModelView",
+        model_admin: ModelView,
         **options: Any,
     ):
         self.name = name
@@ -195,7 +196,7 @@ class QueryAjaxModelLoader:
 
         # no type casting to string if a ColumnAssociationProxyInstance is given
         filters = [
-            cast(field, String).ilike("%%%s%%" % term) for field in self._cached_fields
+            cast(field, String).ilike(f"%{term}%") for field in self._cached_fields
         ]
 
         stmt = stmt.filter(or_(*filters))
@@ -214,7 +215,7 @@ class QueryAjaxModelLoader:
 
 def create_ajax_loader(
     *,
-    model_admin: "ModelView",
+    model_admin: ModelView,
     name: str,
     options: dict,
 ) -> QueryAjaxModelLoader:
