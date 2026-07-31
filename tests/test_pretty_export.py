@@ -125,6 +125,32 @@ class TestPrettyExport:
         assert values[1] == "John Doe"
         assert values[2] == "TRUE"
 
+    async def test_get_export_row_values_with_relationship(self):
+        class UserAdmin(ModelView, model=User):
+            column_list = ["id", "name", "addresses"]
+            session_maker = session_maker
+            is_async = False
+
+        with session_maker() as session:
+            user = User(id=1, name="John Doe", email="john@example.com")
+            session.add(user)
+            session.add(Address(id=1, street="Main St", user_id=1))
+            session.add(Address(id=2, street="Second St", user_id=1))
+            session.commit()
+            user = session.get(User, 1)
+
+            model_view = UserAdmin()
+            column_names = ["id", "name", "addresses"]
+
+            values = await PrettyExport._get_export_row_values(
+                model_view, user, column_names
+            )
+
+            assert len(values) == 3
+            assert values[0] == 1
+            assert values[1] == "John Doe"
+            assert values[2] == ",".join(str(address) for address in user.addresses)
+
     async def test_get_export_row_values_with_none_values(self):
         class UserAdmin(ModelView, model=User):
             column_list = ["id", "name", "email"]

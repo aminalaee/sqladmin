@@ -26,7 +26,7 @@ class PrettyExport:
         """
         if name in model_view._relation_names:
             if isinstance(value, list):
-                cell_value = ",".join(formatted_value)
+                cell_value = ",".join(str(item) for item in formatted_value)
             else:
                 cell_value = formatted_value
         else:
