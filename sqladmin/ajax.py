@@ -22,6 +22,21 @@ if TYPE_CHECKING:
 DEFAULT_PAGE_SIZE = 10
 
 
+def _coerce_where_clauses(value: Any) -> list[ColumnElement] | None:
+    """Normalise a ``where`` value to a list of clauses, or None if it is not one."""
+
+    if isinstance(value, ColumnElement):
+        return [value]
+
+    if isinstance(value, Iterable) and not isinstance(value, (str, bytes)):
+        clauses = list(value)
+
+        if all(isinstance(item, ColumnElement) for item in clauses):
+            return clauses
+
+    return None
+
+
 class QueryAjaxModelLoader:
     def __init__(
         self,
@@ -78,28 +93,23 @@ class QueryAjaxModelLoader:
             if isinstance(clause, Awaitable):
                 clause = await clause  # type: ignore[union-attr]
 
-            if isinstance(clause, ColumnElement):
-                return [clause]
+            clauses = _coerce_where_clauses(clause)
 
-            if (
-                isinstance(clause, Iterable)
-                and not isinstance(clause, (str, bytes))
-                and all(isinstance(item, ColumnElement) for item in clause)  # type: ignore[union-attr]
-            ):
-                return list(clause)
+            if clauses is not None:
+                return clauses
 
+            # A callable object or functools.partial has no __name__.
+            name = getattr(self.where, "__name__", repr(self.where))
             raise ValueError(
-                f"Function {self.where.__name__} "
+                f"Function {name} "
                 f'in "where" option should return ColumnElement. '
                 f"Got: {type(clause).__name__}"
             )
 
-        if (
-            isinstance(self.where, Iterable)
-            and not isinstance(self.where, (str, bytes))
-            and all(isinstance(item, ColumnElement) for item in self.where)  # type: ignore[union-attr]
-        ):
-            return list(self.where)
+        clauses = _coerce_where_clauses(self.where)
+
+        if clauses is not None:
+            return clauses
 
         raise ValueError(f'"where" option should be one of {AJAX_WHERE_CLAUSES_TYPE}')
 

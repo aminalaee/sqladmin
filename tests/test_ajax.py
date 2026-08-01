@@ -1,3 +1,4 @@
+import functools
 import re
 import uuid
 from collections.abc import AsyncGenerator
@@ -689,6 +690,52 @@ async def test_ajax_where_invalid_function_return(
     identity = view().identity
 
     with pytest.raises(ValueError, match=re.escape(error)):
+        await client.get(f"/admin/{identity}/ajax/lookup?name=team&term=1")
+
+
+class _WhereCallable:
+    """A callable object has no __name__ - the error path must not assume one."""
+
+    def __call__(self, request: Request, term: str) -> str:
+        return "id = 1"
+
+
+@pytest.mark.parametrize(
+    "where_clause",
+    [
+        _WhereCallable(),
+        functools.partial(lambda request, term, pk: "id = 1", pk=1),
+    ],
+)
+async def test_ajax_where_invalid_return_from_callable_without_name(
+    client: AsyncClient, where_clause
+) -> None:
+    unique_suffix = uuid.uuid4().hex[:8]
+    dynamic_classname = f"AjaxWhereNoName_{unique_suffix}"
+
+    model = type(
+        dynamic_classname,
+        (Base,),
+        {
+            "__tablename__": f"ajax_where_no_name_{unique_suffix}",
+            "id": Column(Integer, primary_key=True),
+            "team_id": Column(Integer, ForeignKey("teams.id")),
+            "team": relationship("Team"),
+        },
+    )
+
+    view = type(
+        f"{dynamic_classname}Admin",
+        (ModelView,),
+        {"form_ajax_refs": {"team": {"fields": ("id",), "where": where_clause}}},
+        model=model,
+    )
+
+    admin.add_view(view)
+    identity = view().identity
+
+    # Not AttributeError: 'partial' object has no attribute '__name__'
+    with pytest.raises(ValueError, match="should return ColumnElement"):
         await client.get(f"/admin/{identity}/ajax/lookup?name=team&term=1")
 
 
