@@ -110,6 +110,7 @@ def validate_import_row(
     row_data = {col: row.get(col) for col in import_columns}
 
     fallback_form = form_class(row)
+    fallback_valid = fallback_form.validate()
     fallback_data = denormalize_wtform_data(fallback_form.data, model)
 
     merged_import_data, row_errors = merge_import_row_data(
@@ -118,6 +119,15 @@ def validate_import_row(
         row_data,
         fallback_data,
     )
+
+    if not fallback_valid:
+        # Relationship fields are not mapper columns, so they are not coerced or
+        # re-validated below: an unresolvable value is denormalized to None and
+        # would silently pass. Keep the errors WTForms already reported for them.
+        mapper_columns = sa_inspect(model).columns
+        for field_name, field_errors in fallback_form.errors.items():
+            if field_name in import_columns and field_name not in mapper_columns:
+                row_errors.setdefault(field_name, []).extend(field_errors)
 
     validation_form = form_class(
         build_import_form_row(row, merged_import_data, import_columns)

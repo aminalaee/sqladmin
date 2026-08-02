@@ -2,7 +2,7 @@ import enum
 
 import pytest
 from sqlalchemy import Boolean, Column, Enum, ForeignKey, Integer, String
-from sqlalchemy.orm import declarative_base, sessionmaker
+from sqlalchemy.orm import declarative_base, relationship, sessionmaker
 from starlette.datastructures import MultiDict
 
 from sqladmin import ModelView
@@ -34,6 +34,8 @@ class ImportWidget(Base):
     profile_id = Column(Integer, ForeignKey("import_profile_validate.id"))
     active = Column(Boolean, nullable=False)
 
+    profile = relationship("ImportProfile")
+
 
 class ImportProfile(Base):
     __tablename__ = "import_profile_validate"
@@ -47,6 +49,13 @@ class ImportUserAdmin(ModelView, model=ImportUser):
 
 class ImportWidgetAdmin(ModelView, model=ImportWidget):
     column_import_list = [ImportWidget.profile_id, ImportWidget.active]
+
+
+@pytest.fixture(autouse=True)
+def prepare_database():
+    Base.metadata.create_all(engine)
+    yield
+    Base.metadata.drop_all(engine)
 
 
 def _model_view(admin_class: type[ModelView]) -> ModelView:
@@ -111,3 +120,25 @@ async def test_validate_import_row_reports_coercion_errors() -> None:
     assert merged == {"active": True}
     assert "profile_id" in errors
     assert "Invalid value" in errors["profile_id"][0]
+
+
+class ImportWidgetRelationshipAdmin(ModelView, model=ImportWidget):
+    column_import_list = [ImportWidget.active, ImportWidget.profile]
+
+
+@pytest.mark.anyio
+async def test_validate_import_row_reports_invalid_relationship_value() -> None:
+    model_view = _model_view(ImportWidgetRelationshipAdmin)
+    form_class = await model_view.scaffold_form(model_view._form_create_rules)
+    row = MultiDict([("active", "true"), ("profile", "adg34gfb13")])
+
+    merged, errors, _row_data = validate_import_row(
+        row,
+        model_view.get_import_columns(),
+        ImportWidget,
+        form_class,
+        Admin._denormalize_wtform_data,
+    )
+
+    assert merged["profile"] is None
+    assert "profile" in errors
