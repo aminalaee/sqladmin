@@ -109,8 +109,15 @@ def validate_import_row(
     """Coerce CSV values, then run WTForms validation on coerced form input."""
     row_data = {col: row.get(col) for col in import_columns}
 
+    # Relationship fields are not mapper columns, so they are not coerced or
+    # re-validated below: an unresolvable value is denormalized to None and would
+    # silently pass. Only those fields need the extra validation pass, so skip it
+    # entirely when every import column is a mapper column.
+    mapper_columns = sa_inspect(model).columns
+    non_mapper_columns = [col for col in import_columns if col not in mapper_columns]
+
     fallback_form = form_class(row)
-    fallback_valid = fallback_form.validate()
+    fallback_valid = fallback_form.validate() if non_mapper_columns else True
     fallback_data = denormalize_wtform_data(fallback_form.data, model)
 
     merged_import_data, row_errors = merge_import_row_data(
@@ -121,12 +128,10 @@ def validate_import_row(
     )
 
     if not fallback_valid:
-        # Relationship fields are not mapper columns, so they are not coerced or
-        # re-validated below: an unresolvable value is denormalized to None and
-        # would silently pass. Keep the errors WTForms already reported for them.
-        mapper_columns = sa_inspect(model).columns
-        for field_name, field_errors in fallback_form.errors.items():
-            if field_name in import_columns and field_name not in mapper_columns:
+        # Keep the errors WTForms already reported for the non-mapper columns.
+        for field_name in non_mapper_columns:
+            field_errors = fallback_form.errors.get(field_name)
+            if field_errors:
                 row_errors.setdefault(field_name, []).extend(field_errors)
 
     validation_form = form_class(
