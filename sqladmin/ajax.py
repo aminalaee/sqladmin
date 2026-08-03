@@ -62,6 +62,14 @@ class QueryAjaxModelLoader:
                 f"{self.model}.{self.name}"
             )
 
+        # Static ``where`` values are known now, so fail fast on a bad config.
+        # Callables can only be validated per request (they need request/term).
+        if self.where is not None and not callable(self.where):
+            if _coerce_where_clauses(self.where) is None:
+                raise ValueError(
+                    f'"where" option should be one of {AJAX_WHERE_CLAUSES_TYPE}'
+                )
+
         self._cached_fields = self._process_fields()
         self._cached_fields_order_by = self._process_order_by_fields()
 

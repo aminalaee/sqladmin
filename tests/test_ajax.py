@@ -621,13 +621,9 @@ async def test_ajax_where_failed_validation(client: AsyncClient, where_clause) -
         model=model,
     )
 
-    admin.add_view(view)
-
-    identity = view().identity
-
     error = f'"where" option should be one of {AJAX_WHERE_CLAUSES_TYPE}'
     with pytest.raises(ValueError, match=re.escape(error)):
-        await client.get(f"/admin/{identity}/ajax/lookup?name=team&term=1")
+        admin.add_view(view)
 
 
 @pytest.mark.parametrize(
@@ -858,6 +854,34 @@ async def test_order_by_desc_in_ajax() -> None:
     admin.add_view(MissedFieldAdmin)
 
     assert len(MissedFieldAdmin()._form_ajax_refs["team"]._cached_fields_order_by) == 1
+
+
+async def test_order_by_desc_is_applied_to_query() -> None:
+    """``order_by`` is not just parsed, it actually orders the returned rows."""
+    async with session_maker() as s:
+        s.add_all(
+            [
+                Team(id=1, name="Alpha"),
+                Team(id=2, name="Beta"),
+                Team(id=3, name="Gamma"),
+            ]
+        )
+        await s.commit()
+
+    loader = QueryAjaxModelLoader(
+        name="team",
+        model=Team,
+        model_admin=MemberAdmin(),
+        fields=("name",),
+        order_by=Team.id.desc(),
+    )
+
+    request = Request(
+        {"type": "http", "method": "GET", "headers": [], "query_string": b""}
+    )
+    results = await loader.get_list(request, "")
+
+    assert [team.id for team in results] == [3, 2, 1]
 
 
 async def test_order_by_relationship_in_ajax() -> None:
