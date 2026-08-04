@@ -172,6 +172,10 @@ async def async_client() -> AsyncGenerator[AsyncClient, None]:
     async with async_engine.begin() as conn:
         await conn.run_sync(Base.metadata.drop_all)
 
+    # Drop pooled connections: asyncpg binds them to the event loop that
+    # created them, and the next test gets a new loop.
+    await async_engine.dispose()
+
 
 @pytest.fixture
 def sync_client() -> Generator[TestClient, None, None]:
@@ -189,6 +193,7 @@ def sync_client() -> Generator[TestClient, None, None]:
         yield client
 
     Base.metadata.drop_all(sync_engine)
+    sync_engine.dispose()
 
 
 def _labels(records: list) -> set:
@@ -355,6 +360,7 @@ async def test_max_models_caps_fanout() -> None:
 
     async with async_engine.begin() as conn:
         await conn.run_sync(Base.metadata.drop_all)
+    await async_engine.dispose()
 
     assert {r["identity"] for r in resp.json()["records"]} <= {"user"}
 
