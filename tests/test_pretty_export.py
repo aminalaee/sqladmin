@@ -29,6 +29,7 @@ class User(Base):
     is_active = Column(Boolean, default=True)
 
     addresses = relationship("Address", back_populates="user")
+    tags = relationship("Tag", back_populates="user", collection_class=set)
 
 
 class Address(Base):
@@ -40,6 +41,22 @@ class Address(Base):
     user_id = Column(Integer, ForeignKey("users.id"))
 
     user = relationship("User", back_populates="addresses")
+
+    def __str__(self) -> str:
+        return self.street
+
+
+class Tag(Base):
+    __tablename__ = "tags"
+
+    id = Column(Integer, primary_key=True)
+    label = Column(String)
+    user_id = Column(Integer, ForeignKey("users.id"))
+
+    user = relationship("User", back_populates="tags")
+
+    def __str__(self) -> str:
+        return self.label
 
 
 @pytest.fixture(autouse=True)
@@ -149,7 +166,47 @@ class TestPrettyExport:
             assert len(values) == 3
             assert values[0] == 1
             assert values[1] == "John Doe"
-            assert values[2] == ",".join(str(address) for address in user.addresses)
+            assert values[2] == "Main St,Second St"
+
+    async def test_get_export_row_values_with_set_relationship(self):
+        class UserAdmin(ModelView, model=User):
+            column_list = ["id", "tags"]
+            session_maker = session_maker
+            is_async = False
+
+        with session_maker() as session:
+            user = User(id=1, name="John Doe", email="john@example.com")
+            session.add(user)
+            session.add(Tag(id=1, label="vip", user_id=1))
+            session.commit()
+            user = session.get(User, 1)
+
+            values = await PrettyExport._get_export_row_values(
+                UserAdmin(), user, ["id", "tags"]
+            )
+
+            assert values[1] == "vip"
+
+    async def test_get_export_row_values_with_relationship_formatter(self):
+        class UserAdmin(ModelView, model=User):
+            column_list = ["id", "addresses"]
+            column_formatters = {"addresses": lambda m, a: f"{len(m.addresses)} addr"}
+            session_maker = session_maker
+            is_async = False
+
+        with session_maker() as session:
+            user = User(id=1, name="John Doe", email="john@example.com")
+            session.add(user)
+            session.add(Address(id=1, street="Main St", user_id=1))
+            session.add(Address(id=2, street="Second St", user_id=1))
+            session.commit()
+            user = session.get(User, 1)
+
+            values = await PrettyExport._get_export_row_values(
+                UserAdmin(), user, ["id", "addresses"]
+            )
+
+            assert values[1] == "2 addr"
 
     async def test_get_export_row_values_with_none_values(self):
         class UserAdmin(ModelView, model=User):

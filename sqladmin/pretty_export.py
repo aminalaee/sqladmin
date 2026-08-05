@@ -1,4 +1,4 @@
-from collections.abc import AsyncGenerator
+from collections.abc import AsyncGenerator, Iterable
 from typing import TYPE_CHECKING, Any
 
 from starlette.responses import StreamingResponse
@@ -25,7 +25,9 @@ class PrettyExport:
         Only used when `use_pretty_export = True`.
         """
         if name in model_view._relation_names:
-            if isinstance(value, list):
+            if isinstance(formatted_value, str):
+                cell_value = formatted_value
+            elif isinstance(formatted_value, Iterable):
                 cell_value = ",".join(str(item) for item in formatted_value)
             else:
                 cell_value = formatted_value
