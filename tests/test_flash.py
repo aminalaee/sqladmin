@@ -164,7 +164,7 @@ class AlwaysAuthBackend(AuthenticationBackend):
         return True
 
     async def logout(self, request: Request) -> bool:
-        return True
+        return True  # pragma: no cover
 
     async def authenticate(self, request: Request) -> bool:
         return await self.login(request)

@@ -24,7 +24,7 @@ from starlette.requests import Request
 
 if sys.version_info < (3, 11):
 
-    class StrEnum(str, Enum):
+    class StrEnum(str, Enum):  # pragma: no cover
         __str__ = str.__str__
         __repr__ = Enum.__repr__
 else:
@@ -39,7 +39,7 @@ T = TypeVar("T")
 
 
 class _UnsetType:
-    def __repr__(self) -> str:
+    def __repr__(self) -> str:  # pragma: no cover
         return "_UNSET"
 
 

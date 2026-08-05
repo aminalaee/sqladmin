@@ -290,7 +290,7 @@ class Backend(AuthenticationBackend):
         request.session.update({"token": "valid_token"})
         return True
 
-    async def logout(self, request: Request) -> bool:
+    async def logout(self, request: Request) -> bool:  # pragma: no cover
         request.session.clear()
         return True
 
@@ -317,6 +317,12 @@ def test_authenticate_func_always_return_bool():
 
         response = client.get("/admin/")
         assert response.status_code == 200
+
+        response = client.get("/admin/logout")
+        assert response.status_code == 200
+
+        response = client.get("/admin/")
+        assert response.url == "http://default_login_redirect/admin/login"
 
 
 def test_sync_function_under_login_required_decorator():

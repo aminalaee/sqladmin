@@ -1,5 +1,6 @@
 import enum
 import json
+import sys
 from collections.abc import AsyncGenerator
 from typing import Any
 
@@ -24,6 +25,7 @@ from sqlalchemy.orm import declarative_base, relationship, selectinload
 from starlette.applications import Starlette
 from starlette.requests import Request
 
+import sqladmin.helpers
 from sqladmin import Admin, ModelView
 from tests.common import async_engine as engine
 
@@ -294,6 +296,10 @@ class PersonAdmin(ModelView, model=Person):
     form_columns = [Person.name]
 
 
+class WorkerAdmin(ModelView, model=Worker):
+    column_details_list = [Worker.id, Worker.person_name]
+
+
 class WithDefaultsAdmin(ModelView, model=WithDefaults):
     pass
 
@@ -306,6 +312,7 @@ admin.add_view(EachRowActionAdmin)
 admin.add_view(ProductAdmin)
 admin.add_view(PersonAdmin)
 admin.add_view(WithDefaultsAdmin)
+admin.add_view(WorkerAdmin)
 
 
 def _parse_ndjson_events(content: str) -> list[dict]:
@@ -1317,6 +1324,101 @@ async def test_import_csv_permission_check_can_import(client: AsyncClient) -> No
     assert allowed_import.status_code == 200
 
 
+@pytest.mark.parametrize(
+    "call_number, expected_text",
+    [
+        (1, '"total": 1, "imported": 0'),
+        (2, '"total": 1, "imported": 0'),
+        (3, "Import canceled. No rows were imported"),
+    ],
+)
+async def test_import_csv_reqeust_disconnect(
+    monkeypatch, call_number, expected_text
+) -> None:
+    """
+    If this test has failed, it means that somewhere the is_disconnected function is
+    being called. You need to check the response of the new is_disconnected call in its
+    proper order.
+    """
+    async with session_maker() as s:
+        s.add_all(
+            [
+                User(id=1),
+                User(id=2),
+            ]
+        )
+        await s.commit()
+
+    class AddressWithRelationshipImportAdmin(ModelView, model=Address):
+        can_import = True
+        column_import_list = [Address.id, Address.user]
+
+    local_app = Starlette()
+    local_admin = Admin(app=local_app, engine=engine)
+    local_admin.add_view(AddressWithRelationshipImportAdmin)
+
+    transport = ASGITransport(app=local_app)
+    async with AsyncClient(
+        transport=transport,
+        base_url="http://testserver",
+    ) as local_client:
+        call_counter = 0
+
+        async def is_disconnected(self) -> bool:
+            nonlocal call_counter
+            call_counter += 1
+            return call_counter == call_number
+
+        monkeypatch.setattr(Request, "is_disconnected", is_disconnected)
+
+        response = await local_client.post(
+            "/admin/address/import",
+            files={
+                "csvfile": (
+                    "address.csv",
+                    b"id,user\r\n1,67\r\n",
+                    "text/csv",
+                )
+            },
+        )
+
+        assert expected_text in response.text
+
+
+async def test_import_csv_on_import_row_error() -> None:
+    class UserSelectiveImportAdmin(ModelView, model=User):
+        can_import = True
+        column_import_list = [User.name, User.status]
+
+        async def on_import_row(self, data: dict, model: Any, request: Request) -> None:
+            raise ValueError("error!")
+
+    local_app = Starlette()
+    local_admin = Admin(app=local_app, engine=engine)
+    local_admin.add_view(UserSelectiveImportAdmin)
+
+    transport = ASGITransport(app=local_app)
+    async with AsyncClient(
+        transport=transport,
+        base_url="http://testserver",
+    ) as local_client:
+        response = await local_client.post(
+            "/admin/user/import",
+            data={"continue_on_error": "no"},
+            headers={"x-allow-import": "1"},
+            files={
+                "csvfile": (
+                    "user.csv",
+                    b"name,status\r\nUSER_1,ACTIVE\r\n",
+                    "text/csv",
+                )
+            },
+        )
+
+    assert response.status_code == 200
+    assert "error!" in response.text
+
+
 async def test_import_csv_bad_type_is_404(client: AsyncClient) -> None:
     response = await client.post(
         "/admin/notfound/import",
@@ -1329,6 +1431,11 @@ async def test_import_csv_bad_type_is_404(client: AsyncClient) -> None:
         },
     )
     assert response.status_code == 404
+
+
+async def test_import_csv_empty_payload_error(client: AsyncClient) -> None:
+    response = await client.post("/admin/user/import")
+    assert "Invalid file upload. Expected a CSV file." in response.text
 
 
 async def test_import_csv_permission(client: AsyncClient) -> None:
@@ -1361,6 +1468,58 @@ async def test_import_csv_invalid_extension(client: AsyncClient) -> None:
     assert response.text == (
         "No CSV file uploaded or file does not have a .csv extension."
     )
+
+
+async def test_import_csv_database_error(client: AsyncClient, monkeypatch) -> None:
+    async def commit(self) -> None:
+        raise Exception("Error!")
+
+    monkeypatch.setattr(AsyncSession, "commit", commit)
+
+    response = await client.post(
+        "/admin/user/import",
+        files={
+            "csvfile": (
+                "user.csv",
+                b"name,status\r\nUSER_1,ACTIVE\r\n",
+                "text/csv",
+            )
+        },
+    )
+
+    assert response.status_code == 200
+    assert (
+        "Import failed during database commit. No rows were imported (rolled back)"
+        in response.text
+    )
+
+
+async def test_import_csv_parse_error(client: AsyncClient, monkeypatch) -> None:
+    def mock_parse_csv(csv_content: bytes, columns: list[str], delimiter: str = ","):
+        raise Exception("Error!")
+
+    original_func = sqladmin.helpers.parse_csv
+
+    for module_name, module in list(sys.modules.items()):
+        if (
+            hasattr(module, "parse_csv")
+            and getattr(module, "parse_csv") is original_func
+        ):
+            monkeypatch.setattr(module, "parse_csv", mock_parse_csv)
+
+    response = await client.post(
+        "/admin/user/import",
+        files={
+            "csvfile": (
+                "user.csv",
+                b"name,status\r\nUSER_1,ACTIVE\r\n",
+                "text/csv",
+            )
+        },
+    )
+
+    assert response.status_code == 400
+    assert "Failed to parse CSV file." in response.text
 
 
 async def test_import_csv_invalid_content_type(client: AsyncClient) -> None:
@@ -1879,5 +2038,19 @@ async def test_hybrid_property(client: AsyncClient) -> None:
         await session.commit()
 
     response = await client.get("/admin/person/details/1")
+    assert response.status_code == 200
+    assert "Hybrid" in response.text
+
+
+async def test_hybrid_inplace_property(client: AsyncClient) -> None:
+    async with session_maker() as session:
+        person = Person(name="Daniel")
+        session.add(person)
+        await session.flush()
+        worker = Worker(person_id=person.id)
+        session.add(worker)
+        await session.commit()
+
+    response = await client.get("/admin/worker/details/1")
     assert response.status_code == 200
     assert "Hybrid" in response.text
