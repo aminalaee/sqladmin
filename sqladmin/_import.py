@@ -180,7 +180,7 @@ async def foreign_key_error_message(
 ) -> str | None:
     try:
         coerced_value = coerce_column_value(target_column, value)
-    except (TypeError, ValueError):  # pragma: no cover
+    except (TypeError, ValueError):
         return f"Invalid value {value!r} for column {column_key}."
 
     stmt = (

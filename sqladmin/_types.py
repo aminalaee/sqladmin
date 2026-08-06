@@ -28,7 +28,7 @@ if sys.version_info < (3, 11):
         __str__ = str.__str__
         __repr__ = Enum.__repr__
 else:
-    from enum import StrEnum as StrEnum  # noqa: F401
+    from enum import StrEnum as StrEnum  # noqa: F401  # pragma: no cover
 
 MODEL_PROPERTY = ColumnProperty | RelationshipProperty
 ENGINE_TYPE = Engine | AsyncEngine

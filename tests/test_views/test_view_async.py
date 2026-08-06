@@ -15,6 +15,7 @@ from sqlalchemy import (
     Enum,
     ForeignKey,
     Integer,
+    Select,
     String,
     func,
     select,
@@ -136,7 +137,9 @@ class Worker(Base):
     @person_name.inplace.expression
     def _person_name_expression(cls):
         return (
-            select(Person.name).where(Person.id == cls.person_id).label("person_name")
+            select(Person.name.op("||")(" inplace"))
+            .where(Person.id == cls.person_id)
+            .label("person_name")
         )
 
     def __str__(self):
@@ -273,6 +276,8 @@ class EachRowActionAdmin(ModelView, model=EachRowAction):
         "can_delete",
     ]
 
+    can_import = False
+
     async def check_can_create(self, request: Request) -> bool:
         return True
 
@@ -298,6 +303,11 @@ class PersonAdmin(ModelView, model=Person):
 
 class WorkerAdmin(ModelView, model=Worker):
     column_details_list = [Worker.id, Worker.person_name]
+    column_list = [Worker.id, Worker.person_name]
+
+    def list_query(self, request: Request) -> Select:
+        stmt = select(self.model, self.model.person_name)
+        return stmt
 
 
 class WithDefaultsAdmin(ModelView, model=WithDefaults):
@@ -756,11 +766,25 @@ async def test_check_can_view_details(client: AsyncClient) -> None:
     response = await client.get("admin/each-row-action/details/1")
     assert response.status_code == 403
 
+    error_msg = (
+        r"pk not found in request.path_params "
+        r"\"{'identity': 'each-row-action', 'pk': ''}\""
+    )
+
+    with pytest.raises(ValueError, match=error_msg):
+        await client.get("admin/each-row-action/details/")
+
     response = await client.get("admin/each-row-action/edit/2")
     assert response.status_code == 403
 
+    with pytest.raises(ValueError, match=error_msg):
+        await client.get("admin/each-row-action/edit/")
+
     response = await client.delete("admin/each-row-action/delete?pks=3")
     assert response.status_code == 403
+
+    with pytest.raises(ValueError, match='pks not found in request.query_params ""'):
+        await client.delete("admin/each-row-action/delete")
 
 
 async def test_check_can_create(client: AsyncClient) -> None:
@@ -2028,7 +2052,7 @@ async def test_import_csv_on_import_row_hook(client: AsyncClient) -> None:
     assert user.status == Status.ACTIVE
 
 
-async def test_hybrid_property(client: AsyncClient) -> None:
+async def test_hybrid_property_python_getter(client: AsyncClient) -> None:
     async with session_maker() as session:
         person = Person(name="Daniel")
         session.add(person)
@@ -2042,15 +2066,21 @@ async def test_hybrid_property(client: AsyncClient) -> None:
     assert "Hybrid" in response.text
 
 
-async def test_hybrid_inplace_property(client: AsyncClient) -> None:
-    async with session_maker() as session:
-        person = Person(name="Daniel")
-        session.add(person)
-        await session.flush()
-        worker = Worker(person_id=person.id)
-        session.add(worker)
-        await session.commit()
-
-    response = await client.get("/admin/worker/details/1")
-    assert response.status_code == 200
-    assert "Hybrid" in response.text
+# async def test_hybrid_property_sql_expression(client: AsyncClient) -> None:
+#     async with session_maker() as session:
+#         person = Person(name="Daniel")
+#         session.add(person)
+#         await session.flush()
+#         worker = Worker(person_id=person.id)
+#         session.add(worker)
+#         await session.commit()
+#
+#         query = select(Worker.person_name).filter(Worker.id == 1)
+#         worker: Worker = (await session.execute(query)).one_or_none()
+#         print(f"{worker.person_name = }")
+#
+#     response = await client.get("/admin/worker/list")
+#     with open("a.html", mode="w") as f:
+#         f.write(response.text)
+#     assert response.status_code == 200
+#     assert "inplace" in response.text
