@@ -69,7 +69,14 @@ class ViewMenu(ItemMenu):
         return self.view.is_accessible(request)
 
     def is_active(self, request: Request) -> bool:
-        return self.view.identity == request.path_params.get("identity")
+        if self.view.is_model:
+            return self.view.identity == request.path_params.get("identity")
+        # Custom (BaseView) views are served from a fixed path that has no
+        # ``identity`` path parameter, so ``request.path_params`` never carries
+        # one and the identity comparison would always fail (see #956). Match on
+        # the resolved URL path instead.
+        view_path = URL(str(self.url(request))).path.rstrip("/")
+        return request.url.path.rstrip("/") == view_path
 
     def url(self, request: Request) -> str | URL:
         if self.view.is_model:
