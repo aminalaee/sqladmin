@@ -10,34 +10,36 @@
       
       
       
-        <link rel="canonical" href="https://smithyhq.github.io/sqladmin/contributing/">
+        <link rel="canonical" href="https://smithyhq.github.io/sqladmin/cookbook/audit_logging/">
       
       
-        <link rel="prev" href="../api_reference/authentication/">
+        <link rel="prev" href="../using_wysiwyg/">
       
+      
+        <link rel="next" href="../working_with_passwords/">
       
       
         
       
       
-      <link rel="icon" href="../assets/images/favicon.png">
+      <link rel="icon" href="../../assets/images/favicon.png">
       <meta name="generator" content="zensical-0.0.50">
     
     
       
-        <title>Contributing - SQLAlchemy Admin</title>
+        <title>Audit logging - SQLAlchemy Admin</title>
       
     
     
       
         
       
-      <link rel="stylesheet" href="../assets/stylesheets/modern/main.62c9b9cc.min.css">
+      <link rel="stylesheet" href="../../assets/stylesheets/modern/main.62c9b9cc.min.css">
       
         
           
         
-        <link rel="stylesheet" href="../assets/stylesheets/modern/palette.dfe2e883.min.css">
+        <link rel="stylesheet" href="../../assets/stylesheets/modern/palette.dfe2e883.min.css">
       
       
 
@@ -56,7 +58,7 @@
       
     
     
-    <script>__md_scope=new URL("..",location),__md_scope.pathname.endsWith("/")||(__md_scope=new URL(__md_scope.pathname+"/",location)),__md_hash=e=>[...e].reduce(((e,t)=>(e<<5)-e+t.charCodeAt(0)),0),__md_get=(e,t=localStorage,_=__md_scope)=>JSON.parse(t.getItem(_.pathname+"."+e)),__md_set=(e,t,_=localStorage,a=__md_scope)=>{try{_.setItem(a.pathname+"."+e,JSON.stringify(t))}catch(e){}},document.documentElement.setAttribute("data-platform",navigator.platform)</script>
+    <script>__md_scope=new URL("../..",location),__md_scope.pathname.endsWith("/")||(__md_scope=new URL(__md_scope.pathname+"/",location)),__md_hash=e=>[...e].reduce(((e,t)=>(e<<5)-e+t.charCodeAt(0)),0),__md_get=(e,t=localStorage,_=__md_scope)=>JSON.parse(t.getItem(_.pathname+"."+e)),__md_set=(e,t,_=localStorage,a=__md_scope)=>{try{_.setItem(a.pathname+"."+e,JSON.stringify(t))}catch(e){}},document.documentElement.setAttribute("data-platform",navigator.platform)</script>
     
       
   
@@ -91,7 +93,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#contributing" class="md-skip">
+        <a href="#audit-logging" class="md-skip">
           Skip to content
         </a>
       
@@ -107,7 +109,7 @@
 
 <header class="md-header md-header--shadow" data-md-component="header">
   <nav class="md-header__inner md-grid" aria-label="Header">
-    <a href="./.." title="SQLAlchemy Admin" class="md-header__button md-logo" aria-label="SQLAlchemy Admin" data-md-component="logo">
+    <a href="../.." title="SQLAlchemy Admin" class="md-header__button md-logo" aria-label="SQLAlchemy Admin" data-md-component="logo">
       
   
   <svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" class="lucide lucide-book-open" viewBox="0 0 24 24"><path d="M12 7v14M3 18a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h5a4 4 0 0 1 4 4 4 4 0 0 1 4-4h5a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1h-6a3 3 0 0 0-3 3 3 3 0 0 0-3-3z"/></svg>
@@ -127,7 +129,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Contributing
+              Audit logging
             
           </span>
         </div>
@@ -216,7 +218,7 @@
 
 <nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
   <label class="md-nav__title" for="__drawer">
-    <a href="./.." title="SQLAlchemy Admin" class="md-nav__button md-logo" aria-label="SQLAlchemy Admin" data-md-component="logo">
+    <a href="../.." title="SQLAlchemy Admin" class="md-nav__button md-logo" aria-label="SQLAlchemy Admin" data-md-component="logo">
       
   
   <svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" class="lucide lucide-book-open" viewBox="0 0 24 24"><path d="M12 7v14M3 18a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h5a4 4 0 0 1 4 4 4 4 0 0 1 4-4h5a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1h-6a3 3 0 0 0-3 3 3 3 0 0 0-3-3z"/></svg>
@@ -246,7 +248,7 @@
   
   
     <li class="md-nav__item">
-      <a href="./.." class="md-nav__link">
+      <a href="../.." class="md-nav__link">
         
   
   
@@ -272,7 +274,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../configurations/" class="md-nav__link">
+      <a href="../../configurations/" class="md-nav__link">
         
   
   
@@ -298,7 +300,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../authentication/" class="md-nav__link">
+      <a href="../../authentication/" class="md-nav__link">
         
   
   
@@ -324,7 +326,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../working_with_templates/" class="md-nav__link">
+      <a href="../../working_with_templates/" class="md-nav__link">
         
   
   
@@ -350,7 +352,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../writing_custom_views/" class="md-nav__link">
+      <a href="../../writing_custom_views/" class="md-nav__link">
         
   
   
@@ -376,7 +378,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../working_with_files/" class="md-nav__link">
+      <a href="../../working_with_files/" class="md-nav__link">
         
   
   
@@ -402,7 +404,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../internationalization/" class="md-nav__link">
+      <a href="../../internationalization/" class="md-nav__link">
         
   
   
@@ -428,7 +430,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../model_convertors/" class="md-nav__link">
+      <a href="../../model_convertors/" class="md-nav__link">
         
   
   
@@ -451,18 +453,20 @@
       
   
   
+    
   
   
+  
     
     
     
     
     
-    <li class="md-nav__item md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_9" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_9" checked>
         
           
           <label class="md-nav__link" for="__nav_9" id="__nav_9_label" tabindex="0">
@@ -482,7 +486,7 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_9_label" aria-expanded="false">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_9_label" aria-expanded="true">
           <label class="md-nav__title" for="__nav_9">
             <span class="md-nav__icon md-icon"></span>
             
@@ -499,7 +503,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../cookbook/deployment_with_https/" class="md-nav__link">
+      <a href="../deployment_with_https/" class="md-nav__link">
         
   
   
@@ -526,7 +530,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../cookbook/optimize_relationship_loading/" class="md-nav__link">
+      <a href="../optimize_relationship_loading/" class="md-nav__link">
         
   
   
@@ -553,7 +557,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../cookbook/display_custom_attributes/" class="md-nav__link">
+      <a href="../display_custom_attributes/" class="md-nav__link">
         
   
   
@@ -580,7 +584,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../cookbook/using_request_object/" class="md-nav__link">
+      <a href="../using_request_object/" class="md-nav__link">
         
   
   
@@ -607,7 +611,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../cookbook/multiple_databases/" class="md-nav__link">
+      <a href="../multiple_databases/" class="md-nav__link">
         
   
   
@@ -634,7 +638,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../cookbook/using_wysiwyg/" class="md-nav__link">
+      <a href="../using_wysiwyg/" class="md-nav__link">
         
   
   
@@ -658,10 +662,36 @@
                 
   
   
+    
   
   
-    <li class="md-nav__item">
-      <a href="../cookbook/audit_logging/" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Audit logging
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="././" class="md-nav__link md-nav__link--active">
         
   
   
@@ -676,6 +706,60 @@
   
 
       </a>
+      
+        
+
+
+<nav class="md-nav md-nav--secondary" aria-label="On this page">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      On this page
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#logging-to-your-existing-log-stream" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Logging to your existing log stream
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#persisting-to-your-own-table" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Persisting to your own table
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#writing-a-custom-backend" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Writing a custom backend
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
     </li>
   
 
@@ -688,7 +772,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../cookbook/working_with_passwords/" class="md-nav__link">
+      <a href="../working_with_passwords/" class="md-nav__link">
         
   
   
@@ -715,7 +799,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../cookbook/displaying_one_time_secrets/" class="md-nav__link">
+      <a href="../displaying_one_time_secrets/" class="md-nav__link">
         
   
   
@@ -794,7 +878,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../api_reference/application/" class="md-nav__link">
+      <a href="../../api_reference/application/" class="md-nav__link">
         
   
   
@@ -821,7 +905,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../api_reference/model_view/" class="md-nav__link">
+      <a href="../../api_reference/model_view/" class="md-nav__link">
         
   
   
@@ -848,7 +932,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../api_reference/base_view/" class="md-nav__link">
+      <a href="../../api_reference/base_view/" class="md-nav__link">
         
   
   
@@ -875,7 +959,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../api_reference/authentication/" class="md-nav__link">
+      <a href="../../api_reference/authentication/" class="md-nav__link">
         
   
   
@@ -906,19 +990,10 @@
       
   
   
-    
   
   
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      
-      
-      
-        
-      
-      
-      <a href="././" class="md-nav__link md-nav__link--active">
+    <li class="md-nav__item">
+      <a href="../../contributing/" class="md-nav__link">
         
   
   
@@ -933,7 +1008,6 @@
   
 
       </a>
-      
     </li>
   
 
@@ -955,6 +1029,11 @@
                       
                     
                     
+                      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+                      <div class="md-sidebar-button__wrapper">
+                        <label class="md-sidebar-button" for="__toc"></label>
+                      </div>
+                    
                   
                   <div class="md-sidebar__inner">
                     
@@ -966,6 +1045,47 @@
   
     
   
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      On this page
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#logging-to-your-existing-log-stream" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Logging to your existing log stream
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#persisting-to-your-own-table" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Persisting to your own table
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#writing-a-custom-backend" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Writing a custom backend
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
   
 </nav>
                   </div>
@@ -983,10 +1103,96 @@
   
 
 
-<h1 id="contributing">Contributing</h1>
-<p>Contributing guidelines are maintained in the repository root.</p>
-<p>Please read <a href="https://github.com/smithyhq/sqladmin/blob/main/CONTRIBUTING.md">CONTRIBUTING.md</a>
-for the full guide.</p>
+<h1 id="audit-logging">Audit logging</h1>
+<p>SQLAdmin can record every create, update and delete made through the admin to
+an <em>audit backend</em>. Configure one with the <code>audit_backend</code> argument of <code>Admin</code>.
+The default is <code>NullAuditBackend</code>, which records nothing, so auditing is fully
+opt-in.</p>
+<p>Each change is described by a fixed <code>AuditEntry</code> dataclass:</p>
+<div class="highlight"><pre><span></span><code><span class="nd">@dataclass</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">AuditEntry</span><span class="p">:</span>
+    <span class="n">action</span><span class="p">:</span> <span class="nb">str</span>          <span class="c1"># &quot;create&quot;, &quot;update&quot; or &quot;delete&quot;</span>
+    <span class="n">identity</span><span class="p">:</span> <span class="nb">str</span>        <span class="c1"># the ModelView identity, e.g. &quot;user&quot;</span>
+    <span class="n">pk</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span>       <span class="c1"># the affected object&#39;s identifier</span>
+    <span class="n">changes</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">|</span> <span class="kc">None</span> <span class="c1"># submitted field values (&quot;None&quot; for deletes)</span>
+    <span class="n">timestamp</span><span class="p">:</span> <span class="n">datetime</span>  <span class="c1"># UTC</span>
+</code></pre></div>
+<h2 id="logging-to-your-existing-log-stream">Logging to your existing log stream</h2>
+<p><code>LoggingAuditBackend</code> emits each entry through the standard <code>logging</code> module,
+under the <code>sqladmin.audit</code> logger by default:</p>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">sqladmin</span><span class="w"> </span><span class="kn">import</span> <span class="n">Admin</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">sqladmin.audit</span><span class="w"> </span><span class="kn">import</span> <span class="n">LoggingAuditBackend</span>
+
+<span class="n">admin</span> <span class="o">=</span> <span class="n">Admin</span><span class="p">(</span><span class="n">app</span><span class="p">,</span> <span class="n">engine</span><span class="p">,</span> <span class="n">audit_backend</span><span class="o">=</span><span class="n">LoggingAuditBackend</span><span class="p">())</span>
+</code></pre></div>
+<h2 id="persisting-to-your-own-table">Persisting to your own table</h2>
+<p><code>DBAuditBackend</code> writes entries to a database table — but SQLAdmin does not ship
+an audit model, because the right shape depends on your app, most importantly
+the type of your users' primary key (int, str or UUID) and the foreign key to
+it. Instead you define the model and subclass the backend, overriding two
+methods:</p>
+<ul>
+<li><code>get_actor(request)</code> — map the current request/session to your user's primary
+  key (or any actor identifier).</li>
+<li><code>build_row(entry, actor, request)</code> — turn an <code>AuditEntry</code> plus the resolved
+  actor into an instance of <em>your</em> model.</li>
+</ul>
+<p>The <code>AuditEntry</code> fields never change; only this mapping does.</p>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">sqlalchemy</span><span class="w"> </span><span class="kn">import</span> <span class="n">Column</span><span class="p">,</span> <span class="n">Integer</span><span class="p">,</span> <span class="n">String</span><span class="p">,</span> <span class="n">JSON</span><span class="p">,</span> <span class="n">DateTime</span><span class="p">,</span> <span class="n">ForeignKey</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">sqladmin</span><span class="w"> </span><span class="kn">import</span> <span class="n">Admin</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">sqladmin.audit</span><span class="w"> </span><span class="kn">import</span> <span class="n">DBAuditBackend</span>
+
+
+<span class="k">class</span><span class="w"> </span><span class="nc">AuditLog</span><span class="p">(</span><span class="n">Base</span><span class="p">):</span>
+    <span class="n">__tablename__</span> <span class="o">=</span> <span class="s2">&quot;audit_log&quot;</span>
+
+    <span class="nb">id</span> <span class="o">=</span> <span class="n">Column</span><span class="p">(</span><span class="n">Integer</span><span class="p">,</span> <span class="n">primary_key</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">action</span> <span class="o">=</span> <span class="n">Column</span><span class="p">(</span><span class="n">String</span><span class="p">(</span><span class="mi">20</span><span class="p">))</span>
+    <span class="n">table</span> <span class="o">=</span> <span class="n">Column</span><span class="p">(</span><span class="n">String</span><span class="p">(</span><span class="mi">100</span><span class="p">))</span>
+    <span class="n">object_pk</span> <span class="o">=</span> <span class="n">Column</span><span class="p">(</span><span class="n">String</span><span class="p">(</span><span class="mi">100</span><span class="p">),</span> <span class="n">nullable</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">changes</span> <span class="o">=</span> <span class="n">Column</span><span class="p">(</span><span class="n">JSON</span><span class="p">,</span> <span class="n">nullable</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">created_at</span> <span class="o">=</span> <span class="n">Column</span><span class="p">(</span><span class="n">DateTime</span><span class="p">(</span><span class="n">timezone</span><span class="o">=</span><span class="kc">True</span><span class="p">))</span>
+    <span class="c1"># FK to your own user table; the PK type is entirely yours (int/str/UUID).</span>
+    <span class="n">user_id</span> <span class="o">=</span> <span class="n">Column</span><span class="p">(</span><span class="n">Integer</span><span class="p">,</span> <span class="n">ForeignKey</span><span class="p">(</span><span class="s2">&quot;users.id&quot;</span><span class="p">),</span> <span class="n">nullable</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+
+<span class="k">class</span><span class="w"> </span><span class="nc">MyAuditBackend</span><span class="p">(</span><span class="n">DBAuditBackend</span><span class="p">):</span>
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">get_actor</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">request</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">request</span><span class="o">.</span><span class="n">session</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;user_id&quot;</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">build_row</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">entry</span><span class="p">,</span> <span class="n">actor</span><span class="p">,</span> <span class="n">request</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">AuditLog</span><span class="p">(</span>
+            <span class="n">action</span><span class="o">=</span><span class="n">entry</span><span class="o">.</span><span class="n">action</span><span class="p">,</span>
+            <span class="n">table</span><span class="o">=</span><span class="n">entry</span><span class="o">.</span><span class="n">identity</span><span class="p">,</span>
+            <span class="n">object_pk</span><span class="o">=</span><span class="n">entry</span><span class="o">.</span><span class="n">pk</span><span class="p">,</span>
+            <span class="n">changes</span><span class="o">=</span><span class="n">entry</span><span class="o">.</span><span class="n">changes</span><span class="p">,</span>
+            <span class="n">created_at</span><span class="o">=</span><span class="n">entry</span><span class="o">.</span><span class="n">timestamp</span><span class="p">,</span>
+            <span class="n">user_id</span><span class="o">=</span><span class="n">actor</span><span class="p">,</span>
+        <span class="p">)</span>
+
+
+<span class="n">admin</span> <span class="o">=</span> <span class="n">Admin</span><span class="p">(</span><span class="n">app</span><span class="p">,</span> <span class="n">engine</span><span class="p">,</span> <span class="n">audit_backend</span><span class="o">=</span><span class="n">MyAuditBackend</span><span class="p">(</span><span class="n">session_maker</span><span class="p">))</span>
+</code></pre></div>
+<p>Because the audit log is just one of your own models, you can register it as a
+read-only <code>ModelView</code> to browse the trail inside the admin with the usual list,
+filter and detail pages.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Auditing is best-effort: a backend that raises is logged (to
+<code>sqladmin.audit</code>) rather than propagated, so a misconfigured audit backend
+cannot break an already-committed change. The <code>DBAuditBackend</code> writes in its
+own transaction, separate from the change it records.</p>
+</div>
+<h2 id="writing-a-custom-backend">Writing a custom backend</h2>
+<p>For anything else — a message queue, an external audit service — subclass
+<code>AuditBackend</code> directly and implement the single async <code>log</code> method:</p>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">sqladmin.audit</span><span class="w"> </span><span class="kn">import</span> <span class="n">AuditBackend</span>
+
+
+<span class="k">class</span><span class="w"> </span><span class="nc">QueueAuditBackend</span><span class="p">(</span><span class="n">AuditBackend</span><span class="p">):</span>
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">log</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">entry</span><span class="p">,</span> <span class="n">request</span><span class="p">):</span>
+        <span class="k">await</span> <span class="n">queue</span><span class="o">.</span><span class="n">publish</span><span class="p">(</span><span class="n">entry</span><span class="o">.</span><span class="vm">__dict__</span><span class="p">)</span>
+</code></pre></div>
 
 
 
@@ -1067,10 +1273,10 @@ for the full guide.</p>
     
       
       
-      <script id="__config" type="application/json">{"annotate":null,"base":"..","features":["content.code.copy"],"search":"../assets/javascripts/workers/search.b6b7e04f.min.js","tags":null,"translations":{"clipboard.copied":"Copied to clipboard","clipboard.copy":"Copy to clipboard","search.result.more.one":"1 more on this page","search.result.more.other":"# more on this page","search.result.none":"No matching documents","search.result.one":"1 matching document","search.result.other":"# matching documents","search.result.placeholder":"Type to start searching","search.result.term.missing":"Missing","select.version":"Select version"},"version":null}</script>
+      <script id="__config" type="application/json">{"annotate":null,"base":"../..","features":["content.code.copy"],"search":"../../assets/javascripts/workers/search.b6b7e04f.min.js","tags":null,"translations":{"clipboard.copied":"Copied to clipboard","clipboard.copy":"Copy to clipboard","search.result.more.one":"1 more on this page","search.result.more.other":"# more on this page","search.result.none":"No matching documents","search.result.one":"1 matching document","search.result.other":"# matching documents","search.result.placeholder":"Type to start searching","search.result.term.missing":"Missing","select.version":"Select version"},"version":null}</script>
     
     
-      <script src="../assets/javascripts/bundle.d7f30b55.min.js"></script>
+      <script src="../../assets/javascripts/bundle.d7f30b55.min.js"></script>
       
     
   </body>

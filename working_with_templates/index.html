@@ -393,6 +393,17 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
+  <a href="#passing-extra-context-to-templates" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Passing extra context to templates
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#customizing-column-filter-templates" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
@@ -806,6 +817,33 @@
   
   
     <li class="md-nav__item">
+      <a href="../cookbook/audit_logging/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Audit logging
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../cookbook/working_with_passwords/" class="md-nav__link">
         
   
@@ -1095,6 +1133,17 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
+  <a href="#passing-extra-context-to-templates" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Passing extra context to templates
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#customizing-column-filter-templates" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
@@ -1220,6 +1269,31 @@ SQLAdmin and in the <code>content</code> block it adds custom HTML tags:</p>
     <span class="n">details_template</span> <span class="o">=</span> <span class="s2">&quot;sqladmin/custom_details.html&quot;</span>
 </code></pre></div>
 </div>
+<h3 id="passing-extra-context-to-templates">Passing extra context to templates</h3>
+<p>Each model view page can pass extra values to its template through a per-page
+context hook. Override any of <code>list_context</code>, <code>create_context</code>, <code>edit_context</code>
+or <code>details_context</code> on your <code>ModelView</code> to return a mapping that is merged into
+the template context for that page. Every hook is <code>async</code>, receives the
+<code>request</code>, and returns <code>{}</code> by default:</p>
+<div class="admonition example">
+<p class="admonition-title">Example</p>
+<div class="highlight"><span class="filename">admin.py</span><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">UserAdmin</span><span class="p">(</span><span class="n">ModelView</span><span class="p">,</span> <span class="n">model</span><span class="o">=</span><span class="n">User</span><span class="p">):</span>
+    <span class="n">details_template</span> <span class="o">=</span> <span class="s2">&quot;sqladmin/custom_details.html&quot;</span>
+
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">details_context</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">request</span><span class="p">:</span> <span class="n">Request</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+        <span class="k">return</span> <span class="p">{</span><span class="s2">&quot;extra_note&quot;</span><span class="p">:</span> <span class="s2">&quot;Read-only for auditors&quot;</span><span class="p">}</span>
+</code></pre></div>
+<div class="highlight"><span class="filename">custom_details.html</span><pre><span></span><code>{% extends &quot;sqladmin/details.html&quot; %}
+{% block content %}
+    {{ super() }}
+    <span class="p">&lt;</span><span class="nt">p</span><span class="p">&gt;</span>{{ extra_note }}<span class="p">&lt;/</span><span class="nt">p</span><span class="p">&gt;</span>
+{% endblock %}
+</code></pre></div>
+</div>
+<p>The returned values are added to the context already passed to the page, so they
+are available as top-level variables in the template. The core context keys that
+SQLAdmin sets (such as <code>model_view</code>, <code>form</code>, <code>pagination</code> and <code>model</code>) always
+take precedence, so a hook can add new values but cannot override them.</p>
 <h3 id="customizing-column-filter-templates">Customizing column filter templates</h3>
 <p>Each built-in column filter declares a <code>template</code> attribute which defaults to one of
 <code>sqladmin/filters/lookup_filter.html</code> or <code>sqladmin/filters/operation_filter.html</code>.

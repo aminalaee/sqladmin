@@ -741,6 +741,33 @@
   
   
     <li class="md-nav__item">
+      <a href="../audit_logging/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Audit logging
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../working_with_passwords/" class="md-nav__link">
         
   
@@ -1106,6 +1133,52 @@ you can use <code>form_ajax_refs</code> to load <code>Child</code> objects with 
         <span class="p">}</span>
     <span class="p">}</span>
 </code></pre></div>
+<p>You can use additional <code>where</code> conditions; in this case, 
+a portion of the records will be excluded during the search based on this rule:</p>
+<div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">ParentAdmin</span><span class="p">(</span><span class="n">ModelView</span><span class="p">,</span> <span class="n">model</span><span class="o">=</span><span class="n">Parent</span><span class="p">):</span>
+    <span class="n">form_ajax_refs</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="s2">&quot;children&quot;</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s2">&quot;fields&quot;</span><span class="p">:</span> <span class="p">(</span><span class="s2">&quot;id&quot;</span><span class="p">,),</span>
+            <span class="s2">&quot;where&quot;</span><span class="p">:</span> <span class="n">Children</span><span class="o">.</span><span class="n">id</span> <span class="o">==</span> <span class="mi">1</span><span class="p">,</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+</code></pre></div>
+<p>As a filter, you can use:</p>
+<ul>
+<li>Direct conditions
+    <div class="highlight"><pre><span></span><code><span class="n">Children</span><span class="o">.</span><span class="n">id</span> <span class="o">==</span> <span class="mi">1</span>
+</code></pre></div></li>
+<li>A collection of conditions
+    <div class="highlight"><pre><span></span><code><span class="p">(</span>
+    <span class="n">Children</span><span class="o">.</span><span class="n">id</span> <span class="o">==</span> <span class="mi">1</span><span class="p">,</span>
+    <span class="n">Children</span><span class="o">.</span><span class="n">active</span><span class="o">.</span><span class="n">is_</span><span class="p">(</span><span class="kc">True</span><span class="p">),</span>
+<span class="p">)</span>
+</code></pre></div></li>
+<li>A synchronous function with required parameters
+  <div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">starlette.requests</span><span class="w"> </span><span class="kn">import</span> <span class="n">Request</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">sqlalchemy.sql.elements</span><span class="w"> </span><span class="kn">import</span> <span class="n">ColumnElement</span>
+
+<span class="k">def</span><span class="w"> </span><span class="nf">where_clause</span><span class="p">(</span><span class="n">request</span><span class="p">:</span> <span class="n">Request</span><span class="p">,</span> <span class="n">term</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ColumnElement</span><span class="p">:</span>
+    <span class="k">return</span> <span class="n">Children</span><span class="o">.</span><span class="n">id</span> <span class="o">==</span> <span class="mi">1</span>
+</code></pre></div></li>
+<li>An asynchronous function with required parameters
+  <div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">starlette.requests</span><span class="w"> </span><span class="kn">import</span> <span class="n">Request</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">sqlalchemy.sql.elements</span><span class="w"> </span><span class="kn">import</span> <span class="n">ColumnElement</span>
+
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">where_clause</span><span class="p">(</span><span class="n">request</span><span class="p">:</span> <span class="n">Request</span><span class="p">,</span> <span class="n">term</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ColumnElement</span><span class="p">:</span>
+    <span class="k">return</span> <span class="n">Children</span><span class="o">.</span><span class="n">id</span> <span class="o">==</span> <span class="mi">1</span>
+</code></pre></div></li>
+<li>A function with required parameters that returns an iterable <code>ColumnElement</code> object
+  <div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">starlette.requests</span><span class="w"> </span><span class="kn">import</span> <span class="n">Request</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">sqlalchemy.sql.elements</span><span class="w"> </span><span class="kn">import</span> <span class="n">ColumnElement</span>
+
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">where_clause</span><span class="p">(</span><span class="n">request</span><span class="p">:</span> <span class="n">Request</span><span class="p">,</span> <span class="n">term</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">ColumnElement</span><span class="p">]:</span>
+    <span class="k">return</span> <span class="p">[</span>
+        <span class="n">Children</span><span class="o">.</span><span class="n">id</span> <span class="o">==</span> <span class="mi">1</span><span class="p">,</span>
+        <span class="n">Children</span><span class="o">.</span><span class="n">active</span><span class="o">.</span><span class="n">is_</span><span class="p">(</span><span class="kc">True</span><span class="p">),</span>
+    <span class="p">]</span>
+</code></pre></div></li>
+</ul>
 <p>This will allow you to search <code>Child</code> objects using the <code>id</code> field while also ordering the results.</p>
 <h3 id="using-form_columns-or-form_excluded_columns">Using <code>form_columns</code> or <code>form_excluded_columns</code></h3>
 <p>Another option, which is not as useful as the previous one, is that you might not need

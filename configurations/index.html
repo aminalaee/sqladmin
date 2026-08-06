@@ -1006,6 +1006,33 @@
   
   
     <li class="md-nav__item">
+      <a href="../cookbook/audit_logging/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Audit logging
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../cookbook/working_with_passwords/" class="md-nav__link">
         
   
@@ -1685,6 +1712,9 @@ The following options are available:</p>
 <li><code>category</code>: Category name to display group of <code>ModelView</code> classes together in dropdown.</li>
 <li><code>category_icon</code>: Category icon to display.</li>
 </ul>
+<p>Category groups start collapsed. Expanding or collapsing one group leaves the
+others untouched, and the state is remembered per admin instance in the
+browser's <code>localStorage</code>, so it survives navigating between pages.</p>
 <div class="admonition example">
 <p class="admonition-title">Example</p>
 <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">UserAdmin</span><span class="p">(</span><span class="n">ModelView</span><span class="p">,</span> <span class="n">model</span><span class="o">=</span><span class="n">User</span><span class="p">):</span>
