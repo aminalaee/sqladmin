@@ -43,6 +43,17 @@ class ImportProfile(Base):
     id = Column(Integer, primary_key=True)
 
 
+class ImportRequiredWidget(Base):
+    __tablename__ = "import_required_widget_validate"
+
+    id = Column(Integer, primary_key=True)
+    profile_id = Column(
+        Integer, ForeignKey("import_profile_validate.id"), nullable=False
+    )
+
+    profile = relationship("ImportProfile")
+
+
 class ImportUserAdmin(ModelView, model=ImportUser):
     column_import_list = [ImportUser.name, ImportUser.status]
 
@@ -141,4 +152,51 @@ async def test_validate_import_row_reports_invalid_relationship_value() -> None:
     )
 
     assert merged["profile"] is None
-    assert "profile" in errors
+    assert errors["profile"] == ["Not a valid choice"]
+
+
+@pytest.mark.anyio
+async def test_validate_import_row_accepts_valid_relationship_value() -> None:
+    with session_maker() as session:
+        session.add(ImportProfile(id=1))
+        session.commit()
+
+    model_view = _model_view(ImportWidgetRelationshipAdmin)
+    form_class = await model_view.scaffold_form(model_view._form_create_rules)
+    row = MultiDict([("active", "true"), ("profile", "1")])
+
+    merged, errors, _row_data = validate_import_row(
+        row,
+        model_view.get_import_columns(),
+        ImportWidget,
+        form_class,
+        Admin._denormalize_wtform_data,
+    )
+
+    assert errors == {}
+    assert merged["active"] is True
+    assert merged["profile"] == "1"
+
+
+class ImportRequiredWidgetRelationshipAdmin(ModelView, model=ImportRequiredWidget):
+    column_import_list = [ImportRequiredWidget.profile]
+
+
+@pytest.mark.anyio
+@pytest.mark.parametrize("value", ["adg34gfb13", ""])
+async def test_validate_import_row_does_not_duplicate_relationship_errors(
+    value: str,
+) -> None:
+    model_view = _model_view(ImportRequiredWidgetRelationshipAdmin)
+    form_class = await model_view.scaffold_form(model_view._form_create_rules)
+    row = MultiDict([("profile", value)])
+
+    _merged, errors, _row_data = validate_import_row(
+        row,
+        model_view.get_import_columns(),
+        ImportRequiredWidget,
+        form_class,
+        Admin._denormalize_wtform_data,
+    )
+
+    assert errors["profile"] == ["Not a valid choice"]
