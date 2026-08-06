@@ -3,6 +3,7 @@ from __future__ import annotations
 import builtins
 import inspect as inspect_module
 import json
+import logging
 import time
 import warnings
 from collections.abc import AsyncGenerator, Callable, Sequence
@@ -37,6 +38,7 @@ from sqladmin._queries import Query
 from sqladmin._types import (
     _UNSET,
     BASE_FORMATTERS_TYPE,
+    COLUMN_FORMATTER_TYPE,
     MODEL_ATTR,
     SESSION_MAKER,
     ColumnFilter,
@@ -45,6 +47,7 @@ from sqladmin._types import (
     StrEnum,
 )
 from sqladmin.ajax import create_ajax_loader
+from sqladmin.audit import AuditEntry
 from sqladmin.exceptions import InvalidModelError
 from sqladmin.formatters import BASE_FORMATTERS
 from sqladmin.forms import (
@@ -291,7 +294,7 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
         ```
     """
 
-    column_formatters: ClassVar[dict[MODEL_ATTR, Callable[..., Any]]] = {}
+    column_formatters: ClassVar[dict[MODEL_ATTR, COLUMN_FORMATTER_TYPE]] = {}
     """Dictionary of list view column formatters.
     Columns can either be string names or SQLAlchemy columns.
 
@@ -305,9 +308,9 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
     ???+ formatter
         ```python
         def formatter(model, attribute, request):
-            # `model` is model instance
-            # `attribute` is a Union[ColumnProperty, RelationshipProperty]
-            # `request` is a starlette.requests.Request
+            # `model` is the model instance
+            # `attribute` is the name of the attribute being rendered
+            # `request` is a starlette.requests.Request, and is optional
             pass
         ```
     """
@@ -427,7 +430,7 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
         ```
     """
 
-    column_formatters_detail: ClassVar[dict[MODEL_ATTR, Callable[..., Any]]] = {}
+    column_formatters_detail: ClassVar[dict[MODEL_ATTR, COLUMN_FORMATTER_TYPE]] = {}
     """Dictionary of details view column formatters.
     Columns can either be string names or SQLAlchemy columns.
 
@@ -441,9 +444,9 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
     ???+ formatter
         ```python
         def formatter(model, attribute, request):
-            # `model` is model instance
-            # `attribute` is a Union[ColumnProperty, RelationshipProperty]
-            # `request` is a starlette.requests.Request
+            # `model` is the model instance
+            # `attribute` is the name of the attribute being rendered
+            # `request` is a starlette.requests.Request, and is optional
             pass
         ```
     """
@@ -1374,6 +1377,27 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
         * ``Response`` -- return a custom Starlette ``Response`` directly.
         """
 
+    async def list_context(self, request: Request) -> dict[str, Any]:
+        """Extra template context for the list page.
+
+        Return a mapping that is merged into the base context for the list
+        template. Returns ``{}`` by default. Core keys (``model_view``,
+        ``pagination``, ...) always take precedence, so this can only add keys.
+        """
+        return {}
+
+    async def create_context(self, request: Request) -> dict[str, Any]:
+        """Extra template context for the create page. See :meth:`list_context`."""
+        return {}
+
+    async def edit_context(self, request: Request) -> dict[str, Any]:
+        """Extra template context for the edit page. See :meth:`list_context`."""
+        return {}
+
+    async def details_context(self, request: Request) -> dict[str, Any]:
+        """Extra template context for the details page. See :meth:`list_context`."""
+        return {}
+
     def _build_column_pairs(
         self,
         pair: dict[Any, Any],
@@ -1385,12 +1409,43 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
 
     async def delete_model(self, request: Request, pk: Any) -> None:
         await Query(self).delete(pk, request)
+        await self._emit_audit(request, "delete", pk, None)
+
+    async def _emit_audit(
+        self,
+        request: Request,
+        action: str,
+        pk: Any,
+        changes: dict | None,
+    ) -> None:
+        """Send an :class:`~sqladmin.audit.AuditEntry` to the configured
+        audit backend. Best-effort: a failing backend is logged, not raised,
+        so a broken audit config cannot break an already-committed change."""
+        backend = getattr(getattr(self, "_admin_ref", None), "audit_backend", None)
+        if backend is None:
+            return
+        entry = AuditEntry(
+            action=action,
+            identity=self.identity,
+            pk=str(pk) if pk is not None else None,
+            changes=changes,
+        )
+        try:
+            await backend.log(entry, request)
+        except Exception:  # pragma: no cover - defensive
+            logging.getLogger("sqladmin.audit").exception(
+                "Audit backend failed to log %s on %s", action, self.identity
+            )
 
     async def insert_model(self, request: Request, data: dict) -> Any:
-        return await Query(self).insert(data, request)
+        obj = await Query(self).insert(data, request)
+        await self._emit_audit(request, "create", get_object_identifier(obj), data)
+        return obj
 
     async def update_model(self, request: Request, pk: str, data: dict) -> Any:
-        return await Query(self).update(pk, data, request)
+        obj = await Query(self).update(pk, data, request)
+        await self._emit_audit(request, "update", pk, data)
+        return obj
 
     async def on_model_delete(self, model: Any, request: Request) -> None:
         """Perform some actions before a model is deleted.

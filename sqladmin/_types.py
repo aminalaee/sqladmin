@@ -1,5 +1,5 @@
 import sys
-from collections.abc import Callable, Iterable
+from collections.abc import Awaitable, Callable, Iterable
 from enum import Enum
 from typing import (
     Any,
@@ -19,6 +19,7 @@ from sqlalchemy.orm import (
     RelationshipProperty,
     sessionmaker,
 )
+from sqlalchemy.sql.elements import ColumnElement
 from sqlalchemy.sql.expression import Select
 from starlette.requests import Request
 
@@ -34,6 +35,13 @@ MODEL_PROPERTY = ColumnProperty | RelationshipProperty
 ENGINE_TYPE = Engine | AsyncEngine
 MODEL_ATTR = str | InstrumentedAttribute
 SESSION_MAKER = sessionmaker | async_sessionmaker
+
+# Signature of a user supplied column formatter. The first argument is the model
+# *instance* being rendered, the second is the name of the attribute and the
+# optional third one is the current request.
+COLUMN_FORMATTER_TYPE: TypeAlias = (
+    Callable[[Any, Any], Any] | Callable[[Any, Any, Request], Any]
+)
 
 T = TypeVar("T")
 
@@ -94,3 +102,12 @@ BASE_FORMATTERS_TYPE: TypeAlias = dict[
     type[Any],
     Callable[[Any], Markup | Iterable[Markup] | AnyStr | Iterable[AnyStr]],
 ]
+
+AJAX_WHERE_CLAUSES_TYPE: TypeAlias = (
+    ColumnElement
+    | Iterable[ColumnElement]
+    | Callable[[Request, str], ColumnElement]
+    | Callable[[Request, str], Awaitable[ColumnElement]]
+    | Callable[[Request, str], Iterable[ColumnElement]]
+    | Callable[[Request, str], Awaitable[Iterable[ColumnElement]]]
+)

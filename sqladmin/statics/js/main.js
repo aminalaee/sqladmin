@@ -622,3 +622,80 @@ function formatImportTemplate(template, values) {
     return Object.prototype.hasOwnProperty.call(values, key) ? values[key] : match;
   });
 }
+
+// Remember which sidebar category groups are expanded.
+//
+// The menu is server rendered, so every click on it reloads the whole page.
+// Without this, each navigation resets every group back to its default state.
+// The expanded groups are stored per admin instance, and Bootstrap's dropdowns
+// are configured with `data-bs-auto-close="false"` so toggling one group never
+// touches the others.
+(function () {
+  var navbar = document.querySelector('[data-sqladmin-menu]');
+  if (!navbar) return;
+
+  var storageKey = 'sqladmin:menu:' + (navbar.getAttribute('data-sqladmin-menu') || '');
+
+  // localStorage throws when it is unavailable (private mode, disabled site
+  // data) and the stored value can be stale, so every access is guarded. A
+  // failure only costs the user the remembered state, the menu still works.
+  function readExpanded() {
+    try {
+      var stored = JSON.parse(window.localStorage.getItem(storageKey));
+      return Array.isArray(stored) ? stored : [];
+    } catch (error) {
+      return [];
+    }
+  }
+
+  function writeExpanded(names) {
+    try {
+      window.localStorage.setItem(storageKey, JSON.stringify(names));
+    } catch (error) {
+      // Ignored on purpose, see above.
+    }
+  }
+
+  function categoryNameOf(element) {
+    var item = element && element.closest
+      ? element.closest('[data-sqladmin-menu-category]')
+      : null;
+    return item ? item.getAttribute('data-sqladmin-menu-category') : null;
+  }
+
+  function rememberCategory(name, isExpanded) {
+    var names = readExpanded().filter(function (stored) { return stored !== name; });
+    if (isExpanded) names.push(name);
+    writeExpanded(names);
+  }
+
+  // Bootstrap marks both the toggle and the menu with `show`, and reads the
+  // class back off the toggle to decide what a click should do. Restoring only
+  // one of the two makes the next click a no-op.
+  var expanded = readExpanded();
+  Array.prototype.forEach.call(
+    navbar.querySelectorAll('[data-sqladmin-menu-category]'),
+    function (item) {
+      var name = item.getAttribute('data-sqladmin-menu-category');
+      if (expanded.indexOf(name) === -1) return;
+
+      var toggle = item.querySelector('[data-bs-toggle="dropdown"]');
+      var dropdown = item.querySelector('.dropdown-menu');
+      if (!toggle || !dropdown) return;
+
+      toggle.classList.add('show');
+      toggle.setAttribute('aria-expanded', 'true');
+      dropdown.classList.add('show');
+    }
+  );
+
+  document.addEventListener('shown.bs.dropdown', function (event) {
+    var name = categoryNameOf(event.target);
+    if (name !== null) rememberCategory(name, true);
+  });
+
+  document.addEventListener('hidden.bs.dropdown', function (event) {
+    var name = categoryNameOf(event.target);
+    if (name !== null) rememberCategory(name, false);
+  });
+})();
