@@ -1872,14 +1872,14 @@ wheels = [
 
 [[package]]
 name = "types-wtforms"
-version = "3.2.1.20260408"
+version = "3.2.1.20260518"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "markupsafe" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/7b/d3/2e43193319e349d1488a64964bec52d45742aa03ab79f020e0a13f1bd4cb/types_wtforms-3.2.1.20260408.tar.gz", hash = "sha256:41597de1b5e028f9852972f48440ef37d5cb0c91a6790f09bdeac8c9b578aa9a", size = 17429, upload-time = "2026-04-08T04:33:59.561Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/bf/f0/0c84f7175c56089ba0c000d1eb4f20b144721b7446b90280625f3c8ce23b/types_wtforms-3.2.1.20260518.tar.gz", hash = "sha256:05fb7adfc8cdd72c7b597e20b74f6270511ca492a80953805f25ee7d1cfd1282", size = 17505, upload-time = "2026-05-18T06:07:30.769Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/ac/ef/747b42d46184750ad433c3abb85d75c024d37329c3b74aa343c204a9f5c7/types_wtforms-3.2.1.20260408-py3-none-any.whl", hash = "sha256:797aec9822f9ae5b786f6d24affd2eebdc0c18372de35fc73abe6746276c7417", size = 24311, upload-time = "2026-04-08T04:33:58.403Z" },
+    { url = "https://files.pythonhosted.org/packages/6e/94/0da3294e8c4fd4b64e96d57f7a768fb57e3b2d77ac0aed142c25fe1f28d5/types_wtforms-3.2.1.20260518-py3-none-any.whl", hash = "sha256:193377e60e715920b47481fbc62a7f3796045d0492e02a46319c5064eee81e23", size = 24303, upload-time = "2026-05-18T06:07:29.866Z" },
 ]
 
 [[package]]
