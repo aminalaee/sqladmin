@@ -3,6 +3,7 @@ from __future__ import annotations
 import builtins
 import inspect as inspect_module
 import json
+import logging
 import time
 import warnings
 from collections.abc import AsyncGenerator, Callable, Sequence
@@ -45,6 +46,7 @@ from sqladmin._types import (
     StrEnum,
 )
 from sqladmin.ajax import create_ajax_loader
+from sqladmin.audit import AuditEntry
 from sqladmin.exceptions import InvalidModelError
 from sqladmin.formatters import BASE_FORMATTERS
 from sqladmin.forms import (
@@ -1406,12 +1408,43 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
 
     async def delete_model(self, request: Request, pk: Any) -> None:
         await Query(self).delete(pk, request)
+        await self._emit_audit(request, "delete", pk, None)
+
+    async def _emit_audit(
+        self,
+        request: Request,
+        action: str,
+        pk: Any,
+        changes: dict | None,
+    ) -> None:
+        """Send an :class:`~sqladmin.audit.AuditEntry` to the configured
+        audit backend. Best-effort: a failing backend is logged, not raised,
+        so a broken audit config cannot break an already-committed change."""
+        backend = getattr(getattr(self, "_admin_ref", None), "audit_backend", None)
+        if backend is None:
+            return
+        entry = AuditEntry(
+            action=action,
+            identity=self.identity,
+            pk=str(pk) if pk is not None else None,
+            changes=changes,
+        )
+        try:
+            await backend.log(entry, request)
+        except Exception:  # pragma: no cover - defensive
+            logging.getLogger("sqladmin.audit").exception(
+                "Audit backend failed to log %s on %s", action, self.identity
+            )
 
     async def insert_model(self, request: Request, data: dict) -> Any:
-        return await Query(self).insert(data, request)
+        obj = await Query(self).insert(data, request)
+        await self._emit_audit(request, "create", get_object_identifier(obj), data)
+        return obj
 
     async def update_model(self, request: Request, pk: str, data: dict) -> Any:
-        return await Query(self).update(pk, data, request)
+        obj = await Query(self).update(pk, data, request)
+        await self._emit_audit(request, "update", pk, data)
+        return obj
 
     async def on_model_delete(self, model: Any, request: Request) -> None:
         """Perform some actions before a model is deleted.

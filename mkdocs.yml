@@ -38,6 +38,7 @@ nav:
       - Using a request object: "cookbook/using_request_object.md"
       - Multiple databases: "cookbook/multiple_databases.md"
       - Using rich text editor: "cookbook/using_wysiwyg.md"
+      - Audit logging: "cookbook/audit_logging.md"
       - Working with Passwords: "cookbook/working_with_passwords.md"
       - Displaying one-time secrets: "cookbook/displaying_one_time_secrets.md"
   - API Reference:

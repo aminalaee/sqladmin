@@ -38,6 +38,7 @@ from sqladmin._import import handle_import_upload, import_csv, import_error_resp
 from sqladmin._menu import CategoryMenu, Menu, ViewMenu
 from sqladmin._types import ENGINE_TYPE, SESSION_MAKER
 from sqladmin.ajax import QueryAjaxModelLoader
+from sqladmin.audit import AuditBackend, NullAuditBackend
 from sqladmin.authentication import AuthenticationBackend, login_required
 from sqladmin.editors import collect_form_media
 from sqladmin.flash import get_flashed_messages
@@ -91,8 +92,10 @@ class BaseAdmin:
         middlewares: Sequence[Middleware] | None = None,
         authentication_backend: AuthenticationBackend | None = None,
         i18n_config: I18nConfig | None = None,
+        audit_backend: AuditBackend | None = None,
     ) -> None:
         self.app = app
+        self.audit_backend = audit_backend or NullAuditBackend()
         self.engine = engine
         self.base_url = base_url
         self.templates_dir = templates_dir
@@ -511,6 +514,7 @@ class Admin(BaseAdminView):
         authentication_backend: AuthenticationBackend | None = None,
         static_files_kwargs: dict[str, Any] | None = None,
         i18n_config: I18nConfig | None = None,
+        audit_backend: AuditBackend | None = None,
     ) -> None:
         """
         Args:
@@ -543,6 +547,7 @@ class Admin(BaseAdminView):
             middlewares=middlewares,
             authentication_backend=authentication_backend,
             i18n_config=i18n_config,
+            audit_backend=audit_backend,
         )
 
         static_files_kwargs = {**(static_files_kwargs or {}), "packages": ["sqladmin"]}
