@@ -1,6 +1,11 @@
 <script>
   (function () {
     var fieldId = "{{ field.id }}";
+    var el = document.getElementById(fieldId);
+    if (el) {
+      // Hidden required textareas block submit in Chrome ("not focusable").
+      el.removeAttribute("required");
+    }
     tinymce.init({
       selector: "#" + fieldId,
       plugins: "{{ field.plugins }}",

@@ -58,7 +58,25 @@ def collect_form_media(form: Form) -> FieldMedia:
     return media
 
 
-class CKEditor5Field(TextAreaField):
+class RichTextFieldMixin:
+    """
+    Shared behaviour for WYSIWYG fields that replace a ``<textarea>``.
+
+    Editors hide the original textarea. If it still has the HTML5 ``required``
+    attribute, Chrome blocks submit with::
+
+        An invalid form control with name='...' is not focusable.
+
+    No request is sent. Keep WTForms server-side required validators; only the
+    client-side attribute is suppressed.
+    """
+
+    def __call__(self, **kwargs: Any) -> Any:
+        kwargs["required"] = False
+        return super().__call__(**kwargs)  # type: ignore[misc]
+
+
+class CKEditor5Field(RichTextFieldMixin, TextAreaField):
     """
     A ``TextAreaField`` rendered with the CKEditor 5 rich text editor.
 
@@ -94,7 +112,7 @@ class CKEditor5Field(TextAreaField):
         )
 
 
-class TinyMCEField(TextAreaField):
+class TinyMCEField(RichTextFieldMixin, TextAreaField):
     """
     A ``TextAreaField`` rendered with the TinyMCE rich text editor.
 
@@ -131,7 +149,7 @@ class TinyMCEField(TextAreaField):
         )
 
 
-class QuillField(TextAreaField):
+class QuillField(RichTextFieldMixin, TextAreaField):
     """
     A ``TextAreaField`` rendered with the Quill rich text editor.
 
@@ -168,7 +186,7 @@ class QuillField(TextAreaField):
         )
 
 
-class SummernoteField(TextAreaField):
+class SummernoteField(RichTextFieldMixin, TextAreaField):
     """
     A ``TextAreaField`` rendered with the Summernote rich text editor.
 
