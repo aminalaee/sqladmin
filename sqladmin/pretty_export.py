@@ -1,4 +1,4 @@
-from collections.abc import AsyncGenerator, Iterable
+from collections.abc import AsyncGenerator
 from typing import TYPE_CHECKING, Any
 
 from starlette.responses import StreamingResponse
@@ -15,7 +15,7 @@ class PrettyExport:
     @staticmethod
     async def _base_export_cell(
         model_view: "ModelView", name: str, value: Any, formatted_value: Any
-    ) -> str:
+    ) -> Any:
         """
         Default formatting logic for a cell in pretty export.
 
@@ -27,7 +27,10 @@ class PrettyExport:
         if name in model_view._relation_names:
             if isinstance(formatted_value, str):
                 cell_value = formatted_value
-            elif isinstance(formatted_value, Iterable):
+            elif isinstance(formatted_value, (set, frozenset)):
+                # Unordered collections are sorted so exports are reproducible.
+                cell_value = ",".join(sorted(str(item) for item in formatted_value))
+            elif isinstance(formatted_value, (list, tuple)):
                 cell_value = ",".join(str(item) for item in formatted_value)
             else:
                 cell_value = formatted_value

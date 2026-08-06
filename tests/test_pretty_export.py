@@ -7,7 +7,12 @@ from typing import Any
 
 import pytest
 from sqlalchemy import Boolean, Column, ForeignKey, Integer, String
-from sqlalchemy.orm import declarative_base, relationship, sessionmaker
+from sqlalchemy.orm import (
+    attribute_keyed_dict,
+    declarative_base,
+    relationship,
+    sessionmaker,
+)
 from starlette.responses import StreamingResponse
 
 from sqladmin import ModelView
@@ -30,6 +35,9 @@ class User(Base):
 
     addresses = relationship("Address", back_populates="user")
     tags = relationship("Tag", back_populates="user", collection_class=set)
+    items = relationship(
+        "Item", back_populates="user", collection_class=attribute_keyed_dict("sku")
+    )
 
 
 class Address(Base):
@@ -57,6 +65,19 @@ class Tag(Base):
 
     def __str__(self) -> str:
         return self.label
+
+
+class Item(Base):
+    __tablename__ = "items"
+
+    id = Column(Integer, primary_key=True)
+    sku = Column(String)
+    user_id = Column(Integer, ForeignKey("users.id"))
+
+    user = relationship("User", back_populates="items")
+
+    def __str__(self) -> str:
+        return self.sku
 
 
 @pytest.fixture(autouse=True)
@@ -186,6 +207,45 @@ class TestPrettyExport:
             )
 
             assert values[1] == "vip"
+
+    async def test_get_export_row_values_with_set_relationship_is_sorted(self):
+        class UserAdmin(ModelView, model=User):
+            column_list = ["id", "tags"]
+            session_maker = session_maker
+            is_async = False
+
+        with session_maker() as session:
+            user = User(id=1, name="John Doe", email="john@example.com")
+            session.add(user)
+            for i, label in enumerate(["vip", "beta", "alpha"], start=1):
+                session.add(Tag(id=i, label=label, user_id=1))
+            session.commit()
+            user = session.get(User, 1)
+
+            values = await PrettyExport._get_export_row_values(
+                UserAdmin(), user, ["id", "tags"]
+            )
+
+            assert values[1] == "alpha,beta,vip"
+
+    async def test_get_export_row_values_with_dict_relationship(self):
+        class UserAdmin(ModelView, model=User):
+            column_list = ["id", "items"]
+            session_maker = session_maker
+            is_async = False
+
+        with session_maker() as session:
+            user = User(id=1, name="John Doe", email="john@example.com")
+            session.add(user)
+            session.add(Item(id=1, sku="sku-1", user_id=1))
+            session.commit()
+            user = session.get(User, 1)
+
+            values = await PrettyExport._get_export_row_values(
+                UserAdmin(), user, ["id", "items"]
+            )
+
+            assert values[1] == {"sku-1": user.items["sku-1"]}
 
     async def test_get_export_row_values_with_relationship_formatter(self):
         class UserAdmin(ModelView, model=User):
