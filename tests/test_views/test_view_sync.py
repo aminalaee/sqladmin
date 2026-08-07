@@ -1261,7 +1261,7 @@ def test_import_csv_permission_check_can_import(client: TestClient) -> None:
         (3, "Import canceled. No rows were imported"),
     ],
 )
-def test_import_csv_reqeust_disconnect(monkeypatch, call_number, expected_text) -> None:
+def test_import_csv_request_disconnect(monkeypatch, call_number, expected_text) -> None:
     """
     If this test has failed, it means that somewhere the is_disconnected function is
     being called. You need to check the response of the new is_disconnected call in its
@@ -1340,6 +1340,7 @@ def test_import_csv_on_import_row_error() -> None:
 
 def test_import_csv_empty_payload_error(client: TestClient) -> None:
     response = client.post("/admin/user/import")
+    assert response.status_code == 400
     assert "Invalid file upload. Expected a CSV file." in response.text
 
 

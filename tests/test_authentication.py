@@ -281,7 +281,7 @@ def test_extra_session_kwargs_passed_to_middleware() -> None:
     assert middleware.kwargs["https_only"] is True
 
 
-class Backend(AuthenticationBackend):
+class AlwaysBoolBackend(AuthenticationBackend):
     async def login(self, request: Request) -> bool:
         form = await request.form()
         if form.get("username") != "success":
@@ -290,7 +290,7 @@ class Backend(AuthenticationBackend):
         request.session.update({"token": "valid_token"})
         return True
 
-    async def logout(self, request: Request) -> bool:  # pragma: no cover
+    async def logout(self, request: Request) -> bool:
         request.session.clear()
         return True
 
@@ -304,7 +304,9 @@ class Backend(AuthenticationBackend):
 def test_authenticate_func_always_return_bool():
     app_ = Starlette()
     admin_ = Admin(
-        app=app_, engine=engine, authentication_backend=Backend(secret_key="sqladmin")
+        app=app_,
+        engine=engine,
+        authentication_backend=AlwaysBoolBackend(secret_key="sqladmin"),
     )
     admin_.add_view(CustomAdmin)
     admin_.add_view(MovieAdmin)
@@ -325,6 +327,61 @@ def test_authenticate_func_always_return_bool():
         assert response.url == "http://default_login_redirect/admin/login"
 
 
+class AlwaysResponseBackend(AuthenticationBackend):
+    async def login(self, request: Request) -> JSONResponse:
+        form = await request.form()
+        if form.get("username") != "success":
+            return JSONResponse({"success": False})
+
+        request.session.update({"token": "valid_token"})
+        return JSONResponse({"success": True})
+
+    async def logout(self, request: Request) -> JSONResponse:
+        request.session.clear()
+        return JSONResponse({"success": True})
+
+    async def authenticate(self, request: Request) -> JSONResponse:
+        if request.session.get("token") == "valid_token":
+            return JSONResponse({"success": True})
+        else:
+            return await self.login(request)
+
+
+def test_authenticate_func_always_return_response():
+    app_ = Starlette()
+    admin_ = Admin(
+        app=app_,
+        engine=engine,
+        authentication_backend=AlwaysResponseBackend(secret_key="sqladmin"),
+    )
+    admin_.add_view(CustomAdmin)
+    admin_.add_view(MovieAdmin)
+
+    with TestClient(app=app_, base_url="http://always_return_response") as client:
+        response = client.get("/admin/")
+        assert response.status_code == 200
+        assert response.text == '{"success":false}'
+
+        response = client.post("/admin/login", data={"username": "fail"})
+        assert response.status_code == 200
+        assert response.text == '{"success":false}'
+
+        response = client.post("/admin/login", data={"username": "success"})
+        assert response.status_code == 200
+        assert response.text == '{"success":true}'
+
+        response = client.get("/admin/")
+        assert response.status_code == 200
+
+        response = client.get("/admin/logout")
+        assert response.status_code == 200
+        assert response.text == '{"success":true}'
+
+        response = client.get("/admin/")
+        assert response.status_code == 200
+        assert response.text == '{"success":false}'
+
+
 def test_sync_function_under_login_required_decorator():
     app_ = Starlette()
 
@@ -334,7 +391,9 @@ def test_sync_function_under_login_required_decorator():
             return JSONResponse({"status": "ok"})
 
     CustomAdmin(
-        app=app_, engine=engine, authentication_backend=Backend(secret_key="sqladmin")
+        app=app_,
+        engine=engine,
+        authentication_backend=AlwaysBoolBackend(secret_key="sqladmin"),
     )
 
     with TestClient(app_) as client:

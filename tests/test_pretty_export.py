@@ -45,7 +45,7 @@ class Address(Base):
     user = relationship("User", back_populates="addresses")
 
     def __str__(self) -> str:
-        return f"{self.id}"
+        return f"Address {self.id}"
 
 
 @pytest.fixture(autouse=True)
@@ -90,7 +90,7 @@ class TestPrettyExport:
         assert values[0] == 1
         assert values[1] == "John Doe"
         assert values[2] == "john@example.com"
-        assert values[3] == "1"
+        assert values[3] == "Address 1"
 
     async def test_get_export_row_values_with_custom_export_cell(self):
         class UserAdmin(ModelView, model=User):

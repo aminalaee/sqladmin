@@ -6,7 +6,7 @@ import pytest
 from sqlalchemy import Column, Integer, String
 from sqlalchemy.orm import declarative_base
 from wtforms import Form
-from wtforms.validators import DataRequired
+from wtforms.validators import DataRequired, Length
 
 from sqladmin.fields import (
     BooleanField,
@@ -231,7 +231,7 @@ def test_boolean_field() -> None:
 
 def test_textarea_field() -> None:
     class F(Form):
-        text = TextAreaField(validators=[DataRequired()])
+        text = TextAreaField()
 
     form = F()
     assert "autoresize-textarea" in form.text()
@@ -263,3 +263,14 @@ def test_textarea_field_all_bool_false() -> None:
     form = F()
     assert "autoresize-textarea" not in form.text()
     assert "chars-count-label" not in form.text()
+
+
+def test_textarea_field_with_validators() -> None:
+    class F(Form):
+        text = TextAreaField(validators=[DataRequired(), Length(min=1, max=100)])
+
+    form = F()
+
+    assert len(form.text.validators) == 2
+    assert type(form.text.validators[0]) is DataRequired
+    assert type(form.text.validators[1]) is Length

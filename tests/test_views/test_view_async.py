@@ -1,6 +1,5 @@
 import enum
 import json
-import sys
 from collections.abc import AsyncGenerator
 from typing import Any
 
@@ -26,7 +25,6 @@ from sqlalchemy.orm import declarative_base, relationship, selectinload
 from starlette.applications import Starlette
 from starlette.requests import Request
 
-import sqladmin.helpers
 from sqladmin import Admin, ModelView
 from tests.common import async_engine as engine
 
@@ -1356,7 +1354,7 @@ async def test_import_csv_permission_check_can_import(client: AsyncClient) -> No
         (3, "Import canceled. No rows were imported"),
     ],
 )
-async def test_import_csv_reqeust_disconnect(
+async def test_import_csv_request_disconnect(
     monkeypatch, call_number, expected_text
 ) -> None:
     """
@@ -1459,6 +1457,7 @@ async def test_import_csv_bad_type_is_404(client: AsyncClient) -> None:
 
 async def test_import_csv_empty_payload_error(client: AsyncClient) -> None:
     response = await client.post("/admin/user/import")
+    assert response.status_code == 400
     assert "Invalid file upload. Expected a CSV file." in response.text
 
 
@@ -1522,14 +1521,7 @@ async def test_import_csv_parse_error(client: AsyncClient, monkeypatch) -> None:
     def mock_parse_csv(csv_content: bytes, columns: list[str], delimiter: str = ","):
         raise Exception("Error!")
 
-    original_func = sqladmin.helpers.parse_csv
-
-    for module_name, module in list(sys.modules.items()):
-        if (
-            hasattr(module, "parse_csv")
-            and getattr(module, "parse_csv") is original_func
-        ):
-            monkeypatch.setattr(module, "parse_csv", mock_parse_csv)
+    monkeypatch.setattr("sqladmin._import.parse_csv", mock_parse_csv)
 
     response = await client.post(
         "/admin/user/import",
@@ -2052,7 +2044,7 @@ async def test_import_csv_on_import_row_hook(client: AsyncClient) -> None:
     assert user.status == Status.ACTIVE
 
 
-async def test_hybrid_property_python_getter(client: AsyncClient) -> None:
+async def test_hybrid_property_display_in_related_admin(client: AsyncClient) -> None:
     async with session_maker() as session:
         person = Person(name="Daniel")
         session.add(person)
@@ -2066,21 +2058,15 @@ async def test_hybrid_property_python_getter(client: AsyncClient) -> None:
     assert "Hybrid" in response.text
 
 
-# async def test_hybrid_property_sql_expression(client: AsyncClient) -> None:
-#     async with session_maker() as session:
-#         person = Person(name="Daniel")
-#         session.add(person)
-#         await session.flush()
-#         worker = Worker(person_id=person.id)
-#         session.add(worker)
-#         await session.commit()
-#
-#         query = select(Worker.person_name).filter(Worker.id == 1)
-#         worker: Worker = (await session.execute(query)).one_or_none()
-#         print(f"{worker.person_name = }")
-#
-#     response = await client.get("/admin/worker/list")
-#     with open("a.html", mode="w") as f:
-#         f.write(response.text)
-#     assert response.status_code == 200
-#     assert "inplace" in response.text
+async def test_hybrid_property_display_in_admin_list(client: AsyncClient) -> None:
+    async with session_maker() as session:
+        person = Person(name="Daniel")
+        session.add(person)
+        await session.flush()
+        worker = Worker(person_id=person.id)
+        session.add(worker)
+        await session.commit()
+
+    response = await client.get("/admin/worker/list")
+    assert response.status_code == 200
+    assert "Hybrid" in response.text
