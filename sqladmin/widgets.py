@@ -138,7 +138,9 @@ class FileInputWidget(widgets.FileInput):
 
         if isinstance(field.data, StorageFile):
             filename = field.data.name
-            current_value = Markup("Currently: {value}").format(value=field.data.path)
+            current_value = Markup("Currently: {value}").format(
+                value=escape(field.data.path)
+            )
             base64_bytes = base64.b64encode(field.data.open().read()).decode("utf-8")
 
         input_html = super().__call__(field, **kwargs)
@@ -152,7 +154,7 @@ class FileInputWidget(widgets.FileInput):
                 'data-role="clear-file-input">'
                 '<i class="fa-solid fa-xmark"></i>'
                 "</button>"
-            ).format(field_id=field.id)
+            ).format(field_id=escape(field.id))
         else:
             clear_button = Markup()
 
@@ -170,9 +172,9 @@ class FileInputWidget(widgets.FileInput):
             "</div>"
             "</div>"
         ).format(
-            base64=base64_bytes,
-            field_id=field.id,
-            filename=filename,
+            base64=escape(base64_bytes),
+            field_id=escape(field.id),
+            filename=escape(filename),
             current_value=current_value,
             input_html=input_html,
             clear_button=clear_button,
