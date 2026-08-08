@@ -152,7 +152,10 @@ class BaseAdmin:
     def init_debug_toolbar(self):
         if self.debug_toolbar:
             try:
-                from debug_toolbar.fastapi import setup_debug_toolbar, FastAPIDebugToolbarConfig
+                from debug_toolbar.fastapi import (
+                    FastAPIDebugToolbarConfig,
+                    setup_debug_toolbar,
+                )
             except ImportError as e:
                 raise ImportError(
                     "debug-toolbar is not installed. "
@@ -569,7 +572,7 @@ class Admin(BaseAdminView):
             authentication_backend=authentication_backend,
             i18n_config=i18n_config,
             audit_backend=audit_backend,
-            debug_toolbar = debug_toolbar
+            debug_toolbar=debug_toolbar,
         )
 
         static_files_kwargs = {**(static_files_kwargs or {}), "packages": ["sqladmin"]}
