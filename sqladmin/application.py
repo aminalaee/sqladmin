@@ -145,11 +145,11 @@ class BaseAdmin:
 
         self.admin = Starlette(middleware=middlewares)
         self.templates = self.init_templating_engine()
-        self.debug_toolbar = self.init_debug_toolbar()
         self._views: list[BaseView | ModelView] = []
         self._menu = Menu()
+        self.init_debug_toolbar()
 
-    def init_debug_toolbar(self):
+    def init_debug_toolbar(self) -> None:
         if self.debug_toolbar:
             try:
                 from debug_toolbar.fastapi import (
