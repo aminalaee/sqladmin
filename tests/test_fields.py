@@ -129,6 +129,13 @@ def test_query_select_field() -> None:
     form.select._select_data = []
     assert form.validate() is False
 
+    class F(Form):
+        select = QuerySelectField(data=select_data, get_label=lambda: "Answer")
+
+    form = F(DummyData(select=["1"]))
+    form.select._select_data = []
+    assert form.validate() is False
+
     class F(Form):  # type: ignore
         select = QuerySelectField(
             data=select_data,

@@ -984,3 +984,71 @@ async def test_order_by_error_type_field_not_found_in_ajax() -> None:
 
     with pytest.raises(ValueError, match="error does not exist"):
         admin.add_view(MissedFieldAdmin)
+
+
+async def test_ajax_allow_blank_true(client: AsyncClient) -> None:
+    name = test_ajax_allow_blank_true.__name__
+
+    model = type(
+        name,
+        (Base,),
+        {
+            "__tablename__": name,
+            "id": Column(Integer, primary_key=True),
+            "team_id": Column(Integer, ForeignKey("teams.id")),
+            "team": relationship("Team"),
+        },
+    )
+
+    async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.create_all)
+
+    view = type(
+        f"{name}Admin",
+        (ModelView,),
+        {
+            "form_ajax_refs": {"team": {"fields": ("id",)}},
+            "form_args": {"team": {"allow_blank": True}},
+        },
+        model=model,
+    )
+    admin.add_view(view)
+    identity = view().identity
+
+    response = await client.post(f"/admin/{identity}/create", data={"team": "__None"})
+    assert f"http://testserver/admin/{name}/create" == str(response.url)
+    assert response.status_code == 302
+
+
+async def test_ajax_allow_blank_false(client: AsyncClient) -> None:
+    name = test_ajax_allow_blank_false.__name__
+
+    model = type(
+        name,
+        (Base,),
+        {
+            "__tablename__": name,
+            "id": Column(Integer, primary_key=True),
+            "team_id": Column(Integer, ForeignKey("teams.id")),
+            "team": relationship("Team"),
+        },
+    )
+
+    async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.create_all)
+
+    view = type(
+        f"{name}Admin",
+        (ModelView,),
+        {
+            "form_ajax_refs": {"team": {"fields": ("id",)}},
+            "form_args": {"team": {"allow_blank": False}},
+        },
+        model=model,
+    )
+    admin.add_view(view)
+    identity = view().identity
+
+    response = await client.post(f"/admin/{identity}/create", data={"team": None})
+    assert "Not a valid choice" in str(response.text)
+    assert response.status_code == 400
