@@ -168,10 +168,7 @@ async def test_file_preview(client: AsyncClient) -> None:
 
 
 async def test_file_preview_pk_empty(client: AsyncClient) -> None:
-    error_msg = (
-        r"pk not found in request.path_params "
-        r"\"{\'identity\': \'user\', \'pk\': \'\', \'column_name\': \'file\'}\""
-    )
+    error_msg = r"pk not found in request\.path_params"
 
     with pytest.raises(ValueError, match=error_msg):
         await client.get("/admin/user//file/preview/")

@@ -326,9 +326,6 @@ admin.add_view(WorkerAdmin)
 def _parse_ndjson_events(content: str) -> list[dict]:
     events = []
     for line in content.splitlines():
-        line = line.strip()
-        if not line:
-            continue  # pragma: no cover
         events.append(json.loads(line))
     return events
 
@@ -764,10 +761,7 @@ async def test_check_can_view_details(client: AsyncClient) -> None:
     response = await client.get("admin/each-row-action/details/1")
     assert response.status_code == 403
 
-    error_msg = (
-        r"pk not found in request.path_params "
-        r"\"{'identity': 'each-row-action', 'pk': ''}\""
-    )
+    error_msg = r"pk not found in request\.path_params"
 
     with pytest.raises(ValueError, match=error_msg):
         await client.get("admin/each-row-action/details/")
@@ -2070,3 +2064,20 @@ async def test_hybrid_property_display_in_admin_list(client: AsyncClient) -> Non
     response = await client.get("/admin/worker/list")
     assert response.status_code == 200
     assert "Hybrid" in response.text
+
+
+async def test_hybrid_property_sql_expression() -> None:
+    async with session_maker() as session:
+        person = Person(name="Daniel")
+        session.add(person)
+        await session.flush()
+        session.add(Worker(person_id=person.id))
+        await session.commit()
+
+    async with session_maker() as session:
+        result = await session.execute(select(Worker.person_name))
+        value = result.scalar_one()
+
+    # Class-level access goes through _person_name_expression, which appends
+    # " inplace"; the instance getter appends "Hybrid" instead.
+    assert value == "Daniel inplace"

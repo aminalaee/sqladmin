@@ -44,12 +44,28 @@ class ImportProfile(Base):
     id = Column(Integer, primary_key=True)
 
 
+class ImportGadget(Base):
+    __tablename__ = "import_gadget_validate"
+
+    id = Column(Integer, primary_key=True)
+    # A String column with a ForeignKey to an Integer primary key. This is legal,
+    # and it is the shape that reaches the coercion failure in
+    # foreign_key_error_message: merge_import_row_data coerces against the String
+    # column, so a non-integer value passes through untouched and only fails when
+    # it is coerced against the Integer target column.
+    profile_ref = Column(String, ForeignKey("import_profile_validate.id"))
+
+
 class ImportUserAdmin(ModelView, model=ImportUser):
     column_import_list = [ImportUser.name, ImportUser.status]
 
 
 class ImportWidgetAdmin(ModelView, model=ImportWidget):
     column_import_list = [ImportWidget.profile_id, ImportWidget.active]
+
+
+class ImportGadgetAdmin(ModelView, model=ImportGadget):
+    column_import_list = [ImportGadget.profile_ref]
 
 
 def _model_view(admin_class: type[ModelView]) -> ModelView:
@@ -117,25 +133,19 @@ async def test_validate_import_row_reports_coercion_errors() -> None:
 
 
 @pytest.mark.anyio
-async def test_import_value_error_coerce_column_value(monkeypatch) -> None:
-    def mock_coerce_column_value(column: Column, value):
-        raise ValueError("error!")
-
-    monkeypatch.setattr(
-        "sqladmin._import.coerce_column_value", mock_coerce_column_value
-    )
-
-    model_view = _model_view(ImportWidgetAdmin)
+async def test_import_value_error_coerce_column_value() -> None:
+    model_view = _model_view(ImportGadgetAdmin)
     result = await validate_foreign_key_values(
         model_view,
         {
-            ImportWidget.id.key: 1,
-            ImportWidget.active.key: True,
-            ImportWidget.profile_id.key: 1,
+            ImportGadget.id.key: 1,
+            ImportGadget.profile_ref.key: "not-an-int",
         },
         {},
     )
-    assert result == {"profile_id": ["Invalid value 1 for column profile_id."]}
+    assert result == {
+        "profile_ref": ["Invalid value 'not-an-int' for column profile_ref."]
+    }
 
 
 @pytest.mark.anyio

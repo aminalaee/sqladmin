@@ -279,10 +279,16 @@ def test_textarea_field_with_validators() -> None:
         text = TextAreaField(validators=[DataRequired(), Length(min=1, max=100)])
 
     form = F()
+    html = form.text()
 
     assert len(form.text.validators) == 2
     assert type(form.text.validators[0]) is DataRequired
     assert type(form.text.validators[1]) is Length
+
+    # Validator flags must reach the rendered widget, not just the field.
+    assert "required" in html
+    assert 'minlength="1"' in html
+    assert 'maxlength="100"' in html
 
 
 def test_enum_field() -> None:

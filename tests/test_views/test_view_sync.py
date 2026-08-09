@@ -128,7 +128,9 @@ class Worker(Base):
     @person_name.inplace.expression
     def _person_name_expression(cls):
         return (
-            select(Person.name).where(Person.id == cls.person_id).label("person_name")
+            select(Person.name.op("||")(" inplace"))
+            .where(Person.id == cls.person_id)
+            .label("person_name")
         )
 
     def __str__(self):
@@ -246,9 +248,6 @@ admin.add_view(WorkerAdmin)
 def _parse_ndjson_events(content: str) -> list[dict]:
     events = []
     for line in content.splitlines():
-        line = line.strip()
-        if not line:
-            continue  # pragma: no cover
         events.append(json.loads(line))
     return events
 
@@ -1162,9 +1161,27 @@ def test_hybrid_inplace_property(client: TestClient) -> None:
         session.add(worker)
         session.commit()
 
+    # The details page reads the attribute off an instance, so this asserts the
+    # Python getter. The SQL expression is covered by the test below.
     response = client.get("/admin/worker/details/1")
     assert response.status_code == 200
     assert "Hybrid" in response.text
+
+
+def test_hybrid_property_sql_expression() -> None:
+    with session_maker() as session:
+        person = Person(name="Daniel")
+        session.add(person)
+        session.flush()
+        session.add(Worker(person_id=person.id))
+        session.commit()
+
+    with session_maker() as session:
+        value = session.execute(select(Worker.person_name)).scalar_one()
+
+    # Class-level access goes through _person_name_expression, which appends
+    # " inplace"; the instance getter appends "Hybrid" instead.
+    assert value == "Daniel inplace"
 
 
 def test_import_csv_file(client: TestClient) -> None:
