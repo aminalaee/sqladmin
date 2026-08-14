@@ -89,11 +89,11 @@ class BaseAdmin:
         logo_height: int = 64,
         favicon_url: str | None = None,
         templates_dir: str = "templates",
-        debug_toolbar: bool | Any = False,
         middlewares: Sequence[Middleware] | None = None,
         authentication_backend: AuthenticationBackend | None = None,
         i18n_config: I18nConfig | None = None,
         audit_backend: AuditBackend | None = None,
+        debug_toolbar: bool | Any = False,
     ) -> None:
         self.app = app
         self.audit_backend = audit_backend or NullAuditBackend()

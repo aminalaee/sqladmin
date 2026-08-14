@@ -240,6 +240,14 @@ def test_build_category_menu():
     admin._menu.items.pop().name = "Accounts"
 
 
+@pytest.mark.parametrize("debug_toolbar", [True, False])
+def test_debug_toolbar(debug_toolbar: bool) -> None:
+    app = Starlette()
+    admin = Admin(app=app, engine=engine, debug_toolbar=debug_toolbar)
+
+    assert admin.debug_toolbar is debug_toolbar
+
+
 def test_normalize_wtform_fields() -> None:
     app = Starlette()
     admin = Admin(app=app, engine=engine)

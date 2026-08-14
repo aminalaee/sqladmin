@@ -39,6 +39,7 @@ nav:
       - Multiple databases: "cookbook/multiple_databases.md"
       - Using rich text editor: "cookbook/using_wysiwyg.md"
       - Audit logging: "cookbook/audit_logging.md"
+      - Debug toolbar: "docs/debug_toolbar.md"
       - Working with Passwords: "cookbook/working_with_passwords.md"
       - Displaying one-time secrets: "cookbook/displaying_one_time_secrets.md"
   - API Reference:

@@ -1,4 +1,3 @@
-```markdown
 # Debugging with Debug Toolbar
 
 SQLAdmin works with any ASGI-compatible debug toolbar.  
@@ -9,7 +8,14 @@ This guide shows how to enable it with FastAPI (the most common case).
 ## Installation
 
 ```bash
-pip install "debug-toolbar[fastapi]"
+# For Litestar
+pip install debug-toolbar[litestar]
+
+# For Starlette
+pip install debug-toolbar[starlette]
+
+# For FastAPI
+pip install debug-toolbar[fastapi]
 ```
 
 If you also want the SQLAlchemy panel (recommended):
@@ -41,7 +47,9 @@ class User(Base):
 Base.metadata.create_all(engine)
 
 app = FastAPI()
-admin = Admin(app, engine)
+
+# Pass the debug toolbar configuration to SQLAdmin.
+admin = Admin(app, engine, debug_toolbar)
 
 class UserAdmin(ModelView, model=User):
     column_list = [User.id, User.name]
@@ -73,7 +81,3 @@ config = FastAPIDebugToolbarConfig(
 )
 
 setup_debug_toolbar(app, config)
-```
-
-The most useful panel for SQLAdmin is **SQLAlchemyPanel** — it shows every SQL query executed by the admin interface, including N+1 detection.
-```
