@@ -142,18 +142,58 @@ full-text search, trigram matching, or anything else your database supports:
 
     ```python title="admin.py"
     from sqlalchemy import Select, select
+    from starlette.requests import Request
 
     class ArticleAdmin(ModelView, model=Article):
         column_searchable_list = [Article.title]
         palette_search = True
 
-        def palette_search_query(self, term: str) -> Select:
+        def palette_search_query(self, request: Request, term: str) -> Select:
             return (
                 select(Article)
                 .where(Article.search_vector.match(term))
                 .limit(self.palette_search_limit)
             )
     ```
+
+## Relationships and `__str__`
+
+The palette calls `str(obj)` to build each result's label, after the query has
+returned. If `__str__` accesses a relationship that was not eager-loaded, the
+session is already closed and SQLAlchemy raises `DetachedInstanceError`.
+
+The palette follows the same convention as the rest of SQLAdmin here: it
+eager-loads exactly the relations named in `column_list`, the same set already
+eager-loaded for the list page. List a relationship there if `__str__` touches
+it, even if you do not want it rendered as its own column:
+
+!!! example
+
+    ```python title="admin.py"
+    class PlayerAdmin(ModelView, model=Player):
+        column_list = [Player.id, Player.name, Player.team]
+        column_searchable_list = [Player.name]
+        palette_search = True
+    ```
+
+A relationship touched by `__str__` but absent from `column_list` will still
+crash. For a label built from a relationship you would rather not display,
+override `palette_search_query` to eager-load it explicitly instead:
+
+```python
+def palette_search_query(self, request: Request, term: str) -> Select:
+    from sqlalchemy.orm import selectinload
+
+    stmt = super().palette_search_query(request, term)
+    return stmt.options(selectinload(Player.team))
+```
+
+## Request-based scoping
+
+`palette_search_query` builds on `list_query(request)` by default, so a view
+that restricts `list_query` per request — filtering by tenant from the session,
+for example — gets the same restriction applied to palette results
+automatically. There is nothing extra to opt into for this to take effect.
 
 ## Translations
 

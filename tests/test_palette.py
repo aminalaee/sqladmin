@@ -3,9 +3,9 @@ from typing import Any
 
 import pytest
 from httpx import ASGITransport, AsyncClient
-from sqlalchemy import Column, Integer, String, create_engine
+from sqlalchemy import Column, ForeignKey, Integer, String, create_engine
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
-from sqlalchemy.orm import Session, declarative_base, sessionmaker
+from sqlalchemy.orm import Session, declarative_base, relationship, sessionmaker
 from starlette.applications import Starlette
 from starlette.requests import Request
 from starlette.testclient import TestClient
@@ -433,8 +433,10 @@ def test_palette_requires_authentication() -> None:
 
     Base.metadata.drop_all(engine)
 
-    assert resp.status_code in (302, 307)
-    assert "/admin/login" in resp.headers["location"]
+    # Unlike other admin routes, the palette endpoint answers unauthenticated
+    # requests with JSON rather than an HTML redirect: see
+    # test_palette_returns_json_401_when_unauthenticated for why.
+    assert resp.status_code == 401
 
 
 # --------------------------------------------------------------------------- #
@@ -609,3 +611,246 @@ async def test_palette_commands_can_be_overridden() -> None:
     commands = resp.json()["commands"]
     assert [c["label"] for c in commands] == ["goTo", "create", "Export as CSV"]
     assert commands[-1]["badge"] == "csv"
+
+
+# --------------------------------------------------------------------------- #
+# Review follow-ups: scoped search against models the fan-out never reaches
+# --------------------------------------------------------------------------- #
+class NoDetailsAdmin(ModelView, model=Secret):
+    can_view_details = False
+    column_searchable_list = [Secret.name]
+    palette_search = True
+
+
+class NoSearchableAdmin(ModelView, model=Locked):
+    # No column_searchable_list at all: _search_fields is empty.
+    palette_search = True
+
+
+async def test_scoped_search_against_can_view_details_false() -> None:
+    app = Starlette()
+    admin = Admin(app=app, engine=async_engine)
+    admin.add_view(NoDetailsAdmin)
+
+    async with async_engine.begin() as conn:
+        await conn.run_sync(Base.metadata.create_all)
+    async with async_session_maker() as session:
+        session.add(Secret(name="johnson secret"))
+        await session.commit()
+
+    transport = ASGITransport(app=app)
+    async with AsyncClient(transport=transport, base_url="http://test") as client:
+        resp = await client.get(
+            "/admin/palette", params={"q": "johnson", "scope": "secret"}
+        )
+
+    async with async_engine.begin() as conn:
+        await conn.run_sync(Base.metadata.drop_all)
+    await async_engine.dispose()
+
+    # The view is visible/accessible so the scope itself resolves (no 404),
+    # but can_view_details = False means there is nothing to link to.
+    assert resp.status_code == 200
+    assert resp.json()["records"] == []
+
+
+async def test_scoped_search_against_model_with_no_searchable_columns() -> None:
+    app = Starlette()
+    admin = Admin(app=app, engine=async_engine)
+    admin.add_view(NoSearchableAdmin)
+
+    async with async_engine.begin() as conn:
+        await conn.run_sync(Base.metadata.create_all)
+    async with async_session_maker() as session:
+        session.add(Locked(name="john locked"))
+        await session.commit()
+
+    transport = ASGITransport(app=app)
+    async with AsyncClient(transport=transport, base_url="http://test") as client:
+        resp = await client.get(
+            "/admin/palette", params={"q": "john", "scope": "locked"}
+        )
+
+    async with async_engine.begin() as conn:
+        await conn.run_sync(Base.metadata.drop_all)
+    await async_engine.dispose()
+
+    assert resp.status_code == 200
+    assert resp.json()["records"] == []
+
+
+# --------------------------------------------------------------------------- #
+# Review follow-ups: relationships touched by __str__, tenant-style scoping
+# --------------------------------------------------------------------------- #
+class Team(Base):
+    __tablename__ = "palette_teams"
+
+    id = Column(Integer, primary_key=True)
+    name = Column(String(length=64))
+
+
+class Player(Base):
+    __tablename__ = "palette_players"
+
+    id = Column(Integer, primary_key=True)
+    name = Column(String(length=64))
+    team_id = Column(Integer, ForeignKey("palette_teams.id"))
+    team = relationship("Team")
+
+    def __str__(self) -> str:
+        return f"{self.name} ({self.team.name if self.team else '-'})"
+
+
+class PlayerAdmin(ModelView, model=Player):
+    # The relation __str__ touches must be listed here: sqladmin eager-loads
+    # exactly the relations named in column_list wherever it later calls
+    # str(obj), and the palette follows the same convention.
+    column_list = [Player.id, Player.name, Player.team]
+    column_searchable_list = [Player.name]
+    palette_search = True
+
+
+class TenantArticle(Base):
+    __tablename__ = "palette_tenant_articles"
+
+    id = Column(Integer, primary_key=True)
+    title = Column(String(length=64))
+    tenant = Column(String(length=64))
+
+    def __str__(self) -> str:
+        return self.title or ""
+
+
+class TenantArticleAdmin(ModelView, model=TenantArticle):
+    column_searchable_list = [TenantArticle.title]
+    palette_search = True
+
+    def list_query(self, request: Request):  # type: ignore[no-untyped-def]
+        from sqlalchemy import select
+
+        tenant = request.query_params.get("tenant")
+        stmt = select(TenantArticle)
+        if tenant:
+            stmt = stmt.where(TenantArticle.tenant == tenant)
+        return stmt
+
+
+async def test_relationship_in_str_does_not_crash_when_listed() -> None:
+    app = Starlette()
+    admin = Admin(app=app, engine=async_engine)
+    admin.add_view(PlayerAdmin)
+
+    async with async_engine.begin() as conn:
+        await conn.run_sync(Base.metadata.create_all)
+    async with async_session_maker() as session:
+        team = Team(name="Backend")
+        session.add(team)
+        await session.flush()
+        session.add(Player(name="John", team_id=team.id))
+        await session.commit()
+
+    transport = ASGITransport(app=app)
+    async with AsyncClient(transport=transport, base_url="http://test") as client:
+        resp = await client.get("/admin/palette", params={"q": "john"})
+
+    async with async_engine.begin() as conn:
+        await conn.run_sync(Base.metadata.drop_all)
+    await async_engine.dispose()
+
+    assert resp.status_code == 200
+    assert _labels(resp.json()["records"]) == {"John (Backend)"}
+
+
+async def test_palette_respects_list_query_scoping() -> None:
+    # A view overriding list_query for request-based scoping (e.g. a tenant
+    # filter) should see that scoping applied by the palette too, not just
+    # the list page.
+    app = Starlette()
+    admin = Admin(app=app, engine=async_engine)
+    admin.add_view(TenantArticleAdmin)
+
+    async with async_engine.begin() as conn:
+        await conn.run_sync(Base.metadata.create_all)
+    async with async_session_maker() as session:
+        session.add_all(
+            [
+                TenantArticle(title="Acme roadmap", tenant="acme"),
+                TenantArticle(title="Acme onboarding", tenant="acme"),
+                TenantArticle(title="Beta roadmap", tenant="beta"),
+            ]
+        )
+        await session.commit()
+
+    transport = ASGITransport(app=app)
+    async with AsyncClient(transport=transport, base_url="http://test") as client:
+        resp = await client.get(
+            "/admin/palette",
+            params={"q": "roadmap", "scope": "tenant-article", "tenant": "acme"},
+        )
+
+    async with async_engine.begin() as conn:
+        await conn.run_sync(Base.metadata.drop_all)
+    await async_engine.dispose()
+
+    assert _labels(resp.json()["records"]) == {"Acme roadmap"}
+
+
+# --------------------------------------------------------------------------- #
+# Review follow-ups: authentication returns JSON, not an HTML redirect
+# --------------------------------------------------------------------------- #
+def test_palette_returns_json_401_when_unauthenticated() -> None:
+    from sqladmin.authentication import AuthenticationBackend
+
+    class DenyBackend(AuthenticationBackend):
+        async def login(self, request: Request) -> bool:
+            return False
+
+        async def logout(self, request: Request) -> bool:
+            return True
+
+        async def authenticate(self, request: Request) -> bool:
+            return False
+
+    engine = create_engine("sqlite://")
+    Base.metadata.create_all(engine)
+
+    app = Starlette()
+    admin = Admin(
+        app=app,
+        engine=engine,
+        authentication_backend=DenyBackend(secret_key="x"),
+    )
+    admin.add_view(UserAdmin)
+
+    with TestClient(app) as client:
+        resp = client.get(
+            "/admin/palette", headers={"X-Requested-With": "XMLHttpRequest"}
+        )
+
+    Base.metadata.drop_all(engine)
+
+    # A JSON 401 (not an HTML redirect) lets the frontend recognise the
+    # session expired and send the user to the login page itself, instead of
+    # rendering a login page's markup inside the results list.
+    assert resp.status_code == 401
+    assert resp.json() == {"detail": "Authentication required"}
+
+
+def test_login_url_exposed_for_client_side_redirect(sync_client: TestClient) -> None:
+    page = sync_client.get("/admin/user/list").text
+    assert "SA_PALETTE_LOGIN_URL" in page
+
+
+# --------------------------------------------------------------------------- #
+# Review follow-ups: bounds on the constructor parameters
+# --------------------------------------------------------------------------- #
+def test_negative_palette_settings_are_clamped_to_zero() -> None:
+    app = Starlette()
+    admin = Admin(
+        app=app,
+        engine=sync_engine,
+        palette_search_min_chars=-5,
+        palette_search_max_models=-5,
+    )
+    assert admin.palette_search_min_chars == 0
+    assert admin.palette_search_max_models == 0

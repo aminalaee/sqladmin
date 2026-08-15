@@ -357,7 +357,35 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
     palette_search_limit: ClassVar[int] = 5
     """Maximum number of records returned per model from a palette query."""
 
-    def palette_commands(self, request: Request) -> builtins.list[dict]:
+    def palette_search_query(self, request: Request, term: str) -> Select:
+        """Statement used for palette record search of this model.
+
+        The default reuses ``search_query`` — the same ``ilike`` expression as
+        the list page — built on top of ``list_query(request)`` so any
+        request-based scoping applied there also applies to the palette, and
+        caps rows at ``palette_search_limit``. Override for full-text search,
+        trigram matching, or anything else the database supports.
+
+        ???+ example
+            ```python
+            class ArticleAdmin(ModelView, model=Article):
+                column_searchable_list = [Article.title]
+                palette_search = True
+
+                def palette_search_query(self, request: Request, term: str) -> Select:
+                    return (
+                        select(Article)
+                        .where(Article.search_vector.match(term))
+                        .limit(self.palette_search_limit)
+                    )
+            ```
+        """
+
+        from sqladmin.palette import default_palette_search_query
+
+        return default_palette_search_query(self, request, term)
+
+    def palette_commands(self, request: Request) -> list[dict]:
         """Commands the palette offers for this model.
 
         Called only for the model that best matches what the user typed, so the

@@ -16,6 +16,8 @@
 var saPaletteScope = null;
 var saPaletteScopeName = null;
 var saPaletteTimeout = null;
+var saPaletteXhr = null;
+var saPaletteRequestSeq = 0;
 
 function saPaletteText(key) {
   var i18n = window.SA_PALETTE_I18N || {};
@@ -33,8 +35,18 @@ function saPaletteFormat(key, params) {
   return text;
 }
 
+// $("<div>").text(v).html() only escapes &, < and > for element-content
+// context. Values here are also written into an HTML attribute (data-url,
+// data-scope, data-name), where a literal double quote closes the attribute
+// early and lets anything after it become new, unescaped markup. Quotes are
+// escaped unconditionally, in both contexts, since escaping them in plain
+// text content is harmless.
 function saPaletteEsc(value) {
-  return $("<div>").text(value == null ? "" : value).html();
+  return $("<div>")
+    .text(value == null ? "" : value)
+    .html()
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
 }
 
 // Wrap occurrences of the search term in <mark>.
@@ -60,20 +72,6 @@ function saPaletteHighlight(text, term) {
     last = match.index + match[0].length;
   }
   return out + saPaletteEsc(text.slice(last));
-}
-
-function saPaletteTerm() {
-  return ($("#sa-palette-input").val() || "").trim();
-}
-
-function saPaletteSingular(name) {
-  if (/ies$/.test(name)) {
-    return name.slice(0, -3) + "y";
-  }
-  if (/s$/.test(name)) {
-    return name.slice(0, -1);
-  }
-  return name;
 }
 
 function saPaletteRow(lead, label, right, attrs) {
@@ -138,14 +136,39 @@ function saPaletteSetScope(identity, name) {
 function saPaletteFetch() {
   // Native trim: jQuery 4.0 removed $.trim.
   var term = ($("#sa-palette-input").val() || "").trim();
-  $.ajax({
+  var scope = saPaletteScope;
+
+  // Requests do not always resolve in the order they were sent — a short
+  // term commonly matches more rows than a longer one typed a moment later,
+  // and can therefore take longer to come back. Cancel whatever is still in
+  // flight and stamp this request with a sequence number so a response that
+  // arrives after a newer one has already rendered is recognised as stale
+  // and dropped rather than overwriting a result the user has moved past.
+  if (saPaletteXhr) {
+    saPaletteXhr.abort();
+  }
+  var seq = ++saPaletteRequestSeq;
+
+  saPaletteXhr = $.ajax({
     url: window.SA_PALETTE_URL,
     method: "GET",
     dataType: "json",
-    data: saPaletteScope ? { q: term, scope: saPaletteScope } : { q: term },
+    data: scope ? { q: term, scope: scope } : { q: term },
     headers: { "X-Requested-With": "XMLHttpRequest" },
-    success: saPaletteRender,
-    error: function () {
+    success: function (data) {
+      if (seq !== saPaletteRequestSeq) {
+        return;
+      }
+      saPaletteRender(data, term);
+    },
+    error: function (jqXHR) {
+      if (jqXHR.statusText === "abort" || seq !== saPaletteRequestSeq) {
+        return;
+      }
+      if (jqXHR.status === 401 && window.SA_PALETTE_LOGIN_URL) {
+        window.location.href = window.SA_PALETTE_LOGIN_URL;
+        return;
+      }
       $("#sa-palette-results").html(
         '<div class="sa-empty">' + saPaletteEsc(saPaletteText("searchFailed")) + "</div>"
       );
@@ -153,9 +176,8 @@ function saPaletteFetch() {
   });
 }
 
-function saPaletteRender(data) {
+function saPaletteRender(data, term) {
   var html = "";
-  var term = saPaletteTerm();
 
   if (data.scope) {
     html += saPaletteHead(

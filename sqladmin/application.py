@@ -57,7 +57,7 @@ from sqladmin.i18n import (
     ngettext,
 )
 from sqladmin.models import BaseView, ModelView
-from sqladmin.palette import build_palette_response
+from sqladmin.palette import build_palette_response, palette_login_required
 from sqladmin.secret import Secret
 from sqladmin.templating import Jinja2Templates
 
@@ -105,8 +105,8 @@ class BaseAdmin:
         self.logo_height = logo_height
         self.favicon_url = favicon_url
         self.i18n_config = i18n_config
-        self.palette_search_min_chars = palette_search_min_chars
-        self.palette_search_max_models = palette_search_max_models
+        self.palette_search_min_chars = max(0, palette_search_min_chars)
+        self.palette_search_max_models = max(0, palette_search_max_models)
         if i18n_config is not None and not BABEL_INSTALLED:
             warnings.warn(
                 "i18n_config was provided but the 'babel' package is not "
@@ -1013,7 +1013,7 @@ class Admin(BaseAdminView):
         data = [loader.format(m) for m in await loader.get_list(term)]
         return JSONResponse({"results": data})
 
-    @login_required
+    @palette_login_required
     async def palette(self, request: Request) -> Response:
         """Command-palette search endpoint.
 

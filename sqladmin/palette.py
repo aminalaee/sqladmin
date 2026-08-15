@@ -1,9 +1,12 @@
 from __future__ import annotations
 
 import asyncio
+import functools
+from collections.abc import Callable
 from typing import TYPE_CHECKING, Any, NamedTuple
 
-from sqlalchemy import Select, select
+from sqlalchemy import Select
+from sqlalchemy.orm import selectinload
 from starlette.exceptions import HTTPException
 from starlette.requests import Request
 from starlette.responses import JSONResponse, Response
@@ -16,12 +19,47 @@ if TYPE_CHECKING:
 
 __all__ = [
     "PaletteResult",
+    "palette_login_required",
     "default_model_commands",
+    "default_palette_search_query",
     "palette_base_query",
-    "palette_search_query",
     "search_model_records",
     "build_palette_response",
 ]
+
+
+def palette_login_required(
+    func: Callable[..., Any],
+) -> Callable[..., Any]:
+    """Authentication guard for the palette endpoint.
+
+    ``sqladmin.authentication.login_required`` answers an unauthenticated
+    request with a 302 redirect to the HTML login page. ``palette.js`` always
+    calls this endpoint with ``XMLHttpRequest`` and ``dataType: "json"``, so a
+    redirect just fails to parse as JSON: the request "succeeds" with a login
+    page in the body, and the palette can only report a generic search
+    failure with no indication that the fix is to log back in.
+
+    This mirrors ``login_required`` but returns a 401 JSON response instead,
+    which ``palette.js`` recognises and turns into a redirect to the login
+    page itself.
+    """
+
+    @functools.wraps(func)
+    async def wrapper(self: Any, request: Request) -> Response:
+        admin = getattr(self, "_admin_ref", self)
+        auth_backend = getattr(admin, "authentication_backend", None)
+        if auth_backend is not None:
+            authenticated = await auth_backend.authenticate(request)
+            if isinstance(authenticated, Response):
+                return authenticated
+            if not authenticated:
+                return JSONResponse(
+                    {"detail": "Authentication required"}, status_code=401
+                )
+        return await func(self, request)
+
+    return wrapper
 
 
 class PaletteResult(NamedTuple):
@@ -37,26 +75,38 @@ class PaletteResult(NamedTuple):
         return self._asdict()
 
 
-def palette_base_query(view: ModelView) -> Select:
+def palette_base_query(view: ModelView, request: Request) -> Select:
     """Base statement for palette search.
 
-    Kept separate from ``ModelView.list_query`` (which takes a ``Request`` and
-    may apply per-request scoping that does not make sense for a global search).
-    Relationships are intentionally *not* eager-loaded: the label is rendered
-    from already-selected columns, so we avoid extra joins.
+    Built from ``view.list_query(request)`` rather than a bare
+    ``select(view.model)``, so any request-based scoping a view applies there
+    (tenant filtering by session, for example) also applies to the palette.
+    Overriding ``list_query`` is therefore enough to scope both the list page
+    and the palette consistently.
+
+    Relationships referenced by ``__str__`` are a common source of a
+    ``DetachedInstanceError`` once the session that loaded the row is closed,
+    since the label is rendered after the query has returned. Eager-loading
+    ``view._list_relations`` — the same relations already eager-loaded for the
+    list page — covers that without requiring every view to know to do it.
     """
 
-    return select(view.model)
+    stmt = view.list_query(request)
+    for relation in view._list_relations:
+        stmt = stmt.options(selectinload(relation))
+    return stmt
 
 
-def palette_search_query(view: ModelView, term: str) -> Select:
-    """Statement used for palette record search of a single model.
+def default_palette_search_query(
+    view: ModelView, request: Request, term: str
+) -> Select:
+    """Default implementation behind ``ModelView.palette_search_query``.
 
     Reuses ``ModelView.search_query`` — the same ``ilike`` expression as the
     list page — and caps rows at ``view.palette_search_limit``.
     """
 
-    stmt = palette_base_query(view)
+    stmt = palette_base_query(view, request)
     stmt = view.search_query(stmt=stmt, term=term)
     return stmt.limit(view.palette_search_limit)
 
@@ -79,7 +129,7 @@ async def search_model_records(
     if not view._search_fields or not view.can_view_details:
         return []
 
-    stmt = palette_search_query(view, term)
+    stmt = view.palette_search_query(request, term)
     rows = await view._run_query(stmt)
 
     allowed = await asyncio.gather(

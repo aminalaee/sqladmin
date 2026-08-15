@@ -24,6 +24,7 @@
 </div>
 <script>
   window.SA_PALETTE_URL = "{{ url_for('admin:palette') }}";
+  window.SA_PALETTE_LOGIN_URL = "{{ request.url_for('admin:login') }}";
   window.SA_PALETTE_I18N = {
     models: "{{ _('Models') }}",
     modelsHint: "{{ _('registry, no database query') }}",
