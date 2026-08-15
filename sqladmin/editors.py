@@ -6,6 +6,8 @@ from typing import Any
 from wtforms import Form
 from wtforms.fields import TextAreaField
 
+from sqladmin.fields import JSONField
+
 
 class FieldMedia:
     """
@@ -56,7 +58,25 @@ def collect_form_media(form: Form) -> FieldMedia:
     return media
 
 
-class CKEditor5Field(TextAreaField):
+class RichTextFieldMixin:
+    """
+    Shared behaviour for WYSIWYG fields that replace a ``<textarea>``.
+
+    Editors hide the original textarea. If it still has the HTML5 ``required``
+    attribute, Chrome blocks submit with::
+
+        An invalid form control with name='...' is not focusable.
+
+    No request is sent. Keep WTForms server-side required validators; only the
+    client-side attribute is suppressed.
+    """
+
+    def __call__(self, **kwargs: Any) -> Any:
+        kwargs["required"] = False
+        return super().__call__(**kwargs)  # type: ignore[misc]
+
+
+class CKEditor5Field(RichTextFieldMixin, TextAreaField):
     """
     A ``TextAreaField`` rendered with the CKEditor 5 rich text editor.
 
@@ -92,7 +112,7 @@ class CKEditor5Field(TextAreaField):
         )
 
 
-class TinyMCEField(TextAreaField):
+class TinyMCEField(RichTextFieldMixin, TextAreaField):
     """
     A ``TextAreaField`` rendered with the TinyMCE rich text editor.
 
@@ -112,12 +132,14 @@ class TinyMCEField(TextAreaField):
         plugins: str = "lists link table code wordcount",
         toolbar: str = "bold italic | link | code",
         min_height: int = 200,
+        content_style: str = "",
         **kwargs: Any,
     ) -> None:
         self.api_key = api_key
         self.plugins = plugins
         self.toolbar = toolbar
         self.min_height = min_height
+        self.content_style = content_style
         super().__init__(*args, **kwargs)
 
     @property
@@ -127,7 +149,7 @@ class TinyMCEField(TextAreaField):
         )
 
 
-class QuillField(TextAreaField):
+class QuillField(RichTextFieldMixin, TextAreaField):
     """
     A ``TextAreaField`` rendered with the Quill rich text editor.
 
@@ -164,7 +186,7 @@ class QuillField(TextAreaField):
         )
 
 
-class SummernoteField(TextAreaField):
+class SummernoteField(RichTextFieldMixin, TextAreaField):
     """
     A ``TextAreaField`` rendered with the Summernote rich text editor.
 
@@ -203,4 +225,46 @@ class SummernoteField(TextAreaField):
                 f"https://cdn.jsdelivr.net/npm/summernote@{self._VERSION}/dist/summernote-bs4.min.css"
             ],
             js=js,
+        )
+
+
+class JSONEditorField(JSONField):
+    """
+    A field rendered with the `JSONEditor <https://github.com/josdejong/jsoneditor>`_
+    widget for editing ``JSON``/``JSONB`` columns.
+
+    Inherits the JSON serialisation of :class:`sqladmin.fields.JSONField`, so
+    the stored value is a real JSON value (dict/list), not a string. Use it
+    through ``form_overrides`` and configure it with ``form_args``::
+
+        class ConfigAdmin(ModelView, model=Config):
+            form_overrides = {"data": JSONEditorField}
+            form_args = {"data": {"mode": "code"}}
+
+    Assets are loaded from a CDN. Pass ``version`` to pin a release and
+    ``mode`` to pick the initial editor mode (one of ``"tree"``, ``"code"``,
+    ``"form"``, ``"text"`` or ``"view"``).
+    """
+
+    editor_init_template = "sqladmin/editors/jsoneditor.html"
+
+    def __init__(
+        self,
+        *args: Any,
+        version: str = "10.1.0",
+        mode: str = "tree",
+        min_height: int = 300,
+        **kwargs: Any,
+    ) -> None:
+        self.version = version
+        self.mode = mode
+        self.min_height = min_height
+        super().__init__(*args, **kwargs)
+
+    @property
+    def media(self) -> FieldMedia:
+        base = f"https://cdn.jsdelivr.net/npm/jsoneditor@{self.version}/dist"
+        return FieldMedia(
+            css=[f"{base}/jsoneditor.min.css"],
+            js=[f"{base}/jsoneditor.min.js"],
         )

@@ -38,6 +38,7 @@ from sqladmin._import import handle_import_upload, import_csv, import_error_resp
 from sqladmin._menu import CategoryMenu, Menu, ViewMenu
 from sqladmin._types import ENGINE_TYPE, SESSION_MAKER
 from sqladmin.ajax import QueryAjaxModelLoader
+from sqladmin.audit import AuditBackend, NullAuditBackend
 from sqladmin.authentication import AuthenticationBackend, login_required
 from sqladmin.editors import collect_form_media
 from sqladmin.flash import get_flashed_messages
@@ -92,10 +93,12 @@ class BaseAdmin:
         middlewares: Sequence[Middleware] | None = None,
         authentication_backend: AuthenticationBackend | None = None,
         i18n_config: I18nConfig | None = None,
+        audit_backend: AuditBackend | None = None,
         palette_search_min_chars: int = 2,
         palette_search_max_models: int = 8,
     ) -> None:
         self.app = app
+        self.audit_backend = audit_backend or NullAuditBackend()
         self.engine = engine
         self.base_url = base_url
         self.templates_dir = templates_dir
@@ -516,6 +519,7 @@ class Admin(BaseAdminView):
         authentication_backend: AuthenticationBackend | None = None,
         static_files_kwargs: dict[str, Any] | None = None,
         i18n_config: I18nConfig | None = None,
+        audit_backend: AuditBackend | None = None,
         palette_search_min_chars: int = 2,
         palette_search_max_models: int = 8,
     ) -> None:
@@ -554,6 +558,7 @@ class Admin(BaseAdminView):
             middlewares=middlewares,
             authentication_backend=authentication_backend,
             i18n_config=i18n_config,
+            audit_backend=audit_backend,
             palette_search_min_chars=palette_search_min_chars,
             palette_search_max_models=palette_search_max_models,
         )
@@ -661,6 +666,7 @@ class Admin(BaseAdminView):
             )
 
         context = {
+            **await model_view.list_context(request),
             "model_view": model_view,
             "pagination": pagination,
             "can_import": await model_view.check_can_import(request),
@@ -685,6 +691,7 @@ class Admin(BaseAdminView):
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
 
         context = {
+            **await model_view.details_context(request),
             "model_view": model_view,
             "model": model,
             "title": model_view.name,
@@ -762,9 +769,12 @@ class Admin(BaseAdminView):
 
         Form = await model_view.scaffold_form(model_view._form_create_rules)
 
+        create_context = await model_view.create_context(request)
+
         if request.method == "GET":
             form = Form()
             context = {
+                **create_context,
                 "model_view": model_view,
                 "form": form,
             }
@@ -776,6 +786,7 @@ class Admin(BaseAdminView):
         form = Form(form_data)
 
         context = {
+            **create_context,
             "model_view": model_view,
             "form": form,
         }
@@ -830,6 +841,7 @@ class Admin(BaseAdminView):
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
         initial_data = await model_view.get_form_data_for_edit(model)
         context = {
+            **await model_view.edit_context(request),
             "obj": model,
             "model_view": model_view,
             "form": Form(data=initial_data),
@@ -1010,7 +1022,7 @@ class Admin(BaseAdminView):
         except KeyError as exc:
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST) from exc
 
-        data = [loader.format(m) for m in await loader.get_list(term)]
+        data = [loader.format(m) for m in await loader.get_list(request, term)]
         return JSONResponse({"results": data})
 
     @palette_login_required
