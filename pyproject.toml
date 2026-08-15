@@ -38,6 +38,7 @@ dependencies = [
   "jinja2",
   "python-multipart",
   "sqlalchemy >= 2.0",
+  "litestar-debug-toolbar>=0.4.2",
 ]
 
 

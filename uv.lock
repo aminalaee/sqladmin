@@ -707,6 +707,18 @@ wheels = [
 ]
 
 [[package]]
+name = "litestar-debug-toolbar"
+version = "0.4.2"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "jinja2" },
+    { name = "markupsafe" },
+]
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/10/18/f3b82d2b361c7fd7be8f6e0f13899f492f5bc0845d68d5b8e7379c8636cf/litestar_debug_toolbar-0.4.2-py3-none-any.whl", hash = "sha256:36f2fb5f385b3f9ec84b407171330f1a62136e6f076d4bc180039923f5976422", size = 151715, upload-time = "2026-01-07T00:23:27.809Z" },
+]
+
+[[package]]
 name = "markdown"
 version = "3.10.2"
 source = { registry = "https://pypi.org/simple" }
@@ -1612,6 +1624,7 @@ version = "0.31.0"
 source = { editable = "." }
 dependencies = [
     { name = "jinja2" },
+    { name = "litestar-debug-toolbar" },
     { name = "python-multipart" },
     { name = "sqlalchemy" },
     { name = "starlette" },
@@ -1671,6 +1684,7 @@ requires-dist = [
     { name = "itsdangerous", marker = "extra == 'auth'" },
     { name = "itsdangerous", marker = "extra == 'full'" },
     { name = "jinja2" },
+    { name = "litestar-debug-toolbar", specifier = ">=0.4.2" },
     { name = "python-multipart" },
     { name = "sqlalchemy", specifier = ">=2.0" },
     { name = "starlette", specifier = ">=0.50,<2.0.0" },
