@@ -200,3 +200,23 @@ async def test_validate_import_row_does_not_duplicate_relationship_errors(
     )
 
     assert errors["profile"] == ["Not a valid choice"]
+
+
+@pytest.mark.anyio
+async def test_validate_import_row_rejects_invalid_nullable_relationship_value() -> (
+    None
+):
+    model_view = _model_view(ImportWidgetRelationshipAdmin)
+    form_class = await model_view.scaffold_form(model_view._form_create_rules)
+    row = MultiDict([("active", "true"), ("profile", "adg34gfb13")])
+
+    merged, errors, _row_data = validate_import_row(
+        row,
+        model_view.get_import_columns(),
+        ImportWidget,
+        form_class,
+        Admin._denormalize_wtform_data,
+    )
+
+    assert merged["profile"] is None
+    assert errors == {"profile": ["Not a valid choice"]}

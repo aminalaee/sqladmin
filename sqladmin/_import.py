@@ -113,12 +113,19 @@ def validate_import_row(
     # re-validated below: an unresolvable value is denormalized to None and would
     # silently pass. Only those fields need the extra validation pass, so skip it
     # entirely when every import column is a mapper column.
-    mapper_columns = sa_inspect(model).columns
-    non_mapper_columns = [col for col in import_columns if col not in mapper_columns]
+    mapper = sa_inspect(model)
+    non_mapper_columns = [
+        col for col in import_columns if mapper.columns.get(col) is None
+    ]
 
-    fallback_form = form_class(row)
-    fallback_valid = fallback_form.validate() if non_mapper_columns else True
-    fallback_data = denormalize_wtform_data(fallback_form.data, model)
+    if non_mapper_columns:
+        fallback_form = form_class(row)
+        fallback_valid = fallback_form.validate()
+        fallback_data = denormalize_wtform_data(fallback_form.data, model)
+    else:
+        fallback_form = None
+        fallback_valid = True
+        fallback_data = {}
 
     merged_import_data, row_errors = merge_import_row_data(
         model,
@@ -129,6 +136,7 @@ def validate_import_row(
 
     if not fallback_valid:
         # Keep the errors WTForms already reported for the non-mapper columns.
+        assert fallback_form is not None
         for field_name in non_mapper_columns:
             # An empty cell is not a bad value: the pass below already reports it
             # when the field is required, so do not double up here.
@@ -144,7 +152,11 @@ def validate_import_row(
     if not validation_form.validate():
         for field_name, field_errors in validation_form.errors.items():
             existing = row_errors.setdefault(field_name, [])
-            existing.extend(e for e in field_errors if e not in existing)
+            seen = set(existing)
+            for error in field_errors:
+                if error not in seen:
+                    existing.append(error)
+                    seen.add(error)
 
     return merged_import_data, row_errors, row_data
 
