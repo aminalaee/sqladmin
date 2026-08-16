@@ -75,6 +75,8 @@ dev = [
   "greenlet",
   "httpx",
   "itsdangerous",
+  "litestar-debug-toolbar>=0.4.2",
+  "litestar>=2.24.0",
   "phonenumbers",
   "pillow",
   "psycopg2-binary",
