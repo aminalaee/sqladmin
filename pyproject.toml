@@ -38,14 +38,22 @@ dependencies = [
   "jinja2",
   "python-multipart",
   "sqlalchemy >= 2.0",
-  "litestar-debug-toolbar>=0.4.2",
 ]
 
 
 [project.optional-dependencies]
 auth = ["itsdangerous"]
 i18n = ["babel"]
-full = ["itsdangerous", "babel"]
+debug = [
+  "litestar-debug-toolbar>=0.4.2",
+  "litestar>=2.24.0",
+]
+full = [
+  "itsdangerous",
+  "babel",
+  "litestar-debug-toolbar>=0.4.2",
+  "litestar>=2.24.0",
+]
 
 [project.urls]
 Documentation = "https://smithyhq.github.io/sqladmin/"
