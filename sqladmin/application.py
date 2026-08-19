@@ -852,7 +852,9 @@ class Admin(BaseAdminView):
 
         form_data_dict = self._denormalize_wtform_data(form.data, model)
         try:
-            if model_view.save_as and form_data.get("save") == "Save as new":
+            if model_view.save_as and self._save_button_clicked(
+                form_data, "Save as new"
+            ):
                 obj = await model_view.insert_model(request, form_data_dict)
             else:
                 obj = await model_view.update_model(
@@ -1023,18 +1025,31 @@ class Admin(BaseAdminView):
         identity = request.path_params["identity"]
         identifier = get_object_identifier(obj)
 
-        if form.get("save") == "Save":
+        if Admin._save_button_clicked(form, "Save"):
             url = URL(str(request.url_for("admin:list", identity=identity)))
             if request.url.query:
                 url = url.replace(query=request.url.query)
             return url
 
-        if form.get("save") == "Save and continue editing" or (
-            form.get("save") == "Save as new" and model_view.save_as_continue
+        if Admin._save_button_clicked(form, "Save and continue editing") or (
+            Admin._save_button_clicked(form, "Save as new")
+            and model_view.save_as_continue
         ):
             return request.url_for("admin:edit", identity=identity, pk=identifier)
 
         return request.url_for("admin:create", identity=identity)
+
+    @staticmethod
+    def _save_button_clicked(form: FormData, label: str) -> bool:
+        """Return whether the submit button ``label`` was pressed.
+
+        The create/edit templates render the submit buttons via gettext, so in
+        non-English locales the submitted ``save`` value is the translated
+        label. Compare against both the English literal and the active-locale
+        translation.
+        """
+        save = form.get("save")
+        return save in (label, gettext(label))
 
     @staticmethod
     async def _handle_form_data(request: Request, obj: Any = None) -> FormData:
