@@ -59,6 +59,7 @@ from sqladmin.i18n import (
     ngettext,
 )
 from sqladmin.models import BaseView, ModelView
+from sqladmin.palette import build_palette_response, palette_login_required
 from sqladmin.secret import Secret
 from sqladmin.templating import Jinja2Templates
 
@@ -94,6 +95,8 @@ class BaseAdmin:
         authentication_backend: AuthenticationBackend | None = None,
         i18n_config: I18nConfig | None = None,
         audit_backend: AuditBackend | None = None,
+        palette_search_min_chars: int = 2,
+        palette_search_max_models: int = 8,
     ) -> None:
         self.app = app
         self.audit_backend = audit_backend or NullAuditBackend()
@@ -106,6 +109,8 @@ class BaseAdmin:
         self.logo_height = logo_height
         self.favicon_url = favicon_url
         self.i18n_config = i18n_config
+        self.palette_search_min_chars = max(0, palette_search_min_chars)
+        self.palette_search_max_models = max(0, palette_search_max_models)
         if i18n_config is not None and not BABEL_INSTALLED:
             warnings.warn(
                 "i18n_config was provided but the 'babel' package is not "
@@ -516,6 +521,8 @@ class Admin(BaseAdminView):
         static_files_kwargs: dict[str, Any] | None = None,
         i18n_config: I18nConfig | None = None,
         audit_backend: AuditBackend | None = None,
+        palette_search_min_chars: int = 2,
+        palette_search_max_models: int = 8,
     ) -> None:
         """
         Args:
@@ -532,6 +539,10 @@ class Admin(BaseAdminView):
             i18n_config: Internationalization configuration. When provided, the
                 interface is translated per request and, if
                 ``language_switcher`` is set, a language switcher is shown.
+            palette_search_min_chars: Minimum term length before the command
+                palette runs an unscoped record search. Defaults to 2.
+            palette_search_max_models: Maximum number of opted-in models the
+                palette fans out to for an unscoped search. Defaults to 8.
         """
 
         super().__init__(
@@ -549,6 +560,8 @@ class Admin(BaseAdminView):
             authentication_backend=authentication_backend,
             i18n_config=i18n_config,
             audit_backend=audit_backend,
+            palette_search_min_chars=palette_search_min_chars,
+            palette_search_max_models=palette_search_max_models,
         )
 
         static_files_kwargs = {**(static_files_kwargs or {}), "packages": ["sqladmin"]}
@@ -619,6 +632,7 @@ class Admin(BaseAdminView):
                 name="file_preview",
                 methods=["GET"],
             ),
+            Route("/palette", endpoint=self.palette, name="palette"),
         ]
 
         self.admin.router.routes = routes
@@ -1011,6 +1025,19 @@ class Admin(BaseAdminView):
 
         data = [loader.format(m) for m in await loader.get_list(request, term)]
         return JSONResponse({"results": data})
+
+    @palette_login_required
+    async def palette(self, request: Request) -> Response:
+        """Command-palette search endpoint.
+
+        Model name matches are served from the in-memory view registry (no DB
+        access). A ``?scope=<identity>`` query runs a single query against one
+        model. An unscoped query fans out only across models that set
+        ``palette_search = True``, capped and run concurrently. See
+        ``sqladmin.palette.build_palette_response`` for details.
+        """
+
+        return await build_palette_response(self, request)
 
     @staticmethod
     def get_save_redirect_url(
