@@ -1024,12 +1024,20 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
             return default
 
         try:
-            return int(number)
+            value = int(number)
         except ValueError as exc:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Invalid page or pageSize parameter",
             ) from exc
+
+        if value < 1:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Invalid page or pageSize parameter",
+            )
+
+        return value
 
     async def count(self, request: Request, stmt: Select | None = None) -> int:
         if stmt is None:
@@ -1078,6 +1086,9 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
         count = await self.count(
             request, select(func.count()).select_from(stmt.subquery())
         )
+
+        max_page = max(1, (count + page_size - 1) // page_size)
+        page = min(page, max_page)
 
         stmt = stmt.limit(page_size).offset((page - 1) * page_size)
         rows = await self._run_query(stmt)
