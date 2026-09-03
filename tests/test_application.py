@@ -269,7 +269,11 @@ def test_denormalize_wtform_fields() -> None:
     }
 
 
-def test_validate_page_and_page_size():
+@pytest.mark.parametrize(
+    "query",
+    ["page=aaaa", "page=0", "page=-1", "pageSize=0", "pageSize=-1"],
+)
+def test_reject_invalid_page_and_page_size(query: str) -> None:
     app = Starlette()
     admin = Admin(app=app, engine=engine)
 
@@ -279,11 +283,30 @@ def test_validate_page_and_page_size():
 
     client = TestClient(app)
 
-    response = client.get("/admin/user/list?page=10000")
-    assert response.status_code == 200
-
-    response = client.get("/admin/user/list?page=aaaa")
+    response = client.get(f"/admin/user/list?{query}")
     assert response.status_code == 400
+
+
+def test_clamp_page_before_query() -> None:
+    app = Starlette()
+    admin = Admin(app=app, engine=engine)
+
+    class UserAdmin(ModelView, model=User): ...
+
+    admin.add_view(UserAdmin)
+
+    with session_maker() as session:
+        session.add_all(User() for _ in range(UserAdmin.page_size))
+        session.commit()
+
+    client = TestClient(app)
+
+    response = client.get(
+        "/admin/user/list?page=99999999999999999999", follow_redirects=False
+    )
+
+    assert response.status_code == 302
+    assert response.headers["location"] == "http://testserver/admin/user/list?page=1"
 
 
 def test_polymorphic_model_pages_use_view_identity() -> None:

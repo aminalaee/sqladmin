@@ -48,7 +48,8 @@ class Pagination:
 
     def __post_init__(self) -> None:
         # Clamp page
-        self.page = min(self.page, max(1, self.count // self.page_size + 1))
+        max_page = max(1, (self.count + self.page_size - 1) // self.page_size)
+        self.page = min(max(self.page, 1), max_page)
 
     def resize(self, page_size: int) -> Pagination:
         self.page = (self.page - 1) * self.page_size // page_size + 1
