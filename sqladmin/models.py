@@ -1079,6 +1079,13 @@ class ModelView(BaseView, metaclass=ModelViewMeta):
             request, select(func.count()).select_from(stmt.subquery())
         )
 
+        # Clamp before building the LIMIT/OFFSET, not after: an oversized
+        # page number times page_size can overflow what the DB driver's
+        # integer binding accepts (SQLite in particular), so the offset
+        # needs a valid page to work with rather than raising before
+        # Pagination ever gets a chance to clamp it itself.
+        page = min(page, max(1, count // page_size + 1))
+
         stmt = stmt.limit(page_size).offset((page - 1) * page_size)
         rows = await self._run_query(stmt)
 

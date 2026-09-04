@@ -282,6 +282,11 @@ def test_validate_page_and_page_size():
     response = client.get("/admin/user/list?page=10000")
     assert response.status_code == 200
 
+    # A page number this large used to overflow the integer binding on the
+    # LIMIT/OFFSET before Pagination ever got a chance to clamp it.
+    response = client.get("/admin/user/list?page=99999999999999999999")
+    assert response.status_code == 200
+
     response = client.get("/admin/user/list?page=aaaa")
     assert response.status_code == 400
 
