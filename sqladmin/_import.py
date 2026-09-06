@@ -118,14 +118,9 @@ def validate_import_row(
         col for col in import_columns if mapper.columns.get(col) is None
     ]
 
-    if non_mapper_columns:
-        fallback_form = form_class(row)
-        fallback_valid = fallback_form.validate()
-        fallback_data = denormalize_wtform_data(fallback_form.data, model)
-    else:
-        fallback_form = None
-        fallback_valid = True
-        fallback_data = {}
+    fallback_form = form_class(row)
+    fallback_valid = fallback_form.validate() if non_mapper_columns else True
+    fallback_data = denormalize_wtform_data(fallback_form.data, model)
 
     merged_import_data, row_errors = merge_import_row_data(
         model,
@@ -136,7 +131,6 @@ def validate_import_row(
 
     if not fallback_valid:
         # Keep the errors WTForms already reported for the non-mapper columns.
-        assert fallback_form is not None
         for field_name in non_mapper_columns:
             # An empty cell is not a bad value: the pass below already reports it
             # when the field is required, so do not double up here.

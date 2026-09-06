@@ -239,11 +239,6 @@ class UserAdmin(ModelView, model=User):
     can_import = True
 
 
-class UserRelationshipImportAdmin(ModelView, model=User):
-    can_import = True
-    column_import_list = [User.name, User.profile]
-
-
 class AddressAdmin(ModelView, model=Address):
     column_list = ["id", "user_id", "user", "user.profile.id"]
     column_searchable_list = [Address.id]
@@ -304,7 +299,6 @@ class WithDefaultsAdmin(ModelView, model=WithDefaults):
 
 
 admin.add_view(UserAdmin)
-admin.add_view(UserRelationshipImportAdmin)
 admin.add_view(AddressAdmin)
 admin.add_view(ProfileAdmin)
 admin.add_view(MovieAdmin)
@@ -1263,10 +1257,17 @@ async def test_import_csv_file(client: AsyncClient) -> None:
     assert users[1].status == Status.DEACTIVE
 
 
-async def test_import_csv_reports_invalid_relationship_value() -> None:
+@pytest.mark.parametrize("relationship_name", ["profile", "addresses"])
+async def test_import_csv_reports_invalid_relationship_value(
+    relationship_name: str,
+) -> None:
+    class RelationshipImportAdmin(ModelView, model=User):
+        can_import = True
+        column_import_list = ["name", relationship_name]
+
     local_app = Starlette()
     local_admin = Admin(app=local_app, engine=engine)
-    local_admin.add_view(UserRelationshipImportAdmin)
+    local_admin.add_view(RelationshipImportAdmin)
     transport = ASGITransport(app=local_app)
     async with AsyncClient(
         transport=transport, base_url="http://testserver"
@@ -1276,7 +1277,7 @@ async def test_import_csv_reports_invalid_relationship_value() -> None:
             files={
                 "csvfile": (
                     "user.csv",
-                    b"name,profile\r\nUSER_1,missing\r\n",
+                    f"name,{relationship_name}\r\nUSER_1,missing\r\n".encode(),
                     "text/csv",
                 )
             },
@@ -1287,7 +1288,14 @@ async def test_import_csv_reports_invalid_relationship_value() -> None:
     assert result["type"] == "result"
     assert result["ok"] is False
     assert result["aborted"] is True
-    assert result["missed_rows"][0]["errors"] == {"profile": ["Not a valid choice"]}
+    assert result["missed_rows"][0]["errors"] == {
+        relationship_name: ["Not a valid choice"]
+    }
+
+    async with session_maker() as session:
+        assert (
+            await session.execute(select(User).where(User.name == "USER_1"))
+        ).scalar_one_or_none() is None
 
 
 async def test_import_csv_button(client: AsyncClient) -> None:
