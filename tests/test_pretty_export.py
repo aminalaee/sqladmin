@@ -187,7 +187,7 @@ class TestPrettyExport:
             assert len(values) == 3
             assert values[0] == 1
             assert values[1] == "John Doe"
-            assert values[2] == "Main St,Second St"
+            assert sorted(values[2].split(",")) == ["Main St", "Second St"]
 
     async def test_get_export_row_values_with_set_relationship(self):
         class UserAdmin(ModelView, model=User):
@@ -245,7 +245,7 @@ class TestPrettyExport:
                 UserAdmin(), user, ["id", "items"]
             )
 
-            assert values[1] == {"sku-1": user.items["sku-1"]}
+            assert values[1] == "sku-1"
 
     async def test_get_export_row_values_with_relationship_formatter(self):
         class UserAdmin(ModelView, model=User):
@@ -551,3 +551,16 @@ class TestPrettyExport:
 
         content = await self._get_csv_content(response)
         assert content == "[]"
+
+
+@pytest.mark.parametrize(
+    "items, expected", [({}, ""), ({"key": "value", "other": "second"}, "value,second")]
+)
+async def test_keyed_relationship_exports_values(items, expected):
+    class UserAdmin(ModelView, model=User):
+        column_list = ["items"]
+
+    assert (
+        await PrettyExport._base_export_cell(UserAdmin(), "items", items, items)
+        == expected
+    )

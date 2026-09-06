@@ -30,6 +30,8 @@ class PrettyExport:
             elif isinstance(formatted_value, (set, frozenset)):
                 # Unordered collections are sorted so exports are reproducible.
                 cell_value = ",".join(sorted(str(item) for item in formatted_value))
+            elif isinstance(formatted_value, dict):
+                cell_value = ",".join(str(item) for item in formatted_value.values())
             elif isinstance(formatted_value, (list, tuple)):
                 cell_value = ",".join(str(item) for item in formatted_value)
             else:
